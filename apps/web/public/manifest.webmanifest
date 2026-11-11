@@ -1,0 +1,10 @@
+{
+  "name": "Tostão",
+  "short_name": "Tostão",
+  "description": "Grana explicada, de tostão em tostão.",
+  "start_url": "/inicio",
+  "display": "standalone",
+  "background_color": "#FDFBF6",
+  "theme_color": "#FDFBF6",
+  "icons": [{ "src": "/elenco/avatar.webp", "sizes": "480x480", "type": "image/webp" }]
+}

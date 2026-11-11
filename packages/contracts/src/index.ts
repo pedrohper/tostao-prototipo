@@ -79,3 +79,5 @@ export type MonthSummaryResponse = {
   byCategory: { categoryId: string | null; name: string; color: string; totalInCents: number }[];
   accounts: { id: string; name: string; balanceInCents: number }[];
 };
+
+export type TransactionDetailResponse = { transaction: TransactionDTO; rulePattern: string };

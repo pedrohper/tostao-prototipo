@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+/* Tokens do design system do Tostão. Viram classes: bg-papel, text-tinta, bg-laranja... */
+@theme {
+  --color-papel: #FDFBF6;
+  --color-papel-2: #F6EFE4;
+  --color-cartao: #FFFDF9;
+  --color-tinta: #1E1B18;
+  --color-tinta-suave: #6B635A;
+  --color-linha: #E4DCCF;
+  --color-laranja: #FF5A36;
+  --color-laranja-texto: #C2410C;
+  --color-amarelo: #FFC233;
+  --color-menta: #3DD6A0;
+  --color-verde-texto: #0E7A55;
+  --color-vermelho-texto: #B42318;
+  --color-rosa: #FFE1E7;
+  --color-menta-clara: #DDF6E8;
+  --color-azul: #DCEBFF;
+  --color-amarelo-claro: #FFF1C7;
+
+  --font-display: "Bricolage Grotesque", Inter, system-ui, sans-serif;
+  --font-sans: Inter, system-ui, sans-serif;
+}
+
+/* Modo escuro: mesmos nomes, outras cores. Os componentes não mudam. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-papel: #1A1714;
+    --color-papel-2: #24201C;
+    --color-cartao: #2B2622;
+    --color-tinta: #F6EFE4;
+    --color-tinta-suave: #B5AB9F;
+    --color-linha: #3A332D;
+    --color-laranja-texto: #FF8A65;
+    --color-verde-texto: #3DD6A0;
+    --color-vermelho-texto: #FF8A80;
+    --color-rosa: #3D2A2E;
+    --color-menta-clara: #1F3A30;
+    --color-azul: #1F2D40;
+    --color-amarelo-claro: #3A3220;
+  }
+}
+
+@layer base {
+body {
+  background: var(--color-papel);
+  color: var(--color-tinta);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--color-laranja); outline-offset: 2px; }
+}

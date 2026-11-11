@@ -22,6 +22,12 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
     return { transactions: transactions.map(presentTransaction) };
   });
 
+  app.get('/transactions/:id', { onRequest: verifyJwt }, async (request) => {
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const { transaction, rulePattern } = await uc.getTransaction.execute({ userId: request.user.sub, transactionId: id });
+    return { transaction: presentTransaction(transaction), rulePattern };
+  });
+
   app.post('/transactions', { onRequest: verifyJwt }, async (request, reply) => {
     const body = manualTransactionBody.parse(request.body);
     const { transaction } = await uc.createManualTransaction.execute({
