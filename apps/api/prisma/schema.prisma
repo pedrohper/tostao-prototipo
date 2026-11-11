@@ -1,0 +1,111 @@
+// Modelo de dados do Tostão.
+// Dinheiro SEMPRE em centavos (Int): nada de float pra grana.
+// Negativo = saiu da conta, positivo = entrou.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  connections  BankConnection[]
+  accounts     Account[]
+  transactions Transaction[]
+  rules        CategoryRule[]
+
+  @@map("users")
+}
+
+// Uma conexão = um "Item" do Pluggy (um banco autorizado no Meu Pluggy)
+model BankConnection {
+  id           String    @id @default(uuid())
+  userId       String    @map("user_id")
+  itemId       String    @map("item_id")
+  institution  String?
+  status       String    @default("ACTIVE") // ACTIVE | ERROR
+  lastSyncedAt DateTime? @map("last_synced_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accounts Account[]
+
+  @@unique([userId, itemId])
+  @@map("bank_connections")
+}
+
+model Account {
+  id             String  @id @default(uuid())
+  userId         String  @map("user_id")
+  connectionId   String  @map("connection_id")
+  externalId     String  @map("external_id")
+  name           String
+  type           String  // BANK | CREDIT
+  balanceInCents Int     @map("balance_in_cents")
+
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  connection   BankConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@unique([userId, externalId])
+  @@map("accounts")
+}
+
+// Categorias são globais (seed). Usuário escolhe entre elas.
+model Category {
+  id    String @id // slug: "delivery", "mercado"...
+  name  String
+  emoji String
+  color String
+  kind  String @default("saida") // saida | entrada
+
+  transactions Transaction[]
+  rules        CategoryRule[]
+
+  @@map("categories")
+}
+
+// "Toda vez que aparecer IFD* põe em Delivery"
+// userId null = regra padrão do sistema
+model CategoryRule {
+  id         String  @id @default(uuid())
+  userId     String? @map("user_id")
+  pattern    String  // trecho em MAIÚSCULAS procurado na descrição
+  categoryId String  @map("category_id")
+
+  user     User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@unique([userId, pattern])
+  @@map("category_rules")
+}
+
+model Transaction {
+  id                 String   @id @default(uuid())
+  userId             String   @map("user_id")
+  accountId          String?  @map("account_id") // null = anotado na mão
+  externalId         String?  @map("external_id") // id do Pluggy, pra não importar duas vezes
+  description        String
+  amountInCents      Int      @map("amount_in_cents")
+  occurredAt         DateTime @map("occurred_at")
+  categoryId         String?  @map("category_id")
+  isInternalTransfer Boolean  @default(false) @map("is_internal_transfer")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account  Account?  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id])
+
+  @@unique([userId, externalId])
+  @@index([userId, occurredAt])
+  @@map("transactions")
+}
