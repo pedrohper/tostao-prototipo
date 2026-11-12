@@ -7,7 +7,7 @@ Protótipo funcional pra testar e validar a ideia. Depois, a plataforma de verda
 ## O que já funciona
 
 - Criar conta, entrar e sair (JWT em cookie httpOnly)
-- Conectar banco pelo **Meu Pluggy** (Item ID) ou com um **banco de exemplo**
+- Conectar banco pelo **Pluggy Connect** (widget dentro do app, com o MeuPluggy) ou com um **banco de exemplo**
 - Sincronização na hora e automática todo dia às 6h, sem duplicar transação
 - Categorização automática por regras (iFood, Spotify, Uber, mercados...)
 - Categorizar na mão com "sempre colocar X em Y", que vira regra e já arruma as outras pendentes
@@ -15,7 +15,21 @@ Protótipo funcional pra testar e validar a ideia. Depois, a plataforma de verda
 - Anotar gasto na mão (dinheiro vivo, Pix que ainda não apareceu)
 - Início com saldo, entrou/saiu do mês e pra onde foi
 - Carteira por mês, com filtros
-- Trilha com os **9 módulos e 45 lições** do currículo, em 6 passos cada
+- Trilha com os **9 módulos e 45 lições** do currículo, em 6 passos cada, com progresso salvo na conta
+- **Minhas assinaturas**: acha o que cobra todo mês (Spotify, YouTube, plano anual em 12x...) e soma por mês e por ano
+- **Fechamento do mês**: quanto sobrou, entrou e saiu vs mês anterior, categorias que mais pesaram e maior gasto
+- **Limites por categoria**: teto mensal com barra no Início e aviso quando passa
+- Mesmo cartão vindo de duas conexões (ex.: Bradesco e Bradescard) conta uma vez só
+- Desconectar banco pela tela Conectar
+- **Minhas categorias**: crie categorias de gasto e de entrada; a categoria **Não conta** tira do resumo dinheiro que só passa por você (repasse com a família)
+- **Importar extrato** OFX/CSV (Conectar → Importar extrato): funciona com qualquer banco, sem Pluggy; reimportar não duplica
+- Aviso no Início e no Conectar quando um banco para de atualizar ou o Pluggy está fora
+- **Chat com o Tostão** (aba Tostão): IA (DeepSeek) que responde com base nos seus números; precisa de `DEEPSEEK_API_KEY` no `apps/api/.env` (limite `CHAT_DAILY_LIMIT`, padrão 40/dia)
+- **Tostão no WhatsApp** (Perfil > Tostão no WhatsApp): o mesmo chat pela Cloud API da Meta. A pessoa gera um código no app e manda pro número; só número ligado vê dados. Liga com `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN` e `WHATSAPP_NUMBER` (só dígitos, com DDI) no `apps/api/.env`. Webhook: `GET/POST /whatsapp/webhook` (assinatura `X-Hub-Signature-256` conferida); é a única rota que precisa ser pública.
+- **Busca** (topo da Carteira), **Metas** (Perfil > Minha meta) e **categoria automática** com o DeepSeek depois de cada sync/importação (botão "Categorizar pra mim" na aba "sem categoria").
+- Cadastro aberto; convite (Perfil → Convidar alguém) é opcional e só marca quem chamou quem
+- Sessão que renova sozinha, limite de 5 tentativas de login, backup diário (`scripts/backup-db.sh`)
+- Ocultar conta que você não usa (ex.: poupança parada): some da Carteira e do saldo
 - Layout de celular e de desktop, e modo escuro automático
 
 ## Rodando na sua máquina
@@ -36,16 +50,18 @@ Abra http://localhost:3000, crie uma conta e, em "Conectar", digite qualquer tex
 
 ### Usando seu banco de verdade (Meu Pluggy)
 
-1. Crie uma conta no [dashboard do Pluggy](https://dashboard.pluggy.ai). Em **Applications**, pegue o `Client ID` e o `Client Secret`.
-2. Em [meu.pluggy.ai](https://meu.pluggy.ai), conecte seus bancos. Faça isso **enquanto o trial do Pluggy estiver ativo**.
-3. No dashboard, em "Ir para Demo", use **Copiar Item ID** (um por banco).
+1. Em [meu.pluggy.ai](https://meu.pluggy.ai), conecte seus bancos (Open Finance).
+2. Crie uma conta no [dashboard do Pluggy](https://dashboard.pluggy.ai). Começa um trial de 15 dias: conecte os bancos **enquanto ele estiver ativo** (depois do trial os dados continuam sendo lidos, mas não dá pra ligar banco novo).
+3. Na sua Application, em personalizar, deixe o connector **MeuPluggy** na lista. Pegue o `Client ID` e o `Client Secret`.
 4. No `apps/api/.env`:
    ```
    BANK_GATEWAY="pluggy"
    PLUGGY_CLIENT_ID="..."
    PLUGGY_CLIENT_SECRET="..."
    ```
-5. Reinicie o `pnpm dev` e cole o Item ID na tela "Conectar".
+5. Reinicie o `pnpm dev`. Na tela "Conectar", toque em **Conectar meu banco**: abre o Pluggy Connect, você escolhe **MeuPluggy** e autoriza (uma vez por banco). O Tostão recebe o Item ID sozinho.
+
+Plano B: se o banco já foi ligado pela Demo do dashboard ("Ir para Demo" → menu de três pontos no canto superior direito → **Copiar Item ID**), cole em "Já tenho um Item ID". O campo aceita o ID puro ou qualquer texto/link que tenha o ID dentro.
 
 > ⚠️ **Este repo é público.** O `.env` está no `.gitignore`. Nunca commite credenciais.
 
@@ -88,12 +104,13 @@ O caminho de uma requisição: **controller** valida com Zod, chama o **use case
 
 | Atalho | Como deveria ser |
 |---|---|
-| Item ID colado à mão | Pluggy Connect Widget dentro do app (exige plano pago do Pluggy) |
-| Progresso das lições no `localStorage` | Tabela `LessonProgress` + endpoint na API |
 | Só o simulador da lição 1.1 existe | Um simulador por lição |
 | Compromisso da semana não é auditado | Job que confere o extrato e marca cumprido/não cumprido |
 | Cron dentro do processo da API | Worker separado ou cron do provedor |
-| Fuso fixo -03:00 | Fuso do usuário |
+| Fuso fixo -03:00 (dia sem hora vindo do banco = meio-dia de Brasília) | Fuso do usuário |
 | Transferência interna por par de valores | Pode errar se alguém te mandar o mesmo valor que você mandou pra outra pessoa no mesmo dia |
-| Sem recuperar senha, sem refresh token | E-mail de recuperação e sessão renovável |
-| Chat, Tribunal, Batalha e Fechamento | Ainda só no design (canvas) |
+| Recuperar senha por link gerado no servidor (`pnpm --filter @tostao/api reset-link email`) | E-mail de recuperação automático |
+| Limite de login em memória, por e-mail | Redis/limite por IP na borda |
+| Chat manda um resumo pronto pra IA (sem ferramentas) | IA consultando dados por function calling |
+| Tribunal e Batalha | Ainda só no design (canvas) |
+| Assinatura detectada por padrão de descrição | Usar a categoria do Pluggy e deixar a pessoa confirmar/ignorar |

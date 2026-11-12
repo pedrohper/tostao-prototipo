@@ -2,9 +2,10 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import type { Lesson } from '@/lib/lessons';
-import { markDone } from '@/lib/progress';
+import { markLessonDone } from '../actions';
 import { Mascote, type Pose } from '@/components/mascote';
 import { Button } from '@/components/ui';
+import { Confete } from '@/components/confete';
 import { SIMULATORS } from './simulators';
 
 type Props = { lesson: Lesson; moduleTitle: string; moduleNumber: number; nextId: string | null };
@@ -26,7 +27,7 @@ export function LessonPlayer({ lesson, moduleTitle, moduleNumber, nextId }: Prop
   const last = step === STEPS.length - 1;
 
   const advance = () => {
-    if (step === STEPS.length - 2) markDone(lesson.id);
+    if (step === STEPS.length - 2) void markLessonDone(lesson.id);
     setStep(step + 1);
   };
 
@@ -84,7 +85,8 @@ export function LessonPlayer({ lesson, moduleTitle, moduleNumber, nextId }: Prop
         {step === 4 && <p className="rounded-[20px] bg-cartao p-4 font-semibold">{lesson.commitment}</p>}
         {step === 5 && (
           <div className="flex flex-col items-center gap-2 py-6 text-center">
-            <p className="font-display text-[34px] font-extrabold">+20 XP</p>
+            <Confete />
+            <p className="mascote-pula font-display text-[34px] font-extrabold">+20 XP</p>
             <p className="text-[15px]">Lição feita. O Caramelo já tá de olho no seu extrato pra conferir o compromisso.</p>
           </div>
         )}
@@ -93,7 +95,7 @@ export function LessonPlayer({ lesson, moduleTitle, moduleNumber, nextId }: Prop
       {last ? (
         <div className="flex flex-col gap-2.5">
           {nextId && <Link href={`/aprender/${nextId}`} className="flex h-[54px] items-center justify-center rounded-full bg-tinta font-semibold text-papel no-underline">Próxima lição</Link>}
-          <Link href="/aprender" className="flex h-[50px] items-center justify-center rounded-full border-[1.5px] border-tinta font-semibold no-underline">Voltar pra trilha</Link>
+          <Link href="/aprender" className="flex h-[50px] items-center justify-center rounded-full border-[1.5px] border-tinta font-semibold no-underline">Voltar pro Aprender</Link>
         </div>
       ) : (
         <Button variant="dark" onClick={advance} disabled={step === 3 && !vote}>

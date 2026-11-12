@@ -1,6 +1,7 @@
 import type { Repositories } from '../repositories/types.js';
 import { ResourceNotFoundError } from '../domain/errors.js';
 import { categorizeByRules, patternFromDescription } from '../services/categorize.js';
+import { canUseCategory, isNeutral } from './categories.js';
 
 type Input = { userId: string; transactionId: string; categoryId: string; remember: boolean };
 
@@ -17,9 +18,11 @@ export class CategorizeTransactionUseCase {
     const tx = await transactions.findById(transactionId);
     // Transação de outro usuário = "não encontrada". Nunca revele que existe.
     if (!tx || tx.userId !== userId) throw new ResourceNotFoundError('Transação');
-    if (!(await categories.findById(categoryId))) throw new ResourceNotFoundError('Categoria');
+    if (!canUseCategory(await categories.findById(categoryId), userId)) throw new ResourceNotFoundError('Categoria');
 
-    await transactions.save({ ...tx, categoryId });
+    // "Não conta" tira do gasto/renda; sair dela devolve (o próximo sync reavalia fatura e afins).
+    const internal = (current: boolean) => (isNeutral(categoryId) ? true : isNeutral(tx.categoryId) ? false : current);
+    await transactions.save({ ...tx, categoryId, isInternalTransfer: internal(tx.isInternalTransfer) });
     let alsoUpdated = 0;
 
     if (remember) {
@@ -28,7 +31,7 @@ export class CategorizeTransactionUseCase {
         const rule = await rules.upsert({ userId, pattern, categoryId });
         for (const other of await transactions.findUncategorized(userId)) {
           if (other.id !== tx.id && categorizeByRules(other.description, [rule])) {
-            await transactions.save({ ...other, categoryId });
+            await transactions.save({ ...other, categoryId, isInternalTransfer: isNeutral(categoryId) || other.isInternalTransfer });
             alsoUpdated++;
           }
         }

@@ -41,3 +41,19 @@ export function dayLabel(iso: string) {
 export function todayIso() {
   return new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
 }
+
+/** "10/12" no fuso de Brasília. */
+export function shortDate(iso: string) {
+  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' });
+}
+
+/** "agora", "há 2 h", "há 3 dias". */
+export function ago(iso: string, now = Date.now()) {
+  const min = Math.max(0, Math.round((now - new Date(iso).getTime()) / 60_000));
+  if (min < 5) return 'agora';
+  if (min < 60) return `há ${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `há ${h} h`;
+  const d = Math.round(h / 24);
+  return `há ${d} ${d === 1 ? 'dia' : 'dias'}`;
+}

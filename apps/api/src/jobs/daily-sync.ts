@@ -5,7 +5,7 @@ import type { Repositories } from '../repositories/types.js';
 import type { SyncBankConnectionUseCase } from '../use-cases/sync-bank-connection.js';
 
 export async function syncAllConnections(repos: Repositories, sync: SyncBankConnectionUseCase, log = console) {
-  const connections = await repos.connections.listActive();
+  const connections = (await repos.connections.listActive()).filter((c) => !c.itemId.startsWith('import:'));
   for (const c of connections) {
     try {
       const r = await sync.execute({ connectionId: c.id });

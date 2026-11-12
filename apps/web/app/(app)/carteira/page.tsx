@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import type { MonthSummaryResponse, TransactionDTO } from '@tostao/contracts';
 import { api } from '@/lib/api';
-import { currentMonth, dayLabel, money, monthName, shiftMonth } from '@/lib/format';
-import { ButtonLink } from '@/components/ui';
+import { currentMonth, dayLabel, money, monthName, shiftMonth, shortDate } from '@/lib/format';
+import { BankIcon, ButtonLink, CardIcon } from '@/components/ui';
 import { Mascote } from '@/components/mascote';
+import { AutoCategorizeButton } from './auto-categorize-button';
+import { Chevron, Row, SearchBar } from './transaction-row';
 
 const FILTERS = { tudo: 'Tudo', saidas: 'Saídas', entradas: 'Entradas', pendentes: 'Sem categoria' } as const;
 type Filter = keyof typeof FILTERS;
@@ -32,41 +34,60 @@ export default async function CarteiraPage({ searchParams }: { searchParams: Pro
   const q = (p: Record<string, string>) => `/carteira?${new URLSearchParams({ mes: month, filtro: filter, ...p })}`;
   const isCurrent = month >= currentMonth();
   const mesTitulo = `${monthName(month)} ${month.slice(0, 4)}`;
+  const bancos = summary.accounts.filter((a) => a.type === 'BANK');
+  // Contas primeiro, cartões depois (como no design)
+  const contas = [...bancos, ...summary.accounts.filter((a) => a.type === 'CREDIT')];
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-end justify-between">
-        <div>
-          <h1 className="font-display text-[28px] font-extrabold">Carteira</h1>
-          {summary.balanceInCents !== null && <span className="text-sm text-tinta-suave">{money(summary.balanceInCents)} em {summary.accounts.length} contas</span>}
-        </div>
-        <Link href="/anotar" className="rounded-full bg-laranja px-4 py-2.5 text-sm font-bold text-[#1E1B18] no-underline">+ Anotar gasto</Link>
+        <h1 className="font-display text-[34px] leading-[38px] font-extrabold">Carteira</h1>
+        {summary.balanceInCents !== null && <span className="pb-1.5 text-[13px] font-semibold text-tinta-suave">{money(summary.balanceInCents)} em {bancos.length} {bancos.length === 1 ? 'conta' : 'contas'}</span>}
       </div>
 
-      <div className="flex items-center justify-between rounded-2xl bg-cartao px-2 py-1.5">
-        <Link href={q({ mes: shiftMonth(month, -1) })} aria-label="Mês anterior" className="flex h-10 w-10 items-center justify-center text-xl">‹</Link>
-        <span className="font-semibold capitalize">{mesTitulo}</span>
-        {isCurrent ? <span className="h-10 w-10" /> : <Link href={q({ mes: shiftMonth(month, 1) })} aria-label="Próximo mês" className="flex h-10 w-10 items-center justify-center text-xl">›</Link>}
+      <SearchBar />
+
+      <div className="flex items-center justify-between rounded-full bg-papel-2 p-1">
+        <Link href={q({ mes: shiftMonth(month, -1) })} aria-label="Mês anterior" className="flex h-9 w-9 items-center justify-center"><Chevron d="M15 18l-6-6 6-6" /></Link>
+        <span className="text-[15px] font-bold capitalize">{mesTitulo}</span>
+        {isCurrent
+          ? <span className="flex h-9 w-9 items-center justify-center text-linha" aria-hidden="true"><Chevron d="M9 18l6-6-6-6" /></span>
+          : <Link href={q({ mes: shiftMonth(month, 1) })} aria-label="Próximo mês" className="flex h-9 w-9 items-center justify-center"><Chevron d="M9 18l6-6-6-6" /></Link>}
       </div>
 
-      {summary.accounts.length > 0 && (
-        <div className="-mx-5 flex gap-2.5 overflow-x-auto px-5 pb-1">
-          {summary.accounts.map((a) => (
-            <div key={a.id} className="flex min-w-[130px] flex-col rounded-2xl bg-cartao p-3">
-              <span className="text-xs font-semibold text-tinta-suave">{a.name}</span>
-              <span className="font-bold">{money(a.balanceInCents)}</span>
-            </div>
-          ))}
+      {contas.length > 0 && (
+        <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 md:-mx-8 md:px-8">
+          {contas.map((a) => {
+            const card = a.type === 'CREDIT';
+            return (
+              <div key={a.id} className={`flex w-[124px] shrink-0 flex-col gap-0.5 rounded-[14px] border px-3 py-2.5 ${card ? 'border-[#F5CDB8] bg-[#FFF4EE] dark:border-[#5A3526] dark:bg-[#33241D]' : 'border-linha bg-cartao'}`}>
+                <span className="flex min-w-0 items-center gap-1.5 text-xs font-semibold text-tinta-suave">
+                  {card ? <CardIcon className="shrink-0 text-laranja-texto" /> : <BankIcon className="shrink-0" />}
+                  <span className="truncate">{a.name}</span>
+                </span>
+                <span className="text-[15px] font-bold tabular-nums">{money(card ? Math.max(0, -a.balanceInCents) : a.balanceInCents)}</span>
+                <span className="text-[11px] font-semibold text-tinta-suave">{card ? (a.dueDate ? `Fatura · vence ${shortDate(a.dueDate)}` : 'Fatura atual') : 'Conta'}</span>
+              </div>
+            );
+          })}
         </div>
+      )}
+
+      {summary.hiddenAccounts.length > 0 && (
+        <Link href="/perfil" className="-mt-2 text-[13px] text-tinta-suave">
+          {summary.hiddenAccounts.length} {summary.hiddenAccounts.length === 1 ? 'conta oculta' : 'contas ocultas'} · mostrar no Perfil
+        </Link>
       )}
 
       <div className="-mx-5 flex gap-2 overflow-x-auto px-5">
         {(Object.keys(FILTERS) as Filter[]).map((f) => (
-          <Link key={f} href={q({ filtro: f })} className={`shrink-0 rounded-full px-3.5 py-2 text-[13px] font-semibold no-underline ${filter === f ? 'bg-tinta text-papel' : 'bg-papel-2'}`}>
+          <Link key={f} href={q({ filtro: f })} className={`shrink-0 rounded-full px-3 py-1.5 text-[13px] font-semibold no-underline ${filter === f ? 'bg-tinta text-papel' : f === 'pendentes' && summary.uncategorizedCount > 0 ? 'bg-rosa text-tinta' : 'bg-papel-2 text-tinta'}`}>
             {f === 'pendentes' ? `${summary.uncategorizedCount} sem categoria` : FILTERS[f]}
           </Link>
         ))}
       </div>
+
+      {filter === 'pendentes' && shown.some((t) => t.amountInCents !== 0) && <AutoCategorizeButton />}
 
       {shown.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-10 text-center">
@@ -75,37 +96,20 @@ export default async function CarteiraPage({ searchParams }: { searchParams: Pro
           {transactions.length === 0 && <ButtonLink href="/conectar" variant="outline">Conectar banco</ButtonLink>}
         </div>
       ) : (
-        <div className="flex flex-col gap-1">
-          {[...groups.entries()].map(([day, list]) => (
+        <div className="flex flex-col">
+          {[...groups.entries()].map(([day, list], i) => (
             <section key={day} className="flex flex-col">
-              <h2 className="pt-3 pb-1.5 text-[13px] font-semibold text-tinta-suave">{day}</h2>
+              <h2 className={`pb-1.5 text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase ${i === 0 ? 'pt-1.5' : 'pt-3'}`}>{day}</h2>
               {list.map((t) => <Row key={t.id} t={t} back={q({})} />)}
             </section>
           ))}
         </div>
       )}
-    </div>
-  );
-}
 
-function Row({ t, back }: { t: TransactionDTO; back: string }) {
-  const pending = !t.categoryId && !t.isInternalTransfer;
-  const sub = t.isInternalTransfer ? 'Entre suas contas · não conta como gasto'
-    : pending ? 'Sem categoria · toque pra categorizar'
-      : [t.categoryName, t.accountName ?? 'Anotado na mão'].filter(Boolean).join(' · ');
-  return (
-    <Link href={`/carteira/${t.id}?voltar=${encodeURIComponent(back)}`}
-      className={`flex items-center gap-3 rounded-2xl px-2 py-2.5 no-underline ${pending ? 'bg-amarelo-claro' : ''} ${t.isInternalTransfer ? 'opacity-60' : ''}`}>
-      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg font-bold ${pending ? 'bg-amarelo' : 'bg-papel-2'}`}>
-        {pending ? '?' : t.isInternalTransfer ? '⇄' : t.amountInCents > 0 ? '↓' : '↑'}
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate text-[15px] font-semibold">{t.description}</span>
-        <span className="truncate text-xs text-tinta-suave">{sub}</span>
-      </div>
-      <span className={`shrink-0 text-[15px] font-bold ${t.amountInCents > 0 ? 'text-verde-texto' : ''}`}>
-        {t.amountInCents > 0 ? '+ ' : ''}{money(Math.abs(t.amountInCents))}
-      </span>
-    </Link>
+      <Link href="/anotar" className="sticky bottom-[104px] z-10 ml-auto flex h-14 items-center gap-2 rounded-full bg-tinta pr-[22px] pl-[18px] text-[15px] font-semibold text-papel no-underline shadow-[0_4px_14px_rgba(30,27,24,0.22)] md:bottom-6">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+        Anotar gasto
+      </Link>
+    </div>
   );
 }

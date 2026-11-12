@@ -30,15 +30,15 @@
     --color-papel-2: #24201C;
     --color-cartao: #2B2622;
     --color-tinta: #F6EFE4;
-    --color-tinta-suave: #B5AB9F;
-    --color-linha: #3A332D;
-    --color-laranja-texto: #FF8A65;
-    --color-verde-texto: #3DD6A0;
+    --color-tinta-suave: #B8AEA2;
+    --color-linha: #3A342E;
+    --color-laranja-texto: #FF8A6E;
+    --color-verde-texto: #5FE3B4;
     --color-vermelho-texto: #FF8A80;
-    --color-rosa: #3D2A2E;
+    --color-rosa: #43272E;
     --color-menta-clara: #1F3A30;
     --color-azul: #1F2D40;
-    --color-amarelo-claro: #3A3220;
+    --color-amarelo-claro: #3D3320;
   }
 }
 
@@ -52,4 +52,51 @@ body {
 
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--color-laranja); outline-offset: 2px; }
+}
+
+/* Rabo do Caramelo desenhando enquanto o Tostão pensa */
+.rabo-pensando path { stroke-dasharray: 260; stroke-dashoffset: 260; animation: rabo-desenha 1.6s cubic-bezier(.6, 0, .4, 1) infinite; }
+@keyframes rabo-desenha { 0% { stroke-dashoffset: 260; } 45%, 60% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -260; } }
+@media (prefers-reduced-motion: reduce) { .rabo-pensando path { animation: none; stroke-dashoffset: 0; } }
+
+/* ── Movimento ───────────────────────────────────────────────────────────
+   Leve e rápido: a tela entra em cascata, barras enchem, botões afundam no toque,
+   o Tostão respira. Tudo some com "reduzir movimento" do sistema. */
+@keyframes sobe { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes enche-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes enche-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes respira { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-3px) rotate(-1.5deg); } }
+@keyframes pula { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes confete { 0% { transform: translate3d(0, -10px, 0) rotate(0); opacity: 1; } 100% { transform: translate3d(var(--dx), 420px, 0) rotate(var(--rot)); opacity: 0; } }
+
+/* Cada tela entra em cascata: os blocos de cima primeiro (template.tsx remonta a cada navegação). */
+.tela > * > * { animation: sobe .38s cubic-bezier(.2, .8, .2, 1) both; }
+.tela > * > :nth-child(2) { animation-delay: .04s; }
+.tela > * > :nth-child(3) { animation-delay: .08s; }
+.tela > * > :nth-child(4) { animation-delay: .12s; }
+.tela > * > :nth-child(5) { animation-delay: .16s; }
+.tela > * > :nth-child(6) { animation-delay: .2s; }
+.tela > * > :nth-child(n+7) { animation-delay: .24s; }
+/* O botão flutuante "Anotar gasto" é sticky: transform nele quebraria o sticky no Safari antigo. */
+.tela > * > .sticky { animation-name: none; }
+
+.bar-fill { transform-origin: left; animation: enche-x .7s cubic-bezier(.2, .8, .2, 1) .15s both; }
+.bar-up { transform-origin: bottom; animation: enche-y .6s cubic-bezier(.2, .8, .2, 1) .2s both; }
+.bar-down { transform-origin: top; animation: enche-y .6s cubic-bezier(.2, .8, .2, 1) .2s both; }
+
+/* Toque: botão e card afundam um pouco */
+button:not(:disabled), a.rounded-full, a.rounded-2xl, a.rounded-xl, a.rounded-\[20px\] { transition: transform .12s ease, background-color .15s ease, opacity .15s ease; }
+button:not(:disabled):active, a.rounded-full:active, a.rounded-2xl:active, a.rounded-xl:active, a.rounded-\[20px\]:active { transform: scale(.97); }
+
+/* Tostão e Caramelo respiram devagar; o que comemora entra pulando */
+.mascote { animation: respira 3.6s ease-in-out infinite; transform-origin: 50% 90%; }
+.mascote-pula { animation: pula .5s cubic-bezier(.2, .8, .2, 1.2) both, respira 3.6s ease-in-out .5s infinite; }
+
+.confete { pointer-events: none; position: fixed; inset: 0 0 auto 0; height: 0; z-index: 50; overflow: visible; }
+.confete i { position: absolute; top: 0; width: 8px; height: 12px; border-radius: 2px; animation: confete 1.6s cubic-bezier(.2, .6, .4, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tela > * > *, .bar-fill, .bar-up, .bar-down, .mascote, .mascote-pula { animation: none !important; }
+  .confete { display: none; }
+  button:active, a:active { transform: none !important; }
 }

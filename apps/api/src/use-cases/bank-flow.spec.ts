@@ -6,6 +6,9 @@ import { ConnectBankUseCase } from './connect-bank.js';
 import { GetMonthSummaryUseCase } from './get-month-summary.js';
 import { CategorizeTransactionUseCase } from './categorize-transaction.js';
 import { ResourceNotFoundError } from '../domain/errors.js';
+import { DisconnectBankUseCase } from './disconnect-bank.js';
+import { CreateCategoryUseCase, DeleteCategoryUseCase } from './categories.js';
+import { makeUseCases } from './factories.js';
 
 const NOW = new Date(Date.UTC(2026, 10, 20, 18)); // 20/11/2026
 const MONTH = '2026-11';
@@ -57,5 +60,130 @@ describe('fluxo do banco (conectar → sincronizar → resumo → categorizar)',
     await expect(
       new CategorizeTransactionUseCase(repos).execute({ userId: 'intruso', transactionId: tx.id, categoryId: 'delivery', remember: false }),
     ).rejects.toBeInstanceOf(ResourceNotFoundError);
+  });
+
+  it('desconectar apaga contas e transações do banco, mas mantém o que foi anotado na mão', async () => {
+    const { connection } = await connect.execute({ userId: 'u1', itemId: 'item-123456' });
+    await repos.transactions.create({ userId: 'u1', accountId: null, externalId: null, description: 'PASTEL', amountInCents: -800, occurredAt: NOW, categoryId: null, isInternalTransfer: false });
+    const disconnect = new DisconnectBankUseCase(repos.connections, new FakeBankGateway(() => NOW));
+
+    await expect(disconnect.execute({ userId: 'intruso', connectionId: connection.id })).rejects.toBeInstanceOf(ResourceNotFoundError);
+
+    expect(await disconnect.execute({ userId: 'u1', connectionId: connection.id })).toEqual({ providerDeleted: true });
+    expect(repos.connections.items).toHaveLength(0);
+    expect(repos.accounts.items).toHaveLength(0);
+    expect(repos.transactions.items.map((t) => t.description)).toEqual(['PASTEL']);
+  });
+
+  it('desconectar apaga aqui mesmo se o provedor falhar', async () => {
+    const { connection } = await connect.execute({ userId: 'u1', itemId: 'item-123456' });
+    const broken = Object.assign(new FakeBankGateway(() => NOW), { deleteItem: async () => { throw new Error('fora do ar'); } });
+    expect(await new DisconnectBankUseCase(repos.connections, broken).execute({ userId: 'u1', connectionId: connection.id })).toEqual({ providerDeleted: false });
+    expect(repos.connections.items).toHaveLength(0);
+  });
+
+  it('"Não conta" tira o repasse do resumo, e a regra pega os próximos sozinha', async () => {
+    await connect.execute({ userId: 'u1', itemId: 'item-123456' });
+    const before = await new GetMonthSummaryUseCase(repos).execute({ userId: 'u1', month: MONTH });
+    const salario = repos.transactions.items.find((t) => t.amountInCents > 0 && !t.isInternalTransfer)!;
+
+    await new CategorizeTransactionUseCase(repos).execute({ userId: 'u1', transactionId: salario.id, categoryId: 'nao-conta', remember: true });
+    const after = await new GetMonthSummaryUseCase(repos).execute({ userId: 'u1', month: MONTH });
+    expect(after.incomeInCents).toBe(before.incomeInCents - salario.amountInCents);
+    expect(repos.transactions.items.find((t) => t.id === salario.id)!.isInternalTransfer).toBe(true);
+
+    // sincronizar de novo não desfaz
+    await sync.execute({ connectionId: repos.connections.items[0]!.id });
+    expect(repos.transactions.items.find((t) => t.id === salario.id)!.isInternalTransfer).toBe(true);
+
+    // mudou de ideia: volta a contar
+    await new CategorizeTransactionUseCase(repos).execute({ userId: 'u1', transactionId: salario.id, categoryId: 'salario', remember: false });
+    const back = await new GetMonthSummaryUseCase(repos).execute({ userId: 'u1', month: MONTH });
+    expect(back.incomeInCents).toBe(before.incomeInCents);
+  });
+
+  it('categoria própria: só o dono vê, usa e apaga; apagar devolve as transações pra pendente', async () => {
+    await connect.execute({ userId: 'u1', itemId: 'item-123456' });
+    const { category } = await new CreateCategoryUseCase(repos).execute({ userId: 'u1', name: 'Freela', emoji: '💻', kind: 'saida' });
+    await expect(new CreateCategoryUseCase(repos).execute({ userId: 'u1', name: 'freela', emoji: '', kind: 'saida' })).rejects.toThrow('Já tem');
+
+    expect((await repos.categories.list('u1')).some((c) => c.id === category.id)).toBe(true);
+    expect((await repos.categories.list('u2')).some((c) => c.id === category.id)).toBe(false);
+
+    const gasto = repos.transactions.items.find((t) => t.amountInCents < 0 && !t.isInternalTransfer)!;
+    await expect(
+      new CategorizeTransactionUseCase(repos).execute({ userId: 'u2', transactionId: gasto.id, categoryId: category.id, remember: false }),
+    ).rejects.toBeInstanceOf(ResourceNotFoundError);
+    await new CategorizeTransactionUseCase(repos).execute({ userId: 'u1', transactionId: gasto.id, categoryId: category.id, remember: true });
+
+    const del = new DeleteCategoryUseCase(repos);
+    await expect(del.execute({ userId: 'u2', categoryId: category.id })).rejects.toBeInstanceOf(ResourceNotFoundError);
+    await expect(del.execute({ userId: 'u1', categoryId: 'mercado' })).rejects.toBeInstanceOf(ResourceNotFoundError); // do sistema, não
+    await del.execute({ userId: 'u1', categoryId: category.id });
+    expect(repos.transactions.items.find((t) => t.id === gasto.id)!.categoryId).toBeNull();
+    expect(repos.rules.items.some((r) => r.categoryId === category.id)).toBe(false);
+  });
+
+  it('conta oculta sai do saldo e da lista, e continua oculta depois do sync', async () => {
+    const { connection } = await connect.execute({ userId: 'u1', itemId: 'item-123456' });
+    const uc = makeUseCases({ repos, bank: new FakeBankGateway(() => NOW) });
+    const before = await new GetMonthSummaryUseCase(repos).execute({ userId: 'u1', month: MONTH });
+    const conta = repos.accounts.items[0]!;
+
+    await expect(uc.setAccountHidden.execute({ userId: 'intruso', accountId: conta.id, hidden: true })).rejects.toBeInstanceOf(ResourceNotFoundError);
+    await uc.setAccountHidden.execute({ userId: 'u1', accountId: conta.id, hidden: true });
+    await sync.execute({ connectionId: connection.id });
+
+    const after = await new GetMonthSummaryUseCase(repos).execute({ userId: 'u1', month: MONTH });
+    expect(after.accounts.map((a) => a.id)).not.toContain(conta.id);
+    expect(after.hiddenAccounts.map((a) => a.id)).toEqual([conta.id]);
+    expect(after.balanceInCents).not.toBe(before.balanceInCents);
+  });
+
+  describe('mesmo cartão em duas conexões (Bradesco e Bradescard)', () => {
+    // Cada conexão devolve o mesmo cartão Elo final 8335, com id diferente no provedor
+    class CardGateway extends FakeBankGateway {
+      constructor(private readonly withFingerprint: boolean) { super(() => NOW); }
+      override async fetchAccounts(itemId: string) {
+        return [{ externalId: `${itemId}:bradesco`, name: 'ELO MAIS', type: 'CREDIT' as const, balanceInCents: -17282, fingerprint: this.withFingerprint ? 'CREDIT:ELO:8335' : null }];
+      }
+    }
+    const setup = (gateway: FakeBankGateway) => {
+      const s = new SyncBankConnectionUseCase({ ...repos, bank: gateway, now: () => NOW });
+      return { sync: s, connect: new ConnectBankUseCase(repos.connections, gateway, s) };
+    };
+    const age = (itemId: string, iso: string) => {
+      const c = repos.connections.items.find((x) => x.itemId === itemId)!;
+      c.createdAt = new Date(iso);
+      return c;
+    };
+
+    it('a conexão mais nova não importa o cartão de novo', async () => {
+      const { connect } = setup(new CardGateway(true));
+      await connect.execute({ userId: 'u1', itemId: 'bradesco' });
+      age('bradesco', '2026-11-12T11:00:00Z');
+      const second = await connect.execute({ userId: 'u1', itemId: 'bradescard' });
+
+      expect(second.accounts).toBe(0);
+      expect(repos.accounts.items).toHaveLength(1);
+      expect(repos.transactions.items).toHaveLength(1); // IFD*ACAI DO ZE, uma vez só
+    });
+
+    it('limpa a cópia que já tinha entrado antes, qualquer que seja a ordem do sync', async () => {
+      const old = setup(new CardGateway(false));
+      await old.connect.execute({ userId: 'u1', itemId: 'bradesco' });
+      await old.connect.execute({ userId: 'u1', itemId: 'bradescard' });
+      const bradesco = age('bradesco', '2026-11-12T11:00:00Z');
+      const bradescard = age('bradescard', '2026-11-12T12:01:00Z');
+      expect(repos.transactions.items).toHaveLength(2); // o bug: duplicado
+
+      const { sync: fixed } = setup(new CardGateway(true));
+      await fixed.execute({ connectionId: bradescard.id }); // a mais nova sincroniza primeiro e ainda não acha o gêmeo marcado
+      await fixed.execute({ connectionId: bradesco.id });
+      await fixed.execute({ connectionId: bradescard.id }); // agora acha e apaga a cópia
+
+      expect(repos.accounts.items.map((a) => a.connectionId)).toEqual([bradesco.id]);
+      expect(repos.transactions.items).toHaveLength(1);
+    });
   });
 });

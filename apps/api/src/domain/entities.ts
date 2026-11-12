@@ -27,9 +27,20 @@ export type Account = {
   name: string;
   type: 'BANK' | 'CREDIT';
   balanceInCents: number;
+  /** Identidade do cartão fora do provedor (bandeira + final). Pega o mesmo cartão vindo de duas conexões. */
+  fingerprint: string | null;
+  /** Cartão: limite total e vencimento da fatura atual, quando o banco informa. */
+  creditLimitInCents: number | null;
+  dueDate: Date | null;
+  /** Ocultada pela pessoa: some da tela e do saldo, mas continua sincronizando. */
+  hidden: boolean;
 };
 
-export type Category = { id: string; name: string; emoji: string; color: string; kind: 'saida' | 'entrada' };
+/** kind "neutra" = não conta como gasto nem renda (ex.: repasse com a família). userId null = categoria do sistema. */
+export type Category = { id: string; name: string; emoji: string; color: string; kind: 'saida' | 'entrada' | 'neutra'; userId?: string | null };
+
+/** Categoria do sistema pra "isso não conta": vira transferência interna. */
+export const NEUTRAL_CATEGORY_ID = 'nao-conta';
 
 export type CategoryRule = {
   id: string;
@@ -50,3 +61,12 @@ export type Transaction = {
   isInternalTransfer: boolean;
   createdAt: Date;
 };
+
+export type CategoryBudget = { id: string; userId: string; categoryId: string; limitInCents: number };
+
+export type LessonProgress = { userId: string; lessonId: string; completedAt: Date };
+
+export type Invite = { code: string; createdById: string; usedById: string | null; createdAt: Date; usedAt: Date | null };
+export type PasswordReset = { id: string; userId: string; tokenHash: string; expiresAt: Date; usedAt: Date | null };
+
+export type ChatMessage = { id: string; userId: string; role: 'user' | 'assistant'; content: string; channel: 'app' | 'whatsapp'; createdAt: Date };

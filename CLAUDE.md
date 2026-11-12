@@ -18,9 +18,11 @@ Nest.js talvez depois. PWA primeiro. Modelo: uso próprio agora, freemium depois
 ## Regras de domínio
 - Dinheiro sempre em centavos (Int). Negativo = saída.
 - `externalId` evita importar a mesma transação duas vezes (escopo por usuário).
-- Transferência entre contas próprias e pagamento de fatura não contam como gasto nem renda.
-- Pluggy: auth em POST /auth (apiKey vale 2 h, reaproveitar), header X-API-KEY, pageSize máx 500,
-  DEBIT = saída. Meu Pluggy: conectar bancos com o trial ativo; Item ID copiado no dashboard ("Ir para Demo").
+- Transferência entre contas próprias e pagamento de fatura não contam como gasto nem renda. Categoria `nao-conta` (kind neutra) também vira transferência interna.
+- Categoria com `userId` é da pessoa (só ela vê/usa/apaga); sem `userId` é do sistema. Conta `hidden` sai do saldo e das telas, e o sync nunca mexe no campo.
+- Pluggy: auth em POST /auth (apiKey vale 2 h, reaproveitar), header X-API-KEY, pageSize máx 500 (contas),
+  transações só no GET /v2/transactions (cursor `after`, `next` ou null; o v1 responde 410), DEBIT = saída. Conexão: widget Pluggy Connect (POST /connect_token) com o connector MeuPluggy, item.id vem no onSuccess.
+  Trial do dashboard (15 dias) precisa estar ativo pra ligar banco. Plano B: "Copiar Item ID" no menu da Demo.
 
 ## Marca
 - Personagens: Tostão (porquinho, boné laranja #FF5A36 com aba amarela #FFC233 sempre pra trás,
@@ -35,4 +37,4 @@ Homelab Ubuntu Server 24.04 headless, acessado via Tailscale (pasta `~/homelab/t
 Login exige HTTPS (cookie secure em produção).
 
 ## Pendências conhecidas
-Atalhos do protótipo listados no README. Ainda só no design: Chat, Tribunal, Batalha, Fechamento.
+Atalhos do protótipo listados no README. Chat com IA: DeepSeek (`DEEPSEEK_API_KEY`), contexto montado em `use-cases/ask-tostao.ts`. Ainda só no design: Tribunal, Batalha. Comando `pnpm --filter @tostao/api recompute-transfers` reaplica a regra de transferência interna no histórico.

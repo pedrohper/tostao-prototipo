@@ -8,6 +8,12 @@ import type { BankAccountData, BankGateway, BankItemData, BankTransactionData } 
 export class FakeBankGateway implements BankGateway {
   constructor(private readonly now: () => Date = () => new Date()) {}
 
+  async createConnectToken(): Promise<string | null> {
+    return null; // sem widget: a tela mostra só o campo de texto
+  }
+
+  async deleteItem(): Promise<void> {}
+
   async fetchItem(): Promise<BankItemData> {
     return { institution: 'Banco de exemplo' };
   }
@@ -17,6 +23,10 @@ export class FakeBankGateway implements BankGateway {
       { externalId: `${itemId}:nubank`, name: 'Nubank', type: 'BANK', balanceInCents: 31210 },
       { externalId: `${itemId}:mp`, name: 'Mercado Pago', type: 'BANK', balanceInCents: 20470 },
       { externalId: `${itemId}:bradesco`, name: 'Bradesco', type: 'BANK', balanceInCents: 32550 },
+      {
+        externalId: `${itemId}:cartao`, name: 'Nubank Mastercard', type: 'CREDIT', balanceInCents: -28790,
+        creditLimitInCents: 120000, dueDate: nextDay10(this.now()),
+      },
     ];
   }
 
@@ -25,7 +35,7 @@ export class FakeBankGateway implements BankGateway {
     // dia D do mês atual, sem passar de hoje
     const day = (d: number) => {
       const date = new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), Math.min(d, n.getUTCDate()), 15));
-      return date;
+      return date > n ? new Date(n.getTime() - 60_000) : date; // hoje antes das 15h: 1 min atrás, nunca no futuro
     };
     const key = accountExternalId.split(':').pop();
     const data: Record<string, [string, number, number][]> = {
@@ -55,4 +65,9 @@ export class FakeBankGateway implements BankGateway {
       }))
       .filter((t) => t.occurredAt >= from && t.occurredAt <= to);
   }
+}
+
+/** Dia 10 do mês que vem, pra fatura de exemplo. */
+function nextDay10(now: Date) {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 10, 15));
 }

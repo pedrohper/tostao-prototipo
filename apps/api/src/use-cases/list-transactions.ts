@@ -8,15 +8,18 @@ export class ListTransactionsUseCase {
     const { from, to } = monthRange(month);
     const [txs, categories, accounts] = await Promise.all([
       this.repos.transactions.findManyInRange(userId, from, to),
-      this.repos.categories.list(),
+      this.repos.categories.list(userId),
       this.repos.accounts.listByUser(userId),
     ]);
-    const catName = new Map(categories.map((c) => [c.id, c.name]));
+    const cat = new Map(categories.map((c) => [c.id, c]));
     const accName = new Map(accounts.map((a) => [a.id, a.name]));
+    const hidden = new Set(accounts.filter((a) => a.hidden).map((a) => a.id));
     return {
-      transactions: txs.map((t) => ({
+      transactions: txs.filter((t) => !(t.accountId && hidden.has(t.accountId))).map((t) => ({
         ...t,
-        categoryName: t.categoryId ? catName.get(t.categoryId) ?? null : null,
+        categoryName: t.categoryId ? cat.get(t.categoryId)?.name ?? null : null,
+        categoryEmoji: t.categoryId ? cat.get(t.categoryId)?.emoji ?? null : null,
+        categoryColor: t.categoryId ? cat.get(t.categoryId)?.color ?? null : null,
         accountName: t.accountId ? accName.get(t.accountId) ?? null : null,
       })),
     };

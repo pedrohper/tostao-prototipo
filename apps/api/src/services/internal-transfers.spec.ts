@@ -29,4 +29,20 @@ describe('detectInternalTransfers', () => {
     const fatura = tx('nubank', -45000, 10, 'Pagamento de fatura');
     expect(detectInternalTransfers([fatura]).has(fatura.id)).toBe(true);
   });
+  it('fatura do Nubank paga por Pix de outra conta e débito automático da fatura são internos', () => {
+    const pix = tx('mp', -24240, 30, 'Pagamento com Pix NU PAGAMENTOS SA');
+    const deb = tx('elo', 17358, 4, 'PAGTO. POR DEB EM C/C');
+    const amiga = tx('mp', -660, 30, 'Pix enviado Amanda Costa');
+    expect(detectInternalTransfers([pix, deb, amiga])).toEqual(new Set([pix.id, deb.id]));
+  });
+  it('fatura paga por boleto: a saída da conta pareia com o "Pagamento recebido" do cartão', () => {
+    const boleto = tx('bradesco', -23471, 30, 'Pagamento de conta BANCO BRADESCARD S A');
+    const cartao = tx('amazon', 23471, 30, 'Pagamento recebido');
+    expect(detectInternalTransfers([boleto, cartao])).toEqual(new Set([boleto.id, cartao.id]));
+  });
+  it('cofrinho do Mercado Pago (guardar e tirar) é interno', () => {
+    const guardou = tx('mp', -200000, 10, 'Dinheiro reservado Carteira de Motorista');
+    const tirou = tx('mp', 140000, 7, 'Dinheiro retirado Reserva de Emergencia');
+    expect(detectInternalTransfers([guardou, tirou])).toEqual(new Set([guardou.id, tirou.id]));
+  });
 });
