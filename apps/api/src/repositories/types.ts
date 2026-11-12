@@ -1,6 +1,6 @@
 // Contratos dos repositórios. O use case pede "alguém que saiba salvar usuário",
 // sem saber se é Postgres ou um array na memória (nos testes).
-import type { Account, BankConnection, Category, CategoryRule, Transaction, User, CategoryBudget, LessonProgress, Invite, PasswordReset } from '../domain/entities.js';
+import type { Account, BankConnection, Category, CategoryRule, Transaction, User, CategoryBudget, LessonProgress, Invite, PasswordReset, ChatMessage } from '../domain/entities.js';
 
 export type NewUser = Pick<User, 'name' | 'email' | 'passwordHash'>;
 export interface UsersRepository {
@@ -91,6 +91,13 @@ export interface PasswordResetsRepository {
   markUsed(id: string): Promise<void>;
 }
 
+export interface ChatMessagesRepository {
+  /** As mais recentes, em ordem de conversa (antiga → nova). */
+  listRecent(userId: string, limit: number): Promise<ChatMessage[]>;
+  create(data: Omit<ChatMessage, 'id' | 'createdAt'>): Promise<ChatMessage>;
+  countUserSince(userId: string, since: Date): Promise<number>;
+}
+
 export type Repositories = {
   users: UsersRepository;
   connections: BankConnectionsRepository;
@@ -103,4 +110,5 @@ export type Repositories = {
   ignoredSubscriptions: IgnoredSubscriptionsRepository;
   invites: InvitesRepository;
   passwordResets: PasswordResetsRepository;
+  chat: ChatMessagesRepository;
 };

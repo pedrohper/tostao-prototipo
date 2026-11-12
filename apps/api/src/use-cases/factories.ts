@@ -6,6 +6,8 @@ import { CreateCategoryUseCase, DeleteCategoryUseCase } from './categories.js';
 // O controller pede um use case pronto e não se preocupa com o que tem dentro.
 import type { Repositories } from '../repositories/types.js';
 import type { BankGateway } from '../gateways/bank-gateway.js';
+import { FakeAiGateway, type AiGateway } from '../gateways/ai-gateway.js';
+import { AskTostaoUseCase } from './ask-tostao.js';
 import { RegisterUserUseCase } from './register-user.js';
 import { AuthenticateUseCase } from './authenticate.js';
 import { GetProfileUseCase } from './get-profile.js';
@@ -20,9 +22,9 @@ import { GetTransactionUseCase } from './get-transaction.js';
 import { ListSubscriptionsUseCase } from './list-subscriptions.js';
 import { GetBudgetsUseCase, SetBudgetUseCase } from './budgets.js';
 
-export type Deps = { repos: Repositories; bank: BankGateway };
+export type Deps = { repos: Repositories; bank: BankGateway; ai?: AiGateway; chatDailyLimit?: number };
 
-export function makeUseCases({ repos, bank }: Deps) {
+export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), chatDailyLimit = 40 }: Deps) {
   const sync = new SyncBankConnectionUseCase({ ...repos, bank });
   return {
     registerUser: new RegisterUserUseCase(repos),
@@ -48,6 +50,8 @@ export function makeUseCases({ repos, bank }: Deps) {
     markLessonDone: { execute: ({ userId, lessonId }: { userId: string; lessonId: string }) => repos.lessons.markDone(userId, lessonId) },
     listCategories: { execute: async ({ userId }: { userId?: string }) => ({ categories: await repos.categories.list(userId) }) },
     createCategory: new CreateCategoryUseCase(repos),
+    askTostao: new AskTostaoUseCase(repos, ai, chatDailyLimit),
+    chatHistory: { execute: async ({ userId }: { userId: string }) => ({ messages: await repos.chat.listRecent(userId, 60) }) },
     setAccountHidden: {
       execute: async ({ userId, accountId, hidden }: { userId: string; accountId: string; hidden: boolean }) => {
         const account = (await repos.accounts.listByUser(userId)).find((a) => a.id === accountId);

@@ -1,9 +1,9 @@
 // Repositórios de verdade, no Postgres via Prisma.
 // Repare que a assinatura é a mesma dos em memória: o use case nem percebe a troca.
 import type { PrismaClient } from '@prisma/client';
-import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, Transaction, Invite, PasswordReset } from '../../domain/entities.js';
+import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, Transaction, Invite, PasswordReset, ChatMessage } from '../../domain/entities.js';
 import type {
-  AccountData, AccountsRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, IgnoredSubscriptionsRepository, InvitesRepository, LessonProgressRepository, PasswordResetsRepository,
+  AccountData, AccountsRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, ChatMessagesRepository, IgnoredSubscriptionsRepository, InvitesRepository, LessonProgressRepository, PasswordResetsRepository,
   NewTransaction, NewUser, Repositories, TransactionsRepository, UsersRepository,
 } from '../types.js';
 
@@ -135,6 +135,16 @@ class PrismaPasswordResetsRepository implements PasswordResetsRepository {
   async markUsed(id: string) { await this.db.passwordReset.update({ where: { id }, data: { usedAt: new Date() } }); }
 }
 
+class PrismaChatMessagesRepository implements ChatMessagesRepository {
+  constructor(private db: PrismaClient) {}
+  async listRecent(userId: string, limit: number) {
+    const rows = await this.db.chatMessage.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: limit });
+    return rows.reverse() as ChatMessage[];
+  }
+  async create(data: Omit<ChatMessage, 'id' | 'createdAt'>) { return (await this.db.chatMessage.create({ data })) as ChatMessage; }
+  countUserSince(userId: string, since: Date) { return this.db.chatMessage.count({ where: { userId, role: 'user', createdAt: { gte: since } } }); }
+}
+
 export function makePrismaRepositories(db: PrismaClient): Repositories {
   return {
     users: new PrismaUsersRepository(db),
@@ -148,5 +158,6 @@ export function makePrismaRepositories(db: PrismaClient): Repositories {
     ignoredSubscriptions: new PrismaIgnoredSubscriptionsRepository(db),
     invites: new PrismaInvitesRepository(db),
     passwordResets: new PrismaPasswordResetsRepository(db),
+    chat: new PrismaChatMessagesRepository(db),
   };
 }

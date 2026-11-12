@@ -12,6 +12,9 @@ const schema = z
     PLUGGY_CLIENT_ID: z.string().default(''),
     PLUGGY_CLIENT_SECRET: z.string().default(''),
     SYNC_CRON: z.string().default('0 6 * * *'),
+    DEEPSEEK_API_KEY: z.string().default(''),
+    DEEPSEEK_MODEL: z.string().default('deepseek-chat'),
+    CHAT_DAILY_LIMIT: z.coerce.number().int().positive().default(40),
   })
   .refine((e) => e.BANK_GATEWAY !== 'pluggy' || (e.PLUGGY_CLIENT_ID && e.PLUGGY_CLIENT_SECRET), {
     message: 'Com BANK_GATEWAY=pluggy, preencha PLUGGY_CLIENT_ID e PLUGGY_CLIENT_SECRET',

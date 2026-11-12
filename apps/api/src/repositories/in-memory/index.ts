@@ -1,8 +1,8 @@
 // Repositórios em memória: arrays simples. Usados nos testes e pra rodar sem Postgres.
 import { randomUUID } from 'node:crypto';
-import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, LessonProgress, Transaction, User, Invite, PasswordReset } from '../../domain/entities.js';
+import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, LessonProgress, Transaction, User, Invite, PasswordReset, ChatMessage } from '../../domain/entities.js';
 import type {
-  AccountData, AccountsRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, IgnoredSubscriptionsRepository, InvitesRepository, LessonProgressRepository, PasswordResetsRepository,
+  AccountData, AccountsRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, ChatMessagesRepository, IgnoredSubscriptionsRepository, InvitesRepository, LessonProgressRepository, PasswordResetsRepository,
   Repositories, TransactionsRepository, UsersRepository,
 } from '../types.js';
 import { DEFAULT_CATEGORIES, DEFAULT_RULES } from '../../lib/defaults.js';
@@ -186,6 +186,17 @@ export class InMemoryPasswordResetsRepository implements PasswordResetsRepositor
   }
 }
 
+export class InMemoryChatMessagesRepository implements ChatMessagesRepository {
+  items: ChatMessage[] = [];
+  async listRecent(userId: string, limit: number) { return this.items.filter((m) => m.userId === userId).slice(-limit); }
+  async create(data: Omit<ChatMessage, 'id' | 'createdAt'>) {
+    const m: ChatMessage = { id: randomUUID(), createdAt: new Date(), ...data };
+    this.items.push(m);
+    return m;
+  }
+  async countUserSince(userId: string, since: Date) { return this.items.filter((m) => m.userId === userId && m.role === 'user' && m.createdAt >= since).length; }
+}
+
 export function makeInMemoryRepositories() {
   const transactions = new InMemoryTransactionsRepository();
   const accounts = new InMemoryAccountsRepository(transactions);
@@ -201,5 +212,6 @@ export function makeInMemoryRepositories() {
     ignoredSubscriptions: new InMemoryIgnoredSubscriptionsRepository(),
     invites: new InMemoryInvitesRepository(),
     passwordResets: new InMemoryPasswordResetsRepository(),
+    chat: new InMemoryChatMessagesRepository(),
   } satisfies Repositories;
 }

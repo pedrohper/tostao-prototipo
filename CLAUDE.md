@@ -37,4 +37,4 @@ Homelab Ubuntu Server 24.04 headless, acessado via Tailscale (pasta `~/homelab/t
 Login exige HTTPS (cookie secure em produção).
 
 ## Pendências conhecidas
-Atalhos do protótipo listados no README. Ainda só no design: Chat, Tribunal, Batalha. Comando `pnpm --filter @tostao/api recompute-transfers` reaplica a regra de transferência interna no histórico.
+Atalhos do protótipo listados no README. Chat com IA: DeepSeek (`DEEPSEEK_API_KEY`), contexto montado em `use-cases/ask-tostao.ts`. Ainda só no design: Tribunal, Batalha. Comando `pnpm --filter @tostao/api recompute-transfers` reaplica a regra de transferência interna no histórico.

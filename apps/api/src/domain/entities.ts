@@ -65,3 +65,5 @@ export type LessonProgress = { userId: string; lessonId: string; completedAt: Da
 
 export type Invite = { code: string; createdById: string; usedById: string | null; createdAt: Date; usedAt: Date | null };
 export type PasswordReset = { id: string; userId: string; tokenHash: string; expiresAt: Date; usedAt: Date | null };
+
+export type ChatMessage = { id: string; userId: string; role: 'user' | 'assistant'; content: string; channel: 'app' | 'whatsapp'; createdAt: Date };

@@ -27,6 +27,7 @@ model User {
   invitesSent  Invite[]        @relation("InvitesSent")
   inviteUsed   Invite?         @relation("InviteUsed")
   passwordResets PasswordReset[]
+  chatMessages   ChatMessage[]
   ignoredSubscriptions IgnoredSubscription[]
   categories   Category[]
 
@@ -187,4 +188,19 @@ model PasswordReset {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("password_resets")
+}
+
+// Conversa com o Tostão (app e, depois, WhatsApp).
+model ChatMessage {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  role      String   // user | assistant
+  content   String
+  channel   String   @default("app") // app | whatsapp
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("chat_messages")
 }

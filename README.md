@@ -22,6 +22,7 @@ Protótipo funcional pra testar e validar a ideia. Depois, a plataforma de verda
 - Mesmo cartão vindo de duas conexões (ex.: Bradesco e Bradescard) conta uma vez só
 - Desconectar banco pela tela Conectar
 - **Minhas categorias**: crie categorias de gasto e de entrada; a categoria **Não conta** tira do resumo dinheiro que só passa por você (repasse com a família)
+- **Chat com o Tostão** (aba Tostão): IA (DeepSeek) que responde com base nos seus números; precisa de `DEEPSEEK_API_KEY` no `apps/api/.env` (limite `CHAT_DAILY_LIMIT`, padrão 40/dia)
 - Cadastro só por convite (Perfil → Convidar alguém); a primeira conta do servidor entra sem
 - Sessão que renova sozinha, limite de 5 tentativas de login, backup diário (`scripts/backup-db.sh`)
 - Ocultar conta que você não usa (ex.: poupança parada): some da Carteira e do saldo
@@ -106,5 +107,6 @@ O caminho de uma requisição: **controller** valida com Zod, chama o **use case
 | Transferência interna por par de valores | Pode errar se alguém te mandar o mesmo valor que você mandou pra outra pessoa no mesmo dia |
 | Recuperar senha por link gerado no servidor (`pnpm --filter @tostao/api reset-link email`) | E-mail de recuperação automático |
 | Limite de login em memória, por e-mail | Redis/limite por IP na borda |
-| Chat, Tribunal e Batalha | Ainda só no design (canvas) |
+| Chat manda um resumo pronto pra IA (sem ferramentas) | IA consultando dados por function calling |
+| Tribunal e Batalha | Ainda só no design (canvas) |
 | Assinatura detectada por padrão de descrição | Usar a categoria do Pluggy e deixar a pessoa confirmar/ignorar |

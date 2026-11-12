@@ -53,3 +53,8 @@ body {
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--color-laranja); outline-offset: 2px; }
 }
+
+/* Rabo do Caramelo desenhando enquanto o Tostão pensa */
+.rabo-pensando path { stroke-dasharray: 260; stroke-dashoffset: 260; animation: rabo-desenha 1.6s cubic-bezier(.6, 0, .4, 1) infinite; }
+@keyframes rabo-desenha { 0% { stroke-dashoffset: 260; } 45%, 60% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -260; } }
+@media (prefers-reduced-motion: reduce) { .rabo-pensando path { animation: none; stroke-dashoffset: 0; } }
