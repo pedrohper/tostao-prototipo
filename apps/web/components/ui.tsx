@@ -1,3 +1,4 @@
+import { Icone } from './icone';
 import Link from 'next/link';
 
 const base = 'flex items-center justify-center rounded-full font-semibold transition active:translate-y-px disabled:opacity-50';
@@ -70,7 +71,7 @@ export function BankIcon({ className = '' }: { className?: string }) {
 export function StreakChip({ days }: { days: number }) {
   return (
     <span className="flex items-center gap-1 rounded-full bg-amarelo-claro px-2.5 py-1.5 text-sm font-bold" aria-label={`${days} ${days === 1 ? 'dia' : 'dias'} de ofensiva`}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="#FF5A36" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z" /></svg>
+      <Icone src="ui/ofensiva" size={18} />
       {days}
     </span>
   );

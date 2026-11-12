@@ -1,4 +1,5 @@
 'use client';
+import { CatIcon, Icone } from '@/components/icone';
 import Link from 'next/link';
 import { useState } from 'react';
 import type { Lesson } from '@/lib/lessons';
@@ -57,7 +58,7 @@ export function LessonPlayer({ lesson, moduleTitle, moduleNumber, nextId }: Prop
             {Sim ? <Sim /> : (
               <>
                 <p className="text-[15px]">{lesson.simulator.description.charAt(0).toUpperCase() + lesson.simulator.description.slice(1)}</p>
-                <p className="rounded-xl bg-papel-2 p-3 text-sm text-tinta-suave">🚧 Esse simulador ainda tá no papel. Por enquanto, imagina a conta com os seus números.</p>
+                <p className="flex items-center gap-2 rounded-xl bg-papel-2 p-3 text-sm text-tinta-suave"><Icone src="ui/em-construcao" size={28} />Esse simulador ainda tá no papel. Por enquanto, imagina a conta com os seus números.</p>
               </>
             )}
           </div>

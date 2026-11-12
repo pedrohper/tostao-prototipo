@@ -1,3 +1,4 @@
+import { CatIcon, Icone } from '@/components/icone';
 import Link from 'next/link';
 import type { BudgetsResponse, ForecastResponse, LessonProgressResponse, MonthSummaryResponse, ProfileResponse, SubscriptionsResponse } from '@tostao/contracts';
 import { NO_PROGRESS } from '@/lib/xp';
@@ -5,7 +6,7 @@ import { BudgetBar } from '@/components/budget-bar';
 import { api } from '@/lib/api';
 import { ago, currentMonth, money, monthName, shiftMonth, shortDate } from '@/lib/format';
 import { Mascote } from '@/components/mascote';
-import { ButtonLink, Card, CardIcon, StreakChip } from '@/components/ui';
+import { ButtonLink, Card, StreakChip } from '@/components/ui';
 
 export default async function InicioPage() {
   const month = currentMonth();
@@ -175,13 +176,13 @@ export default async function InicioPage() {
                 </div>
                 <div className="h-2.5 overflow-hidden rounded-full bg-papel-2"><div className="bar-fill h-full rounded-full bg-menta" style={{ width: `${pct}%` }} /></div>
                 <span className="text-[13px] text-tinta-suave">
-                  {g.reached ? 'Meta batida! 🎉' : `${money(g.savedInCents)}${g.amountInCents ? ` de ${money(g.amountInCents)}` : ''}${g.monthlyNeededInCents !== null ? ` · guardar ${money(g.monthlyNeededInCents)}/mês` : ''}`}
+                  {g.reached ? <span className="inline-flex items-center gap-1"><Icone src="ui/meta-batida" size={18} />Meta batida!</span> : `${money(g.savedInCents)}${g.amountInCents ? ` de ${money(g.amountInCents)}` : ''}${g.monthlyNeededInCents !== null ? ` · guardar ${money(g.monthlyNeededInCents)}/mês` : ''}`}
                 </span>
               </Link>
             );
           })() : (
             <Link href="/meta" className="flex items-center gap-3 rounded-2xl border border-dashed border-linha p-3.5 text-[15px] text-tinta no-underline">
-              <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-menta-clara text-lg">🎯</span>
+              <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-menta-clara"><Icone src="meta/outro" size={26} /></span>
               <span className="grow"><b>Juntar pra alguma coisa?</b> Cria uma meta e eu te digo quanto guardar por mês.</span>
             </Link>
           ))}
@@ -198,7 +199,7 @@ export default async function InicioPage() {
                   const uso = c.creditLimitInCents ? Math.min(100, (fatura / c.creditLimitInCents) * 100) : null;
                   return (
                     <Link key={c.id} href="/carteira" className="flex min-w-0 flex-col gap-1 rounded-2xl border border-linha bg-cartao p-3 text-tinta no-underline">
-                      <span className="flex min-w-0 items-center gap-1.5 text-[13px] font-semibold text-tinta-suave"><CardIcon className="shrink-0" /><span className="truncate">{c.name}</span></span>
+                      <span className="flex min-w-0 items-center gap-1.5 text-[13px] font-semibold text-tinta-suave"><Icone src="ui/cartao" size={18} /><span className="truncate">{c.name}</span></span>
                       <span className="text-[17px] font-bold tabular-nums">{money(fatura)}</span>
                       {uso !== null && (
                         <div className="h-1.5 rounded-full bg-papel-2" title={`${Math.round(uso)}% do limite`}>

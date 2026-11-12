@@ -1,4 +1,5 @@
 'use client';
+import { Icone } from '@/components/icone';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import type { Module } from '@/lib/lessons';
@@ -50,7 +51,8 @@ export function Trilha({ modules, colors, done: saved }: { modules: Module[]; co
                 style={left ? { paddingLeft: pad } : { paddingRight: pad }}>
                 <span className={`relative flex shrink-0 items-center justify-center rounded-full font-display font-extrabold ${atual ? 'text-[34px] text-[#1E1B18]' : 'text-[28px] text-[#6B635A]'} ${m.optional && !atual ? 'border-2 border-dashed border-[#6B635A]' : ''}`}
                   style={{ width: size, height: size, background: colors[i], boxShadow: atual ? '0 6px 0 #C2410C, 0 0 0 6px var(--color-rosa)' : '0 5px 0 var(--color-linha)' }}>
-                  {completo ? '✓' : m.number}
+                  <Icone src={`modulo/${m.number}`} size={Math.round(size * 0.94)} alt={`Módulo ${m.number}`} />
+                  {completo && <span className={`absolute -bottom-1 ${left ? '-right-1' : '-left-1'}`}><Icone src="jogo/dia-cumprido" size={28} alt="completo" /></span>}
                   {!atual && !completo && feitas === 0 && (
                     <span className={`absolute -bottom-1 ${left ? '-right-1' : '-left-1'} flex h-7 w-7 items-center justify-center rounded-full border-[1.5px] border-linha bg-cartao`}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B635A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>

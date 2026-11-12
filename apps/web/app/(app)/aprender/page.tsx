@@ -1,5 +1,6 @@
+import { Icone } from '@/components/icone';
 import Link from 'next/link';
-import { modules, MODULE_COLORS } from '@/lib/lessons';
+import { modules } from '@/lib/lessons';
 import { Mascote } from '@/components/mascote';
 import { Eyebrow, StreakChip } from '@/components/ui';
 import type { BattlesResponse, LessonProgressResponse, MonthSummaryResponse, TribunalResponse } from '@tostao/contracts';
@@ -33,7 +34,7 @@ export default async function AprenderPage() {
         <h1 className="font-display text-[34px] leading-[38px] font-extrabold">Aprender</h1>
         <div className="flex gap-1.5">
           <StreakChip days={streakDays} />
-          <span className="rounded-full bg-amarelo px-2.5 py-1.5 text-sm font-bold text-[#1E1B18]">{xp} XP</span>
+          <span className="flex items-center gap-1 rounded-full bg-amarelo px-2.5 py-1.5 text-sm font-bold text-[#1E1B18]"><Icone src="ui/xp" size={18} />{xp} XP</span>
         </div>
       </div>
 
@@ -77,13 +78,13 @@ export default async function AprenderPage() {
         <div className="grid grid-cols-2 gap-2.5">
           <Link href="/tribunal" className="flex flex-col gap-1 rounded-[18px] bg-azul p-3 text-[#1E1B18] no-underline">
             <Mascote pose="pensando" size={56} alt="" />
-            <span className="text-[11px] font-bold tracking-[0.08em] text-[#6B635A] uppercase">Tribunal</span>
+            <span className="flex items-center gap-1 text-[11px] font-bold tracking-[0.08em] text-[#6B635A] uppercase"><Icone src="jogo/tribunal" size={18} />Tribunal</span>
             <span className="text-[15px] leading-[19px] font-bold">{tribunal?.case.title ?? 'O caso da semana'}</span>
             <span className="text-xs text-[#6B635A]">{tribunal?.myVote != null ? 'Você já votou · ver veredito' : 'Vota e ganha +20 XP'}</span>
           </Link>
           <Link href="/batalha" className="flex flex-col gap-1 rounded-[18px] bg-amarelo-claro p-3 text-[#1E1B18] no-underline">
             <Mascote pose="caramelo-bravo" size={56} alt="" />
-            <span className="text-[11px] font-bold tracking-[0.08em] text-[#6B635A] uppercase">Batalha</span>
+            <span className="flex items-center gap-1 text-[11px] font-bold tracking-[0.08em] text-[#6B635A] uppercase"><Icone src="jogo/batalha" size={18} />Batalha</span>
             <span className="text-[15px] leading-[19px] font-bold">{tig?.status === 'vencida' ? 'Tigrinho derrotado' : 'Contra o Tigrinho'}</span>
             <span className="text-xs text-[#6B635A]">{batalhaLinha}</span>
           </Link>
@@ -99,11 +100,10 @@ export default async function AprenderPage() {
           </Link>
         </div>
         {proximos.map((m) => {
-          const i = modules.indexOf(m);
           const começou = m.lessons.some((l) => done.includes(l.id));
           return (
             <Link key={m.id} href="/aprender/trilha" className="flex min-h-14 items-center gap-3 border-b border-linha text-tinta no-underline last:border-b-0">
-              <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] text-sm font-bold text-[#1E1B18]" style={{ background: MODULE_COLORS[i] }}>{m.number}</div>
+              <Icone src={`modulo/${m.number}`} size={38} alt={`Módulo ${m.number}`} />
               <div className="flex min-w-0 grow flex-col py-2">
                 <span className="text-[15px] font-semibold">{m.title}{m.optional ? ' · opcional' : ''}</span>
                 <span className="truncate text-xs text-tinta-suave">{m.goal}</span>

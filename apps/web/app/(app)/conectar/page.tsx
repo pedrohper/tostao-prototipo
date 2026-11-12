@@ -1,3 +1,4 @@
+import { CatIcon, Icone } from '@/components/icone';
 import Link from 'next/link';
 import type { ConnectTokenResponse, ProfileResponse } from '@tostao/contracts';
 import { api } from '@/lib/api';
@@ -6,9 +7,9 @@ import { Card } from '@/components/ui';
 import { ConnectPanel, DisconnectButton, SyncButton } from './forms';
 
 const CAMINHOS = [
-  { href: '#banco', emoji: '🔌', bg: 'bg-menta-clara', t: 'Conectar o banco', tag: 'automático', d: 'Pelo Open Finance. Atualiza sozinho todo dia.' },
-  { href: '/importar', emoji: '📄', bg: 'bg-azul', t: 'Importar extrato', tag: 'qualquer banco', d: 'Baixa o arquivo (OFX ou CSV) no app do banco e manda aqui. Uns 3 minutos.' },
-  { href: '/anotar', emoji: '✍️', bg: 'bg-amarelo-claro', t: 'Anotar na mão', tag: null, d: 'Começa anotando o que gastou hoje. Sem banco nenhum.' },
+  { href: '#banco', icon: 'conectar/banco', bg: 'bg-menta-clara', t: 'Conectar o banco', tag: 'automático', d: 'Pelo Open Finance. Atualiza sozinho todo dia.' },
+  { href: '/importar', icon: 'conectar/extrato', bg: 'bg-azul', t: 'Importar extrato', tag: 'qualquer banco', d: 'Baixa o arquivo (OFX ou CSV) no app do banco e manda aqui. Uns 3 minutos.' },
+  { href: '/anotar', icon: 'conectar/anotar', bg: 'bg-amarelo-claro', t: 'Anotar na mão', tag: null, d: 'Começa anotando o que gastou hoje. Sem banco nenhum.' },
 ] as const;
 
 export default async function ConectarPage({ searchParams }: { searchParams: Promise<{ novo?: string }> }) {
@@ -43,7 +44,7 @@ export default async function ConectarPage({ searchParams }: { searchParams: Pro
       <div className="flex flex-col gap-2.5">
         {CAMINHOS.map((c) => (
           <Link key={c.href} href={c.href} className="flex items-center gap-3 rounded-2xl border border-linha bg-cartao p-3.5 text-tinta no-underline">
-            <span aria-hidden="true" className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl ${c.bg}`}>{c.emoji}</span>
+            <span aria-hidden="true" className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${c.bg}`}><Icone src={c.icon} size={30} /></span>
             <span className="flex grow flex-col gap-0.5">
               <span className="flex flex-wrap items-center gap-x-2 text-[15px] font-bold">{c.t}{c.tag && <span className="rounded-full bg-amarelo-claro px-2 py-0.5 text-[11px] font-semibold text-tinta">{c.tag}</span>}</span>
               <span className="text-[13px] leading-[18px] text-tinta-suave">{c.d}</span>

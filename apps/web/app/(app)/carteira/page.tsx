@@ -1,8 +1,9 @@
+import { Icone } from '@/components/icone';
 import Link from 'next/link';
 import type { MonthSummaryResponse, TransactionDTO } from '@tostao/contracts';
 import { api } from '@/lib/api';
 import { currentMonth, dayLabel, money, monthName, shiftMonth, shortDate } from '@/lib/format';
-import { BankIcon, ButtonLink, CardIcon } from '@/components/ui';
+import { ButtonLink } from '@/components/ui';
 import { Mascote } from '@/components/mascote';
 import { AutoCategorizeButton } from './auto-categorize-button';
 import { Chevron, Row, SearchBar } from './transaction-row';
@@ -62,7 +63,7 @@ export default async function CarteiraPage({ searchParams }: { searchParams: Pro
             return (
               <div key={a.id} className={`flex w-[124px] shrink-0 flex-col gap-0.5 rounded-[14px] border px-3 py-2.5 ${card ? 'border-[#F5CDB8] bg-[#FFF4EE] dark:border-[#5A3526] dark:bg-[#33241D]' : 'border-linha bg-cartao'}`}>
                 <span className="flex min-w-0 items-center gap-1.5 text-xs font-semibold text-tinta-suave">
-                  {card ? <CardIcon className="shrink-0 text-laranja-texto" /> : <BankIcon className="shrink-0" />}
+                  <Icone src={card ? 'ui/cartao' : 'ui/banco'} size={18} />
                   <span className="truncate">{a.name}</span>
                 </span>
                 <span className="text-[15px] font-bold tabular-nums">{money(card ? Math.max(0, -a.balanceInCents) : a.balanceInCents)}</span>

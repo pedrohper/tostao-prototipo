@@ -1,3 +1,4 @@
+import { CatIcon, Icone } from '@/components/icone';
 import type { BudgetsResponse, CategoryDTO } from '@tostao/contracts';
 import { api } from '@/lib/api';
 import { currentMonth, money, monthName } from '@/lib/format';
@@ -39,7 +40,7 @@ export default async function LimitesPage() {
           return (
             <div key={c.id} className="flex flex-col gap-2 p-4">
               <div className="flex justify-between text-[15px]">
-                <span className="font-semibold">{c.emoji} {c.name}</span>
+                <span className="flex items-center gap-1.5 font-semibold"><CatIcon id={c.id} emoji={c.emoji} size={20} /> {c.name}</span>
                 {b && <span className="text-tinta-suave">já foi {money(b.spentInCents)}</span>}
               </div>
               <BudgetForm categoryId={c.id} label={c.name} current={b?.limitInCents ?? null} />
