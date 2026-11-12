@@ -22,6 +22,8 @@ Protótipo funcional pra testar e validar a ideia. Depois, a plataforma de verda
 - Mesmo cartão vindo de duas conexões (ex.: Bradesco e Bradescard) conta uma vez só
 - Desconectar banco pela tela Conectar
 - **Minhas categorias**: crie categorias de gasto e de entrada; a categoria **Não conta** tira do resumo dinheiro que só passa por você (repasse com a família)
+- Cadastro só por convite (Perfil → Convidar alguém); a primeira conta do servidor entra sem
+- Sessão que renova sozinha, limite de 5 tentativas de login, backup diário (`scripts/backup-db.sh`)
 - Ocultar conta que você não usa (ex.: poupança parada): some da Carteira e do saldo
 - Layout de celular e de desktop, e modo escuro automático
 
@@ -100,8 +102,9 @@ O caminho de uma requisição: **controller** valida com Zod, chama o **use case
 | Só o simulador da lição 1.1 existe | Um simulador por lição |
 | Compromisso da semana não é auditado | Job que confere o extrato e marca cumprido/não cumprido |
 | Cron dentro do processo da API | Worker separado ou cron do provedor |
-| Fuso fixo -03:00 | Fuso do usuário |
+| Fuso fixo -03:00 (dia sem hora vindo do banco = meio-dia de Brasília) | Fuso do usuário |
 | Transferência interna por par de valores | Pode errar se alguém te mandar o mesmo valor que você mandou pra outra pessoa no mesmo dia |
-| Sem recuperar senha, sem refresh token | E-mail de recuperação e sessão renovável |
+| Recuperar senha por link gerado no servidor (`pnpm --filter @tostao/api reset-link email`) | E-mail de recuperação automático |
+| Limite de login em memória, por e-mail | Redis/limite por IP na borda |
 | Chat, Tribunal e Batalha | Ainda só no design (canvas) |
 | Assinatura detectada por padrão de descrição | Usar a categoria do Pluggy e deixar a pessoa confirmar/ignorar |

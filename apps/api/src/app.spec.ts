@@ -15,6 +15,21 @@ describe('API', () => {
     const auth = { authorization: `Bearer ${reg.json().token}` };
 
     expect((await app.inject({ method: 'GET', url: '/me' })).statusCode).toBe(401);
+
+    // Daqui pra frente, cadastro só com convite
+    const semConvite = await app.inject({ method: 'POST', url: '/users', payload: { name: 'Ana', email: 'a@x.com', password: '12345678' } });
+    expect(semConvite.statusCode).toBe(403);
+    const { code } = (await app.inject({ method: 'POST', url: '/invites', headers: auth })).json();
+    const comConvite = await app.inject({ method: 'POST', url: '/users', payload: { name: 'Ana', email: 'a@x.com', password: '12345678', inviteCode: code } });
+    expect(comConvite.statusCode).toBe(201);
+
+    // Sessão renova
+    const refreshed = await app.inject({ method: 'POST', url: '/sessions/refresh', headers: auth });
+    expect(refreshed.json().token).toEqual(expect.any(String));
+
+    // 5 senhas erradas travam o e-mail
+    for (let i = 0; i < 5; i++) await app.inject({ method: 'POST', url: '/sessions', payload: { email: 'p@x.com', password: 'errada' } });
+    expect((await app.inject({ method: 'POST', url: '/sessions', payload: { email: 'p@x.com', password: '12345678' } })).statusCode).toBe(429);
     expect((await app.inject({ method: 'GET', url: '/me', headers: auth })).json().email).toBe('p@x.com');
 
     // Com o banco de exemplo não tem widget: o token vem null e a tela mostra só o campo manual

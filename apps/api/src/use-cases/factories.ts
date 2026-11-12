@@ -1,3 +1,5 @@
+import { CreateInviteUseCase, ListInvitesUseCase } from './invites.js';
+import { ResetPasswordUseCase } from './password-reset.js';
 import { ResourceNotFoundError } from '../domain/errors.js';
 import { CreateCategoryUseCase, DeleteCategoryUseCase } from './categories.js';
 // Monta os use cases com as dependências certas. É a única parte que "sabe" de tudo.
@@ -23,7 +25,10 @@ export type Deps = { repos: Repositories; bank: BankGateway };
 export function makeUseCases({ repos, bank }: Deps) {
   const sync = new SyncBankConnectionUseCase({ ...repos, bank });
   return {
-    registerUser: new RegisterUserUseCase(repos.users),
+    registerUser: new RegisterUserUseCase(repos),
+    createInvite: new CreateInviteUseCase(repos),
+    listInvites: new ListInvitesUseCase(repos),
+    resetPassword: new ResetPasswordUseCase(repos),
     authenticate: new AuthenticateUseCase(repos.users),
     getProfile: new GetProfileUseCase(repos.users, repos.connections),
     syncBankConnection: sync,

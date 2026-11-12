@@ -1,7 +1,8 @@
 // Guardamos o JWT num cookie httpOnly: o JavaScript do navegador não consegue ler (protege contra XSS).
 import { cookies } from 'next/headers';
 
-export const TOKEN_COOKIE = 'tostao_token';
+export { TOKEN_COOKIE } from './session-constants';
+import { TOKEN_COOKIE } from './session-constants';
 
 export async function getToken() {
   return (await cookies()).get(TOKEN_COOKIE)?.value ?? null;

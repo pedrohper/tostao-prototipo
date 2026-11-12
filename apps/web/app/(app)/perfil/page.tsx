@@ -23,6 +23,7 @@ export default async function PerfilPage() {
         <Link href="/fechamento" className="flex justify-between p-4 no-underline"><span className="font-semibold">Fechamento do mês</span><span className="text-tinta-suave">›</span></Link>
         <Link href="/assinaturas" className="flex justify-between p-4 no-underline"><span className="font-semibold">Minhas assinaturas</span><span className="text-tinta-suave">›</span></Link>
         <Link href="/anotar" className="flex justify-between p-4 no-underline"><span className="font-semibold">Anotar gasto</span><span className="text-tinta-suave">›</span></Link>
+        <Link href="/convites" className="flex justify-between p-4 no-underline"><span className="font-semibold">Convidar alguém</span><span className="text-tinta-suave">›</span></Link>
         <Link href="/aprender" className="flex justify-between p-4 no-underline"><span className="font-semibold">Minha trilha</span><span className="text-tinta-suave">›</span></Link>
       </Card>
       <div className="flex items-center gap-3 rounded-[20px] bg-amarelo-claro p-3">

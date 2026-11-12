@@ -8,6 +8,7 @@ export const registerBody = z.object({
   name: z.string().trim().min(2, 'Nome muito curto'),
   email: z.email('E-mail inválido').transform((e) => e.toLowerCase()),
   password: z.string().min(8, 'A senha precisa de pelo menos 8 caracteres'),
+  inviteCode: z.string().trim().max(40).optional(),
 });
 export type RegisterBody = z.infer<typeof registerBody>;
 
@@ -18,6 +19,14 @@ export const loginBody = z.object({
 export type LoginBody = z.infer<typeof loginBody>;
 
 export type AuthResponse = { token: string };
+
+export const resetPasswordBody = z.object({
+  token: z.string().min(20),
+  password: z.string().min(8, 'A senha precisa de pelo menos 8 caracteres'),
+});
+
+export type InviteDTO = { code: string; createdAt: string; usedAt: string | null; usedBy: string | null };
+export type InvitesResponse = { invites: InviteDTO[] };
 
 export type ProfileResponse = {
   id: string;

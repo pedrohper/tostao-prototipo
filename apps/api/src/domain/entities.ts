@@ -62,3 +62,6 @@ export type Transaction = {
 export type CategoryBudget = { id: string; userId: string; categoryId: string; limitInCents: number };
 
 export type LessonProgress = { userId: string; lessonId: string; completedAt: Date };
+
+export type Invite = { code: string; createdById: string; usedById: string | null; createdAt: Date; usedAt: Date | null };
+export type PasswordReset = { id: string; userId: string; tokenHash: string; expiresAt: Date; usedAt: Date | null };

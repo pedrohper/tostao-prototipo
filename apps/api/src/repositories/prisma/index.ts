@@ -1,9 +1,9 @@
 // Repositórios de verdade, no Postgres via Prisma.
 // Repare que a assinatura é a mesma dos em memória: o use case nem percebe a troca.
 import type { PrismaClient } from '@prisma/client';
-import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, Transaction } from '../../domain/entities.js';
+import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, Transaction, Invite, PasswordReset } from '../../domain/entities.js';
 import type {
-  AccountData, AccountsRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, IgnoredSubscriptionsRepository, LessonProgressRepository,
+  AccountData, AccountsRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, IgnoredSubscriptionsRepository, InvitesRepository, LessonProgressRepository, PasswordResetsRepository,
   NewTransaction, NewUser, Repositories, TransactionsRepository, UsersRepository,
 } from '../types.js';
 
@@ -12,6 +12,8 @@ class PrismaUsersRepository implements UsersRepository {
   findByEmail(email: string) { return this.db.user.findUnique({ where: { email } }); }
   findById(id: string) { return this.db.user.findUnique({ where: { id } }); }
   create(data: NewUser) { return this.db.user.create({ data }); }
+  count() { return this.db.user.count(); }
+  async updatePassword(id: string, passwordHash: string) { await this.db.user.update({ where: { id }, data: { passwordHash } }); }
 }
 
 class PrismaBankConnectionsRepository implements BankConnectionsRepository {
@@ -118,6 +120,21 @@ class PrismaIgnoredSubscriptionsRepository implements IgnoredSubscriptionsReposi
   }
 }
 
+class PrismaInvitesRepository implements InvitesRepository {
+  constructor(private db: PrismaClient) {}
+  create(data: { code: string; createdById: string }) { return this.db.invite.create({ data }); }
+  findByCode(code: string) { return this.db.invite.findUnique({ where: { code } }); }
+  async markUsed(code: string, userId: string) { await this.db.invite.update({ where: { code }, data: { usedById: userId, usedAt: new Date() } }); }
+  listByCreator(userId: string) { return this.db.invite.findMany({ where: { createdById: userId }, orderBy: { createdAt: 'desc' } }); }
+}
+
+class PrismaPasswordResetsRepository implements PasswordResetsRepository {
+  constructor(private db: PrismaClient) {}
+  create(data: { userId: string; tokenHash: string; expiresAt: Date }) { return this.db.passwordReset.create({ data }); }
+  findByTokenHash(tokenHash: string) { return this.db.passwordReset.findUnique({ where: { tokenHash } }); }
+  async markUsed(id: string) { await this.db.passwordReset.update({ where: { id }, data: { usedAt: new Date() } }); }
+}
+
 export function makePrismaRepositories(db: PrismaClient): Repositories {
   return {
     users: new PrismaUsersRepository(db),
@@ -129,5 +146,7 @@ export function makePrismaRepositories(db: PrismaClient): Repositories {
     budgets: new PrismaBudgetsRepository(db),
     lessons: new PrismaLessonProgressRepository(db),
     ignoredSubscriptions: new PrismaIgnoredSubscriptionsRepository(db),
+    invites: new PrismaInvitesRepository(db),
+    passwordResets: new PrismaPasswordResetsRepository(db),
   };
 }

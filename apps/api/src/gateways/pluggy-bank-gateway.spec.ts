@@ -39,3 +39,13 @@ describe('PluggyBankGateway', () => {
     expect(card).toMatchObject({ name: 'AMAZON MASTERCARD PLATINUM', fingerprint: 'CREDIT:MASTERCARD:6018', balanceInCents: -1000 });
   });
 });
+
+import { pluggyDate } from './pluggy-bank-gateway.js';
+describe('data da Pluggy', () => {
+  it('dia sem hora (meia-noite UTC) fica no mesmo dia em Brasília', () => {
+    expect(pluggyDate('2026-11-12T00:00:00.000Z').toISOString()).toBe('2026-11-12T15:00:00.000Z');
+  });
+  it('com hora de verdade, mantém', () => {
+    expect(pluggyDate('2026-11-12T23:40:00.000Z').toISOString()).toBe('2026-11-12T23:40:00.000Z');
+  });
+});

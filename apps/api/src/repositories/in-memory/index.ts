@@ -1,8 +1,8 @@
 // Repositórios em memória: arrays simples. Usados nos testes e pra rodar sem Postgres.
 import { randomUUID } from 'node:crypto';
-import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, LessonProgress, Transaction, User } from '../../domain/entities.js';
+import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, LessonProgress, Transaction, User, Invite, PasswordReset } from '../../domain/entities.js';
 import type {
-  AccountData, AccountsRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, IgnoredSubscriptionsRepository, LessonProgressRepository,
+  AccountData, AccountsRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, IgnoredSubscriptionsRepository, InvitesRepository, LessonProgressRepository, PasswordResetsRepository,
   Repositories, TransactionsRepository, UsersRepository,
 } from '../types.js';
 import { DEFAULT_CATEGORIES, DEFAULT_RULES } from '../../lib/defaults.js';
@@ -15,6 +15,11 @@ export class InMemoryUsersRepository implements UsersRepository {
     const user: User = { id: randomUUID(), createdAt: new Date(), ...data };
     this.items.push(user);
     return user;
+  }
+  async count() { return this.items.length; }
+  async updatePassword(id: string, passwordHash: string) {
+    const u = this.items.find((x) => x.id === id);
+    if (u) u.passwordHash = passwordHash;
   }
 }
 
@@ -152,6 +157,35 @@ export class InMemoryIgnoredSubscriptionsRepository implements IgnoredSubscripti
   }
 }
 
+export class InMemoryInvitesRepository implements InvitesRepository {
+  items: Invite[] = [];
+  async create(data: { code: string; createdById: string }) {
+    const i: Invite = { ...data, usedById: null, createdAt: new Date(), usedAt: null };
+    this.items.push(i);
+    return i;
+  }
+  async findByCode(code: string) { return this.items.find((i) => i.code === code) ?? null; }
+  async markUsed(code: string, userId: string) {
+    const i = this.items.find((x) => x.code === code);
+    if (i) Object.assign(i, { usedById: userId, usedAt: new Date() });
+  }
+  async listByCreator(userId: string) { return this.items.filter((i) => i.createdById === userId).reverse(); }
+}
+
+export class InMemoryPasswordResetsRepository implements PasswordResetsRepository {
+  items: PasswordReset[] = [];
+  async create(data: { userId: string; tokenHash: string; expiresAt: Date }) {
+    const r: PasswordReset = { id: randomUUID(), usedAt: null, ...data };
+    this.items.push(r);
+    return r;
+  }
+  async findByTokenHash(tokenHash: string) { return this.items.find((r) => r.tokenHash === tokenHash) ?? null; }
+  async markUsed(id: string) {
+    const r = this.items.find((x) => x.id === id);
+    if (r) r.usedAt = new Date();
+  }
+}
+
 export function makeInMemoryRepositories() {
   const transactions = new InMemoryTransactionsRepository();
   const accounts = new InMemoryAccountsRepository(transactions);
@@ -165,5 +199,7 @@ export function makeInMemoryRepositories() {
     budgets: new InMemoryBudgetsRepository(),
     lessons: new InMemoryLessonProgressRepository(),
     ignoredSubscriptions: new InMemoryIgnoredSubscriptionsRepository(),
+    invites: new InMemoryInvitesRepository(),
+    passwordResets: new InMemoryPasswordResetsRepository(),
   } satisfies Repositories;
 }

@@ -19,6 +19,18 @@ type Page<T> = { total: number; totalPages: number; page: number; results: T[] }
 type CursorPage<T> = { results: T[]; next: string | null };
 
 const toCents = (value: number) => Math.round(value * 100);
+
+/**
+ * Muitos bancos mandam só o dia, como meia-noite UTC ("2026-11-12T00:00:00.000Z").
+ * Em Brasília isso vira 21h do dia ANTERIOR. Sem hora de verdade, fixamos meio-dia de Brasília do mesmo dia.
+ */
+export function pluggyDate(iso: string): Date {
+  const d = new Date(iso);
+  if (d.getUTCHours() === 0 && d.getUTCMinutes() === 0 && d.getUTCSeconds() === 0 && d.getUTCMilliseconds() === 0) {
+    return new Date(`${iso.slice(0, 10)}T12:00:00-03:00`);
+  }
+  return d;
+}
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
 
 /** Só pra cartão: bandeira + 4 últimos dígitos. Conta corrente e poupança podem ter o mesmo número, então ficam de fora. */
@@ -112,7 +124,7 @@ export class PluggyBankGateway implements BankGateway {
       for (const t of res.results) {
         // DEBIT = dinheiro saindo, CREDIT = entrando. Usamos o "type" pro sinal e o valor absoluto pro tamanho.
         const cents = Math.abs(toCents(t.amount));
-        all.push({ externalId: t.id, description: t.description, amountInCents: t.type === 'DEBIT' ? -cents : cents, occurredAt: new Date(t.date) });
+        all.push({ externalId: t.id, description: t.description, amountInCents: t.type === 'DEBIT' ? -cents : cents, occurredAt: pluggyDate(t.date) });
       }
       path = res.next ? `/v2/transactions${res.next.startsWith('?') ? res.next : `?${res.next}`}` : null;
     }

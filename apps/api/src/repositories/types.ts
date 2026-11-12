@@ -1,12 +1,14 @@
 // Contratos dos repositórios. O use case pede "alguém que saiba salvar usuário",
 // sem saber se é Postgres ou um array na memória (nos testes).
-import type { Account, BankConnection, Category, CategoryRule, Transaction, User, CategoryBudget, LessonProgress } from '../domain/entities.js';
+import type { Account, BankConnection, Category, CategoryRule, Transaction, User, CategoryBudget, LessonProgress, Invite, PasswordReset } from '../domain/entities.js';
 
 export type NewUser = Pick<User, 'name' | 'email' | 'passwordHash'>;
 export interface UsersRepository {
   findByEmail(email: string): Promise<User | null>;
   findById(id: string): Promise<User | null>;
   create(data: NewUser): Promise<User>;
+  count(): Promise<number>;
+  updatePassword(id: string, passwordHash: string): Promise<void>;
 }
 
 export interface BankConnectionsRepository {
@@ -76,6 +78,19 @@ export interface TransactionsRepository {
   clearCategory(categoryId: string): Promise<void>;
 }
 
+export interface InvitesRepository {
+  create(data: { code: string; createdById: string }): Promise<Invite>;
+  findByCode(code: string): Promise<Invite | null>;
+  markUsed(code: string, userId: string): Promise<void>;
+  listByCreator(userId: string): Promise<Invite[]>;
+}
+
+export interface PasswordResetsRepository {
+  create(data: { userId: string; tokenHash: string; expiresAt: Date }): Promise<PasswordReset>;
+  findByTokenHash(tokenHash: string): Promise<PasswordReset | null>;
+  markUsed(id: string): Promise<void>;
+}
+
 export type Repositories = {
   users: UsersRepository;
   connections: BankConnectionsRepository;
@@ -86,4 +101,6 @@ export type Repositories = {
   budgets: BudgetsRepository;
   lessons: LessonProgressRepository;
   ignoredSubscriptions: IgnoredSubscriptionsRepository;
+  invites: InvitesRepository;
+  passwordResets: PasswordResetsRepository;
 };
