@@ -8,6 +8,10 @@
     "db:up": "docker compose up -d db",
     "db:migrate": "pnpm --filter @tostao/api db:migrate",
     "db:seed": "pnpm --filter @tostao/api db:seed",
-    "content:build": "node scripts/build-lessons.mjs"
+    "content:build": "node scripts/build-lessons.mjs",
+    "db:deploy": "pnpm --filter @tostao/api db:deploy",
+    "build": "pnpm --filter @tostao/web build",
+    "start:api": "pnpm --filter @tostao/api start",
+    "start:web": "pnpm --filter @tostao/web start"
   }
 }
