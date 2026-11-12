@@ -5,10 +5,12 @@ import type { BankConnection } from '../domain/entities.js';
 import { ResourceNotFoundError, BankConnectionError } from '../domain/errors.js';
 import { categorizeByRules } from '../services/categorize.js';
 import { detectInternalTransfers } from '../services/internal-transfers.js';
+import { isGenericInstitution } from '../services/bank-names.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const FIRST_SYNC_DAYS = 90; // primeira vez: puxa 3 meses
 const OVERLAP_DAYS = 3; // depois: volta 3 dias, porque o banco às vezes lança atrasado
+const FUTURE_DAYS = 400; // cartão: parcelas futuras vêm com data lá na frente
 
 type Deps = Pick<Repositories, 'connections' | 'accounts' | 'transactions' | 'rules'> & { bank: BankGateway; now?: () => Date };
 
@@ -53,8 +55,18 @@ export class SyncBankConnectionUseCase {
           continue;
         }
         keptAccounts++;
-        const account = await accounts.upsertByExternalId({ ...remote, fingerprint, userId: connection.userId, connectionId: connection.id });
-        const remoteTxs = await bank.fetchTransactions(remote.externalId, since, now);
+        const isCard = remote.type === 'CREDIT';
+        const fetched = await bank.fetchTransactions(remote.externalId, since, isCard ? new Date(now.getTime() + FUTURE_DAYS * DAY) : now);
+        // Parcela que ainda vai cair não é gasto de hoje: fica fora do histórico...
+        const remoteTxs = fetched.filter((t) => t.occurredAt <= now);
+        // ...e sai do "limite usado" que o banco manda, pra sobrar só a fatura aberta.
+        const futureOwed = Math.max(0, -fetched.filter((t) => t.occurredAt > now).reduce((s, t) => s + t.amountInCents, 0));
+        const { institution: _bank, ...data } = remote;
+        const account = await accounts.upsertByExternalId({
+          ...data,
+          balanceInCents: isCard ? Math.min(0, remote.balanceInCents + futureOwed) : remote.balanceInCents,
+          fingerprint, userId: connection.userId, connectionId: connection.id,
+        });
 
         for (const tx of remoteTxs) {
           if (await transactions.findByExternalId(connection.userId, tx.externalId)) continue;
@@ -79,7 +91,11 @@ export class SyncBankConnectionUseCase {
         if (t.isInternalTransfer !== shouldBe && t.accountId) await transactions.save({ ...t, isInternalTransfer: shouldBe });
       }
 
-      await connections.save({ ...connection, status: 'ACTIVE', lastSyncedAt: now });
+      // Pelo MeuPluggy o Item não diz o banco: usa o que as contas revelaram.
+      const institution = isGenericInstitution(connection.institution)
+        ? remoteAccounts.map((a) => a.institution).find(Boolean) ?? connection.institution
+        : connection.institution;
+      await connections.save({ ...connection, institution, status: 'ACTIVE', lastSyncedAt: now });
       return { importedCount, accounts: keptAccounts };
     } catch (err) {
       await connections.save({ ...connection, status: 'ERROR' });

@@ -63,8 +63,9 @@ export function authRoutes(app: FastifyInstance, uc: UseCases, limiter = new Log
       email: user.email,
       createdAt: user.createdAt.toISOString(),
       connections: connections.map((c) => ({
-        id: c.id, itemId: c.itemId, institution: c.institution, status: c.status,
+        id: c.id, itemId: c.itemId, institution: c.institution, displayName: c.displayName, status: c.status,
         lastSyncedAt: c.lastSyncedAt?.toISOString() ?? null,
+        accounts: c.accounts.map((a) => ({ id: a.id, name: a.name, type: a.type, balanceInCents: a.balanceInCents, hidden: a.hidden })),
       })),
     } satisfies ProfileResponse;
   });

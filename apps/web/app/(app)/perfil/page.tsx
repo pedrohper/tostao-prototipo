@@ -2,7 +2,9 @@ import Link from 'next/link';
 import type { LessonProgressResponse, ProfileResponse } from '@tostao/contracts';
 import { api } from '@/lib/api';
 import { Mascote } from '@/components/mascote';
-import { Eyebrow } from '@/components/ui';
+import { BankIcon, CardIcon, Eyebrow } from '@/components/ui';
+import { money } from '@/lib/format';
+import { HideAccountButton } from '../carteira/hide-account-button';
 import { xpFrom } from '@/lib/xp';
 
 const atalhos = [
@@ -47,16 +49,27 @@ export default async function PerfilPage() {
 
       <section className="flex flex-col gap-2">
         <Eyebrow>Contas conectadas</Eyebrow>
+        <p className="-mt-1 text-[13px] text-tinta-suave">Conta oculta sai do saldo e das telas, mas continua atualizando.</p>
         <div className="flex flex-col rounded-2xl border border-linha bg-cartao px-3.5">
           {me.connections.map((c) => {
             const imported = c.itemId.startsWith('import:');
             return (
-              <Link key={c.id} href="/conectar" className={rows}>
-                <span className="text-[15px] font-semibold">{c.institution ?? 'Banco'}</span>
-                <span className={`text-xs ${c.status === 'ERROR' && !imported ? 'font-semibold text-vermelho-texto' : 'text-tinta-suave'}`}>
-                  {imported ? 'extrato importado' : c.status === 'ERROR' ? 'parou de atualizar' : synced(c.lastSyncedAt)}
-                </span>
-              </Link>
+              <div key={c.id} className="flex flex-col border-b border-linha py-1">
+                <Link href="/conectar" className="flex min-h-11 items-center justify-between gap-3 text-tinta no-underline">
+                  <span className="truncate text-[15px] font-semibold">{c.displayName}</span>
+                  <span className={`shrink-0 text-xs ${c.status === 'ERROR' && !imported ? 'font-semibold text-vermelho-texto' : 'text-tinta-suave'}`}>
+                    {imported ? 'extrato importado' : c.status === 'ERROR' ? 'parou de atualizar' : synced(c.lastSyncedAt)}
+                  </span>
+                </Link>
+                {c.accounts.map((a) => (
+                  <div key={a.id} className={`flex min-h-9 items-center gap-2 pb-1 text-[13px] ${a.hidden ? 'text-tinta-suave' : ''}`}>
+                    {a.type === 'CREDIT' ? <CardIcon className="shrink-0 text-laranja-texto" /> : <BankIcon className="shrink-0 text-tinta-suave" />}
+                    <span className={`min-w-0 grow truncate ${a.hidden ? 'line-through' : ''}`}>{a.name}</span>
+                    <span className="shrink-0 tabular-nums">{money(a.type === 'CREDIT' ? Math.max(0, -a.balanceInCents) : a.balanceInCents)}</span>
+                    <HideAccountButton accountId={a.id} hidden={a.hidden} />
+                  </div>
+                ))}
+              </div>
             );
           })}
           <Link href="/conectar" className="flex min-h-[46px] items-center gap-2 text-[15px] font-semibold text-laranja-texto no-underline">

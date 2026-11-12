@@ -1,5 +1,6 @@
 import { BankConnectionError } from '../domain/errors.js';
 import type { BankAccountData, BankGateway, BankItemData, BankTransactionData } from './bank-gateway.js';
+import { bankNameFromTransferNumber, prettyName } from '../services/bank-names.js';
 
 const BASE_URL = 'https://api.pluggy.ai';
 const API_KEY_TTL_MS = 110 * 60 * 1000; // a chave vale 2h; renovamos com 10 min de folga
@@ -12,6 +13,7 @@ type PluggyAccount = {
   subtype?: string | null;
   balance: number;
   number?: string | null;
+  transferNumber?: string | null;
   creditData?: { brand?: string | null; creditLimit?: number | null; balanceDueDate?: string | null } | null;
 };
 type PluggyTransaction = { id: string; description: string; amount: number; date: string; type: 'DEBIT' | 'CREDIT' };
@@ -102,20 +104,25 @@ export class PluggyBankGateway implements BankGateway {
 
   async fetchAccounts(itemId: string): Promise<BankAccountData[]> {
     const page = await this.get<Page<PluggyAccount>>(`/accounts?itemId=${encodeURIComponent(itemId)}`);
-    return page.results.map((a) => ({
-      externalId: a.id,
-      // Cartão: o "name" é o produto (ex.: AMAZON MASTERCARD PLATINUM); o marketingName às vezes vem "OUTROS".
-      // Poupança e corrente do mesmo banco vêm com o mesmo nome; o sufixo separa as duas.
-      name: a.type === 'CREDIT' ? a.name || a.marketingName || 'Cartão' : `${a.marketingName || a.name}${a.subtype === 'SAVINGS_ACCOUNT' ? ' (Poupança)' : ''}`,
-      fingerprint: cardFingerprint(a),
-      type: a.type,
-      // No cartão, "balance" é quanto você deve. Pra gente, dívida é negativo.
-      balanceInCents: a.type === 'CREDIT' ? -Math.abs(toCents(a.balance)) : toCents(a.balance),
-      ...(a.type === 'CREDIT' && {
-        creditLimitInCents: a.creditData?.creditLimit != null ? Math.abs(toCents(a.creditData.creditLimit)) : null,
-        dueDate: a.creditData?.balanceDueDate ? new Date(a.creditData.balanceDueDate) : null,
-      }),
-    }));
+    // O código do banco (COMPE) só vem nas contas; o cartão herda o banco da conta do mesmo Item.
+    const itemBank = page.results.map((a) => bankNameFromTransferNumber(a.transferNumber)).find(Boolean) ?? null;
+    return page.results.map((a) => {
+      const bank = bankNameFromTransferNumber(a.transferNumber) ?? itemBank;
+      return {
+        externalId: a.id,
+        name: accountName(a, bank),
+        institution: bank,
+        fingerprint: cardFingerprint(a),
+        type: a.type,
+        // No cartão, "balance" é o limite usado (inclui parcelas futuras). Pra gente, dívida é negativo.
+        // O sync desconta as parcelas futuras pra chegar na fatura aberta.
+        balanceInCents: a.type === 'CREDIT' ? -Math.abs(toCents(a.balance)) : toCents(a.balance),
+        ...(a.type === 'CREDIT' && {
+          creditLimitInCents: a.creditData?.creditLimit != null ? Math.abs(toCents(a.creditData.creditLimit)) : null,
+          dueDate: a.creditData?.balanceDueDate ? new Date(a.creditData.balanceDueDate) : null,
+        }),
+      };
+    });
   }
 
   // GET /transactions (paginado por página) responde 410 pra Applications novas.
@@ -135,4 +142,19 @@ export class PluggyBankGateway implements BankGateway {
     return all;
   }
 
+}
+
+/**
+ * Nome bonito da conta. Pelo MeuPluggy vem "Nu Pagamentos S.A. - Instituição de Pagamento (Conta Pré-paga)",
+ * então, quando dá pra saber o banco, usa ele: "Nubank", "Bradesco (Poupança)", "Nubank Gold".
+ */
+export function accountName(a: Pick<PluggyAccount, 'type' | 'name' | 'marketingName' | 'subtype'>, bank: string | null) {
+  const savings = a.subtype === 'SAVINGS_ACCOUNT' ? ' (Poupança)' : '';
+  if (a.type === 'CREDIT') {
+    const raw = a.name || (a.marketingName && a.marketingName !== 'OUTROS' ? a.marketingName : '') || 'Cartão';
+    const card = prettyName(raw);
+    return bank && !card.toLowerCase().includes(bank.toLowerCase()) ? `${bank} ${card}` : card;
+  }
+  if (bank) return `${bank}${savings}`;
+  return `${a.marketingName || a.name}${savings}`;
 }

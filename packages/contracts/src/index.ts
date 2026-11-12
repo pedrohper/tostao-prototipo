@@ -33,7 +33,13 @@ export type ProfileResponse = {
   name: string;
   email: string;
   createdAt: string;
-  connections: { id: string; itemId: string; institution: string | null; lastSyncedAt: string | null; status: string }[];
+  connections: {
+    id: string; itemId: string; institution: string | null;
+    /** Nome pra mostrar: o banco de verdade, mesmo quando a conexão vem pelo MeuPluggy. */
+    displayName: string;
+    lastSyncedAt: string | null; status: string;
+    accounts: { id: string; name: string; type: 'BANK' | 'CREDIT'; balanceInCents: number; hidden: boolean }[];
+  }[];
 };
 
 // ---------- Banco ----------

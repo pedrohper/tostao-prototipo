@@ -4,7 +4,6 @@ import { api } from '@/lib/api';
 import { currentMonth, dayLabel, money, monthName, shiftMonth, shortDate } from '@/lib/format';
 import { BankIcon, ButtonLink, CardIcon } from '@/components/ui';
 import { Mascote } from '@/components/mascote';
-import { HideAccountButton } from './hide-account-button';
 
 const FILTERS = { tudo: 'Tudo', saidas: 'Saídas', entradas: 'Entradas', pendentes: 'Sem categoria' } as const;
 type Filter = keyof typeof FILTERS;
@@ -64,7 +63,6 @@ export default async function CarteiraPage({ searchParams }: { searchParams: Pro
                 </span>
                 <span className="text-[15px] font-bold tabular-nums">{money(card ? Math.max(0, -a.balanceInCents) : a.balanceInCents)}</span>
                 <span className="text-[11px] font-semibold text-tinta-suave">{card ? (a.dueDate ? `Fatura · vence ${shortDate(a.dueDate)}` : 'Fatura atual') : 'Conta'}</span>
-                <HideAccountButton accountId={a.id} hidden={false} />
               </div>
             );
           })}
@@ -72,17 +70,9 @@ export default async function CarteiraPage({ searchParams }: { searchParams: Pro
       )}
 
       {summary.hiddenAccounts.length > 0 && (
-        <details className="text-[13px] text-tinta-suave">
-          <summary className="cursor-pointer">{summary.hiddenAccounts.length} {summary.hiddenAccounts.length === 1 ? 'conta oculta' : 'contas ocultas'}</summary>
-          <div className="mt-2 flex flex-col gap-1.5">
-            {summary.hiddenAccounts.map((a) => (
-              <div key={a.id} className="flex items-center justify-between rounded-xl bg-papel-2 px-3 py-2">
-                <span>{a.name} · {money(a.balanceInCents)}</span>
-                <HideAccountButton accountId={a.id} hidden />
-              </div>
-            ))}
-          </div>
-        </details>
+        <Link href="/perfil" className="-mt-2 text-[13px] text-tinta-suave">
+          {summary.hiddenAccounts.length} {summary.hiddenAccounts.length === 1 ? 'conta oculta' : 'contas ocultas'} · mostrar no Perfil
+        </Link>
       )}
 
       <div className="-mx-5 flex gap-2 overflow-x-auto px-5">

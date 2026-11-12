@@ -4,7 +4,7 @@ import { setAccountHidden } from './actions';
 
 function Submit({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
-  return <button type="submit" disabled={pending} className="mt-1 self-start text-xs font-semibold text-tinta-suave underline disabled:opacity-50">{pending ? '…' : children}</button>;
+  return <button type="submit" disabled={pending} className="shrink-0 text-xs font-semibold text-laranja-texto underline disabled:opacity-50">{pending ? '…' : children}</button>;
 }
 
 /** Ocultar conta que você não usa (ou mostrar de novo). */

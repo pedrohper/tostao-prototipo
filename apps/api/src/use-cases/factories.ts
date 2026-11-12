@@ -33,7 +33,7 @@ export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), chatDailyL
     listInvites: new ListInvitesUseCase(repos),
     resetPassword: new ResetPasswordUseCase(repos),
     authenticate: new AuthenticateUseCase(repos.users),
-    getProfile: new GetProfileUseCase(repos.users, repos.connections),
+    getProfile: new GetProfileUseCase(repos.users, repos.connections, repos.accounts),
     syncBankConnection: sync,
     connectBank: new ConnectBankUseCase(repos.connections, bank, sync),
     disconnectBank: new DisconnectBankUseCase(repos.connections, bank),

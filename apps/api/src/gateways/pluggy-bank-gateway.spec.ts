@@ -36,7 +36,7 @@ describe('PluggyBankGateway', () => {
       ? json({ apiKey: 'chave' })
       : json({ total: 1, totalPages: 1, page: 1, results: [{ id: 'a1', name: 'AMAZON MASTERCARD PLATINUM', marketingName: 'OUTROS', type: 'CREDIT', balance: 10, number: '6018', creditData: { brand: 'MASTERCARD' } }] })));
     const [card] = await new PluggyBankGateway('id', 'secret').fetchAccounts('item');
-    expect(card).toMatchObject({ name: 'AMAZON MASTERCARD PLATINUM', fingerprint: 'CREDIT:MASTERCARD:6018', balanceInCents: -1000 });
+    expect(card).toMatchObject({ name: 'Amazon Mastercard Platinum', fingerprint: 'CREDIT:MASTERCARD:6018', balanceInCents: -1000 });
   });
 });
 

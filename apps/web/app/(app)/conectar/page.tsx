@@ -77,14 +77,14 @@ export default async function ConectarPage({ searchParams }: { searchParams: Pro
             return (
             <Card key={c.id} className="flex flex-col gap-2">
               <div className="flex justify-between">
-                <span className="font-semibold">{c.institution ?? 'Banco'}</span>
+                <span className="font-semibold">{c.displayName}</span>
                 <span className={`text-xs font-bold ${imported ? 'text-tinta-suave' : c.status === 'ACTIVE' ? 'text-verde-texto' : 'text-vermelho-texto'}`}>{imported ? 'Extrato importado' : c.status === 'ACTIVE' ? 'Ativo' : 'Parou de atualizar'}</span>
               </div>
               <span className="text-xs text-tinta-suave">{imported ? 'Último arquivo' : 'Última sincronização'}: {c.lastSyncedAt ? new Date(c.lastSyncedAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : 'nunca'}</span>
               {!imported && c.status === 'ERROR' && <p className="text-[13px] text-vermelho-texto">Não consegui atualizar esse banco. Tenta sincronizar de novo; se continuar, desconecta e conecta outra vez, ou importa o extrato.</p>}
               <div className="flex flex-wrap items-center justify-between gap-2">
                 {imported ? <Link href={`/importar?conta=${encodeURIComponent(c.institution ?? '')}`} className="text-sm font-semibold underline">Importar mais</Link> : <SyncButton id={c.id} />}
-                <DisconnectButton id={c.id} name={c.institution ?? 'esse banco'} />
+                <DisconnectButton id={c.id} name={c.displayName} />
               </div>
             </Card>
             );

@@ -42,7 +42,7 @@ export default async function InicioPage() {
       {broken.length > 0 && (
         <Link href="/conectar" role="alert" className="flex items-center gap-3 rounded-2xl bg-amarelo-claro p-3 no-underline">
           <Mascote pose="preocupado" size={56} alt="" />
-          <p className="text-[15px]"><b>{broken.map((c) => c.institution ?? 'Um banco').join(', ')}</b> parou de atualizar. Os números podem estar atrasados. Toca pra resolver.</p>
+          <p className="text-[15px]"><b>{broken.map((c) => c.displayName).join(', ')}</b> parou de atualizar. Os números podem estar atrasados. Toca pra resolver.</p>
         </Link>
       )}
 
