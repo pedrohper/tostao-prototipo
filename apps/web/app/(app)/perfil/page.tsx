@@ -104,6 +104,7 @@ export default async function PerfilPage() {
         <Link href="/conectar" className="flex h-11 items-center text-sm font-semibold text-vermelho-texto no-underline">Desconectar bancos</Link>
         <a href="/sair" className="flex h-11 items-center text-sm font-semibold text-tinta-suave no-underline">Sair da conta</a>
       </div>
+      <Link href="/perfil/apagar-conta" className="-mt-3 flex h-11 items-center self-start text-sm font-semibold text-vermelho-texto underline">Apagar minha conta</Link>
     </div>
   );
 }
