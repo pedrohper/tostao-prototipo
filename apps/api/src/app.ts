@@ -5,6 +5,7 @@ import jwt from '@fastify/jwt';
 import { makeUseCases, type Deps } from './use-cases/factories.js';
 import { errorHandler } from './http/error-handler.js';
 import { authRoutes } from './http/controllers/auth.js';
+import { accountRoutes } from './http/controllers/account.js';
 import { bankRoutes } from './http/controllers/bank.js';
 import { transactionRoutes } from './http/controllers/transactions.js';
 import { planningRoutes } from './http/controllers/planning.js';
@@ -28,6 +29,7 @@ export async function buildApp({ repos, bank, ai, whatsapp = new FakeWhatsAppGat
   const uc = makeUseCases({ repos, bank, ai, whatsapp, chatDailyLimit });
   app.get('/health', async () => ({ ok: true }));
   authRoutes(app, uc);
+  accountRoutes(app, uc);
   bankRoutes(app, uc, repos);
   transactionRoutes(app, uc);
   planningRoutes(app, uc);

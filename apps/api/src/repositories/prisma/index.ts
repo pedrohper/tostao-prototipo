@@ -15,6 +15,7 @@ class PrismaUsersRepository implements UsersRepository {
   create(data: NewUser) { return this.db.user.create({ data }); }
   count() { return this.db.user.count(); }
   async updatePassword(id: string, passwordHash: string) { await this.db.user.update({ where: { id }, data: { passwordHash } }); }
+  async delete(id: string) { await this.db.user.delete({ where: { id } }); } // o resto vai junto (onDelete: Cascade)
 }
 
 class PrismaBankConnectionsRepository implements BankConnectionsRepository {
