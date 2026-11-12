@@ -39,6 +39,9 @@ export function RendaForm({ plan, suggestions, banks }: { plan: FinancialPlan | 
   const [amount, setAmount] = useState(plan?.salary ? toMoney(plan.salary.amountInCents) : guess ? toMoney(guess.monthlyAvgInCents) : '');
   const [payday, setPayday] = useState(String(plan?.salary?.payday ?? (guess ? new Date(guess.hits[guess.hits.length - 1]!.date).getUTCDate() : 5)));
   const [varies, setVaries] = useState(plan?.salary?.varies ?? (guess ? guess.hits.length > guess.months : false));
+  const [advanceOn, setAdvanceOn] = useState(!!plan?.salary?.advance);
+  const [advanceDay, setAdvanceDay] = useState(String(plan?.salary?.advance?.day ?? 15));
+  const [advanceAmount, setAdvanceAmount] = useState(plan?.salary?.advance ? toMoney(plan.salary.advance.amountInCents) : '');
   const [bank, setBank] = useState<string | null>(plan?.salary?.bank ?? guess?.bank?.replace(/\s*\(.*\)$/, '') ?? banks[0] ?? null);
 
   const initialOthers: Other[] = plan
@@ -66,7 +69,10 @@ export function RendaForm({ plan, suggestions, banks }: { plan: FinancialPlan | 
 
   const salaryCents = parseMoney(amount);
   const payload: FinancialPlan = {
-    salary: salaryCents ? { amountInCents: salaryCents, payday: dayNum(payday), varies, bank, pattern: salaryPattern } : null,
+    salary: salaryCents ? {
+      amountInCents: salaryCents, payday: dayNum(payday), varies, bank, pattern: salaryPattern,
+      advance: advanceOn ? { day: dayNum(advanceDay), amountInCents: Math.min(salaryCents, parseMoney(advanceAmount) ?? Math.round(salaryCents / 2)) } : null,
+    } : null,
     otherIncomes: others.filter((o) => o.mode !== 'ignorar' && o.name.trim() && parseMoney(o.amount)).map((o) => ({ name: o.name.trim(), amountInCents: parseMoney(o.amount)!, day: o.day ? dayNum(o.day) : null, countsAsIncome: o.mode === 'renda', pattern: o.pattern })),
     fixedExpenses: fixed.filter((f) => f.name.trim() && parseMoney(f.amount)).map((f) => ({ name: f.name.trim(), amountInCents: parseMoney(f.amount)!, day: dayNum(f.day) })),
     goal: goal ? { kind: goal as 'reserva', label: GOALS.find(([k]) => k === goal)?.[1] ?? null, amountInCents: parseMoney(goalAmount), deadline: /^\d{4}-\d{2}$/.test(goalDate) ? goalDate : null } : null,
@@ -92,7 +98,7 @@ export function RendaForm({ plan, suggestions, banks }: { plan: FinancialPlan | 
         </label>
         <div className="grid grid-cols-[110px_minmax(0,1fr)] items-end gap-2.5">
           <label className="flex flex-col gap-[5px]">
-            <span className="text-[13px] font-semibold">Que dia cai?</span>
+            <span className="text-[13px] font-semibold">{advanceOn ? 'E o resto?' : 'Que dia cai?'}</span>
             <input type="number" min={1} max={31} value={payday} onChange={(e) => setPayday(e.target.value)} className={field} />
           </label>
           <div className="flex flex-col gap-[5px]">
@@ -102,6 +108,25 @@ export function RendaForm({ plan, suggestions, banks }: { plan: FinancialPlan | 
               <button type="button" onClick={() => setVaries(true)} aria-pressed={varies} className={seg(varies)}>Varia</button>
             </div>
           </div>
+        </div>
+        <div className="flex flex-col gap-2.5 rounded-2xl bg-papel-2 px-3.5 py-3">
+          <label className="flex min-h-8 cursor-pointer items-center gap-2.5">
+            <input type="checkbox" checked={advanceOn} onChange={(e) => { setAdvanceOn(e.target.checked); if (e.target.checked && !advanceAmount && salaryCents) setAdvanceAmount(toMoney(Math.round(salaryCents / 2))); }} className="h-5 w-5 shrink-0 accent-[#1E1B18]" />
+            <span className="text-[15px] font-semibold">Recebo adiantamento (vale)</span>
+          </label>
+          {advanceOn && (
+            <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-2.5">
+              <label className="flex flex-col gap-[5px]">
+                <span className="text-[13px] font-semibold">Dia do vale</span>
+                <input type="number" min={1} max={31} value={advanceDay} onChange={(e) => setAdvanceDay(e.target.value)} className={field} />
+              </label>
+              <label className="flex flex-col gap-[5px]">
+                <span className="text-[13px] font-semibold">Quanto vem no vale</span>
+                <input value={advanceAmount} onChange={(e) => setAdvanceAmount(e.target.value)} inputMode="decimal" placeholder="metade" className={field} />
+              </label>
+            </div>
+          )}
+          {advanceOn && <span className="text-xs leading-[17px] text-tinta-suave">O valor lá em cima é o total do mês. O resto cai no outro dia.</span>}
         </div>
         {banks.length > 0 && (
           <div className="flex flex-col gap-2">

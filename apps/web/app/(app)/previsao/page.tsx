@@ -32,7 +32,8 @@ export default async function PrevisaoPage() {
   const worst = f.months.reduce((a, b) => (b.leftInCents < a.leftInCents ? b : a));
   const max = Math.max(...f.months.map((m) => Math.abs(m.leftInCents)), 1);
   const aperta = worst.leftInCents < 0;
-  const salaryDay = plan?.salary?.payday;
+  const sal = plan?.salary;
+  const salaryNote = sal ? (sal.advance ? ` (vale dia ${sal.advance.day} + resto dia ${sal.payday})` : ` (salário dia ${sal.payday})`) : '';
 
   return (
     <div className="flex flex-col gap-3.5">
@@ -70,7 +71,7 @@ export default async function PrevisaoPage() {
       <section className="flex flex-col gap-2">
         <Eyebrow>{cap(monthName(first.month))}, na ponta do lápis</Eyebrow>
         <div className="flex flex-col rounded-2xl border border-linha bg-cartao px-3.5">
-          <Row label={`Renda${salaryDay ? ` (salário dia ${salaryDay})` : ''}`} value={`+ ${money(first.incomeInCents)}`} />
+          <Row label={`Renda${salaryNote}`} value={`+ ${money(first.incomeInCents)}`} />
           <Row label="Contas fixas" value={`− ${money(first.fixedInCents)}`} />
           <Row label="Assinaturas" value={`− ${money(first.subscriptionsInCents)}`} />
           <Row label="Parcelas que ainda caem" value={`− ${money(first.installmentsInCents)}`} />

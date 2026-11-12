@@ -13,7 +13,7 @@ function setup() {
 }
 
 const plan = (over: Partial<FinancialPlan> = {}): FinancialPlan => ({
-  salary: { amountInCents: 320000, payday: 5, varies: true, bank: 'Bradesco', pattern: 'TRANSF SALDO C/SAL P/CC - BCO 237' },
+  salary: { amountInCents: 320000, payday: 5, varies: true, bank: 'Bradesco', advance: { day: 15, amountInCents: 160000 }, pattern: 'TRANSF SALDO C/SAL P/CC - BCO 237' },
   otherIncomes: [{ name: 'Pix da família', amountInCents: 550000, day: 2, countsAsIncome: false, pattern: 'TRANSF.AUTORIZ.ENTRE C/C - FULANO' }],
   fixedExpenses: [{ name: 'Aluguel', amountInCents: 90000, day: 10 }],
   goal: null,

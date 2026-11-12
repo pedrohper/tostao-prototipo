@@ -90,7 +90,7 @@ export class AskTostaoUseCase {
     if (cur.balanceInCents !== null) lines.push(`Saldo nas contas agora: ${brl(cur.balanceInCents)} (${cur.accounts.map((a) => `${a.name} ${brl(a.balanceInCents)}`).join('; ')}).`);
     if (plan) {
       const p: string[] = [];
-      if (plan.salary) p.push(`salário líquido ${brl(plan.salary.amountInCents)} por mês, cai por volta do dia ${plan.salary.payday}${plan.salary.bank ? ` no ${plan.salary.bank}` : ''}${plan.salary.varies ? ' (o valor varia e às vezes vem em partes)' : ''}`);
+      if (plan.salary) p.push(`salário líquido ${brl(plan.salary.amountInCents)} por mês${plan.salary.advance ? `: adiantamento de ${brl(plan.salary.advance.amountInCents)} por volta do dia ${plan.salary.advance.day} e o resto (${brl(plan.salary.amountInCents - plan.salary.advance.amountInCents)})` : ','} cai por volta do dia ${plan.salary.payday}${plan.salary.bank ? ` no ${plan.salary.bank}` : ''}${plan.salary.varies ? ' (o valor varia e às vezes vem em partes)' : ''}`);
       for (const i of plan.otherIncomes) p.push(`${i.name}: ${brl(i.amountInCents)}${i.day ? ` por volta do dia ${i.day}` : ''} (${i.countsAsIncome ? 'conta como renda' : 'só repassa, não é renda dela'})`);
       lines.push(`O que a pessoa contou: ${p.join('; ') || 'nada sobre renda ainda'}.`);
       if (plan.fixedExpenses.length) lines.push(`Contas fixas fora do cartão: ${plan.fixedExpenses.map((f) => `${f.name} ${brl(f.amountInCents)} dia ${f.day}`).join('; ')}.`);
