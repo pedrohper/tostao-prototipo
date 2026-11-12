@@ -14,7 +14,7 @@ export default async function ConvitesPage() {
         <Mascote pose="caramelo-moeda" size={72} alt="" />
         <div>
           <h1 className="font-display text-[28px] leading-tight font-extrabold">Convidar alguém</h1>
-          <p className="text-[15px] text-tinta-suave">Cada convite vale pra uma pessoa só.</p>
+          <p className="text-[15px] text-tinta-suave">Qualquer pessoa pode criar conta. Mandando pelo seu link, você vê aqui quem entrou por você.</p>
         </div>
       </div>
       <form action={createInvite}><Button type="submit">Gerar convite</Button></form>

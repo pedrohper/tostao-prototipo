@@ -15,7 +15,7 @@ export default async function CriarContaPage({ searchParams }: { searchParams: P
       <div className="flex items-center justify-between gap-2">
         <div className="flex flex-col gap-1">
           <h1 className="font-display text-[30px] leading-[34px] font-extrabold">Crie sua conta</h1>
-          <p className="text-sm text-tinta-suave">Pra eu guardar seu progresso e suas metas. Por enquanto é só com convite.</p>
+          <p className="text-sm text-tinta-suave">Pra eu guardar seu progresso e suas metas.</p>
         </div>
         <Mascote pose="orgulhoso" size={80} alt="Tostão orgulhoso de braços cruzados" />
       </div>

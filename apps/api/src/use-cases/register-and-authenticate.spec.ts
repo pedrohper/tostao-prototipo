@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { makeInMemoryRepositories } from '../repositories/in-memory/index.js';
-import { RegisterUserUseCase, InvalidInviteError } from './register-user.js';
+import { RegisterUserUseCase } from './register-user.js';
 import { AuthenticateUseCase } from './authenticate.js';
 import { CreateInviteUseCase } from './invites.js';
 import { CreatePasswordResetUseCase, InvalidResetTokenError, ResetPasswordUseCase } from './password-reset.js';
@@ -17,16 +17,17 @@ describe('cadastro e login', () => {
     expect(user.passwordHash).not.toBe('12345678');
   });
 
-  it('a primeira conta entra sem convite; as outras só com convite, que vale uma vez', async () => {
+  it('cadastro aberto: convite é opcional, marca quem chamou e código ruim não trava', async () => {
     const { user } = await dono();
     const register = new RegisterUserUseCase(repos);
-    await expect(register.execute({ name: 'Ana', email: 'a@x.com', password: '12345678' })).rejects.toBeInstanceOf(InvalidInviteError);
-    await expect(register.execute({ name: 'Ana', email: 'a@x.com', password: '12345678', inviteCode: 'TOST-NADA-NADA' })).rejects.toBeInstanceOf(InvalidInviteError);
+    await register.execute({ name: 'Ana', email: 'a@x.com', password: '12345678' });
+    await register.execute({ name: 'Caio', email: 'c@x.com', password: '12345678', inviteCode: 'TOST-NADA-NADA' });
 
     const { invite } = await new CreateInviteUseCase(repos).execute({ userId: user.id });
-    await register.execute({ name: 'Ana', email: 'a@x.com', password: '12345678', inviteCode: ` ${invite.code.toLowerCase()} ` });
-    expect(repos.invites.items[0]!.usedById).not.toBeNull();
-    await expect(register.execute({ name: 'Bia', email: 'b@x.com', password: '12345678', inviteCode: invite.code })).rejects.toBeInstanceOf(InvalidInviteError);
+    const { user: bia } = await register.execute({ name: 'Bia', email: 'b@x.com', password: '12345678', inviteCode: ` ${invite.code.toLowerCase()} ` });
+    expect(repos.invites.items[0]!.usedById).toBe(bia.id);
+    await register.execute({ name: 'Duda', email: 'd@x.com', password: '12345678', inviteCode: invite.code });
+    expect(repos.invites.items[0]!.usedById).toBe(bia.id);
   });
 
   it('não deixa repetir e-mail', async () => {

@@ -16,11 +16,11 @@ describe('API', () => {
 
     expect((await app.inject({ method: 'GET', url: '/me' })).statusCode).toBe(401);
 
-    // Daqui pra frente, cadastro só com convite
+    // Cadastro aberto: entra sem convite; com convite, fica marcado quem chamou
     const semConvite = await app.inject({ method: 'POST', url: '/users', payload: { name: 'Ana', email: 'a@x.com', password: '12345678' } });
-    expect(semConvite.statusCode).toBe(403);
+    expect(semConvite.statusCode).toBe(201);
     const { code } = (await app.inject({ method: 'POST', url: '/invites', headers: auth })).json();
-    const comConvite = await app.inject({ method: 'POST', url: '/users', payload: { name: 'Ana', email: 'a@x.com', password: '12345678', inviteCode: code } });
+    const comConvite = await app.inject({ method: 'POST', url: '/users', payload: { name: 'Bia', email: 'b@x.com', password: '12345678', inviteCode: code } });
     expect(comConvite.statusCode).toBe(201);
 
     // Sessão renova

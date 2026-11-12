@@ -40,11 +40,11 @@ export function AuthForm({ mode, invite }: { mode: 'entrar' | 'criar'; invite?: 
         {criar && <Input label="Nome" name="name" autoComplete="given-name" placeholder="Como quer ser chamado?" defaultValue={f.name} required />}
         <Input label="E-mail" name="email" type="email" autoComplete="email" placeholder="voce@email.com" defaultValue={f.email} required />
         <Password autoComplete={criar ? 'new-password' : 'current-password'} placeholder={criar ? 'Mínimo de 8 caracteres' : 'Sua senha'} minLength={criar ? 8 : undefined} />
-        {criar && <Input label="Código de convite" name="inviteCode" placeholder="TOST-XXXX-XXXX" autoCapitalize="characters" defaultValue={f.inviteCode ?? invite} />}
+        {criar && (f.inviteCode ?? invite) && <input type="hidden" name="inviteCode" value={f.inviteCode ?? invite} />}
         {!criar && (
           <details className="self-end text-right">
             <summary className="flex h-10 cursor-pointer list-none items-center text-sm font-semibold text-laranja-texto">Esqueci minha senha</summary>
-            <p className="max-w-[280px] text-[13px] text-tinta-suave">Pede um link novo pra quem te convidou. Ele vale por 1 hora.</p>
+            <p className="max-w-[280px] text-[13px] text-tinta-suave">Fala com o Pedro, que cuida do Tostão, e ele te manda um link novo. Vale por 1 hora.</p>
           </details>
         )}
       </div>
@@ -58,6 +58,11 @@ export function AuthForm({ mode, invite }: { mode: 'entrar' | 'criar'; invite?: 
       <button type="submit" disabled={pending} className="flex h-[54px] items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel transition active:translate-y-px disabled:opacity-50">
         {pending ? 'Só um segundo…' : criar ? 'Criar conta' : 'Entrar'}
       </button>
+      {criar && (
+        <p className="text-center text-[12px] leading-[17px] text-tinta-suave">
+          Ao criar sua conta você concorda com os <Link href="/termos" className="font-semibold underline">Termos de uso</Link> e a <Link href="/privacidade" className="font-semibold underline">Política de privacidade</Link>.
+        </p>
+      )}
       <div className="grow" />
       <p className="text-center text-sm text-tinta-suave">
         {criar ? <>Já tem conta? <Link href="/entrar" className="font-bold text-laranja-texto">Entrar</Link></>

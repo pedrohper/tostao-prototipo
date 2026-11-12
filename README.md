@@ -27,7 +27,7 @@ Protótipo funcional pra testar e validar a ideia. Depois, a plataforma de verda
 - **Chat com o Tostão** (aba Tostão): IA (DeepSeek) que responde com base nos seus números; precisa de `DEEPSEEK_API_KEY` no `apps/api/.env` (limite `CHAT_DAILY_LIMIT`, padrão 40/dia)
 - **Tostão no WhatsApp** (Perfil > Tostão no WhatsApp): o mesmo chat pela Cloud API da Meta. A pessoa gera um código no app e manda pro número; só número ligado vê dados. Liga com `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN` e `WHATSAPP_NUMBER` (só dígitos, com DDI) no `apps/api/.env`. Webhook: `GET/POST /whatsapp/webhook` (assinatura `X-Hub-Signature-256` conferida); é a única rota que precisa ser pública.
 - **Busca** (topo da Carteira), **Metas** (Perfil > Minha meta) e **categoria automática** com o DeepSeek depois de cada sync/importação (botão "Categorizar pra mim" na aba "sem categoria").
-- Cadastro só por convite (Perfil → Convidar alguém); a primeira conta do servidor entra sem
+- Cadastro aberto; convite (Perfil → Convidar alguém) é opcional e só marca quem chamou quem
 - Sessão que renova sozinha, limite de 5 tentativas de login, backup diário (`scripts/backup-db.sh`)
 - Ocultar conta que você não usa (ex.: poupança parada): some da Carteira e do saldo
 - Layout de celular e de desktop, e modo escuro automático
