@@ -3,7 +3,7 @@
 import type { PrismaClient } from '@prisma/client';
 import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, Transaction } from '../../domain/entities.js';
 import type {
-  AccountsRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, LessonProgressRepository,
+  AccountsRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, IgnoredSubscriptionsRepository, LessonProgressRepository,
   NewTransaction, NewUser, Repositories, TransactionsRepository, UsersRepository,
 } from '../types.js';
 
@@ -99,6 +99,15 @@ class PrismaLessonProgressRepository implements LessonProgressRepository {
   }
 }
 
+class PrismaIgnoredSubscriptionsRepository implements IgnoredSubscriptionsRepository {
+  constructor(private db: PrismaClient) {}
+  async listKeys(userId: string) { return (await this.db.ignoredSubscription.findMany({ where: { userId } })).map((r) => r.key); }
+  async set(userId: string, key: string, ignored: boolean) {
+    if (ignored) await this.db.ignoredSubscription.upsert({ where: { userId_key: { userId, key } }, create: { userId, key }, update: {} });
+    else await this.db.ignoredSubscription.deleteMany({ where: { userId, key } });
+  }
+}
+
 export function makePrismaRepositories(db: PrismaClient): Repositories {
   return {
     users: new PrismaUsersRepository(db),
@@ -109,5 +118,6 @@ export function makePrismaRepositories(db: PrismaClient): Repositories {
     transactions: new PrismaTransactionsRepository(db),
     budgets: new PrismaBudgetsRepository(db),
     lessons: new PrismaLessonProgressRepository(db),
+    ignoredSubscriptions: new PrismaIgnoredSubscriptionsRepository(db),
   };
 }

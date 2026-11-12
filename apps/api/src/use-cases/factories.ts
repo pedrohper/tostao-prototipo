@@ -34,6 +34,7 @@ export function makeUseCases({ repos, bank }: Deps) {
     getMonthSummary: new GetMonthSummaryUseCase(repos),
     getTransaction: new GetTransactionUseCase(repos),
     listSubscriptions: new ListSubscriptionsUseCase(repos),
+    setSubscriptionIgnored: { execute: ({ userId, key, ignored }: { userId: string; key: string; ignored: boolean }) => repos.ignoredSubscriptions.set(userId, key, ignored) },
     getBudgets: new GetBudgetsUseCase(repos),
     setBudget: new SetBudgetUseCase(repos),
     listLessonProgress: { execute: async ({ userId }: { userId: string }) => ({ done: (await repos.lessons.listByUser(userId)).map((l) => l.lessonId) }) },

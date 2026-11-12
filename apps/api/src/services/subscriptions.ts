@@ -4,6 +4,8 @@ import { normalizeDescription } from '../lib/text.js';
 const DAY = 24 * 60 * 60 * 1000;
 
 export type Subscription = {
+  /** Chave de agrupamento: é o que a pessoa marca como "não é assinatura". */
+  key: string;
   name: string;
   amountInCents: number; // positivo: quanto custa por cobrança (a última)
   chargeCount: number;
@@ -69,7 +71,7 @@ export function detectSubscriptions(transactions: Transaction[], now: Date): Sub
   }
 
   const found: Subscription[] = [];
-  for (const all of groups.values()) {
+  for (const [key, all] of groups) {
     if (all.length < 2) continue;
     all.sort((a, b) => a.occurredAt.getTime() - b.occurredAt.getTime());
 
@@ -86,6 +88,7 @@ export function detectSubscriptions(transactions: Transaction[], now: Date): Sub
       const parcel = normalizeDescription(last.description).match(INSTALLMENT);
       const installmentsLeft = parcel ? Math.max(0, Number(parcel[2]) - Number(parcel[1])) : null;
       found.push({
+        key,
         name: last.description.replace(INSTALLMENT, '').replace(/\s+/g, ' ').trim(),
         amountInCents: Math.abs(last.amountInCents),
         chargeCount: txs.length,

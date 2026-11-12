@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { categorizeBody, manualTransactionBody, monthQuery, type CategoryDTO, type MonthSummaryResponse, type SubscriptionsResponse } from '@tostao/contracts';
+import { categorizeBody, manualTransactionBody, monthQuery, type CategoryDTO, type MonthSummaryResponse, type SubscriptionsResponse, ignoreSubscriptionBody } from '@tostao/contracts';
 import type { UseCases } from '../../use-cases/factories.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
 import { presentTransaction } from '../presenters.js';
@@ -18,10 +18,15 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
 
   app.get('/subscriptions', { onRequest: verifyJwt }, async (request) => {
     const r = await uc.listSubscriptions.execute({ userId: request.user.sub });
-    return {
-      ...r,
-      subscriptions: r.subscriptions.map((s) => ({ ...s, lastChargedAt: s.lastChargedAt.toISOString(), nextChargeAt: s.nextChargeAt.toISOString() })),
-    } satisfies SubscriptionsResponse;
+    const dto = (s: (typeof r.subscriptions)[number]) => ({ ...s, lastChargedAt: s.lastChargedAt.toISOString(), nextChargeAt: s.nextChargeAt.toISOString() });
+    return { ...r, subscriptions: r.subscriptions.map(dto), ignored: r.ignored.map(dto) } satisfies SubscriptionsResponse;
+  });
+
+  // "Isso não é assinatura" (ou desfazer)
+  app.put('/subscriptions/ignored', { onRequest: verifyJwt }, async (request, reply) => {
+    const { key, ignored } = ignoreSubscriptionBody.parse(request.body);
+    await uc.setSubscriptionIgnored.execute({ userId: request.user.sub, key, ignored });
+    return reply.status(204).send();
   });
 
   app.get('/transactions', { onRequest: verifyJwt }, async (request) => {

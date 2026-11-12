@@ -3,11 +3,12 @@ import { api } from '@/lib/api';
 import { money } from '@/lib/format';
 import { Mascote } from '@/components/mascote';
 import { BackLink, ButtonLink, Card } from '@/components/ui';
+import { IgnoreButton } from './ignore-button';
 
 const day = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' });
 
 export default async function AssinaturasPage() {
-  const { subscriptions, monthlyInCents, yearlyInCents } = await api<SubscriptionsResponse>('/subscriptions');
+  const { subscriptions, ignored, monthlyInCents, yearlyInCents } = await api<SubscriptionsResponse>('/subscriptions');
   const active = subscriptions.filter((s) => s.active);
   const stopped = subscriptions.filter((s) => !s.active);
   const cheapest = active.at(-1);
@@ -37,10 +38,11 @@ export default async function AssinaturasPage() {
 
           <Card className="flex flex-col divide-y divide-linha p-0">
             {active.map((s) => (
-              <div key={s.name} className="flex items-center justify-between gap-3 p-4">
-                <div className="flex min-w-0 flex-col">
+              <div key={s.key} className="flex items-center justify-between gap-3 p-4">
+                <div className="flex min-w-0 flex-col items-start">
                   <span className="font-semibold [overflow-wrap:anywhere]">{s.name}</span>
                   <span className="text-[13px] text-tinta-suave">Próxima por volta de {day(s.nextChargeAt)} · {s.installmentsLeft !== null ? `parcelado, ${s.installmentsLeft === 1 ? 'falta 1' : `faltam ${s.installmentsLeft}`}` : `já cobrou ${s.chargeCount}x`}</span>
+                  <IgnoreButton subscriptionKey={s.key} ignored={false} />
                 </div>
                 <span className="shrink-0 font-bold">{money(s.amountInCents)}</span>
               </div>
@@ -61,9 +63,23 @@ export default async function AssinaturasPage() {
           <h2 className="font-display text-lg font-extrabold">Pararam de cobrar</h2>
           <Card className="flex flex-col divide-y divide-linha p-0">
             {stopped.map((s) => (
-              <div key={s.name} className="flex items-center justify-between gap-3 p-4 text-tinta-suave">
+              <div key={s.key} className="flex items-center justify-between gap-3 p-4 text-tinta-suave">
                 <span className="min-w-0 [overflow-wrap:anywhere]">{s.name}</span>
                 <span className="shrink-0 text-sm">última em {day(s.lastChargedAt)}</span>
+              </div>
+            ))}
+          </Card>
+        </section>
+      )}
+
+      {ignored.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h2 className="font-display text-lg font-extrabold">Você disse que não é assinatura</h2>
+          <Card className="flex flex-col divide-y divide-linha p-0">
+            {ignored.map((s) => (
+              <div key={s.key} className="flex items-center justify-between gap-3 p-4 text-tinta-suave">
+                <span className="min-w-0 [overflow-wrap:anywhere]">{s.name} · {money(s.amountInCents)}</span>
+                <IgnoreButton subscriptionKey={s.key} ignored />
               </div>
             ))}
           </Card>

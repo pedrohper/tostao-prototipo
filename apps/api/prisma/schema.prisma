@@ -24,6 +24,7 @@ model User {
   rules        CategoryRule[]
   budgets      CategoryBudget[]
   lessons      LessonProgress[]
+  ignoredSubscriptions IgnoredSubscription[]
 
   @@map("users")
 }
@@ -139,4 +140,15 @@ model LessonProgress {
 
   @@id([userId, lessonId])
   @@map("lesson_progress")
+}
+
+// "Isso não é assinatura": a chave é a mesma que o detector usa pra agrupar (ex.: "CENTAURO")
+model IgnoredSubscription {
+  userId String @map("user_id")
+  key    String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, key])
+  @@map("ignored_subscriptions")
 }

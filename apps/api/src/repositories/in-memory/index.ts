@@ -2,7 +2,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, LessonProgress, Transaction, User } from '../../domain/entities.js';
 import type {
-  AccountsRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, LessonProgressRepository,
+  AccountsRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, IgnoredSubscriptionsRepository, LessonProgressRepository,
   Repositories, TransactionsRepository, UsersRepository,
 } from '../types.js';
 import { DEFAULT_CATEGORIES, DEFAULT_RULES } from '../../lib/defaults.js';
@@ -130,6 +130,15 @@ export class InMemoryLessonProgressRepository implements LessonProgressRepositor
   }
 }
 
+export class InMemoryIgnoredSubscriptionsRepository implements IgnoredSubscriptionsRepository {
+  items: { userId: string; key: string }[] = [];
+  async listKeys(userId: string) { return this.items.filter((i) => i.userId === userId).map((i) => i.key); }
+  async set(userId: string, key: string, ignored: boolean) {
+    this.items = this.items.filter((i) => !(i.userId === userId && i.key === key));
+    if (ignored) this.items.push({ userId, key });
+  }
+}
+
 export function makeInMemoryRepositories() {
   const transactions = new InMemoryTransactionsRepository();
   const accounts = new InMemoryAccountsRepository(transactions);
@@ -142,5 +151,6 @@ export function makeInMemoryRepositories() {
     transactions,
     budgets: new InMemoryBudgetsRepository(),
     lessons: new InMemoryLessonProgressRepository(),
+    ignoredSubscriptions: new InMemoryIgnoredSubscriptionsRepository(),
   } satisfies Repositories;
 }

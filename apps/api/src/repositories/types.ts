@@ -52,6 +52,11 @@ export interface LessonProgressRepository {
   markDone(userId: string, lessonId: string): Promise<void>;
 }
 
+export interface IgnoredSubscriptionsRepository {
+  listKeys(userId: string): Promise<string[]>;
+  set(userId: string, key: string, ignored: boolean): Promise<void>;
+}
+
 export type NewTransaction = Omit<Transaction, 'id' | 'createdAt'>;
 export interface TransactionsRepository {
   findById(id: string): Promise<Transaction | null>;
@@ -72,4 +77,5 @@ export type Repositories = {
   transactions: TransactionsRepository;
   budgets: BudgetsRepository;
   lessons: LessonProgressRepository;
+  ignoredSubscriptions: IgnoredSubscriptionsRepository;
 };

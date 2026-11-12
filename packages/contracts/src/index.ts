@@ -97,6 +97,7 @@ export type TransactionDetailResponse = { transaction: TransactionDTO; rulePatte
 
 // ---------- Assinaturas ----------
 export type SubscriptionDTO = {
+  key: string;
   name: string;
   amountInCents: number; // positivo: quanto custa por mês
   chargeCount: number;
@@ -105,7 +106,8 @@ export type SubscriptionDTO = {
   active: boolean; // false = não cobrou no último ciclo
   installmentsLeft: number | null; // plano parcelado: quantas parcelas faltam
 };
-export type SubscriptionsResponse = { subscriptions: SubscriptionDTO[]; monthlyInCents: number; yearlyInCents: number };
+export type SubscriptionsResponse = { subscriptions: SubscriptionDTO[]; ignored: SubscriptionDTO[]; monthlyInCents: number; yearlyInCents: number };
+export const ignoreSubscriptionBody = z.object({ key: z.string().min(1).max(200), ignored: z.boolean() });
 
 // ---------- Limites por categoria ----------
 export const setBudgetBody = z.object({
