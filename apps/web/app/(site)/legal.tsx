@@ -4,11 +4,11 @@ import s from './site.module.css';
 
 export const ATUALIZADO_EM = '12 de novembro de 2026';
 
-/** E-mail de contato do responsável. Vem do .env da web (CONTATO_EMAIL); sem ele, a página diz o que fazer pelo app. */
+/** E-mail de contato do responsável. Dá pra trocar pelo CONTATO_EMAIL no .env da web (lido no build). */
+const EMAIL = process.env.CONTATO_EMAIL || 'pedrohper.business@gmail.com';
+
 export function Contato() {
-  const email = process.env.CONTATO_EMAIL;
-  if (email) return <a href={`mailto:${email}`}>{email}</a>;
-  return <>o e-mail de contato que vamos publicar aqui ainda durante o beta (enquanto isso, tudo que dá pra fazer sozinho está no Perfil do app)</>;
+  return <a href={`mailto:${EMAIL}`}>{EMAIL}</a>;
 }
 
 export function LegalPage({ title, children }: { title: string; children: React.ReactNode }) {
