@@ -40,4 +40,9 @@ describe('detectInternalTransfers', () => {
     const cartao = tx('amazon', 23471, 30, 'Pagamento recebido');
     expect(detectInternalTransfers([boleto, cartao])).toEqual(new Set([boleto.id, cartao.id]));
   });
+  it('cofrinho do Mercado Pago (guardar e tirar) é interno', () => {
+    const guardou = tx('mp', -200000, 10, 'Dinheiro reservado Carteira de Motorista');
+    const tirou = tx('mp', 140000, 7, 'Dinheiro retirado Reserva de Emergencia');
+    expect(detectInternalTransfers([guardou, tirou])).toEqual(new Set([guardou.id, tirou.id]));
+  });
 });

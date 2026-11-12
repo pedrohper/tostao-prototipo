@@ -60,8 +60,11 @@ export function detectSubscriptions(transactions: Transaction[], now: Date): Sub
     // Parcela só entra se for x/12 (plano anual parcelado). Compra em 10x não é assinatura.
     const parcel = text.match(INSTALLMENT);
     if (parcel && parcel[2] !== '12') continue;
-    const key = subscriptionKey(t.description);
+    let key = subscriptionKey(t.description);
     if (key.length < 3) continue;
+    // Duas séries do mesmo plano parcelado (ex.: renovou o Prime) não podem se misturar:
+    // separa pelo mês em que a série começou (mês da cobrança menos o número da parcela).
+    if (parcel) key += `#${t.occurredAt.getUTCFullYear() * 12 + t.occurredAt.getUTCMonth() - Number(parcel[1])}`;
     groups.set(key, [...(groups.get(key) ?? []), t]);
   }
 

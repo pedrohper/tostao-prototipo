@@ -44,6 +44,13 @@ describe('detectSubscriptions', () => {
     ])).toEqual([['GLOBO*Globoplay', 2190, true, 5]]);
   });
 
+  it('duas séries do mesmo plano anual não se misturam', () => {
+    expect(names([
+      tx('Amazon Prime 1/12', -1390, '2026-08-03'), tx('Amazon Prime 2/12', -1390, '2026-08-14'),
+      tx('AMAZON PRIME BR 5/12', -1390, '2026-09-05'), tx('AMAZON PRIME BR 6/12', -1390, '2026-10-05'), tx('AMAZON PRIME BR 7/12', -1390, '2026-11-05'),
+    ])).toEqual([['AMAZON PRIME BR', 1390, true, 5]]);
+  });
+
   it('compra parcelada que não é anual fica de fora', () => {
     expect(names([tx('LOJA X PARC 02/10', -10000, '2026-09-10'), tx('LOJA X PARC 03/10', -10000, '2026-10-10')])).toEqual([]);
   });
