@@ -12,7 +12,8 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx --env-file=.env prisma/seed.ts",
     "sync": "tsx --env-file=.env src/jobs/run-sync-once.ts",
-    "db:deploy": "prisma migrate deploy"
+    "db:deploy": "prisma migrate deploy",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@fastify/cors": "11.4.1",

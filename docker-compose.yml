@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: tostao
       POSTGRES_DB: tostao
     ports:
-      - "127.0.0.1:5432:5432" # só acessível de dentro do servidor
+      - "127.0.0.1:5433:5432" # só acessível de dentro do servidor
     volumes:
       - tostao-db:/var/lib/postgresql/data
 volumes:
