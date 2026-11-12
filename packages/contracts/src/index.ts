@@ -165,3 +165,56 @@ export const importStatementBody = z.object({
   isCard: z.boolean().optional(),
 });
 export type ImportResponse = { importedCount: number; skipped: number; format: 'ofx' | 'csv'; kind: 'BANK' | 'CREDIT'; accountName: string; from: string; to: string };
+
+// ---------- Renda, contas fixas e previsão ----------
+const cents = z.number().int().min(0).max(100_000_000);
+const day = z.number().int().min(1).max(31);
+export const financialPlanBody = z.object({
+  salary: z.object({
+    amountInCents: cents,
+    payday: day,
+    varies: z.boolean().default(false),
+    bank: z.string().trim().max(60).nullable().default(null),
+    /** Padrão da descrição no extrato (ex.: "TRANSF SALDO C/SAL P/CC"). */
+    pattern: z.string().trim().max(120).nullable().default(null),
+  }).nullable(),
+  otherIncomes: z.array(z.object({
+    name: z.string().trim().min(1).max(60),
+    amountInCents: cents,
+    day: day.nullable().default(null),
+    countsAsIncome: z.boolean(),
+    pattern: z.string().trim().max(120).nullable().default(null),
+  })).max(10).default([]),
+  fixedExpenses: z.array(z.object({ name: z.string().trim().min(1).max(60), amountInCents: cents, day })).max(20).default([]),
+  goal: z.object({
+    kind: z.enum(['reserva', 'viagem', 'sair-do-vermelho', 'outro']),
+    label: z.string().trim().max(60).nullable().default(null),
+    amountInCents: cents.nullable().default(null),
+    deadline: z.string().regex(/^\d{4}-\d{2}$/).nullable().default(null),
+  }).nullable().default(null),
+});
+export type FinancialPlan = z.infer<typeof financialPlanBody>;
+export type FinancialPlanResponse = { plan: FinancialPlan | null };
+
+/** Entradas que se repetem no extrato, pra pessoa dizer o que é salário e o que é repasse. */
+export type IncomeSuggestion = {
+  pattern: string;
+  sample: string;
+  bank: string | null;
+  monthlyAvgInCents: number;
+  months: number;
+  hits: { date: string; amountInCents: number }[];
+  countsAsIncome: boolean;
+};
+export type IncomeSuggestionsResponse = { suggestions: IncomeSuggestion[] };
+
+export type ForecastMonth = {
+  month: string;
+  incomeInCents: number;
+  fixedInCents: number;
+  subscriptionsInCents: number;
+  installmentsInCents: number;
+  dailyInCents: number;
+  leftInCents: number;
+};
+export type ForecastResponse = { hasPlan: boolean; months: ForecastMonth[] };

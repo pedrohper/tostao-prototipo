@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { BudgetsResponse, LessonProgressResponse, MonthSummaryResponse, ProfileResponse, SubscriptionsResponse } from '@tostao/contracts';
+import type { BudgetsResponse, ForecastResponse, LessonProgressResponse, MonthSummaryResponse, ProfileResponse, SubscriptionsResponse } from '@tostao/contracts';
 import { NO_PROGRESS } from '@/lib/xp';
 import { BudgetBar } from '@/components/budget-bar';
 import { api } from '@/lib/api';
@@ -9,12 +9,13 @@ import { ButtonLink, Card, CardIcon, StreakChip } from '@/components/ui';
 
 export default async function InicioPage() {
   const month = currentMonth();
-  const [me, s, subs, limits, progress] = await Promise.all([
+  const [me, s, subs, limits, progress, forecast] = await Promise.all([
     api<ProfileResponse>('/me'),
     api<MonthSummaryResponse>(`/summary?month=${month}`),
     api<SubscriptionsResponse>('/subscriptions').catch(() => null),
     api<BudgetsResponse>(`/budgets?month=${month}`).catch(() => ({ budgets: [] })),
     api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
+    api<ForecastResponse>('/forecast').catch(() => null),
   ]);
   const estourou = limits.budgets.find((b) => b.spentInCents > b.limitInCents);
   const activeSubs = subs?.subscriptions.filter((x) => x.active).length ?? 0;
@@ -135,6 +136,33 @@ export default async function InicioPage() {
               ))}
             </div>
           </section>
+
+          {forecast && (() => {
+            const [prox, depois] = forecast.months;
+            const chevron = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-tinta-suave"><path d="M9 18l6-6-6-6" /></svg>;
+            if (!forecast.hasPlan || !prox) {
+              return (
+                <Link href="/renda" className="flex items-center gap-2 rounded-2xl bg-amarelo-claro py-3 pr-3.5 pl-1.5 text-tinta no-underline">
+                  <Mascote pose="pensando" size={64} alt="Tostão pensando" />
+                  <p className="grow text-[15px] leading-[21px]"><b>Quanto entra por mês?</b> Me conta sua renda e as contas fixas que eu prevejo os próximos meses.</p>
+                  {chevron}
+                </Link>
+              );
+            }
+            const nome = (m: string) => monthName(m);
+            return (
+              <Link href="/previsao" className="flex items-center gap-3 rounded-2xl border border-linha bg-cartao p-3.5 text-tinta no-underline">
+                <div className="flex grow flex-col gap-0.5">
+                  <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">Próximos meses</span>
+                  <span className="text-[15px] leading-[21px]">
+                    {nome(prox.month).charAt(0).toUpperCase() + nome(prox.month).slice(1)}: {prox.leftInCents >= 0 ? <>sobram uns <b>{money(prox.leftInCents)}</b>.</> : <>faltam uns <b>{money(-prox.leftInCents)}</b>.</>}
+                    {depois && depois.leftInCents < Math.min(0, prox.leftInCents) ? ` ${nome(depois.month).charAt(0).toUpperCase() + nome(depois.month).slice(1)} aperta mais.` : ''}
+                  </span>
+                </div>
+                {chevron}
+              </Link>
+            );
+          })()}
 
           {cartoes.length > 0 && (
             <section className="flex flex-col gap-3">

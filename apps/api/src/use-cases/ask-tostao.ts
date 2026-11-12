@@ -5,6 +5,7 @@ import { currentMonth } from '../lib/month.js';
 import { GetMonthSummaryUseCase } from './get-month-summary.js';
 import { ListSubscriptionsUseCase } from './list-subscriptions.js';
 import { GetBudgetsUseCase } from './budgets.js';
+import { ForecastUseCase } from './financial-plan.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const HISTORY = 12; // mensagens anteriores que vão junto (memória curta da conversa)
@@ -70,13 +71,15 @@ export class AskTostaoUseCase {
   private async snapshot(userId: string, now: Date) {
     const month = currentMonth(now);
     const summary = new GetMonthSummaryUseCase(this.repos);
-    const [cur, prev, subs, budgets, categories, recent] = await Promise.all([
+    const [cur, prev, subs, budgets, categories, recent, plan, forecast] = await Promise.all([
       summary.execute({ userId, month }),
       summary.execute({ userId, month: prevMonth(month) }),
       new ListSubscriptionsUseCase(this.repos, () => now).execute({ userId }),
       new GetBudgetsUseCase(this.repos).execute({ userId, month }),
       this.repos.categories.list(userId),
       this.repos.transactions.findManyInRange(userId, new Date(now.getTime() - 45 * DAY), new Date(now.getTime() + DAY)),
+      this.repos.plans.get(userId),
+      new ForecastUseCase(this.repos, () => now).execute({ userId }),
     ]);
     const catName = new Map(categories.map((c) => [c.id, c.name]));
     const lines: string[] = [];
@@ -85,6 +88,17 @@ export class AskTostaoUseCase {
       if (s.byCategory.length) lines.push(`  Gastos por categoria: ${s.byCategory.slice(0, 10).map((c) => `${c.name} ${brl(c.totalInCents)}`).join('; ')}.`);
     };
     if (cur.balanceInCents !== null) lines.push(`Saldo nas contas agora: ${brl(cur.balanceInCents)} (${cur.accounts.map((a) => `${a.name} ${brl(a.balanceInCents)}`).join('; ')}).`);
+    if (plan) {
+      const p: string[] = [];
+      if (plan.salary) p.push(`salário líquido ${brl(plan.salary.amountInCents)} por mês, cai por volta do dia ${plan.salary.payday}${plan.salary.bank ? ` no ${plan.salary.bank}` : ''}${plan.salary.varies ? ' (o valor varia e às vezes vem em partes)' : ''}`);
+      for (const i of plan.otherIncomes) p.push(`${i.name}: ${brl(i.amountInCents)}${i.day ? ` por volta do dia ${i.day}` : ''} (${i.countsAsIncome ? 'conta como renda' : 'só repassa, não é renda dela'})`);
+      lines.push(`O que a pessoa contou: ${p.join('; ') || 'nada sobre renda ainda'}.`);
+      if (plan.fixedExpenses.length) lines.push(`Contas fixas fora do cartão: ${plan.fixedExpenses.map((f) => `${f.name} ${brl(f.amountInCents)} dia ${f.day}`).join('; ')}.`);
+      if (plan.goal) lines.push(`Objetivo: ${plan.goal.label ?? plan.goal.kind}${plan.goal.amountInCents ? ` de ${brl(plan.goal.amountInCents)}` : ''}${plan.goal.deadline ? ` até ${plan.goal.deadline}` : ''}.`);
+      if (forecast.months.length) lines.push(`Previsão (estimativa: renda − contas fixas − assinaturas − parcelas − média do dia a dia): ${forecast.months.map((m) => `${m.month} sobra ${brl(m.leftInCents)} (parcelas ${brl(m.installmentsInCents)}, dia a dia ${brl(m.dailyInCents)})`).join('; ')}.`);
+    } else {
+      lines.push('A pessoa ainda não contou quanto ganha nem as contas fixas. Se perguntarem de previsão ou "dá pra comprar", peça pra preencher "Renda e contas fixas" no Perfil.');
+    }
     month_('Mês atual até hoje', cur);
     month_('Mês passado', prev);
     if (cur.uncategorizedCount) lines.push(`${cur.uncategorizedCount} transações deste mês estão sem categoria.`);

@@ -40,7 +40,7 @@ function Pensando() {
   );
 }
 
-export function ChatClient({ initial, firstName, subtitle }: { initial: ChatMessageDTO[]; firstName: string; subtitle: string }) {
+export function ChatClient({ initial, firstName, subtitle, askIncome = false }: { initial: ChatMessageDTO[]; firstName: string; subtitle: string; askIncome?: boolean }) {
   const [messages, setMessages] = useState(initial);
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +79,13 @@ export function ChatClient({ initial, firstName, subtitle }: { initial: ChatMess
           <p className="text-xs text-tinta-suave">{subtitle}</p>
         </div>
       </div>
+
+      {askIncome && (
+        <Link href="/renda" className="flex items-center gap-2 rounded-2xl bg-amarelo-claro px-3.5 py-3 text-[13px] leading-[19px] text-tinta no-underline">
+          <span className="grow">Me conta quanto você ganha e suas contas fixas: aí eu respondo &quot;dá pra comprar?&quot; de verdade.</span>
+          <span className="shrink-0 font-semibold text-laranja-texto">Contar</span>
+        </Link>
+      )}
 
       <div className="flex flex-1 flex-col justify-end gap-2.5" aria-live="polite">
         {messages.length === 0 && (

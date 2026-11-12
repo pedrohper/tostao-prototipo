@@ -23,6 +23,7 @@ import { GetMonthSummaryUseCase } from './get-month-summary.js';
 import { GetTransactionUseCase } from './get-transaction.js';
 import { ListSubscriptionsUseCase } from './list-subscriptions.js';
 import { GetBudgetsUseCase, SetBudgetUseCase } from './budgets.js';
+import { ForecastUseCase, SaveFinancialPlanUseCase, SuggestIncomeUseCase } from './financial-plan.js';
 
 export type Deps = { repos: Repositories; bank: BankGateway; ai?: AiGateway; chatDailyLimit?: number };
 
@@ -48,6 +49,10 @@ export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), chatDailyL
     setSubscriptionIgnored: { execute: ({ userId, key, ignored }: { userId: string; key: string; ignored: boolean }) => repos.ignoredSubscriptions.set(userId, key, ignored) },
     getBudgets: new GetBudgetsUseCase(repos),
     setBudget: new SetBudgetUseCase(repos),
+    getPlan: { execute: async ({ userId }: { userId: string }) => ({ plan: await repos.plans.get(userId) }) },
+    savePlan: new SaveFinancialPlanUseCase(repos),
+    suggestIncome: new SuggestIncomeUseCase(repos),
+    forecast: new ForecastUseCase(repos),
     listLessonProgress: new ListLessonProgressUseCase(repos),
     markLessonDone: { execute: ({ userId, lessonId }: { userId: string; lessonId: string }) => repos.lessons.markDone(userId, lessonId) },
     listCategories: { execute: async ({ userId }: { userId?: string }) => ({ categories: await repos.categories.list(userId) }) },

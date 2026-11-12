@@ -8,6 +8,8 @@ import { HideAccountButton } from '../carteira/hide-account-button';
 import { NO_PROGRESS, xpFrom } from '@/lib/xp';
 
 const atalhos = [
+  { href: '/renda', label: 'Renda e contas fixas' },
+  { href: '/previsao', label: 'Próximos meses' },
   { href: '/categorias', label: 'Minhas categorias' },
   { href: '/limites', label: 'Limites do mês' },
   { href: '/fechamento', label: 'Fechamento do mês' },

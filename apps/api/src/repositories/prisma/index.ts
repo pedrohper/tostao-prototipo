@@ -1,9 +1,10 @@
 // Repositórios de verdade, no Postgres via Prisma.
 // Repare que a assinatura é a mesma dos em memória: o use case nem percebe a troca.
-import type { PrismaClient } from '@prisma/client';
+import type { Prisma, PrismaClient } from '@prisma/client';
 import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, Transaction, Invite, PasswordReset, ChatMessage } from '../../domain/entities.js';
+import type { FinancialPlan } from '@tostao/contracts';
 import type {
-  AccountData, AccountsRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, ChatMessagesRepository, IgnoredSubscriptionsRepository, InvitesRepository, LessonProgressRepository, PasswordResetsRepository,
+  AccountData, AccountsRepository, FinancialPlansRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, ChatMessagesRepository, IgnoredSubscriptionsRepository, InvitesRepository, LessonProgressRepository, PasswordResetsRepository,
   NewTransaction, NewUser, Repositories, TransactionsRepository, UsersRepository,
 } from '../types.js';
 
@@ -150,6 +151,18 @@ class PrismaChatMessagesRepository implements ChatMessagesRepository {
   countUserSince(userId: string, since: Date) { return this.db.chatMessage.count({ where: { userId, role: 'user', createdAt: { gte: since } } }); }
 }
 
+class PrismaFinancialPlansRepository implements FinancialPlansRepository {
+  constructor(private readonly db: PrismaClient) {}
+  async get(userId: string) {
+    const row = await this.db.financialPlan.findUnique({ where: { userId } });
+    return row ? (row.data as unknown as FinancialPlan) : null;
+  }
+  async save(userId: string, plan: FinancialPlan) {
+    const data = plan as unknown as Prisma.InputJsonObject;
+    await this.db.financialPlan.upsert({ where: { userId }, create: { userId, data }, update: { data } });
+  }
+}
+
 export function makePrismaRepositories(db: PrismaClient): Repositories {
   return {
     users: new PrismaUsersRepository(db),
@@ -164,5 +177,6 @@ export function makePrismaRepositories(db: PrismaClient): Repositories {
     invites: new PrismaInvitesRepository(db),
     passwordResets: new PrismaPasswordResetsRepository(db),
     chat: new PrismaChatMessagesRepository(db),
+    plans: new PrismaFinancialPlansRepository(db),
   };
 }

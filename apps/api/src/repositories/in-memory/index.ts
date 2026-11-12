@@ -1,8 +1,9 @@
 // Repositórios em memória: arrays simples. Usados nos testes e pra rodar sem Postgres.
 import { randomUUID } from 'node:crypto';
 import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, LessonProgress, Transaction, User, Invite, PasswordReset, ChatMessage } from '../../domain/entities.js';
+import type { FinancialPlan } from '@tostao/contracts';
 import type {
-  AccountData, AccountsRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, ChatMessagesRepository, IgnoredSubscriptionsRepository, InvitesRepository, LessonProgressRepository, PasswordResetsRepository,
+  AccountData, AccountsRepository, FinancialPlansRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, ChatMessagesRepository, IgnoredSubscriptionsRepository, InvitesRepository, LessonProgressRepository, PasswordResetsRepository,
   Repositories, TransactionsRepository, UsersRepository,
 } from '../types.js';
 import { DEFAULT_CATEGORIES, DEFAULT_RULES } from '../../lib/defaults.js';
@@ -197,6 +198,12 @@ export class InMemoryChatMessagesRepository implements ChatMessagesRepository {
   async countUserSince(userId: string, since: Date) { return this.items.filter((m) => m.userId === userId && m.role === 'user' && m.createdAt >= since).length; }
 }
 
+export class InMemoryFinancialPlansRepository implements FinancialPlansRepository {
+  items = new Map<string, FinancialPlan>();
+  async get(userId: string) { return this.items.get(userId) ?? null; }
+  async save(userId: string, plan: FinancialPlan) { this.items.set(userId, plan); }
+}
+
 export function makeInMemoryRepositories() {
   const transactions = new InMemoryTransactionsRepository();
   const accounts = new InMemoryAccountsRepository(transactions);
@@ -213,5 +220,6 @@ export function makeInMemoryRepositories() {
     invites: new InMemoryInvitesRepository(),
     passwordResets: new InMemoryPasswordResetsRepository(),
     chat: new InMemoryChatMessagesRepository(),
+    plans: new InMemoryFinancialPlansRepository(),
   } satisfies Repositories;
 }

@@ -30,6 +30,7 @@ model User {
   chatMessages   ChatMessage[]
   ignoredSubscriptions IgnoredSubscription[]
   categories   Category[]
+  plan         FinancialPlan?
 
   @@map("users")
 }
@@ -205,4 +206,15 @@ model ChatMessage {
 
   @@index([userId, createdAt])
   @@map("chat_messages")
+}
+
+// Renda, outras entradas, contas fixas e objetivo (o onboarding pergunta). JSON validado pelo contrato.
+model FinancialPlan {
+  userId    String   @id @map("user_id")
+  data      Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("financial_plans")
 }

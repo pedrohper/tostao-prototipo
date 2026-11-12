@@ -19,7 +19,8 @@ export function ConnectPanel({ widget }: { widget: boolean }) {
     return (
       <div className="flex flex-col gap-3">
         <p className="rounded-2xl bg-menta-clara px-4 py-3 text-[15px] font-semibold">{ok}</p>
-        <Link href="/inicio" className="flex h-[54px] items-center justify-center rounded-full bg-laranja font-bold text-[#1E1B18] no-underline">Ver meu mês</Link>
+        <Link href="/renda" className="flex h-[54px] items-center justify-center rounded-full bg-tinta font-semibold text-papel no-underline">Agora me conta sua renda</Link>
+        <Link href="/inicio" className="flex h-11 items-center justify-center text-[15px] font-semibold text-tinta no-underline">Depois, ver meu mês</Link>
       </div>
     );
   }
