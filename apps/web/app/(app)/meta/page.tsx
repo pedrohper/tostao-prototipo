@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { money, monthName } from '@/lib/format';
 import { Mascote } from '@/components/mascote';
 import { BackLink } from '@/components/ui';
+import { Confete } from '@/components/confete';
 import { DepositForm, GoalForm } from './forms';
 import { deleteGoal } from './actions';
 
@@ -55,13 +56,14 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
           {g.amountInCents && <span className="text-sm text-tinta-suave tabular-nums">de {money(g.amountInCents)}</span>}
         </div>
         <div className="h-3 overflow-hidden rounded-full bg-papel-2" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`${pct}% da meta`}>
-          <div className="h-full rounded-full bg-menta" style={{ width: `${pct}%` }} />
+          <div className="bar-fill h-full rounded-full bg-menta" style={{ width: `${pct}%` }} />
         </div>
         <span className="text-[13px] font-semibold text-tinta-suave">{pct}%{g.deadline ? ` · prazo ${prazo(g.deadline)}` : ''}</span>
       </div>
 
       {g.reached ? (
         <div className="flex items-center gap-1.5 rounded-2xl bg-menta-clara py-3 pr-3.5 pl-1.5">
+          <Confete />
           <Mascote pose="comemorando" size={76} alt="Tostão comemorando" />
           <p className="text-[15px] leading-[21px]"><b>Meta batida!</b> Você juntou {money(g.savedInCents)}. Bora pensar na próxima?</p>
         </div>

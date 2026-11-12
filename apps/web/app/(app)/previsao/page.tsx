@@ -58,9 +58,9 @@ export default async function PrevisaoPage() {
             <div key={m.month} className="flex flex-1 flex-col items-center gap-1.5">
               <span className={`text-[13px] font-bold tabular-nums ${neg ? 'text-vermelho-texto' : 'text-verde-texto'}`}>{neg ? '− ' : '+ '}{money(Math.abs(m.leftInCents))}</span>
               <div className="flex h-[110px] w-full flex-col">
-                <div className="flex h-[55px] items-end">{!neg && <div className="w-full rounded-[10px] bg-menta" style={{ height: h }} />}</div>
+                <div className="flex h-[55px] items-end">{!neg && <div className="bar-up w-full rounded-[10px] bg-menta" style={{ height: h }} />}</div>
                 <div className="h-px w-full bg-linha" />
-                <div className="flex h-[55px] items-start">{neg && <div className="w-full rounded-[10px] bg-[#B42318]" style={{ height: h }} />}</div>
+                <div className="flex h-[55px] items-start">{neg && <div className="bar-down w-full rounded-[10px] bg-[#B42318]" style={{ height: h }} />}</div>
               </div>
               <span className="text-[13px] font-semibold">{short(m.month)}</span>
             </div>

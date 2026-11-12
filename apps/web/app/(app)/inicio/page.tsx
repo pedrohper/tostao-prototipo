@@ -131,7 +131,7 @@ export default async function InicioPage() {
               {top.slice(0, 5).map((c, i) => (
                 <div key={c.categoryId} className="flex flex-col gap-1.5">
                   <div className="flex justify-between text-[15px] font-semibold"><span>{c.name}</span><span className="tabular-nums">{money(c.totalInCents)}</span></div>
-                  <div className="h-2.5 rounded-full bg-papel-2"><div className={`h-full rounded-full ${i === 0 ? 'bg-laranja' : 'bg-tinta'}`} style={{ width: `${Math.max(2, (c.totalInCents / max) * 100)}%` }} /></div>
+                  <div className="h-2.5 rounded-full bg-papel-2"><div className={`bar-fill h-full rounded-full ${i === 0 ? 'bg-laranja' : 'bg-tinta'}`} style={{ width: `${Math.max(2, (c.totalInCents / max) * 100)}%` }} /></div>
                 </div>
               ))}
             </div>
@@ -173,7 +173,7 @@ export default async function InicioPage() {
                   <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">Meta · {g.label}</span>
                   <span className="text-[13px] font-semibold tabular-nums">{pct}%</span>
                 </div>
-                <div className="h-2.5 overflow-hidden rounded-full bg-papel-2"><div className="h-full rounded-full bg-menta" style={{ width: `${pct}%` }} /></div>
+                <div className="h-2.5 overflow-hidden rounded-full bg-papel-2"><div className="bar-fill h-full rounded-full bg-menta" style={{ width: `${pct}%` }} /></div>
                 <span className="text-[13px] text-tinta-suave">
                   {g.reached ? 'Meta batida! 🎉' : `${money(g.savedInCents)}${g.amountInCents ? ` de ${money(g.amountInCents)}` : ''}${g.monthlyNeededInCents !== null ? ` · guardar ${money(g.monthlyNeededInCents)}/mês` : ''}`}
                 </span>
@@ -202,7 +202,7 @@ export default async function InicioPage() {
                       <span className="text-[17px] font-bold tabular-nums">{money(fatura)}</span>
                       {uso !== null && (
                         <div className="h-1.5 rounded-full bg-papel-2" title={`${Math.round(uso)}% do limite`}>
-                          <div className={`h-full rounded-full ${i === 0 ? 'bg-laranja' : 'bg-tinta'}`} style={{ width: `${Math.max(2, uso)}%` }} />
+                          <div className={`bar-fill h-full rounded-full ${i === 0 ? 'bg-laranja' : 'bg-tinta'}`} style={{ width: `${Math.max(2, uso)}%` }} />
                         </div>
                       )}
                       <span className="text-xs font-medium text-tinta-suave">{c.dueDate ? `Fatura vence ${shortDate(c.dueDate)}` : 'Fatura atual'}</span>
