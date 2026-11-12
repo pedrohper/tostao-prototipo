@@ -2,16 +2,18 @@ import Link from 'next/link';
 
 const base = 'flex items-center justify-center rounded-full font-semibold transition active:translate-y-px disabled:opacity-50';
 
-export function ButtonLink({ href, children, variant = 'primary' }: { href: string; children: React.ReactNode; variant?: 'primary' | 'outline' | 'dark' }) {
+export function ButtonLink({ href, children, variant = 'primary' }: { href: string; children: React.ReactNode; variant?: 'primary' | 'outline' | 'dark' | 'laranja' }) {
   return <Link href={href} className={`${base} ${variants[variant]}`}>{children}</Link>;
 }
 
-export function Button({ children, variant = 'primary', ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'outline' | 'dark' }) {
+export function Button({ children, variant = 'primary', ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'outline' | 'dark' | 'laranja' }) {
   return <button {...props} className={`${base} w-full ${variants[variant]} ${props.className ?? ''}`}>{children}</button>;
 }
 
 const variants = {
-  primary: 'h-[54px] bg-laranja text-[#1E1B18] text-base font-bold shadow-[0_2px_0_rgba(30,27,24,0.14)]',
+  // Igual ao artefato: botão principal é tinta; laranja só no "Conectar meu banco" e no desafio da lição.
+  primary: 'h-[54px] bg-tinta text-papel text-base',
+  laranja: 'h-[54px] bg-laranja text-[#1E1B18] text-base font-bold shadow-[0_2px_0_rgba(30,27,24,0.14)]',
   outline: 'h-[50px] border-[1.5px] border-tinta text-tinta text-[15px]',
   dark: 'h-[54px] bg-tinta text-papel text-base',
 };

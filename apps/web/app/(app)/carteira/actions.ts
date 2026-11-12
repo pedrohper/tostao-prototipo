@@ -28,6 +28,7 @@ export async function createManual(_: ActionState, form: FormData): Promise<Acti
     kind: form.get('kind'),
     occurredAt: form.get('occurredAt'),
     categoryId: form.get('categoryId') || null,
+    accountId: form.get('accountId') || null,
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
   try {

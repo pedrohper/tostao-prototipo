@@ -2,19 +2,23 @@ import Link from 'next/link';
 import { modules, MODULE_COLORS } from '@/lib/lessons';
 import { Mascote } from '@/components/mascote';
 import { Eyebrow, StreakChip } from '@/components/ui';
-import type { LessonProgressResponse, MonthSummaryResponse } from '@tostao/contracts';
+import type { BattlesResponse, LessonProgressResponse, MonthSummaryResponse, TribunalResponse } from '@tostao/contracts';
 import { api } from '@/lib/api';
 import { currentMonth } from '@/lib/format';
 import { NO_PROGRESS, xpFrom } from '@/lib/xp';
 import { LegacyProgress } from './legacy-progress';
 
 export default async function AprenderPage() {
-  const [{ done, streakDays, doneToday }, summary] = await Promise.all([
+  const [{ done, streakDays, doneToday, bonusXp = 0 }, summary, tribunal, battles] = await Promise.all([
     api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
     api<MonthSummaryResponse>(`/summary?month=${currentMonth()}`).catch(() => null),
+    api<TribunalResponse>('/tribunal').catch(() => null),
+    api<BattlesResponse>('/battles').catch(() => null),
   ]);
+  const tig = battles?.tigrinho;
+  const batalhaLinha = !tig ? '30 dias sem bet' : tig.status === 'ativa' ? `Dia ${tig.day} de ${tig.totalDays}` : tig.status === 'vencida' ? (battles?.urubu.status === 'vencida' ? 'Dois vilões vencidos' : 'Próximo: Urubu do Pix') : 'Bora de novo?';
   const pendentes = summary?.uncategorizedCount ?? 0;
-  const { xp } = xpFrom(done.length);
+  const { xp } = xpFrom(done.length, bonusXp);
   // Módulo atual = o primeiro que ainda tem lição por fazer
   const atualIdx = modules.findIndex((m) => m.lessons.some((l) => !done.includes(l.id)));
   const atual = atualIdx >= 0 ? modules[atualIdx] : null;
@@ -23,7 +27,7 @@ export default async function AprenderPage() {
   const proximos = atualIdx >= 0 ? modules.slice(atualIdx + 1, atualIdx + 4) : [];
 
   return (
-    <div className="flex flex-col gap-3.5">
+    <div className="flex flex-col gap-3.5 pt-9 md:pt-0">
       <LegacyProgress saved={done} />
       <div className="flex items-end justify-between">
         <h1 className="font-display text-[34px] leading-[38px] font-extrabold">Aprender</h1>
@@ -35,7 +39,7 @@ export default async function AprenderPage() {
 
       <div className="flex items-center gap-1.5 rounded-[18px] border border-linha bg-cartao py-3 pr-3.5 pl-1.5">
         <Mascote pose="professor" size={84} alt="Tostão professor" />
-        <div className="flex min-w-0 grow flex-col gap-1.5">
+        <div className="flex min-w-0 grow flex-col gap-[9px]">
           <Eyebrow>Missões de hoje</Eyebrow>
           <Missao feita={doneToday > 0} href={proxima ? `/aprender/${proxima.id}` : '/aprender/trilha'}>Fazer 1 lição</Missao>
           <Missao feita={pendentes === 0} href="/carteira?filtro=pendentes">
@@ -53,7 +57,7 @@ export default async function AprenderPage() {
           </div>
           <div className="flex items-center justify-between gap-3 rounded-[14px] bg-cartao py-2.5 pr-2.5 pl-3.5">
             <div className="flex min-w-0 flex-col">
-              <span className="text-xs text-tinta-suave">Próxima · 2 min</span>
+              <span className="text-xs text-tinta-suave">Próxima · 2 min · usa seus gastos</span>
               <span className="text-[15px] font-bold">{proxima.title}</span>
             </div>
             <Link href={`/aprender/${proxima.id}`} className="flex h-[38px] shrink-0 items-center rounded-full bg-tinta px-4 text-sm font-semibold text-papel no-underline">
@@ -67,6 +71,24 @@ export default async function AprenderPage() {
           <p className="text-[15px] leading-[21px]"><b>Trilha completa!</b> Você fez todas as lições. Pode rever qualquer uma na trilha.</p>
         </div>
       )}
+
+      <section className="flex flex-col gap-2">
+        <Eyebrow>Jogos da semana</Eyebrow>
+        <div className="grid grid-cols-2 gap-2.5">
+          <Link href="/tribunal" className="flex flex-col gap-1 rounded-[18px] bg-azul p-3 text-[#1E1B18] no-underline">
+            <Mascote pose="pensando" size={56} alt="" />
+            <span className="text-[11px] font-bold tracking-[0.08em] text-[#6B635A] uppercase">Tribunal</span>
+            <span className="text-[15px] leading-[19px] font-bold">{tribunal?.case.title ?? 'O caso da semana'}</span>
+            <span className="text-xs text-[#6B635A]">{tribunal?.myVote != null ? 'Você já votou · ver veredito' : 'Vota e ganha +20 XP'}</span>
+          </Link>
+          <Link href="/batalha" className="flex flex-col gap-1 rounded-[18px] bg-amarelo-claro p-3 text-[#1E1B18] no-underline">
+            <Mascote pose="caramelo-bravo" size={56} alt="" />
+            <span className="text-[11px] font-bold tracking-[0.08em] text-[#6B635A] uppercase">Batalha</span>
+            <span className="text-[15px] leading-[19px] font-bold">{tig?.status === 'vencida' ? 'Tigrinho derrotado' : 'Contra o Tigrinho'}</span>
+            <span className="text-xs text-[#6B635A]">{batalhaLinha}</span>
+          </Link>
+        </div>
+      </section>
 
       <section className="flex flex-col">
         <div className="flex min-h-9 items-center justify-between">
@@ -99,11 +121,14 @@ export default async function AprenderPage() {
 
 function Missao({ feita, href, children }: { feita: boolean; href: string; children: React.ReactNode }) {
   return (
-    <Link href={href} className="flex min-h-8 items-center gap-2 text-[15px] text-tinta no-underline">
-      <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-[1.5px] ${feita ? 'border-menta bg-menta text-[#1E1B18]' : 'border-linha'}`} aria-hidden="true">
-        {feita && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5L20 7" /></svg>}
+    <Link href={href} className="flex flex-col gap-1 text-tinta no-underline">
+      <span className="flex justify-between text-[13px] font-semibold">
+        <span className={feita ? 'text-tinta-suave line-through' : ''}>{children}</span>
+        <span>{feita ? '1/1' : '0/1'}</span>
       </span>
-      <span className={feita ? 'text-tinta-suave line-through' : 'font-semibold'}>{children}</span>
+      <span className="h-2 rounded-full bg-papel-2" aria-hidden="true">
+        <span className={`bar-fill block h-full rounded-full ${feita ? 'w-full bg-menta' : 'w-[4%] bg-tinta'}`} />
+      </span>
       <span className="sr-only">{feita ? '(feita)' : '(pendente)'}</span>
     </Link>
   );

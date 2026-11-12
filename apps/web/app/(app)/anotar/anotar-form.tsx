@@ -7,11 +7,19 @@ import { createManual, type ActionState } from '../carteira/actions';
 
 const field = 'h-12 rounded-xl border-[1.5px] border-linha bg-cartao px-4 text-base text-tinta outline-none focus:border-tinta';
 
-export function AnotarForm({ categories, today }: { categories: CategoryDTO[]; today: string }) {
+// As 6 que mais aparecem no dia a dia (igual ao artefato). O resto fica atrás do "Mais".
+const PRINCIPAIS = ['delivery', 'mercado', 'transporte', 'role', 'casa', 'outros'];
+
+export function AnotarForm({ categories, contas, today }: { categories: CategoryDTO[]; contas: { id: string; name: string; auto: boolean }[]; today: string }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(createManual, {});
   const [kind, setKind] = useState<'saida' | 'entrada'>('saida');
   const [cat, setCat] = useState<string | null>(null);
-  const options = categories.filter((c) => c.kind === kind);
+  const [todas, setTodas] = useState(false);
+  const [conta, setConta] = useState<string | null>(null);
+  const doTipo = categories.filter((c) => c.kind === kind);
+  const principais = doTipo.filter((c) => PRINCIPAIS.includes(c.id)).sort((a, b) => PRINCIPAIS.indexOf(a.id) - PRINCIPAIS.indexOf(b.id));
+  const options = todas || kind === 'entrada' || principais.length < 3 ? doTipo : [...principais, ...doTipo.filter((c) => c.id === cat && !PRINCIPAIS.includes(c.id))];
+  const escolhida = contas.find((c) => c.id === conta);
   return (
     <form action={action} className="flex grow flex-col gap-3.5">
       <div className="grid grid-cols-2 gap-1 rounded-full bg-papel-2 p-1">
@@ -47,7 +55,24 @@ export function AnotarForm({ categories, today }: { categories: CategoryDTO[]; t
             </button>
           ))}
         </div>
+        {options.length < doTipo.length && (
+          <button type="button" onClick={() => setTodas(true)} className="self-start text-[13px] font-semibold text-laranja-texto underline">Mais categorias</button>
+        )}
       </fieldset>
+      {contas.length > 0 && (
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-2 text-[13px] font-semibold">Pago com</legend>
+          <input type="hidden" name="accountId" value={conta ?? ''} />
+          <div className="flex flex-wrap gap-2">
+            {[{ id: null, name: 'Dinheiro' }, ...contas].map((c) => (
+              <button type="button" key={c.id ?? 'dinheiro'} onClick={() => setConta(c.id)} className={`${pill(conta === c.id)} px-3.5`}>
+                <span className="truncate">{c.name}</span>
+              </button>
+            ))}
+          </div>
+          {escolhida?.auto && <p className="text-[12px] leading-[17px] text-tinta-suave">Essa conta já atualiza sozinha pelo banco. Se o gasto aparecer lá também, apaga um dos dois.</p>}
+        </fieldset>
+      )}
       <ErrorNote message={state.error} />
       <div className="grow" />
       <button type="submit" disabled={pending} className="flex h-[54px] shrink-0 items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel disabled:opacity-50">

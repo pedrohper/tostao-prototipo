@@ -1,6 +1,6 @@
 // Contratos dos repositórios. O use case pede "alguém que saiba salvar usuário",
 // sem saber se é Postgres ou um array na memória (nos testes).
-import type { Account, BankConnection, Category, CategoryRule, Transaction, User, CategoryBudget, LessonProgress, Invite, PasswordReset, ChatMessage } from '../domain/entities.js';
+import type { Account, BankConnection, Category, CategoryRule, Transaction, User, CategoryBudget, LessonProgress, Invite, PasswordReset, ChatMessage, TribunalVote, Battle, BattleKind } from '../domain/entities.js';
 import type { FinancialPlan } from '@tostao/contracts';
 
 export type NewUser = Pick<User, 'name' | 'email' | 'passwordHash'>;
@@ -60,6 +60,17 @@ export interface LessonProgressRepository {
   listByUser(userId: string): Promise<LessonProgress[]>;
   /** Idempotente: marcar de novo não duplica. */
   markDone(userId: string, lessonId: string): Promise<void>;
+}
+
+export interface GamesRepository {
+  /** Um voto por pessoa por caso; votar de novo troca o voto. */
+  vote(userId: string, caseId: string, choice: number): Promise<void>;
+  findVote(userId: string, caseId: string): Promise<TribunalVote | null>;
+  countVotes(caseId: string): Promise<number[]>;
+  countUserVotes(userId: string): Promise<number>;
+  listBattles(userId: string): Promise<Battle[]>;
+  saveBattle(battle: Battle): Promise<void>;
+  findBattle(userId: string, kind: BattleKind): Promise<Battle | null>;
 }
 
 export interface IgnoredSubscriptionsRepository {
@@ -131,4 +142,5 @@ export type Repositories = {
   chat: ChatMessagesRepository;
   plans: FinancialPlansRepository;
   whatsapp: WhatsappLinksRepository;
+  games: GamesRepository;
 };

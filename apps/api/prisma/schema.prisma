@@ -26,6 +26,8 @@ model User {
   lessons      LessonProgress[]
   invitesSent  Invite[]        @relation("InvitesSent")
   inviteUsed   Invite?         @relation("InviteUsed")
+  tribunalVotes TribunalVote[]
+  battles      Battle[]
   passwordResets PasswordReset[]
   chatMessages   ChatMessage[]
   ignoredSubscriptions IgnoredSubscription[]
@@ -231,4 +233,33 @@ model WhatsappLink {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("whatsapp_links")
+}
+
+// Tribunal do Tostão: um voto por pessoa por caso da semana
+model TribunalVote {
+  userId  String   @map("user_id")
+  caseId  String   @map("case_id")
+  choice  Int
+  votedAt DateTime @default(now()) @map("voted_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, caseId])
+  @@index([caseId])
+  @@map("tribunal_votes")
+}
+
+// Batalha contra um vilão: Tigrinho (30 dias sem bet, conferido no extrato) e Urubu do Pix (checklist)
+model Battle {
+  userId    String    @map("user_id")
+  kind      String
+  status    String
+  startedAt DateTime  @map("started_at")
+  endedAt   DateTime? @map("ended_at")
+  steps     String[]  @default([])
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, kind])
+  @@map("battles")
 }

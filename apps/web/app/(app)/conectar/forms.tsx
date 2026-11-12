@@ -69,7 +69,7 @@ export function ConnectPanel({ widget }: { widget: boolean }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <Button type="button" onClick={openWidget} disabled={pending}>{pending ? 'Farejando seu extrato…' : 'Conectar meu banco'}</Button>
+      <Button type="button" variant="laranja" onClick={openWidget} disabled={pending}>{pending ? 'Farejando seu extrato…' : 'Conectar meu banco'}</Button>
       <ErrorNote message={state.error} />
       <details className="rounded-2xl bg-cartao p-3">
         <summary className="cursor-pointer text-[15px] font-semibold">Já tenho um Item ID</summary>
