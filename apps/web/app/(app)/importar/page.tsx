@@ -1,9 +1,26 @@
+import type { ProfileResponse } from '@tostao/contracts';
+import { api } from '@/lib/api';
 import { Mascote } from '@/components/mascote';
 import { BackLink, Card } from '@/components/ui';
 import { ImportForm } from './import-form';
 
+const BANCOS: { nome: string; passo: string }[] = [
+  { nome: 'Nubank', passo: 'Conta: no app, toca no saldo → ícone de compartilhar → “Exportar extrato” (vem um CSV por e-mail). Cartão: fatura → “Enviar fatura por e-mail” e usa o CSV.' },
+  { nome: 'Inter', passo: 'App → Extrato → ícone de download → escolhe o período → formato CSV ou OFX.' },
+  { nome: 'Itaú', passo: 'Pelo site (no app não tem): Extrato → período → “Salvar em OFX” (às vezes aparece como Money).' },
+  { nome: 'Bradesco', passo: 'Pelo site: Saldos e extratos → Extrato → “Exportar” → OFX ou CSV.' },
+  { nome: 'Banco do Brasil', passo: 'Pelo site: Extrato → escolhe o mês → “Salvar” → OFX ou CSV.' },
+  { nome: 'Caixa', passo: 'Pelo site: Extrato → período → exportar em OFX.' },
+  { nome: 'Santander', passo: 'Pelo site: Conta corrente → Extrato → “Exportar” → OFX.' },
+  { nome: 'C6 Bank', passo: 'App → Extrato → ícone de compartilhar → “Exportar extrato” → CSV.' },
+  { nome: 'Mercado Pago', passo: 'Pelo site: Seu dinheiro → Relatórios → “Extrato da conta” → gera e baixa o CSV.' },
+  { nome: 'PicPay', passo: 'App → Extrato → ícone de download → período → CSV (chega por e-mail).' },
+];
+
 export default async function ImportarPage({ searchParams }: { searchParams: Promise<{ conta?: string }> }) {
   const { conta } = await searchParams;
+  const me = await api<ProfileResponse>('/me').catch(() => null);
+  const contas = (me?.connections ?? []).filter((c) => c.itemId.startsWith('import:')).map((c) => c.institution ?? '').filter(Boolean);
   return (
     <div className="flex flex-col gap-5">
       <BackLink href="/conectar" />
@@ -14,12 +31,16 @@ export default async function ImportarPage({ searchParams }: { searchParams: Pro
           <p className="text-[15px] text-tinta-suave">Sem Open Finance, sem senha. Só o arquivo.</p>
         </div>
       </div>
-      <ImportForm conta={conta} />
-      <Card className="flex flex-col gap-2 text-[14px] leading-relaxed">
+      <ImportForm conta={conta} contas={contas} />
+      <Card className="flex flex-col gap-1 text-[14px] leading-relaxed">
         <h2 className="font-display text-lg font-extrabold">Onde baixar</h2>
-        <p><b>Nubank:</b> no app, abre a conta ou a fatura e toca em “Exportar extrato” / “Enviar por e-mail”: vem um CSV.</p>
-        <p><b>Itaú, Bradesco, Santander, BB, Inter:</b> no internet banking, extrato → salvar/exportar em <b>OFX</b> (às vezes chamado de “Money” ou “Quicken”).</p>
-        <p>Pode importar o mesmo período de novo sem medo: o que já estava aqui eu pulo.</p>
+        {BANCOS.map((b) => (
+          <details key={b.nome} className="border-t border-linha py-2 first-of-type:border-0">
+            <summary className="flex min-h-10 cursor-pointer list-none items-center justify-between font-semibold">{b.nome}<span aria-hidden className="text-tinta-suave">+</span></summary>
+            <p className="pb-1 text-tinta-suave">{b.passo}</p>
+          </details>
+        ))}
+        <p className="pt-2">Pode importar o mesmo período de novo sem medo: o que já estava aqui eu pulo. Os menus dos bancos mudam de vez em quando: se não achar, procura “Exportar” ou “Extrato” no app ou no site. Banco que não tá na lista? Manda o CSV mesmo, eu tento entender.</p>
       </Card>
     </div>
   );
