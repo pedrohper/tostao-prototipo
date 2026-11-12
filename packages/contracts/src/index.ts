@@ -168,7 +168,24 @@ export type BudgetsResponse = { budgets: BudgetDTO[] };
 // ---------- Progresso das lições ----------
 export const lessonIdParam = z.object({ lessonId: z.string().regex(/^m\d+-l\d+$/, 'Lição inválida') });
 /** streakDays = ofensiva (dias seguidos com lição); doneToday = lições feitas hoje (Brasília). */
-export type LessonProgressResponse = { done: string[]; streakDays: number; doneToday: number };
+export type LessonProgressResponse = { done: string[]; streakDays: number; doneToday: number; bonusXp: number };
+
+// Jogos: Tribunal do Tostão e Batalhas
+export const tribunalVoteBody = z.object({ caseId: z.string().min(1), choice: z.number().int().min(0).max(3) });
+export type TribunalResponse = {
+  case: { id: string; title: string; story: string; question: string; options: string[] };
+  endsAt: string;
+  totalVotes: number;
+  myVote: number | null;
+  votes: number[] | null;
+  verdict: { title: string; text: string } | null;
+};
+export const urubuStepBody = z.object({ done: z.boolean() });
+export type BattlesResponse = {
+  checksStatement: boolean;
+  tigrinho: { status: 'ativa' | 'vencida' | 'perdida'; startedAt: string; day: number; totalDays: number; lostAt: string | null } | null;
+  urubu: { status: 'bloqueada' | 'ativa' | 'vencida'; steps: { id: string; label: string; done: boolean }[] };
+};
 
 // Chat com o Tostão
 export const chatBody = z.object({ message: z.string().trim().min(1, 'Escreve alguma coisa').max(1000, 'Pergunta longa demais') });

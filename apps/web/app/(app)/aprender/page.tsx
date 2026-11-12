@@ -2,19 +2,23 @@ import Link from 'next/link';
 import { modules, MODULE_COLORS } from '@/lib/lessons';
 import { Mascote } from '@/components/mascote';
 import { Eyebrow, StreakChip } from '@/components/ui';
-import type { LessonProgressResponse, MonthSummaryResponse } from '@tostao/contracts';
+import type { BattlesResponse, LessonProgressResponse, MonthSummaryResponse, TribunalResponse } from '@tostao/contracts';
 import { api } from '@/lib/api';
 import { currentMonth } from '@/lib/format';
 import { NO_PROGRESS, xpFrom } from '@/lib/xp';
 import { LegacyProgress } from './legacy-progress';
 
 export default async function AprenderPage() {
-  const [{ done, streakDays, doneToday }, summary] = await Promise.all([
+  const [{ done, streakDays, doneToday, bonusXp = 0 }, summary, tribunal, battles] = await Promise.all([
     api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
     api<MonthSummaryResponse>(`/summary?month=${currentMonth()}`).catch(() => null),
+    api<TribunalResponse>('/tribunal').catch(() => null),
+    api<BattlesResponse>('/battles').catch(() => null),
   ]);
+  const tig = battles?.tigrinho;
+  const batalhaLinha = !tig ? '30 dias sem bet' : tig.status === 'ativa' ? `Dia ${tig.day} de ${tig.totalDays}` : tig.status === 'vencida' ? (battles?.urubu.status === 'vencida' ? 'Dois vilões vencidos' : 'Próximo: Urubu do Pix') : 'Bora de novo?';
   const pendentes = summary?.uncategorizedCount ?? 0;
-  const { xp } = xpFrom(done.length);
+  const { xp } = xpFrom(done.length, bonusXp);
   // Módulo atual = o primeiro que ainda tem lição por fazer
   const atualIdx = modules.findIndex((m) => m.lessons.some((l) => !done.includes(l.id)));
   const atual = atualIdx >= 0 ? modules[atualIdx] : null;
@@ -67,6 +71,24 @@ export default async function AprenderPage() {
           <p className="text-[15px] leading-[21px]"><b>Trilha completa!</b> Você fez todas as lições. Pode rever qualquer uma na trilha.</p>
         </div>
       )}
+
+      <section className="flex flex-col gap-2">
+        <Eyebrow>Jogos da semana</Eyebrow>
+        <div className="grid grid-cols-2 gap-2.5">
+          <Link href="/tribunal" className="flex flex-col gap-1 rounded-[18px] bg-azul p-3 text-[#1E1B18] no-underline">
+            <Mascote pose="pensando" size={56} alt="" />
+            <span className="text-[11px] font-bold tracking-[0.08em] text-[#6B635A] uppercase">Tribunal</span>
+            <span className="text-[15px] leading-[19px] font-bold">{tribunal?.case.title ?? 'O caso da semana'}</span>
+            <span className="text-xs text-[#6B635A]">{tribunal?.myVote != null ? 'Você já votou · ver veredito' : 'Vota e ganha +20 XP'}</span>
+          </Link>
+          <Link href="/batalha" className="flex flex-col gap-1 rounded-[18px] bg-amarelo-claro p-3 text-[#1E1B18] no-underline">
+            <Mascote pose="caramelo-bravo" size={56} alt="" />
+            <span className="text-[11px] font-bold tracking-[0.08em] text-[#6B635A] uppercase">Batalha</span>
+            <span className="text-[15px] leading-[19px] font-bold">{tig?.status === 'vencida' ? 'Tigrinho derrotado' : 'Contra o Tigrinho'}</span>
+            <span className="text-xs text-[#6B635A]">{batalhaLinha}</span>
+          </Link>
+        </div>
+      </section>
 
       <section className="flex flex-col">
         <div className="flex min-h-9 items-center justify-between">

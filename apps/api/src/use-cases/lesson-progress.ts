@@ -17,16 +17,18 @@ export function streakFrom(completedAt: Date[], now: Date) {
 }
 
 export class ListLessonProgressUseCase {
-  constructor(private readonly repos: Pick<Repositories, 'lessons'>, private readonly now: () => Date = () => new Date()) {}
+  constructor(private readonly repos: Pick<Repositories, 'lessons' | 'games'>, private readonly now: () => Date = () => new Date()) {}
 
   async execute({ userId }: { userId: string }) {
-    const rows = await this.repos.lessons.listByUser(userId);
+    const [rows, votes, battles] = await Promise.all([this.repos.lessons.listByUser(userId), this.repos.games.countUserVotes(userId), this.repos.games.listBattles(userId)]);
     const now = this.now();
     const today = brDay(now);
     return {
       done: rows.map((l) => l.lessonId),
       streakDays: streakFrom(rows.map((l) => l.completedAt), now),
       doneToday: rows.filter((l) => brDay(l.completedAt) === today).length,
+      // XP dos jogos: 20 por voto no Tribunal, 100 por batalha vencida
+      bonusXp: votes * 20 + battles.filter((b) => b.status === 'vencida').length * 100,
     };
   }
 }

@@ -1,10 +1,10 @@
 // Repositórios de verdade, no Postgres via Prisma.
 // Repare que a assinatura é a mesma dos em memória: o use case nem percebe a troca.
 import type { Prisma, PrismaClient } from '@prisma/client';
-import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, Transaction, Invite, PasswordReset, ChatMessage } from '../../domain/entities.js';
+import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, Transaction, Invite, PasswordReset, ChatMessage, Battle, BattleKind } from '../../domain/entities.js';
 import type { FinancialPlan } from '@tostao/contracts';
 import type {
-  AccountData, AccountsRepository, FinancialPlansRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, ChatMessagesRepository, IgnoredSubscriptionsRepository, InvitesRepository, LessonProgressRepository, PasswordResetsRepository,
+  AccountData, AccountsRepository, FinancialPlansRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, ChatMessagesRepository, IgnoredSubscriptionsRepository, InvitesRepository, GamesRepository, LessonProgressRepository, PasswordResetsRepository,
   NewTransaction, NewUser, Repositories, TransactionsRepository, UsersRepository, WhatsappLinksRepository,
 } from '../types.js';
 
@@ -117,6 +117,27 @@ class PrismaLessonProgressRepository implements LessonProgressRepository {
   }
 }
 
+class PrismaGamesRepository implements GamesRepository {
+  constructor(private db: PrismaClient) {}
+  async vote(userId: string, caseId: string, choice: number) {
+    await this.db.tribunalVote.upsert({ where: { userId_caseId: { userId, caseId } }, create: { userId, caseId, choice }, update: { choice, votedAt: new Date() } });
+  }
+  findVote(userId: string, caseId: string) { return this.db.tribunalVote.findUnique({ where: { userId_caseId: { userId, caseId } } }); }
+  async countVotes(caseId: string) {
+    const rows = await this.db.tribunalVote.groupBy({ by: ['choice'], where: { caseId }, _count: { _all: true } });
+    const counts: number[] = [];
+    for (const r of rows) counts[r.choice] = r._count._all;
+    return Array.from(counts, (c) => c ?? 0);
+  }
+  countUserVotes(userId: string) { return this.db.tribunalVote.count({ where: { userId } }); }
+  async listBattles(userId: string) { return (await this.db.battle.findMany({ where: { userId } })) as Battle[]; }
+  async saveBattle(b: Battle) {
+    const data = { status: b.status, startedAt: b.startedAt, endedAt: b.endedAt, steps: b.steps };
+    await this.db.battle.upsert({ where: { userId_kind: { userId: b.userId, kind: b.kind } }, create: { userId: b.userId, kind: b.kind, ...data }, update: data });
+  }
+  async findBattle(userId: string, kind: BattleKind) { return (await this.db.battle.findUnique({ where: { userId_kind: { userId, kind } } })) as Battle | null; }
+}
+
 class PrismaIgnoredSubscriptionsRepository implements IgnoredSubscriptionsRepository {
   constructor(private db: PrismaClient) {}
   async listKeys(userId: string) { return (await this.db.ignoredSubscription.findMany({ where: { userId } })).map((r) => r.key); }
@@ -196,5 +217,6 @@ export function makePrismaRepositories(db: PrismaClient): Repositories {
     chat: new PrismaChatMessagesRepository(db),
     plans: new PrismaFinancialPlansRepository(db),
     whatsapp: new PrismaWhatsappLinksRepository(db),
+    games: new PrismaGamesRepository(db),
   };
 }

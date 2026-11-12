@@ -1,9 +1,9 @@
 // Repositórios em memória: arrays simples. Usados nos testes e pra rodar sem Postgres.
 import { randomUUID } from 'node:crypto';
-import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, LessonProgress, Transaction, User, Invite, PasswordReset, ChatMessage } from '../../domain/entities.js';
+import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, LessonProgress, Transaction, User, Invite, PasswordReset, ChatMessage, TribunalVote, Battle, BattleKind } from '../../domain/entities.js';
 import type { FinancialPlan } from '@tostao/contracts';
 import type {
-  AccountData, AccountsRepository, FinancialPlansRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, ChatMessagesRepository, IgnoredSubscriptionsRepository, InvitesRepository, LessonProgressRepository, PasswordResetsRepository,
+  AccountData, AccountsRepository, FinancialPlansRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, ChatMessagesRepository, IgnoredSubscriptionsRepository, InvitesRepository, GamesRepository, LessonProgressRepository, PasswordResetsRepository,
   Repositories, TransactionsRepository, UsersRepository, WhatsappLink, WhatsappLinksRepository,
 } from '../types.js';
 import { DEFAULT_CATEGORIES, DEFAULT_RULES } from '../../lib/defaults.js';
@@ -149,6 +149,28 @@ export class InMemoryLessonProgressRepository implements LessonProgressRepositor
   }
 }
 
+export class InMemoryGamesRepository implements GamesRepository {
+  votes: TribunalVote[] = [];
+  battles: Battle[] = [];
+  async vote(userId: string, caseId: string, choice: number) {
+    this.votes = this.votes.filter((v) => !(v.userId === userId && v.caseId === caseId));
+    this.votes.push({ userId, caseId, choice, votedAt: new Date() });
+  }
+  async findVote(userId: string, caseId: string) { return this.votes.find((v) => v.userId === userId && v.caseId === caseId) ?? null; }
+  async countVotes(caseId: string) {
+    const counts: number[] = [];
+    for (const v of this.votes.filter((x) => x.caseId === caseId)) counts[v.choice] = (counts[v.choice] ?? 0) + 1;
+    return Array.from(counts, (c) => c ?? 0);
+  }
+  async countUserVotes(userId: string) { return this.votes.filter((v) => v.userId === userId).length; }
+  async listBattles(userId: string) { return this.battles.filter((b) => b.userId === userId); }
+  async saveBattle(battle: Battle) {
+    this.battles = this.battles.filter((b) => !(b.userId === battle.userId && b.kind === battle.kind));
+    this.battles.push({ ...battle });
+  }
+  async findBattle(userId: string, kind: BattleKind) { return this.battles.find((b) => b.userId === userId && b.kind === kind) ?? null; }
+}
+
 export class InMemoryIgnoredSubscriptionsRepository implements IgnoredSubscriptionsRepository {
   items: { userId: string; key: string }[] = [];
   async listKeys(userId: string) { return this.items.filter((i) => i.userId === userId).map((i) => i.key); }
@@ -236,5 +258,6 @@ export function makeInMemoryRepositories() {
     chat: new InMemoryChatMessagesRepository(),
     plans: new InMemoryFinancialPlansRepository(),
     whatsapp: new InMemoryWhatsappLinksRepository(),
+    games: new InMemoryGamesRepository(),
   } satisfies Repositories;
 }

@@ -31,11 +31,11 @@ function synced(iso: string | null) {
 }
 
 export default async function PerfilPage() {
-  const [me, { done, streakDays }] = await Promise.all([
+  const [me, { done, streakDays, bonusXp = 0 }] = await Promise.all([
     api<ProfileResponse>('/me'),
     api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
   ]);
-  const { xp, level } = xpFrom(done.length);
+  const { xp, level } = xpFrom(done.length, bonusXp);
   const rows = 'flex min-h-12 items-center justify-between border-b border-linha text-tinta no-underline';
 
   return (

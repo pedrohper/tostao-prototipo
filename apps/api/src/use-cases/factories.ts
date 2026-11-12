@@ -1,4 +1,5 @@
 import { ListLessonProgressUseCase } from './lesson-progress.js';
+import { GamesUseCase } from './games.js';
 import { ImportStatementUseCase } from './import-statement.js';
 import { CreateInviteUseCase, ListInvitesUseCase } from './invites.js';
 import { ResetPasswordUseCase } from './password-reset.js';
@@ -63,6 +64,7 @@ export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), whatsapp =
     setGoal: new SetGoalUseCase(repos),
     goalDeposit: new GoalDepositUseCase(repos),
     listLessonProgress: new ListLessonProgressUseCase(repos),
+    games: new GamesUseCase(repos),
     markLessonDone: { execute: ({ userId, lessonId }: { userId: string; lessonId: string }) => repos.lessons.markDone(userId, lessonId) },
     listCategories: { execute: async ({ userId }: { userId?: string }) => ({ categories: await repos.categories.list(userId) }) },
     createCategory: new CreateCategoryUseCase(repos),

@@ -70,3 +70,9 @@ export type Invite = { code: string; createdById: string; usedById: string | nul
 export type PasswordReset = { id: string; userId: string; tokenHash: string; expiresAt: Date; usedAt: Date | null };
 
 export type ChatMessage = { id: string; userId: string; role: 'user' | 'assistant'; content: string; channel: 'app' | 'whatsapp'; createdAt: Date };
+
+// Jogos: Tribunal (enquete da semana) e Batalha (desafio conferido no extrato)
+export type TribunalVote = { userId: string; caseId: string; choice: number; votedAt: Date };
+export type BattleKind = 'tigrinho' | 'urubu';
+export type BattleStatus = 'ativa' | 'vencida' | 'perdida';
+export type Battle = { userId: string; kind: BattleKind; status: BattleStatus; startedAt: Date; endedAt: Date | null; steps: string[] };

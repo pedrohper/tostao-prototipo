@@ -8,6 +8,7 @@ import { authRoutes } from './http/controllers/auth.js';
 import { bankRoutes } from './http/controllers/bank.js';
 import { transactionRoutes } from './http/controllers/transactions.js';
 import { planningRoutes } from './http/controllers/planning.js';
+import { gamesRoutes } from './http/controllers/games.js';
 import { chatRoutes } from './http/controllers/chat.js';
 import { whatsappRoutes } from './http/controllers/whatsapp.js';
 import { FakeWhatsAppGateway } from './gateways/whatsapp-gateway.js';
@@ -30,6 +31,7 @@ export async function buildApp({ repos, bank, ai, whatsapp = new FakeWhatsAppGat
   bankRoutes(app, uc, repos);
   transactionRoutes(app, uc);
   planningRoutes(app, uc);
+  gamesRoutes(app, uc);
   chatRoutes(app, uc);
   whatsappRoutes(app, uc, whatsapp, whatsappVerifyToken);
   return app;

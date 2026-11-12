@@ -42,7 +42,7 @@ export default async function FechamentoPage({ searchParams }: { searchParams: P
   const nome = monthName(month);
   const isCurrent = month === currentMonth();
   const titulo = sobrou >= 0 ? (share >= 40 ? 'Mês no azul, com um porém' : 'Mês no azul') : 'Mês no vermelho, bora ajustar';
-  const { xp } = xpFrom(progress.done.length);
+  const { xp } = xpFrom(progress.done.length, progress.bonusXp);
   const apostas = s.byCategory.find((c) => c.categoryId === 'apostas')?.totalInCents ?? 0;
 
   const resumo = (
