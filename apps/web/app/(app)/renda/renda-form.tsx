@@ -112,16 +112,16 @@ export function RendaForm({ plan, suggestions, banks }: { plan: FinancialPlan | 
         <div className="flex flex-col gap-2.5 rounded-2xl bg-papel-2 px-3.5 py-3">
           <label className="flex min-h-8 cursor-pointer items-center gap-2.5">
             <input type="checkbox" checked={advanceOn} onChange={(e) => { setAdvanceOn(e.target.checked); if (e.target.checked && !advanceAmount && salaryCents) setAdvanceAmount(toMoney(Math.round(salaryCents / 2))); }} className="h-5 w-5 shrink-0 accent-[#1E1B18]" />
-            <span className="text-[15px] font-semibold">Recebo adiantamento (vale)</span>
+            <span className="text-[15px] font-semibold">Recebo adiantamento</span>
           </label>
           {advanceOn && (
             <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-2.5">
               <label className="flex flex-col gap-[5px]">
-                <span className="text-[13px] font-semibold">Dia do vale</span>
+                <span className="text-[13px] font-semibold">Dia do adiantamento</span>
                 <input type="number" min={1} max={31} value={advanceDay} onChange={(e) => setAdvanceDay(e.target.value)} className={field} />
               </label>
               <label className="flex flex-col gap-[5px]">
-                <span className="text-[13px] font-semibold">Quanto vem no vale</span>
+                <span className="text-[13px] font-semibold">Quanto vem</span>
                 <input value={advanceAmount} onChange={(e) => setAdvanceAmount(e.target.value)} inputMode="decimal" placeholder="metade" className={field} />
               </label>
             </div>

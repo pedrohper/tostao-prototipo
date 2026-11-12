@@ -175,7 +175,7 @@ export const financialPlanBody = z.object({
     payday: day,
     varies: z.boolean().default(false),
     bank: z.string().trim().max(60).nullable().default(null),
-    /** Adiantamento (vale): parte do salário que cai antes, ex.: metade no dia 15. amountInCents é o total do mês. */
+    /** Adiantamento: parte do salário que cai antes, ex.: metade no dia 15. amountInCents é o total do mês. */
     advance: z.object({ day, amountInCents: cents }).nullable().default(null),
     /** Padrão da descrição no extrato (ex.: "TRANSF SALDO C/SAL P/CC"). */
     pattern: z.string().trim().max(120).nullable().default(null),

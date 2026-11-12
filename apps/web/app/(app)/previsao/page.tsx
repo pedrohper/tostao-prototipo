@@ -33,7 +33,7 @@ export default async function PrevisaoPage() {
   const max = Math.max(...f.months.map((m) => Math.abs(m.leftInCents)), 1);
   const aperta = worst.leftInCents < 0;
   const sal = plan?.salary;
-  const salaryNote = sal ? (sal.advance ? ` (vale dia ${sal.advance.day} + resto dia ${sal.payday})` : ` (salário dia ${sal.payday})`) : '';
+  const salaryNote = sal ? (sal.advance ? ` (adiantamento dia ${sal.advance.day} + resto dia ${sal.payday})` : ` (salário dia ${sal.payday})`) : '';
 
   return (
     <div className="flex flex-col gap-3.5">
