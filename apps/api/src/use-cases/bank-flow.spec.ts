@@ -6,6 +6,7 @@ import { ConnectBankUseCase } from './connect-bank.js';
 import { GetMonthSummaryUseCase } from './get-month-summary.js';
 import { CategorizeTransactionUseCase } from './categorize-transaction.js';
 import { ResourceNotFoundError } from '../domain/errors.js';
+import { DisconnectBankUseCase } from './disconnect-bank.js';
 
 const NOW = new Date(Date.UTC(2026, 10, 20, 18)); // 20/11/2026
 const MONTH = '2026-11';
@@ -57,5 +58,25 @@ describe('fluxo do banco (conectar → sincronizar → resumo → categorizar)',
     await expect(
       new CategorizeTransactionUseCase(repos).execute({ userId: 'intruso', transactionId: tx.id, categoryId: 'delivery', remember: false }),
     ).rejects.toBeInstanceOf(ResourceNotFoundError);
+  });
+
+  it('desconectar apaga contas e transações do banco, mas mantém o que foi anotado na mão', async () => {
+    const { connection } = await connect.execute({ userId: 'u1', itemId: 'item-123456' });
+    await repos.transactions.create({ userId: 'u1', accountId: null, externalId: null, description: 'PASTEL', amountInCents: -800, occurredAt: NOW, categoryId: null, isInternalTransfer: false });
+    const disconnect = new DisconnectBankUseCase(repos.connections, new FakeBankGateway(() => NOW));
+
+    await expect(disconnect.execute({ userId: 'intruso', connectionId: connection.id })).rejects.toBeInstanceOf(ResourceNotFoundError);
+
+    expect(await disconnect.execute({ userId: 'u1', connectionId: connection.id })).toEqual({ providerDeleted: true });
+    expect(repos.connections.items).toHaveLength(0);
+    expect(repos.accounts.items).toHaveLength(0);
+    expect(repos.transactions.items.map((t) => t.description)).toEqual(['PASTEL']);
+  });
+
+  it('desconectar apaga aqui mesmo se o provedor falhar', async () => {
+    const { connection } = await connect.execute({ userId: 'u1', itemId: 'item-123456' });
+    const broken = Object.assign(new FakeBankGateway(() => NOW), { deleteItem: async () => { throw new Error('fora do ar'); } });
+    expect(await new DisconnectBankUseCase(repos.connections, broken).execute({ userId: 'u1', connectionId: connection.id })).toEqual({ providerDeleted: false });
+    expect(repos.connections.items).toHaveLength(0);
   });
 });

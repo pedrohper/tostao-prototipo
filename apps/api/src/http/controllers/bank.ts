@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { connectBankBody, type ConnectTokenResponse, type SyncResponse } from '@tostao/contracts';
+import { connectBankBody, type ConnectTokenResponse, type DisconnectResponse, type SyncResponse } from '@tostao/contracts';
 import type { UseCases } from '../../use-cases/factories.js';
 import type { Repositories } from '../../repositories/types.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
@@ -16,6 +16,11 @@ export function bankRoutes(app: FastifyInstance, uc: UseCases, repos: Repositori
     const { itemId } = connectBankBody.parse(request.body);
     const { importedCount, accounts } = await uc.connectBank.execute({ userId: request.user.sub, itemId });
     return reply.status(201).send({ importedCount, accounts } satisfies SyncResponse);
+  });
+
+  app.delete('/connections/:id', { onRequest: verifyJwt }, async (request) => {
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    return (await uc.disconnectBank.execute({ userId: request.user.sub, connectionId: id })) satisfies DisconnectResponse;
   });
 
   app.post('/connections/:id/sync', { onRequest: verifyJwt }, async (request) => {

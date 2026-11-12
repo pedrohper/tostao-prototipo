@@ -3,7 +3,7 @@ import type { ConnectTokenResponse, ProfileResponse } from '@tostao/contracts';
 import { api } from '@/lib/api';
 import { Mascote } from '@/components/mascote';
 import { Card } from '@/components/ui';
-import { ConnectPanel, SyncButton } from './forms';
+import { ConnectPanel, DisconnectButton, SyncButton } from './forms';
 
 export default async function ConectarPage({ searchParams }: { searchParams: Promise<{ novo?: string }> }) {
   const { novo } = await searchParams;
@@ -25,7 +25,7 @@ export default async function ConectarPage({ searchParams }: { searchParams: Pro
         {[
           ['Só leitura.', 'Eu vejo os gastos, mas não consigo mexer no seu dinheiro.'],
           ['Open Finance.', 'O sistema oficial do Banco Central. Sua senha fica no app do banco.'],
-          ['Você manda.', 'Desconecta quando quiser, no Meu Pluggy.'],
+          ['Você manda.', 'Desconecta quando quiser, aqui embaixo ou no Meu Pluggy.'],
         ].map(([b, t]) => (
           <div key={b} className="flex gap-3 rounded-2xl bg-cartao p-3"><span className="text-verde-texto">✓</span><p className="text-[15px]"><b>{b}</b> {t}</p></div>
         ))}
@@ -61,7 +61,10 @@ export default async function ConectarPage({ searchParams }: { searchParams: Pro
                 <span className={`text-xs font-bold ${c.status === 'ACTIVE' ? 'text-verde-texto' : 'text-vermelho-texto'}`}>{c.status === 'ACTIVE' ? 'Ativo' : 'Com erro'}</span>
               </div>
               <span className="text-xs text-tinta-suave">Última sincronização: {c.lastSyncedAt ? new Date(c.lastSyncedAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : 'nunca'}</span>
-              <SyncButton id={c.id} />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <SyncButton id={c.id} />
+                <DisconnectButton id={c.id} name={c.institution ?? 'esse banco'} />
+              </div>
             </Card>
           ))}
         </section>

@@ -12,6 +12,8 @@ export class FakeBankGateway implements BankGateway {
     return null; // sem widget: a tela mostra só o campo de texto
   }
 
+  async deleteItem(): Promise<void> {}
+
   async fetchItem(): Promise<BankItemData> {
     return { institution: 'Banco de exemplo' };
   }

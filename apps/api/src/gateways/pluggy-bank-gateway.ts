@@ -62,6 +62,16 @@ export class PluggyBankGateway implements BankGateway {
     return { institution: item.connector?.name ?? null };
   }
 
+  // Apaga só o Item da nossa Application. A conexão no meu.pluggy.ai continua lá.
+  async deleteItem(itemId: string): Promise<void> {
+    const res = await fetch(`${BASE_URL}/items/${encodeURIComponent(itemId)}`, {
+      method: 'DELETE',
+      headers: { 'X-API-KEY': await this.getApiKey() },
+    });
+    if (res.status === 404 || res.status === 400) return; // já não existe (ou nunca foi um Item válido)
+    if (!res.ok) throw new BankConnectionError(`Pluggy respondeu ${res.status} ao apagar o Item.`);
+  }
+
   async fetchAccounts(itemId: string): Promise<BankAccountData[]> {
     const page = await this.get<Page<PluggyAccount>>(`/accounts?itemId=${encodeURIComponent(itemId)}`);
     return page.results.map((a) => ({

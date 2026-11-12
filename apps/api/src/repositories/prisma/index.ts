@@ -26,6 +26,8 @@ class PrismaBankConnectionsRepository implements BankConnectionsRepository {
   async save({ id, status, lastSyncedAt, institution }: BankConnection) {
     await this.db.bankConnection.update({ where: { id }, data: { status, lastSyncedAt, institution } });
   }
+  // onDelete: Cascade no schema leva junto contas e transações dessa conexão
+  async delete(id: string) { await this.db.bankConnection.delete({ where: { id } }); }
 }
 
 class PrismaAccountsRepository implements AccountsRepository {

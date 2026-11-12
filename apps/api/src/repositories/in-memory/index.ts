@@ -20,6 +20,8 @@ export class InMemoryUsersRepository implements UsersRepository {
 
 export class InMemoryBankConnectionsRepository implements BankConnectionsRepository {
   items: BankConnection[] = [];
+  // Imita o onDelete: Cascade do Postgres
+  constructor(private readonly cascade?: { accounts: InMemoryAccountsRepository; transactions: InMemoryTransactionsRepository }) {}
   async findById(id: string) { return this.items.find((c) => c.id === id) ?? null; }
   async findByUserAndItem(userId: string, itemId: string) {
     return this.items.find((c) => c.userId === userId && c.itemId === itemId) ?? null;
@@ -34,6 +36,13 @@ export class InMemoryBankConnectionsRepository implements BankConnectionsReposit
   async save(connection: BankConnection) {
     const i = this.items.findIndex((c) => c.id === connection.id);
     if (i >= 0) this.items[i] = connection;
+  }
+  async delete(id: string) {
+    this.items = this.items.filter((c) => c.id !== id);
+    if (!this.cascade) return;
+    const gone = new Set(this.cascade.accounts.items.filter((a) => a.connectionId === id).map((a) => a.id));
+    this.cascade.accounts.items = this.cascade.accounts.items.filter((a) => !gone.has(a.id));
+    this.cascade.transactions.items = this.cascade.transactions.items.filter((t) => !t.accountId || !gone.has(t.accountId));
   }
 }
 
@@ -93,12 +102,14 @@ export class InMemoryTransactionsRepository implements TransactionsRepository {
 }
 
 export function makeInMemoryRepositories() {
+  const accounts = new InMemoryAccountsRepository();
+  const transactions = new InMemoryTransactionsRepository();
   return {
     users: new InMemoryUsersRepository(),
-    connections: new InMemoryBankConnectionsRepository(),
-    accounts: new InMemoryAccountsRepository(),
+    connections: new InMemoryBankConnectionsRepository({ accounts, transactions }),
+    accounts,
     categories: new InMemoryCategoriesRepository(),
     rules: new InMemoryCategoryRulesRepository(),
-    transactions: new InMemoryTransactionsRepository(),
+    transactions,
   } satisfies Repositories;
 }

@@ -26,6 +26,8 @@ export interface BankGateway {
    */
   createConnectToken(clientUserId: string): Promise<string | null>;
   fetchItem(itemId: string): Promise<BankItemData>;
+  /** Apaga o Item no provedor. Se ele já não existe, não é erro. */
+  deleteItem(itemId: string): Promise<void>;
   fetchAccounts(itemId: string): Promise<BankAccountData[]>;
   fetchTransactions(accountExternalId: string, from: Date, to: Date): Promise<BankTransactionData[]>;
 }

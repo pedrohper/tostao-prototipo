@@ -2,7 +2,7 @@
 import { useActionState, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { Button, ErrorNote, Field } from '@/components/ui';
-import { connectBank, connectItem, getConnectToken, syncNow, type ConnectState } from './actions';
+import { connectBank, connectItem, disconnectBank, getConnectToken, syncNow, type ConnectState } from './actions';
 
 /**
  * Caminho principal: o widget Pluggy Connect. A pessoa escolhe o banco (ou o MeuPluggy),
@@ -87,6 +87,25 @@ export function SyncButton({ id }: { id: string }) {
         {pending ? 'Sincronizando…' : 'Sincronizar agora'}
       </button>
       {state.ok && <span className="text-sm text-verde-texto">{state.ok}</span>}
+      {state.error && <span className="text-sm text-vermelho-texto">{state.error}</span>}
+    </form>
+  );
+}
+
+export function DisconnectButton({ id, name }: { id: string; name: string }) {
+  const [state, action, pending] = useActionState<ConnectState, FormData>(disconnectBank, {});
+  return (
+    <form
+      action={action}
+      onSubmit={(e) => {
+        if (!confirm(`Desconectar ${name}? Some com as contas e transações que vieram dele. Gastos anotados na mão ficam.`)) e.preventDefault();
+      }}
+      className="flex items-center gap-3"
+    >
+      <input type="hidden" name="id" value={id} />
+      <button type="submit" disabled={pending} className="text-sm font-semibold text-vermelho-texto underline disabled:opacity-50">
+        {pending ? 'Desconectando…' : 'Desconectar'}
+      </button>
       {state.error && <span className="text-sm text-vermelho-texto">{state.error}</span>}
     </form>
   );

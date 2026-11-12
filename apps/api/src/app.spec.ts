@@ -35,6 +35,11 @@ describe('API', () => {
 
     const bad = await app.inject({ method: 'POST', url: '/transactions', headers: auth, payload: { description: '', amountInCents: -5, kind: 'saida', occurredAt: 'ontem' } });
     expect(bad.statusCode).toBe(400);
+
+    const me = (await app.inject({ method: 'GET', url: '/me', headers: auth })).json();
+    const del = await app.inject({ method: 'DELETE', url: `/connections/${me.connections[0].id}`, headers: auth });
+    expect(del.json()).toEqual({ providerDeleted: true });
+    expect((await app.inject({ method: 'GET', url: '/me', headers: auth })).json().connections).toHaveLength(0);
   });
 
   it('pesca o Item ID de dentro de um link colado', () => {

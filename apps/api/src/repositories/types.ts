@@ -16,6 +16,8 @@ export interface BankConnectionsRepository {
   listActive(): Promise<BankConnection[]>;
   create(data: Pick<BankConnection, 'userId' | 'itemId' | 'institution'>): Promise<BankConnection>;
   save(connection: BankConnection): Promise<void>;
+  /** Apaga a conexão e, em cascata, as contas e transações importadas dela. */
+  delete(id: string): Promise<void>;
 }
 
 export type AccountData = Pick<Account, 'userId' | 'connectionId' | 'externalId' | 'name' | 'type' | 'balanceInCents'>;

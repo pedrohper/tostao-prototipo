@@ -42,6 +42,9 @@ export type ConnectBankBody = z.infer<typeof connectBankBody>;
 
 export type SyncResponse = { importedCount: number; accounts: number };
 
+/** providerDeleted = false quando o Pluggy não confirmou: aí vale revogar no meu.pluggy.ai. */
+export type DisconnectResponse = { providerDeleted: boolean };
+
 /** null quando a API roda com o banco de exemplo (sem widget). */
 export type ConnectTokenResponse = { connectToken: string | null };
 

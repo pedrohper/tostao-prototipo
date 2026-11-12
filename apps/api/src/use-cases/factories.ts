@@ -7,6 +7,7 @@ import { AuthenticateUseCase } from './authenticate.js';
 import { GetProfileUseCase } from './get-profile.js';
 import { SyncBankConnectionUseCase } from './sync-bank-connection.js';
 import { ConnectBankUseCase } from './connect-bank.js';
+import { DisconnectBankUseCase } from './disconnect-bank.js';
 import { CategorizeTransactionUseCase } from './categorize-transaction.js';
 import { CreateManualTransactionUseCase } from './create-manual-transaction.js';
 import { ListTransactionsUseCase } from './list-transactions.js';
@@ -23,6 +24,7 @@ export function makeUseCases({ repos, bank }: Deps) {
     getProfile: new GetProfileUseCase(repos.users, repos.connections),
     syncBankConnection: sync,
     connectBank: new ConnectBankUseCase(repos.connections, bank, sync),
+    disconnectBank: new DisconnectBankUseCase(repos.connections, bank),
     createConnectToken: { execute: async ({ userId }: { userId: string }) => ({ connectToken: await bank.createConnectToken(userId) }) },
     categorizeTransaction: new CategorizeTransactionUseCase(repos),
     createManualTransaction: new CreateManualTransactionUseCase(repos),
