@@ -27,6 +27,8 @@ export type BankTransactionData = {
   /** Já com sinal do Tostão: negativo = saiu. */
   amountInCents: number;
   occurredAt: Date;
+  /** Cartão: fatura já fechada a que a transação pertence. Sem isso = fatura aberta (ou o banco não informa). */
+  billId?: string | null;
 };
 
 export interface BankGateway {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeInMemoryRepositories } from '../repositories/in-memory/index.js';
 import type { BankGateway } from '../gateways/bank-gateway.js';
-import { SyncBankConnectionUseCase } from './sync-bank-connection.js';
+import { openBill, SyncBankConnectionUseCase } from './sync-bank-connection.js';
 import { accountName } from '../gateways/pluggy-bank-gateway.js';
 import { bankNameFromTransferNumber } from '../services/bank-names.js';
 import { connectionName } from './get-profile.js';
@@ -34,6 +34,19 @@ describe('cartão pelo MeuPluggy', () => {
     expect(card.balanceInCents).toBe(-28733); // 563,63 − 276,30 (a parcela de 20/11 fica) // R$ 273,43, o que o app do Nubank mostra
     expect(repos.transactions.items.map((t) => t.externalId)).toEqual(['hoje']);
     expect((await repos.connections.findById(connection.id))?.institution).toBe('Nubank');
+  });
+
+  it('banco que marca a fatura (billId): soma o que está aberto até hoje, sem pagamento', () => {
+    const d = (x: string) => new Date(`${x}T15:00:00Z`);
+    const fetched = [
+      { externalId: 'a', description: 'UBER', amountInCents: -1594, occurredAt: d('2026-10-20'), billId: 'fechada' },
+      { externalId: 'b', description: 'Pagamento recebido', amountInCents: 24240, occurredAt: d('2026-10-30'), billId: null },
+      { externalId: 'c', description: 'UBER', amountInCents: -1102, occurredAt: d('2026-10-30'), billId: null },
+      { externalId: 'd', description: 'Estorno de Uber', amountInCents: 1102, occurredAt: d('2026-10-30'), billId: null },
+      { externalId: 'e', description: 'Discord* Nitro', amountInCents: -2599, occurredAt: d('2026-11-07'), billId: null },
+      { externalId: 'f', description: 'AMAZON PRIME 8/12', amountInCents: -1390, occurredAt: d('2026-11-19'), billId: null },
+    ];
+    expect(openBill({ balanceInCents: -54973, dueDate: d('2026-11-03') }, fetched, NOW)).toBe(-2599);
   });
 
   it('nomes', () => {

@@ -1,5 +1,5 @@
 import { isImportConnection } from './import-statement.js';
-import type { BankGateway } from '../gateways/bank-gateway.js';
+import type { BankAccountData, BankGateway, BankTransactionData } from '../gateways/bank-gateway.js';
 import type { Repositories } from '../repositories/types.js';
 import type { BankConnection } from '../domain/entities.js';
 import { ResourceNotFoundError, BankConnectionError } from '../domain/errors.js';
@@ -12,6 +12,7 @@ const DAY = 24 * 60 * 60 * 1000;
 const FIRST_SYNC_DAYS = 90; // primeira vez: puxa 3 meses
 const OVERLAP_DAYS = 3; // depois: volta 3 dias, porque o banco às vezes lança atrasado
 const FUTURE_DAYS = 400; // cartão: parcelas futuras vêm com data lá na frente
+const CARD_BACK_DAYS = 45;
 
 type Deps = Pick<Repositories, 'connections' | 'accounts' | 'transactions' | 'rules'> & { bank: BankGateway; now?: () => Date };
 
@@ -57,23 +58,25 @@ export class SyncBankConnectionUseCase {
         }
         keptAccounts++;
         const isCard = remote.type === 'CREDIT';
-        const fetched = await bank.fetchTransactions(remote.externalId, since, isCard ? new Date(now.getTime() + FUTURE_DAYS * DAY) : now);
-        // Parcela que ainda vai cair não é gasto de hoje: fica fora do histórico...
+        // Cartão: busca ~45 dias pra trás (pra cobrir a fatura aberta inteira) e o futuro (parcelas).
+        const from = isCard ? new Date(Math.min(since.getTime(), now.getTime() - CARD_BACK_DAYS * DAY)) : since;
+        const fetched = await bank.fetchTransactions(remote.externalId, from, isCard ? new Date(now.getTime() + FUTURE_DAYS * DAY) : now);
+        // Parcela que ainda vai cair não é gasto de hoje: fica fora do histórico.
         const remoteTxs = fetched.filter((t) => t.occurredAt <= now);
-        // ...e sai do "limite usado" que o banco manda, pra sobrar só a fatura aberta.
-        // Corte = fechamento da fatura atual (~7 dias antes do vencimento); o que cai depois disso é das próximas.
-        const closing = remote.dueDate ? new Date(nextDueDate(remote.dueDate, now).getTime() - 7 * DAY) : now;
-        const cutoff = closing > now ? closing : now;
-        const futureOwed = Math.max(0, -fetched.filter((t) => t.occurredAt > cutoff).reduce((s, t) => s + t.amountInCents, 0));
         const { institution: _bank, ...data } = remote;
         const account = await accounts.upsertByExternalId({
           ...data,
-          balanceInCents: isCard ? Math.min(0, remote.balanceInCents + futureOwed) : remote.balanceInCents,
+          balanceInCents: isCard ? openBill(remote, fetched, now) : remote.balanceInCents,
           fingerprint, userId: connection.userId, connectionId: connection.id,
         });
 
         for (const tx of remoteTxs) {
-          if (await transactions.findByExternalId(connection.userId, tx.externalId)) continue;
+          const existing = await transactions.findByExternalId(connection.userId, tx.externalId);
+          if (existing) {
+            // O banco corrigiu o valor (ex.: compra em dólar que antes entrou em USD): acompanha.
+            if (existing.amountInCents !== tx.amountInCents) await transactions.save({ ...existing, amountInCents: tx.amountInCents });
+            continue;
+          }
           await transactions.create({
             userId: connection.userId,
             accountId: account.id,
@@ -120,4 +123,23 @@ export class SyncBankConnectionUseCase {
     }
     return false;
   }
+}
+
+const PAYMENT = /pagamento (recebido|de fatura|da fatura)|pgto fatura|pagto fatura/i;
+
+/**
+ * Fatura aberta do cartão (negativo = deve).
+ * - Banco que marca a fatura de cada transação (billId, ex.: Nubank): soma o que ainda não tem fatura,
+ *   até hoje, sem os pagamentos. É o número que aparece no app do banco.
+ * - Sem essa marcação: o "balance" é o limite usado; tira as parcelas que caem depois do fechamento estimado.
+ */
+export function openBill(remote: Pick<BankAccountData, 'balanceInCents' | 'dueDate'>, fetched: BankTransactionData[], now: Date) {
+  if (fetched.some((t) => t.billId)) {
+    const open = fetched.filter((t) => !t.billId && t.occurredAt <= now && !PAYMENT.test(t.description));
+    return Math.min(0, open.reduce((s, t) => s + t.amountInCents, 0));
+  }
+  const closing = remote.dueDate ? new Date(nextDueDate(remote.dueDate, now).getTime() - 7 * DAY) : now;
+  const cutoff = closing > now ? closing : now;
+  const futureOwed = Math.max(0, -fetched.filter((t) => t.occurredAt > cutoff).reduce((s, t) => s + t.amountInCents, 0));
+  return Math.min(0, remote.balanceInCents + futureOwed);
 }

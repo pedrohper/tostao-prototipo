@@ -16,7 +16,11 @@ type PluggyAccount = {
   bankData?: { transferNumber?: string | null } | null;
   creditData?: { brand?: string | null; creditLimit?: number | null; balanceDueDate?: string | null } | null;
 };
-type PluggyTransaction = { id: string; description: string; amount: number; date: string; type: 'DEBIT' | 'CREDIT' };
+type PluggyTransaction = {
+  id: string; description: string; amount: number; date: string; type: 'DEBIT' | 'CREDIT';
+  currencyCode?: string | null; amountInAccountCurrency?: number | null;
+  creditCardMetadata?: { billId?: string | null } | null;
+};
 type Page<T> = { total: number; totalPages: number; page: number; results: T[] };
 type CursorPage<T> = { results: T[]; next: string | null };
 
@@ -134,8 +138,13 @@ export class PluggyBankGateway implements BankGateway {
       const res: CursorPage<PluggyTransaction> = await this.get(path);
       for (const t of res.results) {
         // DEBIT = dinheiro saindo, CREDIT = entrando. Usamos o "type" pro sinal e o valor absoluto pro tamanho.
-        const cents = Math.abs(toCents(t.amount));
-        all.push({ externalId: t.id, description: t.description, amountInCents: t.type === 'DEBIT' ? -cents : cents, occurredAt: pluggyDate(t.date) });
+        // Compra em dólar: "amount" vem em USD; o que conta é o valor em reais.
+        const value = t.currencyCode && t.currencyCode !== 'BRL' && t.amountInAccountCurrency != null ? t.amountInAccountCurrency : t.amount;
+        const cents = Math.abs(toCents(value));
+        all.push({
+          externalId: t.id, description: t.description, amountInCents: t.type === 'DEBIT' ? -cents : cents,
+          occurredAt: pluggyDate(t.date), billId: t.creditCardMetadata?.billId ?? null,
+        });
       }
       path = res.next ? `/v2/transactions${res.next.startsWith('?') ? res.next : `?${res.next}`}` : null;
     }
