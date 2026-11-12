@@ -188,6 +188,8 @@ export const financialPlanBody = z.object({
     pattern: z.string().trim().max(120).nullable().default(null),
   })).max(10).default([]),
   fixedExpenses: z.array(z.object({ name: z.string().trim().min(1).max(60), amountInCents: cents, day })).max(20).default([]),
+  /** VR e VA: não passam pelo Open Finance, a pessoa informa. Só servem pra comida, não entram no caixa. */
+  benefits: z.array(z.object({ kind: z.enum(['VR', 'VA', 'outro']), amountInCents: cents, day })).max(4).default([]),
   goal: z.object({
     kind: z.enum(['reserva', 'viagem', 'sair-do-vermelho', 'outro']),
     label: z.string().trim().max(60).nullable().default(null),
@@ -218,5 +220,7 @@ export type ForecastMonth = {
   installmentsInCents: number;
   dailyInCents: number;
   leftInCents: number;
+  /** VR/VA do mês: informativo, não entra no leftInCents. */
+  benefitsInCents: number;
 };
 export type ForecastResponse = { hasPlan: boolean; months: ForecastMonth[] };

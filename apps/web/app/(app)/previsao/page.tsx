@@ -82,6 +82,12 @@ export default async function PrevisaoPage() {
           </div>
         </div>
       </section>
+      {first.benefitsInCents > 0 && (
+        <div className="flex items-center justify-between rounded-2xl bg-amarelo-claro px-3.5 py-3 text-sm">
+          <span>VR e VA <span className="text-tinta-suave">(só pra comida, fora da conta)</span></span>
+          <span className="font-semibold tabular-nums">{money(first.benefitsInCents)}</span>
+        </div>
+      )}
       <p className="text-xs leading-[18px] text-tinta-suave">É uma estimativa com o que você me contou e as parcelas que aparecem no cartão. Mudou algo? <Link href="/renda" className="font-semibold text-laranja-texto">Ajustar renda e contas fixas</Link>.</p>
       <Link href="/chat" className="flex h-[50px] items-center justify-center rounded-full border-[1.5px] border-tinta text-[15px] font-semibold text-tinta no-underline">Pergunte ao Tostão: dá pra comprar?</Link>
     </div>

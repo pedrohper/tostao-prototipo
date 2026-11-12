@@ -176,6 +176,7 @@ export class ForecastUseCase {
         installmentsInCents: inst,
         dailyInCents: daily,
         leftInCents: income - fixed - subscriptions - inst - daily,
+        benefitsInCents: (plan.benefits ?? []).reduce((s, b) => s + b.amountInCents, 0),
       });
     }
     return { hasPlan: true, months: out };

@@ -42,6 +42,8 @@ export function RendaForm({ plan, suggestions, banks }: { plan: FinancialPlan | 
   const [advanceOn, setAdvanceOn] = useState(!!plan?.salary?.advance);
   const [advanceDay, setAdvanceDay] = useState(String(plan?.salary?.advance?.day ?? 15));
   const [advanceAmount, setAdvanceAmount] = useState(plan?.salary?.advance ? toMoney(plan.salary.advance.amountInCents) : '');
+  const [vr, setVr] = useState(() => { const b = plan?.benefits?.find((x) => x.kind === 'VR'); return { amount: b ? toMoney(b.amountInCents) : '', day: String(b?.day ?? 1) }; });
+  const [va, setVa] = useState(() => { const b = plan?.benefits?.find((x) => x.kind === 'VA'); return { amount: b ? toMoney(b.amountInCents) : '', day: String(b?.day ?? 1) }; });
   const [bank, setBank] = useState<string | null>(plan?.salary?.bank ?? guess?.bank?.replace(/\s*\(.*\)$/, '') ?? banks[0] ?? null);
 
   const initialOthers: Other[] = plan
@@ -74,6 +76,7 @@ export function RendaForm({ plan, suggestions, banks }: { plan: FinancialPlan | 
       advance: advanceOn ? { day: dayNum(advanceDay), amountInCents: Math.min(salaryCents, parseMoney(advanceAmount) ?? Math.round(salaryCents / 2)) } : null,
     } : null,
     otherIncomes: others.filter((o) => o.mode !== 'ignorar' && o.name.trim() && parseMoney(o.amount)).map((o) => ({ name: o.name.trim(), amountInCents: parseMoney(o.amount)!, day: o.day ? dayNum(o.day) : null, countsAsIncome: o.mode === 'renda', pattern: o.pattern })),
+    benefits: ([['VR', vr], ['VA', va]] as const).filter(([, b]) => parseMoney(b.amount)).map(([kind, b]) => ({ kind, amountInCents: parseMoney(b.amount)!, day: dayNum(b.day) })),
     fixedExpenses: fixed.filter((f) => f.name.trim() && parseMoney(f.amount)).map((f) => ({ name: f.name.trim(), amountInCents: parseMoney(f.amount)!, day: dayNum(f.day) })),
     goal: goal ? { kind: goal as 'reserva', label: GOALS.find(([k]) => k === goal)?.[1] ?? null, amountInCents: parseMoney(goalAmount), deadline: /^\d{4}-\d{2}$/.test(goalDate) ? goalDate : null } : null,
   };
@@ -127,6 +130,17 @@ export function RendaForm({ plan, suggestions, banks }: { plan: FinancialPlan | 
             </div>
           )}
           {advanceOn && <span className="text-xs leading-[17px] text-tinta-suave">O valor lá em cima é o total do mês. O resto cai no outro dia.</span>}
+        </div>
+        <div className="flex flex-col gap-2 rounded-2xl border border-linha bg-cartao px-3.5 py-3">
+          <span className="text-[15px] font-semibold">VR e VA <span className="font-normal text-tinta-suave">(se tiver)</span></span>
+          <span className="-mt-1 text-xs leading-[17px] text-tinta-suave">Não passam pelo Open Finance. Ficam separados: só pra comida, fora do dinheiro da conta.</span>
+          {([['VR', vr, setVr], ['VA', va, setVa]] as const).map(([k, b, set]) => (
+            <div key={k} className="grid grid-cols-[44px_minmax(0,1fr)_88px] items-center gap-2">
+              <span className="text-sm font-bold">{k}</span>
+              <input aria-label={`Valor do ${k}`} value={b.amount} onChange={(e) => set({ ...b, amount: e.target.value })} inputMode="decimal" placeholder="R$ por mês" className={field} />
+              <input aria-label={`Dia que cai o ${k}`} value={b.day} onChange={(e) => set({ ...b, day: e.target.value })} inputMode="numeric" placeholder="dia" className={`${field} px-3`} />
+            </div>
+          ))}
         </div>
         {banks.length > 0 && (
           <div className="flex flex-col gap-2">

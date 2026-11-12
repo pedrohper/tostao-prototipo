@@ -17,6 +17,7 @@ const plan = (over: Partial<FinancialPlan> = {}): FinancialPlan => ({
   otherIncomes: [{ name: 'Pix da família', amountInCents: 550000, day: 2, countsAsIncome: false, pattern: 'TRANSF.AUTORIZ.ENTRE C/C - FULANO' }],
   fixedExpenses: [{ name: 'Aluguel', amountInCents: 90000, day: 10 }],
   goal: null,
+  benefits: [{ kind: 'VR', amountInCents: 60000, day: 1 }],
   ...over,
 });
 
@@ -56,6 +57,7 @@ describe('Renda e previsão', () => {
     expect(f.months.map((m) => m.month)).toEqual(['2026-12', '2027-01', '2027-02']);
     expect(f.months.map((m) => m.installmentsInCents)).toEqual([10000, 0, 0]);
     expect(f.months[0]!.incomeInCents).toBe(320000); // o Pix da família não conta
+    expect(f.months[0]!.benefitsInCents).toBe(60000); // VR aparece, mas não soma na sobra
     expect(f.months[1]!.leftInCents).toBe(320000 - 90000 - f.months[1]!.subscriptionsInCents - f.months[1]!.dailyInCents);
   });
 
