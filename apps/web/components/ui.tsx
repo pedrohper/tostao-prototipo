@@ -27,7 +27,7 @@ export function Field({ label, error, ...props }: React.InputHTMLAttributes<HTML
 }
 
 export function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <div className={`rounded-[20px] bg-cartao p-4 ${className}`}>{children}</div>;
+  return <div className={`rounded-[20px] border border-linha bg-cartao p-4 ${className}`}>{children}</div>;
 }
 
 export function ErrorNote({ message }: { message?: string }) {
@@ -40,5 +40,26 @@ export function BackLink({ href, label = 'Voltar' }: { href: string; label?: str
     <Link href={href} aria-label={label} className="-ml-2.5 flex h-11 w-11 items-center justify-center">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
     </Link>
+  );
+}
+
+/** Rótulo pequeno em caixa alta, como "CONTAS CONECTADAS" no design. */
+export function Eyebrow({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return <span className={`text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase ${className}`}>{children}</span>;
+}
+
+export function CardIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+      <rect x="2" y="5" width="20" height="14" rx="3" /><path d="M2 10h20" /><path d="M6 15h4" />
+    </svg>
+  );
+}
+
+export function BankIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+      <path d="M3 21h18" /><path d="M5 21V11M9.5 21V11M14.5 21V11M19 21V11" /><path d="M12 3L3 8.5h18z" />
+    </svg>
   );
 }

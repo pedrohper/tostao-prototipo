@@ -45,7 +45,8 @@ export class GetMonthSummaryUseCase {
       outcomeInCents,
       uncategorizedCount: real.filter((t) => t.categoryId === null).length,
       byCategory,
-      accounts: visible.map((a) => ({ id: a.id, name: a.name, balanceInCents: a.balanceInCents })),
+      accounts: visible.map((a) => ({ id: a.id, name: a.name, type: a.type === 'CREDIT' ? 'CREDIT' as const : 'BANK' as const, balanceInCents: a.balanceInCents,
+        creditLimitInCents: a.creditLimitInCents ?? null, dueDate: a.dueDate ? a.dueDate.toISOString() : null })),
       hiddenAccounts: accounts.filter((a) => a.hidden).map((a) => ({ id: a.id, name: a.name, balanceInCents: a.balanceInCents })),
     };
   }

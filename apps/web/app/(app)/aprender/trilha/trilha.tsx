@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import type { Module } from '@/lib/lessons';
 import { takeLegacyDone } from '@/lib/progress';
-import { importLocalProgress } from './actions';
+import { importLocalProgress } from '../actions';
 
 export function Trilha({ modules, colors, done: saved }: { modules: Module[]; colors: string[]; done: string[] }) {
   const [done, setDone] = useState<string[]>(saved);

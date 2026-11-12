@@ -14,6 +14,9 @@ export type BankAccountData = {
    * (ex.: Bradesco e Bradescard) com ids diferentes; isso deixa a gente perceber.
    */
   fingerprint?: string | null;
+  /** Cartão: limite total e vencimento da fatura atual. */
+  creditLimitInCents?: number | null;
+  dueDate?: Date | null;
 };
 
 export type BankTransactionData = {

@@ -38,7 +38,12 @@ class PrismaAccountsRepository implements AccountsRepository {
     return (await this.db.account.upsert({
       where: { userId_externalId: { userId: data.userId, externalId: data.externalId } },
       create: data,
-      update: { name: data.name, balanceInCents: data.balanceInCents, type: data.type, fingerprint: data.fingerprint },
+      update: {
+        name: data.name, balanceInCents: data.balanceInCents, type: data.type, fingerprint: data.fingerprint,
+        // Import de extrato não manda limite/vencimento: aí não mexe no que já tem.
+        ...(data.creditLimitInCents !== undefined && { creditLimitInCents: data.creditLimitInCents }),
+        ...(data.dueDate !== undefined && { dueDate: data.dueDate }),
+      },
     })) as Account;
   }
   async listByUser(userId: string) { return (await this.db.account.findMany({ where: { userId }, orderBy: { name: 'asc' } })) as Account[]; }

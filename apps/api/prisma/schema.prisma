@@ -61,6 +61,8 @@ model Account {
   balanceInCents Int     @map("balance_in_cents")
   fingerprint    String? // cartão: "CREDIT:BANDEIRA:final", pra achar o mesmo cartão em duas conexões
   hidden         Boolean @default(false) // a pessoa ocultou (ex.: poupança que não usa). O sync nunca mexe nisso.
+  creditLimitInCents Int?      @map("credit_limit_in_cents") // cartão: limite total
+  dueDate            DateTime? @map("due_date") // cartão: vencimento da fatura atual
 
   user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   connection   BankConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)

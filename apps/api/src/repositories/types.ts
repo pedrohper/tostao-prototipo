@@ -22,7 +22,8 @@ export interface BankConnectionsRepository {
   delete(id: string): Promise<void>;
 }
 
-export type AccountData = Pick<Account, 'userId' | 'connectionId' | 'externalId' | 'name' | 'type' | 'balanceInCents' | 'fingerprint'>;
+export type AccountData = Pick<Account, 'userId' | 'connectionId' | 'externalId' | 'name' | 'type' | 'balanceInCents' | 'fingerprint'> &
+  Partial<Pick<Account, 'creditLimitInCents' | 'dueDate'>>;
 export interface AccountsRepository {
   upsertByExternalId(data: AccountData): Promise<Account>;
   listByUser(userId: string): Promise<Account[]>;

@@ -29,6 +29,9 @@ export type Account = {
   balanceInCents: number;
   /** Identidade do cartão fora do provedor (bandeira + final). Pega o mesmo cartão vindo de duas conexões. */
   fingerprint: string | null;
+  /** Cartão: limite total e vencimento da fatura atual, quando o banco informa. */
+  creditLimitInCents: number | null;
+  dueDate: Date | null;
   /** Ocultada pela pessoa: some da tela e do saldo, mas continua sincronizando. */
   hidden: boolean;
 };

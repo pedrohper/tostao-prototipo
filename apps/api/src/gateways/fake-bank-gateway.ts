@@ -23,6 +23,10 @@ export class FakeBankGateway implements BankGateway {
       { externalId: `${itemId}:nubank`, name: 'Nubank', type: 'BANK', balanceInCents: 31210 },
       { externalId: `${itemId}:mp`, name: 'Mercado Pago', type: 'BANK', balanceInCents: 20470 },
       { externalId: `${itemId}:bradesco`, name: 'Bradesco', type: 'BANK', balanceInCents: 32550 },
+      {
+        externalId: `${itemId}:cartao`, name: 'Nubank Mastercard', type: 'CREDIT', balanceInCents: -28790,
+        creditLimitInCents: 120000, dueDate: nextDay10(this.now()),
+      },
     ];
   }
 
@@ -61,4 +65,9 @@ export class FakeBankGateway implements BankGateway {
       }))
       .filter((t) => t.occurredAt >= from && t.occurredAt <= to);
   }
+}
+
+/** Dia 10 do mês que vem, pra fatura de exemplo. */
+function nextDay10(now: Date) {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 10, 15));
 }

@@ -11,7 +11,7 @@ export class GetTransactionUseCase {
     const category = t.categoryId ? await this.repos.categories.findById(t.categoryId) : null;
     const account = t.accountId ? (await this.repos.accounts.listByUser(userId)).find((a) => a.id === t.accountId) : null;
     return {
-      transaction: { ...t, categoryName: category?.name ?? null, accountName: account?.name ?? null },
+      transaction: { ...t, categoryName: category?.name ?? null, categoryEmoji: category?.emoji ?? null, categoryColor: category?.color ?? null, accountName: account?.name ?? null },
       // O padrão que vira regra se o usuário marcar "sempre"
       rulePattern: patternFromDescription(t.description),
     };

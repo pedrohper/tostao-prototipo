@@ -85,6 +85,8 @@ export type TransactionDTO = {
   occurredAt: string;
   categoryId: string | null;
   categoryName: string | null;
+  categoryEmoji: string | null;
+  categoryColor: string | null;
   accountName: string | null;
   isInternalTransfer: boolean;
   source: 'bank' | 'manual';
@@ -107,7 +109,8 @@ export type MonthSummaryResponse = {
   outcomeInCents: number;
   uncategorizedCount: number;
   byCategory: { categoryId: string | null; name: string; color: string; totalInCents: number }[];
-  accounts: { id: string; name: string; balanceInCents: number }[];
+  /** BANK = conta corrente (entra no saldo); CREDIT = cartão (balance = fatura em aberto). */
+  accounts: { id: string; name: string; type: 'BANK' | 'CREDIT'; balanceInCents: number; creditLimitInCents: number | null; dueDate: string | null }[];
   /** Contas que a pessoa ocultou: fora do saldo e da lista. */
   hiddenAccounts: { id: string; name: string; balanceInCents: number }[];
 };

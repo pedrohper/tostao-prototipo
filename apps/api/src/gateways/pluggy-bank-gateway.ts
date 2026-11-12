@@ -12,7 +12,7 @@ type PluggyAccount = {
   subtype?: string | null;
   balance: number;
   number?: string | null;
-  creditData?: { brand?: string | null } | null;
+  creditData?: { brand?: string | null; creditLimit?: number | null; balanceDueDate?: string | null } | null;
 };
 type PluggyTransaction = { id: string; description: string; amount: number; date: string; type: 'DEBIT' | 'CREDIT' };
 type Page<T> = { total: number; totalPages: number; page: number; results: T[] };
@@ -111,6 +111,10 @@ export class PluggyBankGateway implements BankGateway {
       type: a.type,
       // No cartão, "balance" é quanto você deve. Pra gente, dívida é negativo.
       balanceInCents: a.type === 'CREDIT' ? -Math.abs(toCents(a.balance)) : toCents(a.balance),
+      ...(a.type === 'CREDIT' && {
+        creditLimitInCents: a.creditData?.creditLimit != null ? Math.abs(toCents(a.creditData.creditLimit)) : null,
+        dueDate: a.creditData?.balanceDueDate ? new Date(a.creditData.balanceDueDate) : null,
+      }),
     }));
   }
 

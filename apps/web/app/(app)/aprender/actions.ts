@@ -7,6 +7,8 @@ export async function markLessonDone(lessonId: string) {
   try {
     await api(`/progress/${encodeURIComponent(lessonId)}`, { method: 'POST' });
     revalidatePath('/aprender');
+    revalidatePath('/aprender/trilha');
+    revalidatePath('/perfil');
   } catch { /* segue sem salvar */ }
 }
 

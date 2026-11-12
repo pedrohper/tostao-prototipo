@@ -68,7 +68,7 @@ export class InMemoryAccountsRepository implements AccountsRepository {
   async upsertByExternalId(data: AccountData) {
     const found = this.items.find((a) => a.userId === data.userId && a.externalId === data.externalId);
     if (found) { Object.assign(found, data); return found; }
-    const a: Account = { id: randomUUID(), hidden: false, ...data };
+    const a: Account = { id: randomUUID(), hidden: false, creditLimitInCents: null, dueDate: null, ...data };
     this.items.push(a);
     return a;
   }

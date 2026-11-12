@@ -93,7 +93,7 @@ export function LessonPlayer({ lesson, moduleTitle, moduleNumber, nextId }: Prop
       {last ? (
         <div className="flex flex-col gap-2.5">
           {nextId && <Link href={`/aprender/${nextId}`} className="flex h-[54px] items-center justify-center rounded-full bg-tinta font-semibold text-papel no-underline">Próxima lição</Link>}
-          <Link href="/aprender" className="flex h-[50px] items-center justify-center rounded-full border-[1.5px] border-tinta font-semibold no-underline">Voltar pra trilha</Link>
+          <Link href="/aprender" className="flex h-[50px] items-center justify-center rounded-full border-[1.5px] border-tinta font-semibold no-underline">Voltar pro Aprender</Link>
         </div>
       ) : (
         <Button variant="dark" onClick={advance} disabled={step === 3 && !vote}>
