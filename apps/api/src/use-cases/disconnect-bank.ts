@@ -1,6 +1,7 @@
 import type { BankGateway } from '../gateways/bank-gateway.js';
 import type { BankConnectionsRepository } from '../repositories/types.js';
 import { ResourceNotFoundError } from '../domain/errors.js';
+import { isImportConnection } from './import-statement.js';
 
 /**
  * Tira um banco do Tostão: apaga o Item no provedor e a conexão aqui
@@ -19,7 +20,7 @@ export class DisconnectBankUseCase {
 
     let providerDeleted = true;
     try {
-      await this.bank.deleteItem(connection.itemId);
+      if (!isImportConnection(connection.itemId)) await this.bank.deleteItem(connection.itemId);
     } catch {
       providerDeleted = false;
     }

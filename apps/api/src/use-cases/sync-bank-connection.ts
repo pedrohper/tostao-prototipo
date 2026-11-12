@@ -1,3 +1,4 @@
+import { isImportConnection } from './import-statement.js';
 import type { BankGateway } from '../gateways/bank-gateway.js';
 import type { Repositories } from '../repositories/types.js';
 import type { BankConnection } from '../domain/entities.js';
@@ -29,6 +30,8 @@ export class SyncBankConnectionUseCase {
 
     const connection = await connections.findById(connectionId);
     if (!connection) throw new ResourceNotFoundError('Conexão');
+    // Extrato importado de arquivo não tem provedor: atualiza subindo outro arquivo.
+    if (isImportConnection(connection.itemId)) return { importedCount: 0, accounts: (await accounts.listByUser(connection.userId)).filter((a) => a.connectionId === connection.id).length };
 
     const since = connection.lastSyncedAt
       ? new Date(connection.lastSyncedAt.getTime() - OVERLAP_DAYS * DAY)

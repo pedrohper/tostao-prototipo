@@ -24,6 +24,7 @@ export default async function InicioPage() {
   // Nos primeiros 10 dias do mês, chama pro fechamento do mês que acabou
   const lastMonth = shiftMonth(month, -1);
   const showClosing = new Date(Date.now() - 3 * 3600_000).getUTCDate() <= 10;
+  const broken = me.connections.filter((c) => c.status === 'ERROR' && !c.itemId.startsWith('import:'));
   const vazio = s.balanceInCents === null && s.outcomeInCents === 0 && s.incomeInCents === 0;
 
   return (
@@ -32,6 +33,13 @@ export default async function InicioPage() {
         <h1 className="font-display text-[28px] font-extrabold">Fala, {firstName}</h1>
         <Mascote pose="avatar" size={48} alt="" className="rounded-full bg-amarelo-claro" />
       </header>
+
+      {broken.length > 0 && (
+        <Link href="/conectar" role="alert" className="flex items-center gap-3 rounded-[20px] bg-amarelo-claro p-3 no-underline">
+          <Mascote pose="preocupado" size={56} alt="" />
+          <p className="text-[15px]"><b>{broken.map((c) => c.institution ?? 'Um banco').join(', ')}</b> parou de atualizar. Os números podem estar atrasados. Toca pra resolver.</p>
+        </Link>
+      )}
 
       {vazio ? (
         <Card className="flex flex-col items-center gap-3 py-8 text-center">

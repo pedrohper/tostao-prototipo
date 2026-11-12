@@ -1,3 +1,4 @@
+import { ImportStatementUseCase } from './import-statement.js';
 import { CreateInviteUseCase, ListInvitesUseCase } from './invites.js';
 import { ResetPasswordUseCase } from './password-reset.js';
 import { ResourceNotFoundError } from '../domain/errors.js';
@@ -50,6 +51,7 @@ export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), chatDailyL
     markLessonDone: { execute: ({ userId, lessonId }: { userId: string; lessonId: string }) => repos.lessons.markDone(userId, lessonId) },
     listCategories: { execute: async ({ userId }: { userId?: string }) => ({ categories: await repos.categories.list(userId) }) },
     createCategory: new CreateCategoryUseCase(repos),
+    importStatement: new ImportStatementUseCase(repos),
     askTostao: new AskTostaoUseCase(repos, ai, chatDailyLimit),
     chatHistory: { execute: async ({ userId }: { userId: string }) => ({ messages: await repos.chat.listRecent(userId, 60) }) },
     setAccountHidden: {

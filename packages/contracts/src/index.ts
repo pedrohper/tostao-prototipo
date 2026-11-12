@@ -146,3 +146,12 @@ export const chatBody = z.object({ message: z.string().trim().min(1, 'Escreve al
 export type ChatMessageDTO = { id: string; role: 'user' | 'assistant'; content: string; createdAt: string };
 export type ChatHistoryResponse = { messages: ChatMessageDTO[] };
 export type ChatReplyResponse = { question: ChatMessageDTO; reply: ChatMessageDTO; remainingToday: number };
+
+// Importar extrato (OFX/CSV)
+export const importStatementBody = z.object({
+  accountName: z.string().trim().max(40).default(''),
+  fileName: z.string().max(200),
+  content: z.string().min(10, 'Arquivo vazio').max(4_000_000, 'Arquivo grande demais (máx. 4 MB)'),
+  isCard: z.boolean().optional(),
+});
+export type ImportResponse = { importedCount: number; skipped: number; format: 'ofx' | 'csv'; kind: 'BANK' | 'CREDIT'; accountName: string; from: string; to: string };

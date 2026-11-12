@@ -22,6 +22,8 @@ Protótipo funcional pra testar e validar a ideia. Depois, a plataforma de verda
 - Mesmo cartão vindo de duas conexões (ex.: Bradesco e Bradescard) conta uma vez só
 - Desconectar banco pela tela Conectar
 - **Minhas categorias**: crie categorias de gasto e de entrada; a categoria **Não conta** tira do resumo dinheiro que só passa por você (repasse com a família)
+- **Importar extrato** OFX/CSV (Conectar → Importar extrato): funciona com qualquer banco, sem Pluggy; reimportar não duplica
+- Aviso no Início e no Conectar quando um banco para de atualizar ou o Pluggy está fora
 - **Chat com o Tostão** (aba Tostão): IA (DeepSeek) que responde com base nos seus números; precisa de `DEEPSEEK_API_KEY` no `apps/api/.env` (limite `CHAT_DAILY_LIMIT`, padrão 40/dia)
 - Cadastro só por convite (Perfil → Convidar alguém); a primeira conta do servidor entra sem
 - Sessão que renova sozinha, limite de 5 tentativas de login, backup diário (`scripts/backup-db.sh`)

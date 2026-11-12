@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { connectBankBody, type ConnectTokenResponse, type DisconnectResponse, type SyncResponse } from '@tostao/contracts';
+import { connectBankBody, importStatementBody, type ImportResponse, type ConnectTokenResponse, type DisconnectResponse, type SyncResponse } from '@tostao/contracts';
 import type { UseCases } from '../../use-cases/factories.js';
 import type { Repositories } from '../../repositories/types.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
@@ -29,6 +29,13 @@ export function bankRoutes(app: FastifyInstance, uc: UseCases, repos: Repositori
     const { hidden } = z.object({ hidden: z.boolean() }).parse(request.body);
     await uc.setAccountHidden.execute({ userId: request.user.sub, accountId: id, hidden });
     return reply.status(204).send();
+  });
+
+  // Importar extrato (OFX/CSV) sem Pluggy
+  app.post('/imports', { onRequest: verifyJwt, bodyLimit: 5 * 1024 * 1024 }, async (request, reply) => {
+    const body = importStatementBody.parse(request.body);
+    const r = await uc.importStatement.execute({ ...body, userId: request.user.sub });
+    return reply.status(201).send({ ...r, from: r.from.toISOString(), to: r.to.toISOString() } satisfies ImportResponse);
   });
 
   app.post('/connections/:id/sync', { onRequest: verifyJwt }, async (request) => {

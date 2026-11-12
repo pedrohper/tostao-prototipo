@@ -10,7 +10,8 @@ export default async function ConectarPage({ searchParams }: { searchParams: Pro
   const [me, mode] = await Promise.all([
     api<ProfileResponse>('/me'),
     // Só pra saber se a API fala com o Pluggy de verdade (token != null) ou com o banco de exemplo.
-    api<ConnectTokenResponse>('/connections/connect-token', { method: 'POST', body: {} }).catch(() => ({ connectToken: null })),
+    // Se falhar (Pluggy fora do ar, trial vencido), a gente avisa e oferece importar extrato.
+    api<ConnectTokenResponse>('/connections/connect-token', { method: 'POST', body: {} }).then((r) => ({ ...r, down: false })).catch(() => ({ connectToken: null, down: true })),
   ]);
   const widget = mode.connectToken !== null;
   return (
@@ -31,8 +32,20 @@ export default async function ConectarPage({ searchParams }: { searchParams: Pro
         ))}
       </div>
 
+      {mode.down && (
+        <div role="alert" className="flex items-center gap-3 rounded-[20px] bg-amarelo-claro p-3">
+          <Mascote pose="preocupado" size={64} alt="" />
+          <p className="text-[15px]">A conexão automática com os bancos tá fora do ar agora. Enquanto isso, dá pra <Link href="/importar" className="font-semibold underline">importar o extrato</Link> do app do banco.</p>
+        </div>
+      )}
+
       <Card className="flex flex-col gap-3 bg-azul">
-        {widget ? (
+        {mode.down ? (
+          <>
+            <h2 className="font-display text-lg font-extrabold">Sem conexão automática por enquanto</h2>
+            <p className="text-[14px] leading-relaxed">Os bancos que já estão aqui continuam com o que foi puxado até agora.</p>
+          </>
+        ) : widget ? (
           <>
             <h2 className="font-display text-lg font-extrabold">Como funciona</h2>
             <ol className="list-decimal space-y-1 pl-5 text-[14px] leading-relaxed">
@@ -49,24 +62,33 @@ export default async function ConectarPage({ searchParams }: { searchParams: Pro
         )}
       </Card>
 
-      <ConnectPanel widget={widget} />
+      {!mode.down && <ConnectPanel widget={widget} />}
+
+      <Link href="/importar" className="flex items-center justify-between rounded-2xl border-[1.5px] border-linha bg-cartao p-4 no-underline">
+        <span><b>Importar extrato</b><span className="block text-[13px] text-tinta-suave">OFX ou CSV baixado do app do banco. Funciona com qualquer banco.</span></span>
+        <span className="text-tinta-suave">›</span>
+      </Link>
 
       {me.connections.length > 0 && (
         <section className="flex flex-col gap-2">
           <h2 className="font-display text-lg font-extrabold">Bancos conectados</h2>
-          {me.connections.map((c) => (
+          {me.connections.map((c) => {
+            const imported = c.itemId.startsWith('import:');
+            return (
             <Card key={c.id} className="flex flex-col gap-2">
               <div className="flex justify-between">
                 <span className="font-semibold">{c.institution ?? 'Banco'}</span>
-                <span className={`text-xs font-bold ${c.status === 'ACTIVE' ? 'text-verde-texto' : 'text-vermelho-texto'}`}>{c.status === 'ACTIVE' ? 'Ativo' : 'Com erro'}</span>
+                <span className={`text-xs font-bold ${imported ? 'text-tinta-suave' : c.status === 'ACTIVE' ? 'text-verde-texto' : 'text-vermelho-texto'}`}>{imported ? 'Extrato importado' : c.status === 'ACTIVE' ? 'Ativo' : 'Parou de atualizar'}</span>
               </div>
-              <span className="text-xs text-tinta-suave">Última sincronização: {c.lastSyncedAt ? new Date(c.lastSyncedAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : 'nunca'}</span>
+              <span className="text-xs text-tinta-suave">{imported ? 'Último arquivo' : 'Última sincronização'}: {c.lastSyncedAt ? new Date(c.lastSyncedAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : 'nunca'}</span>
+              {!imported && c.status === 'ERROR' && <p className="text-[13px] text-vermelho-texto">Não consegui atualizar esse banco. Tenta sincronizar de novo; se continuar, desconecta e conecta outra vez, ou importa o extrato.</p>}
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <SyncButton id={c.id} />
+                {imported ? <Link href={`/importar?conta=${encodeURIComponent(c.institution ?? '')}`} className="text-sm font-semibold underline">Importar mais</Link> : <SyncButton id={c.id} />}
                 <DisconnectButton id={c.id} name={c.institution ?? 'esse banco'} />
               </div>
             </Card>
-          ))}
+            );
+          })}
         </section>
       )}
 
