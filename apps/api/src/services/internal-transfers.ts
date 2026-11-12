@@ -10,6 +10,7 @@ const KEYWORDS = [
   'PAGAMENTO RECEBIDO', // como aparece do lado do cartão
   'TRANSFERENCIA ENTRE CONTAS',
   'PIX NU PAGAMENTOS', // pagar a fatura do Nubank por Pix, de outra conta sua
+  'GASTOS CARTAO DE CREDITO', // fatura do cartão debitada na conta corrente (lado da conta no Bradesco)
   'PAGTO. POR DEB EM C/C', // fatura do cartão debitada na conta corrente (lado do cartão no Bradesco)
   'DINHEIRO RESERVADO', // cofrinho do Mercado Pago (guardar)
   'DINHEIRO RETIRADO', // cofrinho do Mercado Pago (tirar)

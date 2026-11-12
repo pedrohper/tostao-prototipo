@@ -2,6 +2,8 @@ import type { Repositories } from '../repositories/types.js';
 import type { AiGateway } from '../gateways/ai-gateway.js';
 import { NEUTRAL_CATEGORY_ID } from '../domain/entities.js';
 import { canUseCategory } from './categories.js';
+import { patternFromDescription } from '../services/categorize.js';
+import type { Transaction } from '../domain/entities.js';
 
 const BATCH = 40;
 const MAX_PER_RUN = 200;
@@ -15,6 +17,7 @@ Regras:
 - Use o que você sabe de lojas e serviços do Brasil (ex.: iFood = delivery, Uber/99 = transporte, Drogasil = saúde).
 - "outros" e "entrada-outros" não são lixeira: se não sabe, é null.
 - "salario" só pra salário/folha de pagamento claro (ex.: "SALARIO", "FOLHA", "PAGTO SALARIO"). Rendimento de investimento ou cofrinho vai pra "entrada-outros".
+- Estorno, reembolso ou devolução de compra: null.
 - Nunca invente id de categoria.`;
 
 /**
@@ -45,11 +48,18 @@ export class AutoCategorizeUseCase {
       .filter((t) => !t.isInternalTransfer && t.amountInCents !== 0)
       .sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime())
       .slice(0, MAX_PER_RUN);
+    // Mesma descrição (sem data/código) e mesmo sinal = uma pergunta só, e a mesma categoria pra todas.
+    const groups = new Map<string, Transaction[]>();
+    for (const t of todo) {
+      const key = `${t.amountInCents < 0 ? '-' : '+'}${patternFromDescription(t.description) || t.description}`;
+      groups.set(key, [...(groups.get(key) ?? []), t]);
+    }
+    const items = [...groups.values()];
+    const cats = usable.map((c) => `${c.id}|${c.name}|${c.kind}`).join('\n');
     let categorized = 0;
-    for (let i = 0; i < todo.length; i += BATCH) {
-      const batch = todo.slice(i, i + BATCH);
-      const list = batch.map((t, k) => `${k}|${t.description.replace(/\s+/g, ' ').slice(0, 90)}|${(t.amountInCents / 100).toFixed(2)}`).join('\n');
-      const cats = usable.map((c) => `${c.id}|${c.name}|${c.kind}`).join('\n');
+    for (let i = 0; i < items.length; i += BATCH) {
+      const batch = items.slice(i, i + BATCH);
+      const list = batch.map((g, k) => `${k}|${g[0]!.description.replace(/\s+/g, ' ').slice(0, 90)}|${(g[0]!.amountInCents / 100).toFixed(2)}`).join('\n');
       let answer: Record<string, unknown> = {};
       try {
         const raw = await this.ai.reply([
@@ -62,14 +72,17 @@ export class AutoCategorizeUseCase {
         continue; // IA fora ou resposta estranha: fica pendente, tenta no próximo sync
       }
       for (const [k, catId] of Object.entries(answer)) {
-        const tx = batch[Number(k)];
+        const group = batch[Number(k)];
         const cat = typeof catId === 'string' ? byId.get(catId) : undefined;
-        if (!tx || !cat) continue;
-        if ((tx.amountInCents < 0 && cat.kind !== 'saida') || (tx.amountInCents > 0 && cat.kind !== 'entrada')) continue;
-        const fresh = await this.repos.transactions.findById(tx.id);
-        if (!fresh || fresh.categoryId) continue; // a pessoa categorizou enquanto isso
-        await this.repos.transactions.save({ ...fresh, categoryId: cat.id });
-        categorized++;
+        if (!group || !cat) continue;
+        const sign = group[0]!.amountInCents;
+        if ((sign < 0 && cat.kind !== 'saida') || (sign > 0 && cat.kind !== 'entrada')) continue;
+        for (const tx of group) {
+          const fresh = await this.repos.transactions.findById(tx.id);
+          if (!fresh || fresh.categoryId) continue; // a pessoa categorizou enquanto isso
+          await this.repos.transactions.save({ ...fresh, categoryId: cat.id });
+          categorized++;
+        }
       }
     }
     return { categorized, asked: todo.length };
