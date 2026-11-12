@@ -1,7 +1,7 @@
 import type { ProfileResponse } from '@tostao/contracts';
 import { api } from '@/lib/api';
 import { Mascote } from '@/components/mascote';
-import { BackLink, Card } from '@/components/ui';
+import { BackLink } from '@/components/ui';
 import { ImportForm } from './import-form';
 
 const BANCOS: { nome: string; passo: string }[] = [
@@ -32,16 +32,16 @@ export default async function ImportarPage({ searchParams }: { searchParams: Pro
         </div>
       </div>
       <ImportForm conta={conta} contas={contas} />
-      <Card className="flex flex-col gap-1 text-[14px] leading-relaxed">
-        <h2 className="font-display text-lg font-extrabold">Onde baixar</h2>
+      <div className="flex flex-col rounded-2xl bg-papel-2 px-3.5 py-3 text-[13px] leading-[19px]">
+        <h2 className="text-[14px] font-bold">Onde baixar</h2>
         {BANCOS.map((b) => (
-          <details key={b.nome} className="border-t border-linha py-2 first-of-type:border-0">
+          <details key={b.nome} className="border-b border-linha last-of-type:border-0">
             <summary className="flex min-h-10 cursor-pointer list-none items-center justify-between font-semibold">{b.nome}<span aria-hidden className="text-tinta-suave">+</span></summary>
             <p className="pb-1 text-tinta-suave">{b.passo}</p>
           </details>
         ))}
-        <p className="pt-2">Pode importar o mesmo período de novo sem medo: o que já estava aqui eu pulo. Os menus dos bancos mudam de vez em quando: se não achar, procura “Exportar” ou “Extrato” no app ou no site. Banco que não tá na lista? Manda o CSV mesmo, eu tento entender.</p>
-      </Card>
+        <p className="pt-2 text-tinta-suave">Pode importar o mesmo período de novo sem medo: o que já estava aqui eu pulo. Os menus dos bancos mudam de vez em quando: se não achar, procura “Exportar” ou “Extrato” no app ou no site. Banco que não tá na lista? Manda o CSV mesmo, eu tento entender.</p>
+      </div>
     </div>
   );
 }

@@ -10,21 +10,24 @@ type Input = {
   kind: 'saida' | 'entrada';
   occurredAt: Date;
   categoryId?: string | null;
+  accountId?: string | null;
 };
 
 /** "Anotar gasto": pra dinheiro vivo ou pra quem não conectou banco. */
 export class CreateManualTransactionUseCase {
-  constructor(private readonly repos: Pick<Repositories, 'transactions' | 'categories' | 'rules'>) {}
+  constructor(private readonly repos: Pick<Repositories, 'transactions' | 'categories' | 'rules' | 'accounts'>) {}
 
   async execute(input: Input) {
     const { transactions, categories, rules } = this.repos;
     let categoryId = input.categoryId ?? null;
     if (categoryId && !canUseCategory(await categories.findById(categoryId), input.userId)) throw new ResourceNotFoundError('Categoria');
+    const accountId = input.accountId ?? null;
+    if (accountId && !(await this.repos.accounts.listByUser(input.userId)).some((a) => a.id === accountId)) throw new ResourceNotFoundError('Conta');
     if (!categoryId) categoryId = categorizeByRules(input.description, await rules.listForUser(input.userId));
 
     const transaction = await transactions.create({
       userId: input.userId,
-      accountId: null,
+      accountId,
       externalId: null,
       description: input.description,
       amountInCents: input.kind === 'saida' ? -Math.abs(input.amountInCents) : Math.abs(input.amountInCents),

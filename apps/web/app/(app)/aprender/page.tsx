@@ -23,7 +23,7 @@ export default async function AprenderPage() {
   const proximos = atualIdx >= 0 ? modules.slice(atualIdx + 1, atualIdx + 4) : [];
 
   return (
-    <div className="flex flex-col gap-3.5">
+    <div className="flex flex-col gap-3.5 pt-9 md:pt-0">
       <LegacyProgress saved={done} />
       <div className="flex items-end justify-between">
         <h1 className="font-display text-[34px] leading-[38px] font-extrabold">Aprender</h1>
@@ -35,7 +35,7 @@ export default async function AprenderPage() {
 
       <div className="flex items-center gap-1.5 rounded-[18px] border border-linha bg-cartao py-3 pr-3.5 pl-1.5">
         <Mascote pose="professor" size={84} alt="Tostão professor" />
-        <div className="flex min-w-0 grow flex-col gap-1.5">
+        <div className="flex min-w-0 grow flex-col gap-[9px]">
           <Eyebrow>Missões de hoje</Eyebrow>
           <Missao feita={doneToday > 0} href={proxima ? `/aprender/${proxima.id}` : '/aprender/trilha'}>Fazer 1 lição</Missao>
           <Missao feita={pendentes === 0} href="/carteira?filtro=pendentes">
@@ -53,7 +53,7 @@ export default async function AprenderPage() {
           </div>
           <div className="flex items-center justify-between gap-3 rounded-[14px] bg-cartao py-2.5 pr-2.5 pl-3.5">
             <div className="flex min-w-0 flex-col">
-              <span className="text-xs text-tinta-suave">Próxima · 2 min</span>
+              <span className="text-xs text-tinta-suave">Próxima · 2 min · usa seus gastos</span>
               <span className="text-[15px] font-bold">{proxima.title}</span>
             </div>
             <Link href={`/aprender/${proxima.id}`} className="flex h-[38px] shrink-0 items-center rounded-full bg-tinta px-4 text-sm font-semibold text-papel no-underline">
@@ -99,11 +99,14 @@ export default async function AprenderPage() {
 
 function Missao({ feita, href, children }: { feita: boolean; href: string; children: React.ReactNode }) {
   return (
-    <Link href={href} className="flex min-h-8 items-center gap-2 text-[15px] text-tinta no-underline">
-      <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-[1.5px] ${feita ? 'border-menta bg-menta text-[#1E1B18]' : 'border-linha'}`} aria-hidden="true">
-        {feita && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5L20 7" /></svg>}
+    <Link href={href} className="flex flex-col gap-1 text-tinta no-underline">
+      <span className="flex justify-between text-[13px] font-semibold">
+        <span className={feita ? 'text-tinta-suave line-through' : ''}>{children}</span>
+        <span>{feita ? '1/1' : '0/1'}</span>
       </span>
-      <span className={feita ? 'text-tinta-suave line-through' : 'font-semibold'}>{children}</span>
+      <span className="h-2 rounded-full bg-papel-2" aria-hidden="true">
+        <span className={`bar-fill block h-full rounded-full ${feita ? 'w-full bg-menta' : 'w-[4%] bg-tinta'}`} />
+      </span>
       <span className="sr-only">{feita ? '(feita)' : '(pendente)'}</span>
     </Link>
   );

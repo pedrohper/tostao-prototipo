@@ -83,6 +83,8 @@ export const manualTransactionBody = z.object({
   kind: z.enum(['saida', 'entrada']),
   occurredAt: z.iso.date(),
   categoryId: z.string().nullable().optional(),
+  /** "Pago com": null = dinheiro vivo. */
+  accountId: z.string().nullable().optional(),
 });
 export type ManualTransactionBody = z.infer<typeof manualTransactionBody>;
 

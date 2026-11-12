@@ -98,7 +98,7 @@ export function LessonPlayer({ lesson, moduleTitle, moduleNumber, nextId }: Prop
           <Link href="/aprender" className="flex h-[50px] items-center justify-center rounded-full border-[1.5px] border-tinta font-semibold no-underline">Voltar pro Aprender</Link>
         </div>
       ) : (
-        <Button variant="dark" onClick={advance} disabled={step === 3 && !vote}>
+        <Button variant={step === 4 ? 'laranja' : 'dark'} onClick={advance} disabled={step === 3 && !vote}>
           {step === 4 ? 'Topo o desafio' : step === 3 && !vote ? 'Escolhe um lado' : 'Continuar'}
         </Button>
       )}

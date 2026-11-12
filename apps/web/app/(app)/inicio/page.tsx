@@ -34,7 +34,7 @@ export default async function InicioPage() {
   const vazio = s.balanceInCents === null && s.outcomeInCents === 0 && s.incomeInCents === 0;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 pt-9 md:pt-0">
       <header className="flex items-end justify-between">
         <h1 className="font-display text-[34px] leading-[38px] font-extrabold">Fala, {firstName}</h1>
         <div className="flex items-center gap-1.5">
@@ -58,7 +58,7 @@ export default async function InicioPage() {
           <h2 className="font-display text-2xl font-extrabold">Nada por aqui ainda</h2>
           <p className="max-w-[300px] text-[15px] text-tinta-suave">Conecta o banco ou importa o extrato do app dele, que eu acordo e organizo seus gastos. Ou anota um gasto na mão, também vale.</p>
           <div className="mt-2 flex w-full flex-col gap-2.5">
-            <ButtonLink href="/conectar">Trazer meus gastos</ButtonLink>
+            <ButtonLink href="/conectar" variant="laranja">Trazer meus gastos</ButtonLink>
             <ButtonLink href="/anotar" variant="outline">Anotar um gasto</ButtonLink>
           </div>
         </Card>
