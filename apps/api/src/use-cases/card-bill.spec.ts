@@ -17,10 +17,12 @@ describe('cartão pelo MeuPluggy', () => {
       fetchItem: async () => ({ institution: 'MeuPluggy' }),
       fetchAccounts: async () => [
         { externalId: 'conta', name: 'Nubank', institution: 'Nubank', type: 'BANK', balanceInCents: 0 },
-        { externalId: 'gold', name: 'Nubank Gold', institution: 'Nubank', type: 'CREDIT', balanceInCents: -54973, creditLimitInCents: 60000 },
+        { externalId: 'gold', name: 'Nubank Gold', institution: 'Nubank', type: 'CREDIT', balanceInCents: -56363, creditLimitInCents: 60000, dueDate: new Date('2026-11-03T03:00:00Z') },
       ],
       fetchTransactions: async (id: string, _from: Date, to: Date) => (id !== 'gold' ? [] : [
         { externalId: 'hoje', description: 'IFD*LANCHE', amountInCents: -3000, occurredAt: new Date('2026-11-10T15:00:00Z') },
+        // depois de hoje mas antes do fechamento (26/11): ainda é da fatura atual
+        { externalId: 'nov', description: 'GLOBOPLAY 3/6', amountInCents: -1390, occurredAt: new Date('2026-11-20T15:00:00Z') },
         { externalId: 'dez', description: 'AMAZON PRIME 2/12', amountInCents: -27630, occurredAt: new Date('2026-12-10T15:00:00Z') },
       ].filter((t) => t.occurredAt <= to)),
     } as unknown as BankGateway;
@@ -29,7 +31,7 @@ describe('cartão pelo MeuPluggy', () => {
     await sync.execute({ connectionId: connection.id });
 
     const card = repos.accounts.items.find((a) => a.externalId === 'gold')!;
-    expect(card.balanceInCents).toBe(-27343); // R$ 273,43, o que o app do Nubank mostra
+    expect(card.balanceInCents).toBe(-28733); // 563,63 − 276,30 (a parcela de 20/11 fica) // R$ 273,43, o que o app do Nubank mostra
     expect(repos.transactions.items.map((t) => t.externalId)).toEqual(['hoje']);
     expect((await repos.connections.findById(connection.id))?.institution).toBe('Nubank');
   });

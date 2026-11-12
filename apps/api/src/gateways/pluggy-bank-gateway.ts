@@ -13,7 +13,7 @@ type PluggyAccount = {
   subtype?: string | null;
   balance: number;
   number?: string | null;
-  transferNumber?: string | null;
+  bankData?: { transferNumber?: string | null } | null;
   creditData?: { brand?: string | null; creditLimit?: number | null; balanceDueDate?: string | null } | null;
 };
 type PluggyTransaction = { id: string; description: string; amount: number; date: string; type: 'DEBIT' | 'CREDIT' };
@@ -105,9 +105,9 @@ export class PluggyBankGateway implements BankGateway {
   async fetchAccounts(itemId: string): Promise<BankAccountData[]> {
     const page = await this.get<Page<PluggyAccount>>(`/accounts?itemId=${encodeURIComponent(itemId)}`);
     // O código do banco (COMPE) só vem nas contas; o cartão herda o banco da conta do mesmo Item.
-    const itemBank = page.results.map((a) => bankNameFromTransferNumber(a.transferNumber)).find(Boolean) ?? null;
+    const itemBank = page.results.map((a) => bankNameFromTransferNumber(a.bankData?.transferNumber)).find(Boolean) ?? null;
     return page.results.map((a) => {
-      const bank = bankNameFromTransferNumber(a.transferNumber) ?? itemBank;
+      const bank = bankNameFromTransferNumber(a.bankData?.transferNumber) ?? itemBank;
       return {
         externalId: a.id,
         name: accountName(a, bank),

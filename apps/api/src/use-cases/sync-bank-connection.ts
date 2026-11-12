@@ -6,6 +6,7 @@ import { ResourceNotFoundError, BankConnectionError } from '../domain/errors.js'
 import { categorizeByRules } from '../services/categorize.js';
 import { detectInternalTransfers } from '../services/internal-transfers.js';
 import { isGenericInstitution } from '../services/bank-names.js';
+import { nextDueDate } from './get-month-summary.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const FIRST_SYNC_DAYS = 90; // primeira vez: puxa 3 meses
@@ -60,7 +61,10 @@ export class SyncBankConnectionUseCase {
         // Parcela que ainda vai cair não é gasto de hoje: fica fora do histórico...
         const remoteTxs = fetched.filter((t) => t.occurredAt <= now);
         // ...e sai do "limite usado" que o banco manda, pra sobrar só a fatura aberta.
-        const futureOwed = Math.max(0, -fetched.filter((t) => t.occurredAt > now).reduce((s, t) => s + t.amountInCents, 0));
+        // Corte = fechamento da fatura atual (~7 dias antes do vencimento); o que cai depois disso é das próximas.
+        const closing = remote.dueDate ? new Date(nextDueDate(remote.dueDate, now).getTime() - 7 * DAY) : now;
+        const cutoff = closing > now ? closing : now;
+        const futureOwed = Math.max(0, -fetched.filter((t) => t.occurredAt > cutoff).reduce((s, t) => s + t.amountInCents, 0));
         const { institution: _bank, ...data } = remote;
         const account = await accounts.upsertByExternalId({
           ...data,
