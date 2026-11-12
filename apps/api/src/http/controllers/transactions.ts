@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { categorizeBody, manualTransactionBody, monthQuery, type CategoryDTO, type MonthSummaryResponse, type SubscriptionsResponse, ignoreSubscriptionBody, createCategoryBody } from '@tostao/contracts';
+import { type AutoCategorizeResponse, categorizeBody, manualTransactionBody, monthQuery, type CategoryDTO, type MonthSummaryResponse, type SubscriptionsResponse, ignoreSubscriptionBody, createCategoryBody } from '@tostao/contracts';
 import type { UseCases } from '../../use-cases/factories.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
 import { presentTransaction } from '../presenters.js';
@@ -71,5 +71,10 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
     const { id } = z.object({ id: z.string() }).parse(request.params);
     const body = categorizeBody.parse(request.body);
     return uc.categorizeTransaction.execute({ ...body, userId: request.user.sub, transactionId: id });
+  });
+
+  // "Deixa o Tostão categorizar": a IA tenta as pendentes agora (as que ela não souber continuam pendentes)
+  app.post('/transactions/auto-categorize', { onRequest: verifyJwt }, async (request) => {
+    return (await uc.autoCategorize.execute({ userId: request.user.sub })) satisfies AutoCategorizeResponse;
   });
 }

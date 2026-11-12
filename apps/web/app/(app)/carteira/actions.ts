@@ -1,7 +1,7 @@
 'use server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { categorizeBody, manualTransactionBody } from '@tostao/contracts';
+import { categorizeBody, manualTransactionBody, type AutoCategorizeResponse } from '@tostao/contracts';
 import { api, ApiError } from '@/lib/api';
 import { parseMoney } from '@/lib/format';
 
@@ -47,4 +47,20 @@ export async function setAccountHidden(form: FormData) {
     await api(`/accounts/${encodeURIComponent(id)}`, { method: 'PATCH', body: { hidden: form.get('hidden') === 'true' } });
   } catch { /* se falhar, a conta só continua onde estava */ }
   revalidatePath('/', 'layout');
+}
+
+export type AutoState = { message?: string };
+
+/** "Deixa o Tostão categorizar": a IA tenta as pendentes. Nome de pessoa e o que ela não souber continua pendente. */
+export async function autoCategorize(_: AutoState): Promise<AutoState> {
+  try {
+    const r = await api<AutoCategorizeResponse>('/transactions/auto-categorize', { method: 'POST', body: {} });
+    revalidatePath('/', 'layout');
+    if (r.asked === 0) return { message: 'Meu cérebro de IA tá desligado agora. Bora no manual.' };
+    if (r.categorized === 0) return { message: 'Não reconheci nenhuma dessas. Deve ser Pix pra pessoa, essas só você sabe.' };
+    const rest = r.asked - r.categorized;
+    return { message: `Categorizei ${r.categorized}. ${rest > 0 ? `${rest === 1 ? 'Sobrou 1' : `Sobraram ${rest}`} que só você sabe (Pix pra pessoa e afins).` : 'Confere se ficou certo.'}` };
+  } catch {
+    return { message: 'Não consegui agora. Tenta de novo daqui a pouco.' };
+  }
 }

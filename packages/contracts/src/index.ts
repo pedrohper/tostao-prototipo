@@ -224,3 +224,5 @@ export type ForecastMonth = {
   benefitsInCents: number;
 };
 export type ForecastResponse = { hasPlan: boolean; months: ForecastMonth[] };
+/** Quantas pendentes a IA categorizou (das que ela olhou). */
+export type AutoCategorizeResponse = { categorized: number; asked: number };

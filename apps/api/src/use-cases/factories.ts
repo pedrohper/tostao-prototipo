@@ -23,12 +23,14 @@ import { GetMonthSummaryUseCase } from './get-month-summary.js';
 import { GetTransactionUseCase } from './get-transaction.js';
 import { ListSubscriptionsUseCase } from './list-subscriptions.js';
 import { GetBudgetsUseCase, SetBudgetUseCase } from './budgets.js';
+import { AutoCategorizeUseCase } from './auto-categorize.js';
 import { ForecastUseCase, SaveFinancialPlanUseCase, SuggestIncomeUseCase } from './financial-plan.js';
 
 export type Deps = { repos: Repositories; bank: BankGateway; ai?: AiGateway; chatDailyLimit?: number };
 
 export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), chatDailyLimit = 40 }: Deps) {
   const sync = new SyncBankConnectionUseCase({ ...repos, bank });
+  const autoCategorize = new AutoCategorizeUseCase(repos, ai);
   return {
     registerUser: new RegisterUserUseCase(repos),
     createInvite: new CreateInviteUseCase(repos),
@@ -58,6 +60,7 @@ export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), chatDailyL
     listCategories: { execute: async ({ userId }: { userId?: string }) => ({ categories: await repos.categories.list(userId) }) },
     createCategory: new CreateCategoryUseCase(repos),
     importStatement: new ImportStatementUseCase(repos),
+    autoCategorize,
     askTostao: new AskTostaoUseCase(repos, ai, chatDailyLimit),
     chatHistory: { execute: async ({ userId }: { userId: string }) => ({ messages: await repos.chat.listRecent(userId, 60) }) },
     setAccountHidden: {

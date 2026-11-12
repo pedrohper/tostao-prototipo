@@ -7,6 +7,11 @@ import { verifyJwt } from '../middlewares/verify-jwt.js';
 import { ResourceNotFoundError } from '../../domain/errors.js';
 
 export function bankRoutes(app: FastifyInstance, uc: UseCases, repos: Repositories) {
+  // Depois de puxar transação nova, a IA tenta categorizar o que as regras não pegaram. Roda em segundo plano.
+  const categorizeLater = (userId: string) => {
+    void uc.autoCategorize.execute({ userId }).catch((err) => app.log.warn({ err }, 'categoria automática falhou'));
+  };
+
   // A web pede um token, abre o Pluggy Connect e, no onSuccess, manda o item.id pro POST /connections.
   app.post('/connections/connect-token', { onRequest: verifyJwt }, async (request) => {
     return (await uc.createConnectToken.execute({ userId: request.user.sub })) satisfies ConnectTokenResponse;
@@ -15,6 +20,7 @@ export function bankRoutes(app: FastifyInstance, uc: UseCases, repos: Repositori
   app.post('/connections', { onRequest: verifyJwt }, async (request, reply) => {
     const { itemId } = connectBankBody.parse(request.body);
     const { importedCount, accounts } = await uc.connectBank.execute({ userId: request.user.sub, itemId });
+    categorizeLater(request.user.sub);
     return reply.status(201).send({ importedCount, accounts } satisfies SyncResponse);
   });
 
@@ -35,6 +41,7 @@ export function bankRoutes(app: FastifyInstance, uc: UseCases, repos: Repositori
   app.post('/imports', { onRequest: verifyJwt, bodyLimit: 5 * 1024 * 1024 }, async (request, reply) => {
     const body = importStatementBody.parse(request.body);
     const r = await uc.importStatement.execute({ ...body, userId: request.user.sub });
+    categorizeLater(request.user.sub);
     return reply.status(201).send({ ...r, from: r.from.toISOString(), to: r.to.toISOString() } satisfies ImportResponse);
   });
 
@@ -42,6 +49,8 @@ export function bankRoutes(app: FastifyInstance, uc: UseCases, repos: Repositori
     const { id } = z.object({ id: z.string() }).parse(request.params);
     const connection = await repos.connections.findById(id);
     if (!connection || connection.userId !== request.user.sub) throw new ResourceNotFoundError('Conexão');
-    return (await uc.syncBankConnection.execute({ connectionId: id })) satisfies SyncResponse;
+    const r = await uc.syncBankConnection.execute({ connectionId: id });
+    categorizeLater(request.user.sub);
+    return r satisfies SyncResponse;
   });
 }

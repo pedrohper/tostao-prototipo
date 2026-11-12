@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { currentMonth, dayLabel, money, monthName, shiftMonth, shortDate } from '@/lib/format';
 import { BankIcon, ButtonLink, CardIcon } from '@/components/ui';
 import { Mascote } from '@/components/mascote';
+import { AutoCategorizeButton } from './auto-categorize-button';
 
 const FILTERS = { tudo: 'Tudo', saidas: 'Saídas', entradas: 'Entradas', pendentes: 'Sem categoria' } as const;
 type Filter = keyof typeof FILTERS;
@@ -82,6 +83,8 @@ export default async function CarteiraPage({ searchParams }: { searchParams: Pro
           </Link>
         ))}
       </div>
+
+      {filter === 'pendentes' && shown.some((t) => t.amountInCents !== 0) && <AutoCategorizeButton />}
 
       {shown.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-10 text-center">
