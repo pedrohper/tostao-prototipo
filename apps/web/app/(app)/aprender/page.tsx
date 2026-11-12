@@ -27,7 +27,7 @@ export default async function AprenderPage() {
   const proximos = atualIdx >= 0 ? modules.slice(atualIdx + 1, atualIdx + 4) : [];
 
   return (
-    <div className="flex flex-col gap-3.5 pt-9 md:pt-0">
+    <div className="flex flex-col gap-3.5">
       <LegacyProgress saved={done} />
       <div className="flex items-end justify-between">
         <h1 className="font-display text-[34px] leading-[38px] font-extrabold">Aprender</h1>

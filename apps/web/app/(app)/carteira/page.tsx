@@ -39,7 +39,7 @@ export default async function CarteiraPage({ searchParams }: { searchParams: Pro
   const contas = [...bancos, ...summary.accounts.filter((a) => a.type === 'CREDIT')];
 
   return (
-    <div className="flex flex-col gap-4 pt-9 md:pt-0">
+    <div className="flex flex-col gap-4">
       <div className="flex items-end justify-between">
         <h1 className="font-display text-[34px] leading-[38px] font-extrabold">Carteira</h1>
         {summary.balanceInCents !== null && <span className="pb-1.5 text-[13px] font-semibold text-tinta-suave">{money(summary.balanceInCents)} em {bancos.length} {bancos.length === 1 ? 'conta' : 'contas'}</span>}

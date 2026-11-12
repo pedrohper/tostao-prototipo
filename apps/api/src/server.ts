@@ -32,5 +32,5 @@ scheduleDailySync(env.SYNC_CRON, async () => {
   }
 });
 
-await app.listen({ port: env.PORT, host: '0.0.0.0' });
+await app.listen({ port: env.PORT, host: env.HOST });
 console.log(`🪙 Tostão API em http://localhost:${env.PORT} (banco: ${env.BANK_GATEWAY}, IA: ${ai.enabled ? 'DeepSeek' : 'desligada'}, WhatsApp: ${whatsapp.enabled ? 'ligado' : 'desligado'})`);

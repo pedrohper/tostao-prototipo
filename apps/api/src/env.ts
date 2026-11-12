@@ -7,6 +7,8 @@ const schema = z
     DATABASE_URL: z.string().min(1),
     JWT_SECRET: z.string().min(16, 'JWT_SECRET precisa de pelo menos 16 caracteres'),
     PORT: z.coerce.number().default(3333),
+    // Só a própria máquina fala com a API (o site chama por localhost). Use HOST=0.0.0.0 se precisar abrir.
+    HOST: z.string().default('127.0.0.1'),
     WEB_ORIGIN: z.string().default('http://localhost:3000'),
     BANK_GATEWAY: z.enum(['fake', 'pluggy']).default('fake'),
     PLUGGY_CLIENT_ID: z.string().default(''),
