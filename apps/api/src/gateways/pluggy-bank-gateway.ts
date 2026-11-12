@@ -3,11 +3,11 @@ import type { BankAccountData, BankGateway, BankItemData, BankTransactionData } 
 
 const BASE_URL = 'https://api.pluggy.ai';
 const API_KEY_TTL_MS = 110 * 60 * 1000; // a chave vale 2h; renovamos com 10 min de folga
-const PAGE_SIZE = 500; // máximo aceito pelo Pluggy
 
 type PluggyAccount = { id: string; name: string; marketingName?: string | null; type: 'BANK' | 'CREDIT'; balance: number };
 type PluggyTransaction = { id: string; description: string; amount: number; date: string; type: 'DEBIT' | 'CREDIT' };
 type Page<T> = { total: number; totalPages: number; page: number; results: T[] };
+type CursorPage<T> = { results: T[]; next: string | null };
 
 const toCents = (value: number) => Math.round(value * 100);
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
@@ -83,21 +83,21 @@ export class PluggyBankGateway implements BankGateway {
     }));
   }
 
+  // GET /transactions (paginado por página) responde 410 pra Applications novas.
+  // O /v2/transactions usa cursor: cada resposta traz "next" (query string pronta) ou null no fim.
   async fetchTransactions(accountExternalId: string, from: Date, to: Date): Promise<BankTransactionData[]> {
     const all: BankTransactionData[] = [];
-    let page = 1;
-    let totalPages = 1;
-    do {
-      const qs = new URLSearchParams({ accountId: accountExternalId, from: ymd(from), to: ymd(to), page: String(page), pageSize: String(PAGE_SIZE) });
-      const res = await this.get<Page<PluggyTransaction>>(`/transactions?${qs}`);
-      totalPages = res.totalPages;
+    let path: string | null = `/v2/transactions?${new URLSearchParams({ accountId: accountExternalId, dateFrom: ymd(from), dateTo: ymd(to) })}`;
+    while (path) {
+      const res: CursorPage<PluggyTransaction> = await this.get(path);
       for (const t of res.results) {
         // DEBIT = dinheiro saindo, CREDIT = entrando. Usamos o "type" pro sinal e o valor absoluto pro tamanho.
         const cents = Math.abs(toCents(t.amount));
         all.push({ externalId: t.id, description: t.description, amountInCents: t.type === 'DEBIT' ? -cents : cents, occurredAt: new Date(t.date) });
       }
-      page++;
-    } while (page <= totalPages);
+      path = res.next ? `/v2/transactions${res.next.startsWith('?') ? res.next : `?${res.next}`}` : null;
+    }
     return all;
   }
+
 }

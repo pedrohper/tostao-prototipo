@@ -19,8 +19,8 @@ Nest.js talvez depois. PWA primeiro. Modelo: uso próprio agora, freemium depois
 - Dinheiro sempre em centavos (Int). Negativo = saída.
 - `externalId` evita importar a mesma transação duas vezes (escopo por usuário).
 - Transferência entre contas próprias e pagamento de fatura não contam como gasto nem renda.
-- Pluggy: auth em POST /auth (apiKey vale 2 h, reaproveitar), header X-API-KEY, pageSize máx 500,
-  DEBIT = saída. Conexão: widget Pluggy Connect (POST /connect_token) com o connector MeuPluggy, item.id vem no onSuccess.
+- Pluggy: auth em POST /auth (apiKey vale 2 h, reaproveitar), header X-API-KEY, pageSize máx 500 (contas),
+  transações só no GET /v2/transactions (cursor `after`, `next` ou null; o v1 responde 410), DEBIT = saída. Conexão: widget Pluggy Connect (POST /connect_token) com o connector MeuPluggy, item.id vem no onSuccess.
   Trial do dashboard (15 dias) precisa estar ativo pra ligar banco. Plano B: "Copiar Item ID" no menu da Demo.
 
 ## Marca
