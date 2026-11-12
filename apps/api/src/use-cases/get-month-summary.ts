@@ -46,8 +46,25 @@ export class GetMonthSummaryUseCase {
       uncategorizedCount: real.filter((t) => t.categoryId === null).length,
       byCategory,
       accounts: visible.map((a) => ({ id: a.id, name: a.name, type: a.type === 'CREDIT' ? 'CREDIT' as const : 'BANK' as const, balanceInCents: a.balanceInCents,
-        creditLimitInCents: a.creditLimitInCents ?? null, dueDate: a.dueDate ? a.dueDate.toISOString() : null })),
+        creditLimitInCents: a.creditLimitInCents ?? null, dueDate: a.dueDate ? nextDueDate(a.dueDate, new Date()).toISOString() : null })),
       hiddenAccounts: accounts.filter((a) => a.hidden).map((a) => ({ id: a.id, name: a.name, balanceInCents: a.balanceInCents })),
     };
   }
+}
+
+/**
+ * A Pluggy às vezes manda o vencimento da fatura anterior (já passou).
+ * Cartão vence todo mês no mesmo dia, então empurra mês a mês até chegar em hoje ou depois.
+ */
+export function nextDueDate(due: Date, now: Date) {
+  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  let d = new Date(due);
+  for (let i = 0; i < 24 && d < today; i++) {
+    const day = due.getUTCDate();
+    const next = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1, d.getUTCHours(), d.getUTCMinutes()));
+    const last = new Date(Date.UTC(next.getUTCFullYear(), next.getUTCMonth() + 1, 0)).getUTCDate();
+    next.setUTCDate(Math.min(day, last));
+    d = next;
+  }
+  return d;
 }
