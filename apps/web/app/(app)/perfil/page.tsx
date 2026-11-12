@@ -18,6 +18,7 @@ export default async function PerfilPage() {
       </div>
       <Card className="flex flex-col divide-y divide-linha p-0">
         <Link href="/conectar" className="flex justify-between p-4 no-underline"><span className="font-semibold">Bancos conectados</span><span className="text-tinta-suave">{me.connections.length} ›</span></Link>
+        <Link href="/fechamento" className="flex justify-between p-4 no-underline"><span className="font-semibold">Fechamento do mês</span><span className="text-tinta-suave">›</span></Link>
         <Link href="/assinaturas" className="flex justify-between p-4 no-underline"><span className="font-semibold">Raio-X das assinaturas</span><span className="text-tinta-suave">›</span></Link>
         <Link href="/anotar" className="flex justify-between p-4 no-underline"><span className="font-semibold">Anotar gasto</span><span className="text-tinta-suave">›</span></Link>
         <Link href="/aprender" className="flex justify-between p-4 no-underline"><span className="font-semibold">Minha trilha</span><span className="text-tinta-suave">›</span></Link>

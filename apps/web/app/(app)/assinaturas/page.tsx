@@ -40,7 +40,7 @@ export default async function AssinaturasPage() {
               <div key={s.name} className="flex items-center justify-between gap-3 p-4">
                 <div className="flex min-w-0 flex-col">
                   <span className="font-semibold [overflow-wrap:anywhere]">{s.name}</span>
-                  <span className="text-[13px] text-tinta-suave">Próxima por volta de {day(s.nextChargeAt)} · já cobrou {s.chargeCount}x</span>
+                  <span className="text-[13px] text-tinta-suave">Próxima por volta de {day(s.nextChargeAt)} · {s.installmentsLeft !== null ? `parcelado, ${s.installmentsLeft === 1 ? 'falta 1' : `faltam ${s.installmentsLeft}`}` : `já cobrou ${s.chargeCount}x`}</span>
                 </div>
                 <span className="shrink-0 font-bold">{money(s.amountInCents)}</span>
               </div>
@@ -70,7 +70,7 @@ export default async function AssinaturasPage() {
         </section>
       )}
 
-      <p className="text-center text-[13px] text-tinta-suave">Eu acho as assinaturas pelo padrão: mesma cobrança, valor parecido, uma vez por mês. Parcelado fica de fora.</p>
+      <p className="text-center text-[13px] text-tinta-suave">Eu acho as assinaturas pelo padrão: mesma loja, valor parecido, uma vez por mês. Pix e pagamento de fatura ficam de fora. Plano anual parcelado aparece com as parcelas que faltam.</p>
     </div>
   );
 }

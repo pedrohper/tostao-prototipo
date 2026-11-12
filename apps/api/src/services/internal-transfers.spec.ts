@@ -29,4 +29,10 @@ describe('detectInternalTransfers', () => {
     const fatura = tx('nubank', -45000, 10, 'Pagamento de fatura');
     expect(detectInternalTransfers([fatura]).has(fatura.id)).toBe(true);
   });
+  it('fatura do Nubank paga por Pix de outra conta e débito automático da fatura são internos', () => {
+    const pix = tx('mp', -24240, 30, 'Pagamento com Pix NU PAGAMENTOS SA');
+    const deb = tx('elo', 17358, 4, 'PAGTO. POR DEB EM C/C');
+    const amiga = tx('mp', -660, 30, 'Pix enviado Amanda Costa');
+    expect(detectInternalTransfers([pix, deb, amiga])).toEqual(new Set([pix.id, deb.id]));
+  });
 });

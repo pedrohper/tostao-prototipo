@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { MonthSummaryResponse, ProfileResponse, SubscriptionsResponse } from '@tostao/contracts';
 import { api } from '@/lib/api';
-import { currentMonth, money, monthName } from '@/lib/format';
+import { currentMonth, money, monthName, shiftMonth } from '@/lib/format';
 import { Mascote } from '@/components/mascote';
 import { ButtonLink, Card } from '@/components/ui';
 
@@ -18,6 +18,9 @@ export default async function InicioPage() {
   const top = s.byCategory.filter((c) => c.categoryId);
   const max = Math.max(1, ...s.byCategory.map((c) => c.totalInCents));
   const delivery = s.byCategory.find((c) => c.categoryId === 'delivery');
+  // Nos primeiros 10 dias do mês, chama pro fechamento do mês que acabou
+  const lastMonth = shiftMonth(month, -1);
+  const showClosing = new Date(Date.now() - 3 * 3600_000).getUTCDate() <= 10;
   const vazio = s.balanceInCents === null && s.outcomeInCents === 0 && s.incomeInCents === 0;
 
   return (
@@ -69,6 +72,13 @@ export default async function InicioPage() {
                 <Link href="/aprender/m1-l2" className="self-start rounded-full bg-tinta px-4 py-2 text-sm font-semibold text-papel no-underline">Bora ver</Link>
               </div>
             </div>
+          )}
+
+          {showClosing && (
+            <Link href="/fechamento" className="flex items-center gap-3 rounded-[20px] bg-menta-clara p-3 no-underline">
+              <Mascote pose="professor" size={64} alt="Tostão professor" />
+              <p className="text-[15px] leading-snug"><b>O fechamento de {monthName(lastMonth)} tá pronto.</b> Quanto sobrou, onde mais foi e o que mudou. Toca pra ver.</p>
+            </Link>
           )}
 
           {activeSubs > 0 && subs && (

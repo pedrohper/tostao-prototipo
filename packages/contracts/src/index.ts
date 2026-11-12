@@ -103,5 +103,6 @@ export type SubscriptionDTO = {
   lastChargedAt: string;
   nextChargeAt: string;
   active: boolean; // false = não cobrou no último ciclo
+  installmentsLeft: number | null; // plano parcelado: quantas parcelas faltam
 };
 export type SubscriptionsResponse = { subscriptions: SubscriptionDTO[]; monthlyInCents: number; yearlyInCents: number };

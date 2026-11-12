@@ -9,6 +9,8 @@ const KEYWORDS = [
   'PAGAMENTO FATURA',
   'PAGAMENTO RECEBIDO', // como aparece do lado do cartão
   'TRANSFERENCIA ENTRE CONTAS',
+  'PIX NU PAGAMENTOS', // pagar a fatura do Nubank por Pix, de outra conta sua
+  'PAGTO. POR DEB EM C/C', // fatura do cartão debitada na conta corrente (lado do cartão no Bradesco)
   'APLICACAO RDB',
   'RESGATE RDB',
 ];
