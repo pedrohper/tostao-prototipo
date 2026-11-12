@@ -8,6 +8,10 @@ import type { BankAccountData, BankGateway, BankItemData, BankTransactionData } 
 export class FakeBankGateway implements BankGateway {
   constructor(private readonly now: () => Date = () => new Date()) {}
 
+  async createConnectToken(): Promise<string | null> {
+    return null; // sem widget: a tela mostra só o campo de texto
+  }
+
   async fetchItem(): Promise<BankItemData> {
     return { institution: 'Banco de exemplo' };
   }
@@ -25,7 +29,7 @@ export class FakeBankGateway implements BankGateway {
     // dia D do mês atual, sem passar de hoje
     const day = (d: number) => {
       const date = new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), Math.min(d, n.getUTCDate()), 15));
-      return date;
+      return date > n ? n : date; // no dia de hoje antes das 15h, não cria transação no futuro
     };
     const key = accountExternalId.split(':').pop();
     const data: Record<string, [string, number, number][]> = {

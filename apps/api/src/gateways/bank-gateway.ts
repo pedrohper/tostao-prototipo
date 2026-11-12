@@ -20,6 +20,11 @@ export type BankTransactionData = {
 };
 
 export interface BankGateway {
+  /**
+   * Token curto (uns 30 min) pro widget Pluggy Connect abrir no navegador.
+   * null = esse gateway não tem widget (o fake), então a tela usa só o campo manual.
+   */
+  createConnectToken(clientUserId: string): Promise<string | null>;
   fetchItem(itemId: string): Promise<BankItemData>;
   fetchAccounts(itemId: string): Promise<BankAccountData[]>;
   fetchTransactions(accountExternalId: string, from: Date, to: Date): Promise<BankTransactionData[]>;

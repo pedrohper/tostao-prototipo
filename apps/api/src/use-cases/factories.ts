@@ -23,6 +23,7 @@ export function makeUseCases({ repos, bank }: Deps) {
     getProfile: new GetProfileUseCase(repos.users, repos.connections),
     syncBankConnection: sync,
     connectBank: new ConnectBankUseCase(repos.connections, bank, sync),
+    createConnectToken: { execute: async ({ userId }: { userId: string }) => ({ connectToken: await bank.createConnectToken(userId) }) },
     categorizeTransaction: new CategorizeTransactionUseCase(repos),
     createManualTransaction: new CreateManualTransactionUseCase(repos),
     listTransactions: new ListTransactionsUseCase(repos),

@@ -1,13 +1,18 @@
 import Link from 'next/link';
-import type { ProfileResponse } from '@tostao/contracts';
+import type { ConnectTokenResponse, ProfileResponse } from '@tostao/contracts';
 import { api } from '@/lib/api';
 import { Mascote } from '@/components/mascote';
 import { Card } from '@/components/ui';
-import { ConnectForm, SyncButton } from './forms';
+import { ConnectPanel, SyncButton } from './forms';
 
 export default async function ConectarPage({ searchParams }: { searchParams: Promise<{ novo?: string }> }) {
   const { novo } = await searchParams;
-  const me = await api<ProfileResponse>('/me');
+  const [me, mode] = await Promise.all([
+    api<ProfileResponse>('/me'),
+    // Só pra saber se a API fala com o Pluggy de verdade (token != null) ou com o banco de exemplo.
+    api<ConnectTokenResponse>('/connections/connect-token', { method: 'POST', body: {} }).catch(() => ({ connectToken: null })),
+  ]);
+  const widget = mode.connectToken !== null;
   return (
     <div className="flex flex-col gap-5">
       <div className="flex justify-center"><Mascote pose="conectando" size={170} alt="Tostão ligando dois cabos" /></div>
@@ -27,16 +32,24 @@ export default async function ConectarPage({ searchParams }: { searchParams: Pro
       </div>
 
       <Card className="flex flex-col gap-3 bg-azul">
-        <h2 className="font-display text-lg font-extrabold">Como pegar o Item ID (protótipo)</h2>
-        <ol className="list-decimal space-y-1 pl-5 text-[14px] leading-relaxed">
-          <li>Entre em <a href="https://meu.pluggy.ai" target="_blank" rel="noreferrer" className="font-semibold underline">meu.pluggy.ai</a> e conecte seus bancos.</li>
-          <li>No painel do Pluggy, abra “Ir para Demo” e use “Copiar Item ID”.</li>
-          <li>Cole aqui embaixo. Um Item ID por banco.</li>
-        </ol>
-        <p className="text-[13px] text-tinta-suave">Rodando com <code>BANK_GATEWAY=fake</code>? Qualquer texto funciona e entram dados de exemplo.</p>
+        {widget ? (
+          <>
+            <h2 className="font-display text-lg font-extrabold">Como funciona</h2>
+            <ol className="list-decimal space-y-1 pl-5 text-[14px] leading-relaxed">
+              <li>Toque em “Conectar meu banco”. Abre a janelinha do Pluggy.</li>
+              <li>Procure <b>MeuPluggy</b> e autorize o banco que você já ligou em <a href="https://meu.pluggy.ai" target="_blank" rel="noreferrer" className="font-semibold underline">meu.pluggy.ai</a>. Uma vez por banco.</li>
+              <li>Pronto. Eu puxo contas e transações na hora.</li>
+            </ol>
+          </>
+        ) : (
+          <>
+            <h2 className="font-display text-lg font-extrabold">Banco de exemplo</h2>
+            <p className="text-[14px] leading-relaxed">A API tá rodando com <code>BANK_GATEWAY=fake</code>. Digite qualquer texto e entram dados de exemplo.</p>
+          </>
+        )}
       </Card>
 
-      <ConnectForm />
+      <ConnectPanel widget={widget} />
 
       {me.connections.length > 0 && (
         <section className="flex flex-col gap-2">

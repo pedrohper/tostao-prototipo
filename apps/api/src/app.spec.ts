@@ -4,6 +4,7 @@ import { buildApp } from './app.js';
 import { makeInMemoryRepositories } from './repositories/in-memory/index.js';
 import { FakeBankGateway } from './gateways/fake-bank-gateway.js';
 import { currentMonth } from './lib/month.js';
+import { connectBankBody } from '@tostao/contracts';
 
 describe('API', () => {
   it('cadastro → conectar → resumo → categorizar', async () => {
@@ -15,6 +16,10 @@ describe('API', () => {
 
     expect((await app.inject({ method: 'GET', url: '/me' })).statusCode).toBe(401);
     expect((await app.inject({ method: 'GET', url: '/me', headers: auth })).json().email).toBe('p@x.com');
+
+    // Com o banco de exemplo não tem widget: o token vem null e a tela mostra só o campo manual
+    const token = await app.inject({ method: 'POST', url: '/connections/connect-token', headers: auth });
+    expect(token.json()).toEqual({ connectToken: null });
 
     const conn = await app.inject({ method: 'POST', url: '/connections', headers: auth, payload: { itemId: 'item-de-exemplo' } });
     expect(conn.json().importedCount).toBe(12);
@@ -30,5 +35,12 @@ describe('API', () => {
 
     const bad = await app.inject({ method: 'POST', url: '/transactions', headers: auth, payload: { description: '', amountInCents: -5, kind: 'saida', occurredAt: 'ontem' } });
     expect(bad.statusCode).toBe(400);
+  });
+
+  it('pesca o Item ID de dentro de um link colado', () => {
+    const id = '3f1c2a9e-1b2c-4d5e-8f90-123456789abc';
+    expect(connectBankBody.parse({ itemId: `https://meu.pluggy.ai/algo?itemId=${id.toUpperCase()}` }).itemId).toBe(id);
+    expect(connectBankBody.parse({ itemId: `  ${id} ` }).itemId).toBe(id);
+    expect(connectBankBody.safeParse({ itemId: 'curto' }).success).toBe(false);
   });
 });

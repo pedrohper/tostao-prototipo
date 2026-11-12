@@ -28,12 +28,22 @@ export type ProfileResponse = {
 };
 
 // ---------- Banco ----------
+const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
 export const connectBankBody = z.object({
-  itemId: z.string().trim().min(8, 'Item ID parece curto demais'),
+  // Item IDs do Pluggy são UUIDs. Se a pessoa colar um link ou texto com um UUID dentro, a gente pesca ele.
+  itemId: z
+    .string()
+    .trim()
+    .transform((v) => v.match(UUID)?.[0].toLowerCase() ?? v)
+    .pipe(z.string().min(8, 'Item ID parece curto demais')),
 });
 export type ConnectBankBody = z.infer<typeof connectBankBody>;
 
 export type SyncResponse = { importedCount: number; accounts: number };
+
+/** null quando a API roda com o banco de exemplo (sem widget). */
+export type ConnectTokenResponse = { connectToken: string | null };
 
 // ---------- Transações ----------
 export const monthQuery = z.object({

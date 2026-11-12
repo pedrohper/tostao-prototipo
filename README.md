@@ -7,7 +7,7 @@ Protótipo funcional pra testar e validar a ideia. Depois, a plataforma de verda
 ## O que já funciona
 
 - Criar conta, entrar e sair (JWT em cookie httpOnly)
-- Conectar banco pelo **Meu Pluggy** (Item ID) ou com um **banco de exemplo**
+- Conectar banco pelo **Pluggy Connect** (widget dentro do app, com o MeuPluggy) ou com um **banco de exemplo**
 - Sincronização na hora e automática todo dia às 6h, sem duplicar transação
 - Categorização automática por regras (iFood, Spotify, Uber, mercados...)
 - Categorizar na mão com "sempre colocar X em Y", que vira regra e já arruma as outras pendentes
@@ -36,16 +36,18 @@ Abra http://localhost:3000, crie uma conta e, em "Conectar", digite qualquer tex
 
 ### Usando seu banco de verdade (Meu Pluggy)
 
-1. Crie uma conta no [dashboard do Pluggy](https://dashboard.pluggy.ai). Em **Applications**, pegue o `Client ID` e o `Client Secret`.
-2. Em [meu.pluggy.ai](https://meu.pluggy.ai), conecte seus bancos. Faça isso **enquanto o trial do Pluggy estiver ativo**.
-3. No dashboard, em "Ir para Demo", use **Copiar Item ID** (um por banco).
+1. Em [meu.pluggy.ai](https://meu.pluggy.ai), conecte seus bancos (Open Finance).
+2. Crie uma conta no [dashboard do Pluggy](https://dashboard.pluggy.ai). Começa um trial de 15 dias: conecte os bancos **enquanto ele estiver ativo** (depois do trial os dados continuam sendo lidos, mas não dá pra ligar banco novo).
+3. Na sua Application, em personalizar, deixe o connector **MeuPluggy** na lista. Pegue o `Client ID` e o `Client Secret`.
 4. No `apps/api/.env`:
    ```
    BANK_GATEWAY="pluggy"
    PLUGGY_CLIENT_ID="..."
    PLUGGY_CLIENT_SECRET="..."
    ```
-5. Reinicie o `pnpm dev` e cole o Item ID na tela "Conectar".
+5. Reinicie o `pnpm dev`. Na tela "Conectar", toque em **Conectar meu banco**: abre o Pluggy Connect, você escolhe **MeuPluggy** e autoriza (uma vez por banco). O Tostão recebe o Item ID sozinho.
+
+Plano B: se o banco já foi ligado pela Demo do dashboard ("Ir para Demo" → menu de três pontos no canto superior direito → **Copiar Item ID**), cole em "Já tenho um Item ID". O campo aceita o ID puro ou qualquer texto/link que tenha o ID dentro.
 
 > ⚠️ **Este repo é público.** O `.env` está no `.gitignore`. Nunca commite credenciais.
 
@@ -88,7 +90,6 @@ O caminho de uma requisição: **controller** valida com Zod, chama o **use case
 
 | Atalho | Como deveria ser |
 |---|---|
-| Item ID colado à mão | Pluggy Connect Widget dentro do app (exige plano pago do Pluggy) |
 | Progresso das lições no `localStorage` | Tabela `LessonProgress` + endpoint na API |
 | Só o simulador da lição 1.1 existe | Um simulador por lição |
 | Compromisso da semana não é auditado | Job que confere o extrato e marca cumprido/não cumprido |

@@ -1,17 +1,31 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { connectBankBody, type SyncResponse } from '@tostao/contracts';
+import { connectBankBody, type ConnectTokenResponse, type SyncResponse } from '@tostao/contracts';
 import { api, ApiError } from '@/lib/api';
 
 export type ConnectState = { error?: string; ok?: string };
 
 export async function connectBank(_: ConnectState, form: FormData): Promise<ConnectState> {
-  const parsed = connectBankBody.safeParse({ itemId: form.get('itemId') });
+  return connectItem(String(form.get('itemId') ?? ''));
+}
+
+/** Liga um Item ao usuário. Usado pelo campo manual e pelo onSuccess do Pluggy Connect. */
+export async function connectItem(itemId: string): Promise<ConnectState> {
+  const parsed = connectBankBody.safeParse({ itemId });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
   try {
     const r = await api<SyncResponse>('/connections', { method: 'POST', body: parsed.data });
     revalidatePath('/', 'layout');
     return { ok: `Conectado! ${r.accounts} ${r.accounts === 1 ? 'conta' : 'contas'} e ${r.importedCount} transações novas.` };
+  } catch (e) {
+    return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
+  }
+}
+
+/** Token novo a cada clique: ele vale uns 30 min, então não dá pra guardar da renderização. */
+export async function getConnectToken(): Promise<{ connectToken?: string | null; error?: string }> {
+  try {
+    return await api<ConnectTokenResponse>('/connections/connect-token', { method: 'POST', body: {} });
   } catch (e) {
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }

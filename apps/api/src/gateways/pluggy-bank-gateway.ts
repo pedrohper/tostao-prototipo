@@ -44,6 +44,19 @@ export class PluggyBankGateway implements BankGateway {
     return (await res.json()) as T;
   }
 
+  // O connect token é o que o navegador recebe: ele só abre o widget, não dá acesso à API.
+  // clientUserId marca o Item com o nosso usuário (aparece no dashboard do Pluggy).
+  async createConnectToken(clientUserId: string): Promise<string> {
+    const res = await fetch(`${BASE_URL}/connect_token`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'X-API-KEY': await this.getApiKey() },
+      body: JSON.stringify({ options: { clientUserId, avoidDuplicates: true } }),
+    });
+    if (!res.ok) throw new BankConnectionError(`Pluggy não liberou o widget (${res.status}). O trial do dashboard ainda tá ativo?`);
+    const { accessToken } = (await res.json()) as { accessToken: string };
+    return accessToken;
+  }
+
   async fetchItem(itemId: string): Promise<BankItemData> {
     const item = await this.get<{ connector?: { name?: string } }>(`/items/${itemId}`);
     return { institution: item.connector?.name ?? null };
