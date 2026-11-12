@@ -1,5 +1,6 @@
 import type { BankGateway } from '../gateways/bank-gateway.js';
 import type { Repositories } from '../repositories/types.js';
+import type { BankConnection } from '../domain/entities.js';
 import { ResourceNotFoundError, BankConnectionError } from '../domain/errors.js';
 import { categorizeByRules } from '../services/categorize.js';
 import { detectInternalTransfers } from '../services/internal-transfers.js';
@@ -38,8 +39,18 @@ export class SyncBankConnectionUseCase {
       const remoteAccounts = await bank.fetchAccounts(connection.itemId);
       let importedCount = 0;
 
+      let keptAccounts = 0;
+
       for (const remote of remoteAccounts) {
-        const account = await accounts.upsertByExternalId({ ...remote, userId: connection.userId, connectionId: connection.id });
+        const fingerprint = remote.fingerprint ?? null;
+        if (fingerprint && (await this.belongsToOlderConnection(connection, fingerprint))) {
+          // Mesmo cartão já vem de uma conexão mais antiga: ignora este e apaga a cópia, se ficou de um sync anterior.
+          const copy = (await accounts.listByUser(connection.userId)).find((a) => a.externalId === remote.externalId);
+          if (copy) await accounts.delete(copy.id);
+          continue;
+        }
+        keptAccounts++;
+        const account = await accounts.upsertByExternalId({ ...remote, fingerprint, userId: connection.userId, connectionId: connection.id });
         const remoteTxs = await bank.fetchTransactions(remote.externalId, since, now);
 
         for (const tx of remoteTxs) {
@@ -66,11 +77,24 @@ export class SyncBankConnectionUseCase {
       }
 
       await connections.save({ ...connection, status: 'ACTIVE', lastSyncedAt: now });
-      return { importedCount, accounts: remoteAccounts.length };
+      return { importedCount, accounts: keptAccounts };
     } catch (err) {
       await connections.save({ ...connection, status: 'ERROR' });
       if (err instanceof BankConnectionError) throw err;
       throw new BankConnectionError();
     }
+  }
+
+  /**
+   * O mesmo cartão em duas conexões (ex.: Bradesco e Bradescard): fica com a conexão mais antiga.
+   * Regra determinística, então não importa qual das duas sincroniza primeiro.
+   */
+  private async belongsToOlderConnection(connection: BankConnection, fingerprint: string) {
+    const twins = (await this.deps.accounts.findByFingerprint(connection.userId, fingerprint)).filter((a) => a.connectionId !== connection.id);
+    for (const twin of twins) {
+      const owner = await this.deps.connections.findById(twin.connectionId);
+      if (owner && (owner.createdAt < connection.createdAt || (owner.createdAt.getTime() === connection.createdAt.getTime() && owner.id < connection.id))) return true;
+    }
+    return false;
   }
 }

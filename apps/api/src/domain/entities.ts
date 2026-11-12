@@ -27,6 +27,8 @@ export type Account = {
   name: string;
   type: 'BANK' | 'CREDIT';
   balanceInCents: number;
+  /** Identidade do cartão fora do provedor (bandeira + final). Pega o mesmo cartão vindo de duas conexões. */
+  fingerprint: string | null;
 };
 
 export type Category = { id: string; name: string; emoji: string; color: string; kind: 'saida' | 'entrada' };

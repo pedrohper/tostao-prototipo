@@ -79,4 +79,51 @@ describe('fluxo do banco (conectar → sincronizar → resumo → categorizar)',
     expect(await new DisconnectBankUseCase(repos.connections, broken).execute({ userId: 'u1', connectionId: connection.id })).toEqual({ providerDeleted: false });
     expect(repos.connections.items).toHaveLength(0);
   });
+
+  describe('mesmo cartão em duas conexões (Bradesco e Bradescard)', () => {
+    // Cada conexão devolve o mesmo cartão Elo final 8335, com id diferente no provedor
+    class CardGateway extends FakeBankGateway {
+      constructor(private readonly withFingerprint: boolean) { super(() => NOW); }
+      override async fetchAccounts(itemId: string) {
+        return [{ externalId: `${itemId}:bradesco`, name: 'ELO MAIS', type: 'CREDIT' as const, balanceInCents: -17282, fingerprint: this.withFingerprint ? 'CREDIT:ELO:8335' : null }];
+      }
+    }
+    const setup = (gateway: FakeBankGateway) => {
+      const s = new SyncBankConnectionUseCase({ ...repos, bank: gateway, now: () => NOW });
+      return { sync: s, connect: new ConnectBankUseCase(repos.connections, gateway, s) };
+    };
+    const age = (itemId: string, iso: string) => {
+      const c = repos.connections.items.find((x) => x.itemId === itemId)!;
+      c.createdAt = new Date(iso);
+      return c;
+    };
+
+    it('a conexão mais nova não importa o cartão de novo', async () => {
+      const { connect } = setup(new CardGateway(true));
+      await connect.execute({ userId: 'u1', itemId: 'bradesco' });
+      age('bradesco', '2026-11-12T11:00:00Z');
+      const second = await connect.execute({ userId: 'u1', itemId: 'bradescard' });
+
+      expect(second.accounts).toBe(0);
+      expect(repos.accounts.items).toHaveLength(1);
+      expect(repos.transactions.items).toHaveLength(1); // IFD*ACAI DO ZE, uma vez só
+    });
+
+    it('limpa a cópia que já tinha entrado antes, qualquer que seja a ordem do sync', async () => {
+      const old = setup(new CardGateway(false));
+      await old.connect.execute({ userId: 'u1', itemId: 'bradesco' });
+      await old.connect.execute({ userId: 'u1', itemId: 'bradescard' });
+      const bradesco = age('bradesco', '2026-11-12T11:00:00Z');
+      const bradescard = age('bradescard', '2026-11-12T12:01:00Z');
+      expect(repos.transactions.items).toHaveLength(2); // o bug: duplicado
+
+      const { sync: fixed } = setup(new CardGateway(true));
+      await fixed.execute({ connectionId: bradescard.id }); // a mais nova sincroniza primeiro e ainda não acha o gêmeo marcado
+      await fixed.execute({ connectionId: bradesco.id });
+      await fixed.execute({ connectionId: bradescard.id }); // agora acha e apaga a cópia
+
+      expect(repos.accounts.items.map((a) => a.connectionId)).toEqual([bradesco.id]);
+      expect(repos.transactions.items).toHaveLength(1);
+    });
+  });
 });

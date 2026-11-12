@@ -9,6 +9,11 @@ export type BankAccountData = {
   type: 'BANK' | 'CREDIT';
   /** Conta: saldo disponível. Cartão: fatura em aberto, como NEGATIVO. */
   balanceInCents: number;
+  /**
+   * Cartão: "CREDIT:BANDEIRA:final". O mesmo cartão pode vir de dois conectores
+   * (ex.: Bradesco e Bradescard) com ids diferentes; isso deixa a gente perceber.
+   */
+  fingerprint?: string | null;
 };
 
 export type BankTransactionData = {

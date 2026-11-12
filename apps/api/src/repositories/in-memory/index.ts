@@ -48,6 +48,14 @@ export class InMemoryBankConnectionsRepository implements BankConnectionsReposit
 
 export class InMemoryAccountsRepository implements AccountsRepository {
   items: Account[] = [];
+  constructor(private readonly transactions?: InMemoryTransactionsRepository) {}
+  async findByFingerprint(userId: string, fingerprint: string) {
+    return this.items.filter((a) => a.userId === userId && a.fingerprint === fingerprint);
+  }
+  async delete(id: string) {
+    this.items = this.items.filter((a) => a.id !== id);
+    if (this.transactions) this.transactions.items = this.transactions.items.filter((t) => t.accountId !== id);
+  }
   async upsertByExternalId(data: Omit<Account, 'id'>) {
     const found = this.items.find((a) => a.userId === data.userId && a.externalId === data.externalId);
     if (found) { Object.assign(found, data); return found; }
@@ -102,8 +110,8 @@ export class InMemoryTransactionsRepository implements TransactionsRepository {
 }
 
 export function makeInMemoryRepositories() {
-  const accounts = new InMemoryAccountsRepository();
   const transactions = new InMemoryTransactionsRepository();
+  const accounts = new InMemoryAccountsRepository(transactions);
   return {
     users: new InMemoryUsersRepository(),
     connections: new InMemoryBankConnectionsRepository({ accounts, transactions }),

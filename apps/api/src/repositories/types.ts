@@ -20,10 +20,13 @@ export interface BankConnectionsRepository {
   delete(id: string): Promise<void>;
 }
 
-export type AccountData = Pick<Account, 'userId' | 'connectionId' | 'externalId' | 'name' | 'type' | 'balanceInCents'>;
+export type AccountData = Pick<Account, 'userId' | 'connectionId' | 'externalId' | 'name' | 'type' | 'balanceInCents' | 'fingerprint'>;
 export interface AccountsRepository {
   upsertByExternalId(data: AccountData): Promise<Account>;
   listByUser(userId: string): Promise<Account[]>;
+  findByFingerprint(userId: string, fingerprint: string): Promise<Account[]>;
+  /** Apaga a conta e, em cascata, as transações dela. */
+  delete(id: string): Promise<void>;
 }
 
 export interface CategoriesRepository {

@@ -51,12 +51,14 @@ model Account {
   name           String
   type           String  // BANK | CREDIT
   balanceInCents Int     @map("balance_in_cents")
+  fingerprint    String? // cartão: "CREDIT:BANDEIRA:final", pra achar o mesmo cartão em duas conexões
 
   user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   connection   BankConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
   transactions Transaction[]
 
   @@unique([userId, externalId])
+  @@index([userId, fingerprint])
   @@map("accounts")
 }
 

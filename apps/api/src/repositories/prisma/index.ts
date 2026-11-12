@@ -36,10 +36,12 @@ class PrismaAccountsRepository implements AccountsRepository {
     return (await this.db.account.upsert({
       where: { userId_externalId: { userId: data.userId, externalId: data.externalId } },
       create: data,
-      update: { name: data.name, balanceInCents: data.balanceInCents, type: data.type },
+      update: { name: data.name, balanceInCents: data.balanceInCents, type: data.type, fingerprint: data.fingerprint },
     })) as Account;
   }
   async listByUser(userId: string) { return (await this.db.account.findMany({ where: { userId }, orderBy: { name: 'asc' } })) as Account[]; }
+  async findByFingerprint(userId: string, fingerprint: string) { return (await this.db.account.findMany({ where: { userId, fingerprint } })) as Account[]; }
+  async delete(id: string) { await this.db.account.delete({ where: { id } }); }
 }
 
 class PrismaCategoriesRepository implements CategoriesRepository {

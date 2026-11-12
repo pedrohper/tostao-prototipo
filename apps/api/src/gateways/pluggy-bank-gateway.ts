@@ -4,13 +4,28 @@ import type { BankAccountData, BankGateway, BankItemData, BankTransactionData } 
 const BASE_URL = 'https://api.pluggy.ai';
 const API_KEY_TTL_MS = 110 * 60 * 1000; // a chave vale 2h; renovamos com 10 min de folga
 
-type PluggyAccount = { id: string; name: string; marketingName?: string | null; type: 'BANK' | 'CREDIT'; balance: number };
+type PluggyAccount = {
+  id: string;
+  name: string;
+  marketingName?: string | null;
+  type: 'BANK' | 'CREDIT';
+  balance: number;
+  number?: string | null;
+  creditData?: { brand?: string | null } | null;
+};
 type PluggyTransaction = { id: string; description: string; amount: number; date: string; type: 'DEBIT' | 'CREDIT' };
 type Page<T> = { total: number; totalPages: number; page: number; results: T[] };
 type CursorPage<T> = { results: T[]; next: string | null };
 
 const toCents = (value: number) => Math.round(value * 100);
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
+
+/** Só pra cartão: bandeira + 4 últimos dígitos. Conta corrente e poupança podem ter o mesmo número, então ficam de fora. */
+export function cardFingerprint(a: Pick<PluggyAccount, 'type' | 'number' | 'creditData'>): string | null {
+  const last4 = (a.number ?? '').replace(/\D/g, '').slice(-4);
+  if (a.type !== 'CREDIT' || last4.length < 4) return null;
+  return `CREDIT:${(a.creditData?.brand ?? '').trim().toUpperCase()}:${last4}`;
+}
 
 /**
  * Fala com a API do Pluggy usando as credenciais do Meu Pluggy.
@@ -76,7 +91,9 @@ export class PluggyBankGateway implements BankGateway {
     const page = await this.get<Page<PluggyAccount>>(`/accounts?itemId=${encodeURIComponent(itemId)}`);
     return page.results.map((a) => ({
       externalId: a.id,
-      name: a.marketingName || a.name,
+      // Cartão: o "name" é o produto (ex.: AMAZON MASTERCARD PLATINUM); o marketingName às vezes vem "OUTROS".
+      name: a.type === 'CREDIT' ? a.name || a.marketingName || 'Cartão' : a.marketingName || a.name,
+      fingerprint: cardFingerprint(a),
       type: a.type,
       // No cartão, "balance" é quanto você deve. Pra gente, dívida é negativo.
       balanceInCents: a.type === 'CREDIT' ? -Math.abs(toCents(a.balance)) : toCents(a.balance),

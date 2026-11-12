@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { PluggyBankGateway } from './pluggy-bank-gateway.js';
+import { cardFingerprint, PluggyBankGateway } from './pluggy-bank-gateway.js';
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
@@ -23,5 +23,19 @@ describe('PluggyBankGateway', () => {
     expect(calls[1]).toBe('https://api.pluggy.ai/v2/transactions?accountId=acc&dateFrom=2026-11-01&dateTo=2026-11-30');
     expect(calls[2]).toBe('https://api.pluggy.ai/v2/transactions?accountId=acc&after=abc%3D');
     expect(calls.some((c) => /[?&](page|pageSize|from|to)=/.test(c))).toBe(false);
+  });
+
+  it('marca cartão por bandeira + final, e conta corrente fica sem marca', () => {
+    expect(cardFingerprint({ type: 'CREDIT', number: '**** 8335', creditData: { brand: 'elo' } })).toBe('CREDIT:ELO:8335');
+    expect(cardFingerprint({ type: 'BANK', number: '41930-3', creditData: null })).toBeNull();
+    expect(cardFingerprint({ type: 'CREDIT', number: null, creditData: null })).toBeNull();
+  });
+
+  it('cartão usa o name (o marketingName às vezes vem "OUTROS")', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => url.endsWith('/auth')
+      ? json({ apiKey: 'chave' })
+      : json({ total: 1, totalPages: 1, page: 1, results: [{ id: 'a1', name: 'AMAZON MASTERCARD PLATINUM', marketingName: 'OUTROS', type: 'CREDIT', balance: 10, number: '6018', creditData: { brand: 'MASTERCARD' } }] })));
+    const [card] = await new PluggyBankGateway('id', 'secret').fetchAccounts('item');
+    expect(card).toMatchObject({ name: 'AMAZON MASTERCARD PLATINUM', fingerprint: 'CREDIT:MASTERCARD:6018', balanceInCents: -1000 });
   });
 });
