@@ -43,7 +43,7 @@ export function RendaForm({ plan, suggestions, banks }: { plan: FinancialPlan | 
 
   const initialOthers: Other[] = plan
     ? plan.otherIncomes.map((i) => ({ name: i.name, amount: toMoney(i.amountInCents), day: i.day ? String(i.day) : '', mode: i.countsAsIncome ? 'renda' : 'repasse', pattern: i.pattern }))
-    : suggestions.filter((s) => s.pattern !== firstSalary).slice(0, 3).map((s) => ({ name: s.sample.slice(0, 40), amount: toMoney(s.monthlyAvgInCents), day: String(new Date(s.hits[0]!.date).getUTCDate()), mode: s.countsAsIncome ? 'renda' : 'repasse', pattern: s.pattern }));
+    : suggestions.filter((s) => s.pattern !== firstSalary).slice(0, 3).map((s) => ({ name: s.sample.slice(0, 40), amount: toMoney(s.monthlyAvgInCents), day: String(new Date(s.hits[0]!.date).getUTCDate()), mode: !s.countsAsIncome ? 'repasse' : /^PIX RECEBIDO/.test(s.pattern) ? 'ignorar' : 'renda', pattern: s.pattern }));
   const [others, setOthers] = useState<Other[]>(initialOthers);
   const [fixed, setFixed] = useState<Fixed[]>(plan?.fixedExpenses.map((f) => ({ name: f.name, amount: toMoney(f.amountInCents), day: String(f.day) })) ?? []);
   const [goal, setGoal] = useState<string | null>(plan?.goal?.kind ?? null);
