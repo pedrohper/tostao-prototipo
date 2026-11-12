@@ -11,7 +11,7 @@ Slogan: "Grana explicada, de tostão em tostão". Voz: amigo sincero, sem julgam
 - Commits sempre como Pedro Henrique (73310860+pedrohper@users.noreply.github.com), sem co-autoria do Claude.
 
 ## Stack
-Monorepo pnpm · TypeScript · Fastify (API) · Prisma 6 + Postgres 16 (Docker, porta 5433) · Zod · Vitest ·
+Monorepo pnpm · TypeScript · Fastify (API) · Prisma 6 + Postgres 16 (Docker, localhost:5432 via DATABASE_URL) · Zod · Vitest ·
 Next.js 16 App Router + Tailwind v4 (web) · lições em JSON gerado de `content/curriculo.md`.
 Nest.js talvez depois. PWA primeiro. Modelo: uso próprio agora, freemium depois.
 
@@ -31,7 +31,7 @@ Nest.js talvez depois. PWA primeiro. Modelo: uso próprio agora, freemium depois
 - Currículo: 9 módulos × 5 lições, cada lição em gancho, conceito, simulador, dilema e compromisso.
 
 ## Deploy
-Servidor Ubuntu caseiro (homelab, pasta `~/homelab/tostao-prototipo`): pm2 (tostao-api, tostao-web) + Caddy com HTTPS.
+Homelab Ubuntu Server 24.04 headless, acessado via Tailscale (pasta `~/homelab/tostao-prototipo`). Postgres já existente em container na 5432. Setup: `bash scripts/homelab-setup.sh` (pm2 + `tailscale serve` com HTTPS).
 Login exige HTTPS (cookie secure em produção).
 
 ## Pendências conhecidas
