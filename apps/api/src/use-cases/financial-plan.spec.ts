@@ -63,6 +63,34 @@ describe('Renda e previsão', () => {
 
   it('sem plano, a previsão avisa que falta a renda', async () => {
     const { repos } = setup();
-    expect(await new ForecastUseCase(repos, () => NOW).execute({ userId: 'u1' })).toEqual({ hasPlan: false, months: [] });
+    expect(await new ForecastUseCase(repos, () => NOW).execute({ userId: 'u1' })).toEqual({ hasPlan: false, months: [], goal: null });
+  });
+});
+
+describe('Meta', () => {
+  it('calcula quanto guardar por mês até o prazo e se cabe na sobra', async () => {
+    const { goalStatus } = await import('./financial-plan.js');
+    const g = goalStatus({ kind: 'viagem', label: 'Viagem', amountInCents: 200000, deadline: '2027-07', savedInCents: 40000 }, '2026-11', 30000);
+    expect(g.monthsLeft).toBe(8);
+    expect(g.monthlyNeededInCents).toBe(20000);
+    expect(g.fits).toBe(true);
+    expect(g.reached).toBe(false);
+    expect(goalStatus({ kind: 'reserva', label: null, amountInCents: 1000, deadline: null, savedInCents: 1000 }, '2026-11', null)).toMatchObject({ label: 'Reserva', reached: true, monthlyNeededInCents: null, fits: null });
+  });
+
+  it('"Guardei" soma, "tirei" desconta, e salvar a renda não zera o guardado', async () => {
+    const { repos } = setup();
+    const { SetGoalUseCase, GoalDepositUseCase } = await import('./financial-plan.js');
+    await new SetGoalUseCase(repos).execute({ userId: 'u1', goal: { kind: 'viagem', label: 'Praia', amountInCents: 100000, deadline: '2027-01' } });
+    const dep = new GoalDepositUseCase(repos);
+    await dep.execute({ userId: 'u1', amountInCents: 5000 });
+    expect((await dep.execute({ userId: 'u1', amountInCents: -2000 })).savedInCents).toBe(3000);
+    expect((await dep.execute({ userId: 'u1', amountInCents: -9000 })).savedInCents).toBe(0);
+    await dep.execute({ userId: 'u1', amountInCents: 7000 });
+    await new SaveFinancialPlanUseCase(repos, () => NOW).execute({ userId: 'u1', plan: plan({ goal: { kind: 'viagem', label: 'Praia', amountInCents: 120000, deadline: '2027-01' } }) });
+    expect((await repos.plans.get('u1'))!.goal!.savedInCents).toBe(7000);
+    const f = await new ForecastUseCase(repos, () => NOW).execute({ userId: 'u1' });
+    expect(f.goal!.amountInCents).toBe(120000);
+    expect(f.goal!.monthlyNeededInCents).toBe(Math.ceil(113000 / 2));
   });
 });

@@ -95,7 +95,8 @@ export class AskTostaoUseCase {
       lines.push(`O que a pessoa contou: ${p.join('; ') || 'nada sobre renda ainda'}.`);
       if (plan.benefits?.length) lines.push(`Benefícios (só pra comida, não entram na conta do banco): ${plan.benefits.map((b) => `${b.kind} ${brl(b.amountInCents)} todo dia ${b.day}`).join('; ')}. Gasto de mercado/almoço pode sair daí em vez do salário.`);
       if (plan.fixedExpenses.length) lines.push(`Contas fixas fora do cartão: ${plan.fixedExpenses.map((f) => `${f.name} ${brl(f.amountInCents)} dia ${f.day}`).join('; ')}.`);
-      if (plan.goal) lines.push(`Objetivo: ${plan.goal.label ?? plan.goal.kind}${plan.goal.amountInCents ? ` de ${brl(plan.goal.amountInCents)}` : ''}${plan.goal.deadline ? ` até ${plan.goal.deadline}` : ''}.`);
+      const g = forecast.goal;
+      if (g) lines.push(`Meta: ${g.label}${g.amountInCents ? ` de ${brl(g.amountInCents)}` : ''}${g.deadline ? ` até ${g.deadline}` : ''}; já guardou ${brl(g.savedInCents)}${g.monthlyNeededInCents !== null ? `; precisa guardar ${brl(g.monthlyNeededInCents)}/mês` : ''}${g.fits === false ? ' (não cabe no que sobra pela previsão)' : ''}${g.reached ? ' (META ATINGIDA)' : ''}. Pra registrar o que guardou, a pessoa toca em "Guardei" na tela da meta.`);
       if (forecast.months.length) lines.push(`Previsão (estimativa: renda − contas fixas − assinaturas − parcelas − média do dia a dia): ${forecast.months.map((m) => `${m.month} sobra ${brl(m.leftInCents)} (parcelas ${brl(m.installmentsInCents)}, dia a dia ${brl(m.dailyInCents)})`).join('; ')}.`);
     } else {
       lines.push('A pessoa ainda não contou quanto ganha nem as contas fixas. Se perguntarem de previsão ou "dá pra comprar", peça pra preencher "Renda e contas fixas" no Perfil.');

@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { financialPlanBody, lessonIdParam, monthQuery, setBudgetBody, type BudgetsResponse, type FinancialPlanResponse, type ForecastResponse, type IncomeSuggestionsResponse, type LessonProgressResponse } from '@tostao/contracts';
+import { financialPlanBody, goalBody, goalDepositBody, lessonIdParam, monthQuery, setBudgetBody, type BudgetsResponse, type FinancialPlanResponse, type ForecastResponse, type IncomeSuggestionsResponse, type LessonProgressResponse } from '@tostao/contracts';
 import type { UseCases } from '../../use-cases/factories.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
 
@@ -44,5 +44,16 @@ export function planningRoutes(app: FastifyInstance, uc: UseCases) {
 
   app.get('/forecast', { onRequest: verifyJwt }, async (request) => {
     return (await uc.forecast.execute({ userId: request.user.sub })) satisfies ForecastResponse;
+  });
+
+  // Meta: criar/trocar (body = meta) ou apagar (body = null), e "Guardei"/"Tirei"
+  app.put('/goal', { onRequest: verifyJwt }, async (request) => {
+    const goal = goalBody.nullable().parse(request.body ?? null);
+    return uc.setGoal.execute({ userId: request.user.sub, goal });
+  });
+
+  app.post('/goal/deposits', { onRequest: verifyJwt }, async (request) => {
+    const { amountInCents } = goalDepositBody.parse(request.body);
+    return uc.goalDeposit.execute({ userId: request.user.sub, amountInCents });
   });
 }

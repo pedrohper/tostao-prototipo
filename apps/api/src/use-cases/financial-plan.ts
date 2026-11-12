@@ -1,8 +1,9 @@
-import type { FinancialPlan, ForecastMonth, IncomeSuggestion } from '@tostao/contracts';
+import type { FinancialPlan, ForecastMonth, Goal, GoalStatus, IncomeSuggestion } from '@tostao/contracts';
 import type { Repositories } from '../repositories/types.js';
 import type { Transaction } from '../domain/entities.js';
 import { NEUTRAL_CATEGORY_ID } from '../domain/entities.js';
 import { currentMonth } from '../lib/month.js';
+import { ResourceNotFoundError } from '../domain/errors.js';
 import { normalizeDescription } from '../lib/text.js';
 import { patternFromDescription } from '../services/categorize.js';
 import { GetMonthSummaryUseCase } from './get-month-summary.js';
@@ -47,6 +48,11 @@ export class SaveFinancialPlanUseCase {
       salary: plan.salary ? { ...plan.salary, pattern: plan.salary.pattern ? clean(plan.salary.pattern) : null } : null,
       otherIncomes: plan.otherIncomes.map((i) => ({ ...i, pattern: i.pattern ? clean(i.pattern) : null })),
     };
+    // A meta guarda quanto já foi guardado: o formulário da renda não manda isso, então mantém o que tinha.
+    if (normalized.goal && normalized.goal.savedInCents === undefined) {
+      const before = await this.repos.plans.get(userId);
+      normalized.goal = { ...normalized.goal, savedInCents: before?.goal?.savedInCents ?? 0 };
+    }
     await this.repos.plans.save(userId, normalized);
 
     let updated = 0;
@@ -113,6 +119,53 @@ export class SuggestIncomeUseCase {
   }
 }
 
+const GOAL_LABEL: Record<Goal['kind'], string> = { reserva: 'Reserva', viagem: 'Viagem', 'sair-do-vermelho': 'Sair do vermelho', outro: 'Minha meta' };
+
+/** Quanto falta e quanto guardar por mês. Prazo "2027-07" = até o fim de julho: de novembro são 8 meses (dez a jul). */
+export function goalStatus(goal: Goal, cur: string, nextLeftInCents: number | null): GoalStatus {
+  const saved = goal.savedInCents ?? 0;
+  const amount = goal.amountInCents;
+  const monthsLeft = goal.deadline ? Math.max(1, monthsBetween(cur, goal.deadline)) : null;
+  const missing = amount === null ? null : Math.max(0, amount - saved);
+  const monthly = missing === null || monthsLeft === null ? null : Math.ceil(missing / monthsLeft);
+  return {
+    label: goal.label ?? GOAL_LABEL[goal.kind],
+    amountInCents: amount,
+    savedInCents: saved,
+    deadline: goal.deadline,
+    monthsLeft,
+    monthlyNeededInCents: monthly,
+    fits: monthly === null || nextLeftInCents === null ? null : monthly <= nextLeftInCents,
+    reached: amount !== null && amount > 0 && saved >= amount,
+  };
+}
+
+/** Criar, trocar ou apagar a meta sem passar pelo formulário da renda. */
+export class SetGoalUseCase {
+  constructor(private readonly repos: Pick<Repositories, 'plans'>) {}
+
+  async execute({ userId, goal }: { userId: string; goal: Goal | null }) {
+    const plan = await this.repos.plans.get(userId);
+    const base: FinancialPlan = plan ?? { salary: null, otherIncomes: [], fixedExpenses: [], benefits: [], goal: null };
+    const next = goal ? { ...goal, savedInCents: goal.savedInCents ?? base.goal?.savedInCents ?? 0 } : null;
+    await this.repos.plans.save(userId, { ...base, goal: next });
+    return { goal: next };
+  }
+}
+
+/** "Guardei R$ 50" soma; valor negativo tira. Nunca fica abaixo de zero. */
+export class GoalDepositUseCase {
+  constructor(private readonly repos: Pick<Repositories, 'plans'>) {}
+
+  async execute({ userId, amountInCents }: { userId: string; amountInCents: number }) {
+    const plan = await this.repos.plans.get(userId);
+    if (!plan?.goal) throw new ResourceNotFoundError('Meta');
+    const savedInCents = Math.max(0, (plan.goal.savedInCents ?? 0) + amountInCents);
+    await this.repos.plans.save(userId, { ...plan, goal: { ...plan.goal, savedInCents } });
+    return { savedInCents };
+  }
+}
+
 /** Parcela "3/10" na descrição da compra no cartão. */
 const INSTALLMENT = /(?:^|\D)(\d{1,2})\s*\/\s*(\d{1,2})(?:\D|$)/;
 
@@ -124,9 +177,9 @@ const INSTALLMENT = /(?:^|\D)(\d{1,2})\s*\/\s*(\d{1,2})(?:\D|$)/;
 export class ForecastUseCase {
   constructor(private readonly repos: Repositories, private readonly now: () => Date = () => new Date()) {}
 
-  async execute({ userId, months = 3 }: { userId: string; months?: number }): Promise<{ hasPlan: boolean; months: ForecastMonth[] }> {
+  async execute({ userId, months = 3 }: { userId: string; months?: number }): Promise<{ hasPlan: boolean; months: ForecastMonth[]; goal: GoalStatus | null }> {
     const plan = await this.repos.plans.get(userId);
-    if (!plan) return { hasPlan: false, months: [] };
+    if (!plan) return { hasPlan: false, months: [], goal: null };
     const now = this.now();
     const cur = currentMonth(now);
     const summary = new GetMonthSummaryUseCase(this.repos);
@@ -179,6 +232,12 @@ export class ForecastUseCase {
         benefitsInCents: (plan.benefits ?? []).reduce((s, b) => s + b.amountInCents, 0),
       });
     }
-    return { hasPlan: true, months: out };
+    // Sem salário informado (ex.: só criou a meta), a previsão não tem base: não diz se cabe.
+    const hasIncome = income > 0;
+    return {
+      hasPlan: hasIncome || fixed > 0,
+      months: hasIncome || fixed > 0 ? out : [],
+      goal: plan.goal ? goalStatus(plan.goal, cur, hasIncome ? out[0]?.leftInCents ?? null : null) : null,
+    };
   }
 }

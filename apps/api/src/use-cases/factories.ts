@@ -25,7 +25,7 @@ import { ListSubscriptionsUseCase } from './list-subscriptions.js';
 import { GetBudgetsUseCase, SetBudgetUseCase } from './budgets.js';
 import { AutoCategorizeUseCase } from './auto-categorize.js';
 import { SearchTransactionsUseCase } from './search-transactions.js';
-import { ForecastUseCase, SaveFinancialPlanUseCase, SuggestIncomeUseCase } from './financial-plan.js';
+import { ForecastUseCase, GoalDepositUseCase, SaveFinancialPlanUseCase, SetGoalUseCase, SuggestIncomeUseCase } from './financial-plan.js';
 
 export type Deps = { repos: Repositories; bank: BankGateway; ai?: AiGateway; chatDailyLimit?: number };
 
@@ -57,6 +57,8 @@ export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), chatDailyL
     savePlan: new SaveFinancialPlanUseCase(repos),
     suggestIncome: new SuggestIncomeUseCase(repos),
     forecast: new ForecastUseCase(repos),
+    setGoal: new SetGoalUseCase(repos),
+    goalDeposit: new GoalDepositUseCase(repos),
     listLessonProgress: new ListLessonProgressUseCase(repos),
     markLessonDone: { execute: ({ userId, lessonId }: { userId: string; lessonId: string }) => repos.lessons.markDone(userId, lessonId) },
     listCategories: { execute: async ({ userId }: { userId?: string }) => ({ categories: await repos.categories.list(userId) }) },

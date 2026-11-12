@@ -186,6 +186,18 @@ export type ImportResponse = { importedCount: number; skipped: number; format: '
 // ---------- Renda, contas fixas e previsão ----------
 const cents = z.number().int().min(0).max(100_000_000);
 const day = z.number().int().min(1).max(31);
+/** A meta (uma só por pessoa). savedInCents = quanto já guardou; o app soma com "Guardei". */
+export const goalBody = z.object({
+  kind: z.enum(['reserva', 'viagem', 'sair-do-vermelho', 'outro']),
+  label: z.string().trim().max(60).nullable().default(null),
+  amountInCents: cents.nullable().default(null),
+  deadline: z.string().regex(/^\d{4}-\d{2}$/).nullable().default(null),
+  savedInCents: cents.optional(),
+});
+export type Goal = z.infer<typeof goalBody>;
+/** "Guardei R$ 50" (positivo) ou "tirei R$ 20" (negativo). */
+export const goalDepositBody = z.object({ amountInCents: z.number().int().min(-100_000_000).max(100_000_000).refine((v) => v !== 0, 'Valor precisa ser diferente de zero') });
+
 export const financialPlanBody = z.object({
   salary: z.object({
     amountInCents: cents,
@@ -207,12 +219,7 @@ export const financialPlanBody = z.object({
   fixedExpenses: z.array(z.object({ name: z.string().trim().min(1).max(60), amountInCents: cents, day })).max(20).default([]),
   /** VR e VA: não passam pelo Open Finance, a pessoa informa. Só servem pra comida, não entram no caixa. */
   benefits: z.array(z.object({ kind: z.enum(['VR', 'VA', 'outro']), amountInCents: cents, day })).max(4).default([]),
-  goal: z.object({
-    kind: z.enum(['reserva', 'viagem', 'sair-do-vermelho', 'outro']),
-    label: z.string().trim().max(60).nullable().default(null),
-    amountInCents: cents.nullable().default(null),
-    deadline: z.string().regex(/^\d{4}-\d{2}$/).nullable().default(null),
-  }).nullable().default(null),
+  goal: goalBody.nullable().default(null),
 });
 export type FinancialPlan = z.infer<typeof financialPlanBody>;
 export type FinancialPlanResponse = { plan: FinancialPlan | null };
@@ -240,6 +247,19 @@ export type ForecastMonth = {
   /** VR/VA do mês: informativo, não entra no leftInCents. */
   benefitsInCents: number;
 };
-export type ForecastResponse = { hasPlan: boolean; months: ForecastMonth[] };
+/** Situação da meta: quanto falta e quanto guardar por mês pra chegar no prazo. */
+export type GoalStatus = {
+  label: string;
+  amountInCents: number | null;
+  savedInCents: number;
+  deadline: string | null;
+  monthsLeft: number | null;
+  /** null = sem valor ou sem prazo. */
+  monthlyNeededInCents: number | null;
+  /** O que sobra no mês que vem dá pra guardar o mensal da meta? null = sem previsão. */
+  fits: boolean | null;
+  reached: boolean;
+};
+export type ForecastResponse = { hasPlan: boolean; months: ForecastMonth[]; goal: GoalStatus | null };
 /** Quantas pendentes a IA categorizou (das que ela olhou). */
 export type AutoCategorizeResponse = { categorized: number; asked: number };

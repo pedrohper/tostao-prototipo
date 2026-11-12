@@ -164,6 +164,28 @@ export default async function InicioPage() {
             );
           })()}
 
+          {forecast && (forecast.goal ? (() => {
+            const g = forecast.goal;
+            const pct = g.amountInCents ? Math.min(100, Math.round((g.savedInCents / g.amountInCents) * 100)) : 0;
+            return (
+              <Link href="/meta" className="flex flex-col gap-2 rounded-2xl border border-linha bg-cartao p-3.5 text-tinta no-underline">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">Meta · {g.label}</span>
+                  <span className="text-[13px] font-semibold tabular-nums">{pct}%</span>
+                </div>
+                <div className="h-2.5 overflow-hidden rounded-full bg-papel-2"><div className="h-full rounded-full bg-menta" style={{ width: `${pct}%` }} /></div>
+                <span className="text-[13px] text-tinta-suave">
+                  {g.reached ? 'Meta batida! 🎉' : `${money(g.savedInCents)}${g.amountInCents ? ` de ${money(g.amountInCents)}` : ''}${g.monthlyNeededInCents !== null ? ` · guardar ${money(g.monthlyNeededInCents)}/mês` : ''}`}
+                </span>
+              </Link>
+            );
+          })() : (
+            <Link href="/meta" className="flex items-center gap-3 rounded-2xl border border-dashed border-linha p-3.5 text-[15px] text-tinta no-underline">
+              <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-menta-clara text-lg">🎯</span>
+              <span className="grow"><b>Juntar pra alguma coisa?</b> Cria uma meta e eu te digo quanto guardar por mês.</span>
+            </Link>
+          ))}
+
           {cartoes.length > 0 && (
             <section className="flex flex-col gap-3">
               <div className="flex items-baseline justify-between">

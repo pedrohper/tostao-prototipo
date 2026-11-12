@@ -10,6 +10,7 @@ import { NO_PROGRESS, xpFrom } from '@/lib/xp';
 const atalhos = [
   { href: '/renda', label: 'Renda e contas fixas' },
   { href: '/previsao', label: 'Próximos meses' },
+  { href: '/meta', label: 'Minha meta' },
   { href: '/categorias', label: 'Minhas categorias' },
   { href: '/limites', label: 'Limites do mês' },
   { href: '/fechamento', label: 'Fechamento do mês' },

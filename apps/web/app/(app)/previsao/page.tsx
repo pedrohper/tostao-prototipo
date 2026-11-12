@@ -10,7 +10,7 @@ const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 
 export default async function PrevisaoPage() {
   const [f, { plan }] = await Promise.all([
-    api<ForecastResponse>('/forecast').catch(() => ({ hasPlan: false, months: [] })),
+    api<ForecastResponse>('/forecast').catch((): ForecastResponse => ({ hasPlan: false, months: [], goal: null })),
     api<FinancialPlanResponse>('/plan').catch(() => ({ plan: null })),
   ]);
 
@@ -87,6 +87,12 @@ export default async function PrevisaoPage() {
           <span>VR e VA <span className="text-tinta-suave">(só pra comida, fora da conta)</span></span>
           <span className="font-semibold tabular-nums">{money(first.benefitsInCents)}</span>
         </div>
+      )}
+      {f.goal && !f.goal.reached && f.goal.monthlyNeededInCents !== null && (
+        <Link href="/meta" className={`flex items-center justify-between rounded-2xl px-3.5 py-3 text-sm text-tinta no-underline ${f.goal.fits === false ? 'bg-rosa' : 'bg-menta-clara'}`}>
+          <span>Pra meta “{f.goal.label}”</span>
+          <span className="font-semibold tabular-nums">guardar {money(f.goal.monthlyNeededInCents)}/mês</span>
+        </Link>
       )}
       <p className="text-xs leading-[18px] text-tinta-suave">É uma estimativa com o que você me contou e as parcelas que aparecem no cartão. Mudou algo? <Link href="/renda" className="font-semibold text-laranja-texto">Ajustar renda e contas fixas</Link>.</p>
       <Link href="/chat" className="flex h-[50px] items-center justify-center rounded-full border-[1.5px] border-tinta text-[15px] font-semibold text-tinta no-underline">Pergunte ao Tostão: dá pra comprar?</Link>
