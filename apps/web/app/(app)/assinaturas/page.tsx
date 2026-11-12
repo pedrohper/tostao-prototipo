@@ -17,7 +17,7 @@ export default async function AssinaturasPage() {
     <div className="flex flex-col gap-5">
       <BackLink href="/inicio" />
       <div>
-        <h1 className="font-display text-[28px] leading-tight font-extrabold">Raio-X das assinaturas</h1>
+        <h1 className="font-display text-[28px] leading-tight font-extrabold">Minhas assinaturas</h1>
         <p className="mt-1 text-[15px] text-tinta-suave">O que sai todo mês sozinho, sem você abrir o app.</p>
       </div>
 

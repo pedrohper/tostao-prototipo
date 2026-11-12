@@ -3,7 +3,7 @@
 import type { PrismaClient } from '@prisma/client';
 import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, Transaction } from '../../domain/entities.js';
 import type {
-  AccountsRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, IgnoredSubscriptionsRepository, LessonProgressRepository,
+  AccountData, AccountsRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, IgnoredSubscriptionsRepository, LessonProgressRepository,
   NewTransaction, NewUser, Repositories, TransactionsRepository, UsersRepository,
 } from '../types.js';
 
@@ -32,7 +32,7 @@ class PrismaBankConnectionsRepository implements BankConnectionsRepository {
 
 class PrismaAccountsRepository implements AccountsRepository {
   constructor(private db: PrismaClient) {}
-  async upsertByExternalId(data: Omit<Account, 'id'>) {
+  async upsertByExternalId(data: AccountData) {
     return (await this.db.account.upsert({
       where: { userId_externalId: { userId: data.userId, externalId: data.externalId } },
       create: data,
@@ -42,12 +42,19 @@ class PrismaAccountsRepository implements AccountsRepository {
   async listByUser(userId: string) { return (await this.db.account.findMany({ where: { userId }, orderBy: { name: 'asc' } })) as Account[]; }
   async findByFingerprint(userId: string, fingerprint: string) { return (await this.db.account.findMany({ where: { userId, fingerprint } })) as Account[]; }
   async delete(id: string) { await this.db.account.delete({ where: { id } }); }
+  async setHidden(id: string, hidden: boolean) { await this.db.account.update({ where: { id }, data: { hidden } }); }
 }
 
 class PrismaCategoriesRepository implements CategoriesRepository {
   constructor(private db: PrismaClient) {}
-  async list() { return (await this.db.category.findMany({ orderBy: { name: 'asc' } })) as Category[]; }
+  async list(userId?: string) {
+    return (await this.db.category.findMany({ where: { OR: [{ userId: null }, ...(userId ? [{ userId }] : [])] }, orderBy: { name: 'asc' } })) as Category[];
+  }
   async findById(id: string) { return (await this.db.category.findUnique({ where: { id } })) as Category | null; }
+  async create(data: Omit<Category, 'id'> & { userId: string }) {
+    return (await this.db.category.create({ data: { ...data, id: `u-${crypto.randomUUID()}` } })) as Category;
+  }
+  async delete(id: string) { await this.db.category.delete({ where: { id } }); }
 }
 
 class PrismaCategoryRulesRepository implements CategoryRulesRepository {
@@ -62,6 +69,7 @@ class PrismaCategoryRulesRepository implements CategoryRulesRepository {
     if (found) return this.db.categoryRule.update({ where: { id: found.id }, data: { categoryId: data.categoryId } });
     return this.db.categoryRule.create({ data });
   }
+  async deleteByCategory(categoryId: string) { await this.db.categoryRule.deleteMany({ where: { categoryId } }); }
 }
 
 class PrismaTransactionsRepository implements TransactionsRepository {
@@ -80,6 +88,7 @@ class PrismaTransactionsRepository implements TransactionsRepository {
   async save({ id, categoryId, isInternalTransfer, description }: Transaction) {
     await this.db.transaction.update({ where: { id }, data: { categoryId, isInternalTransfer, description } });
   }
+  async clearCategory(categoryId: string) { await this.db.transaction.updateMany({ where: { categoryId }, data: { categoryId: null } }); }
 }
 
 class PrismaBudgetsRepository implements BudgetsRepository {
@@ -89,6 +98,7 @@ class PrismaBudgetsRepository implements BudgetsRepository {
     return this.db.categoryBudget.upsert({ where: { userId_categoryId: { userId, categoryId } }, create: { userId, categoryId, limitInCents }, update: { limitInCents } });
   }
   async delete(userId: string, categoryId: string) { await this.db.categoryBudget.deleteMany({ where: { userId, categoryId } }); }
+  async deleteByCategory(categoryId: string) { await this.db.categoryBudget.deleteMany({ where: { categoryId } }); }
 }
 
 class PrismaLessonProgressRepository implements LessonProgressRepository {

@@ -38,3 +38,13 @@ export async function createManual(_: ActionState, form: FormData): Promise<Acti
   revalidatePath('/', 'layout');
   redirect(`/carteira?mes=${parsed.data.occurredAt.slice(0, 7)}`);
 }
+
+/** Ocultar (ou mostrar de novo) uma conta, ex.: a poupança parada. Continua sincronizando, só some da tela e do saldo. */
+export async function setAccountHidden(form: FormData) {
+  const id = String(form.get('accountId') ?? '');
+  if (!id) return;
+  try {
+    await api(`/accounts/${encodeURIComponent(id)}`, { method: 'PATCH', body: { hidden: form.get('hidden') === 'true' } });
+  } catch { /* se falhar, a conta só continua onde estava */ }
+  revalidatePath('/', 'layout');
+}

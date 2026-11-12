@@ -29,9 +29,15 @@ export type Account = {
   balanceInCents: number;
   /** Identidade do cartão fora do provedor (bandeira + final). Pega o mesmo cartão vindo de duas conexões. */
   fingerprint: string | null;
+  /** Ocultada pela pessoa: some da tela e do saldo, mas continua sincronizando. */
+  hidden: boolean;
 };
 
-export type Category = { id: string; name: string; emoji: string; color: string; kind: 'saida' | 'entrada' };
+/** kind "neutra" = não conta como gasto nem renda (ex.: repasse com a família). userId null = categoria do sistema. */
+export type Category = { id: string; name: string; emoji: string; color: string; kind: 'saida' | 'entrada' | 'neutra'; userId?: string | null };
+
+/** Categoria do sistema pra "isso não conta": vira transferência interna. */
+export const NEUTRAL_CATEGORY_ID = 'nao-conta';
 
 export type CategoryRule = {
   id: string;

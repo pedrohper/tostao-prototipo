@@ -23,6 +23,14 @@ export function bankRoutes(app: FastifyInstance, uc: UseCases, repos: Repositori
     return (await uc.disconnectBank.execute({ userId: request.user.sub, connectionId: id })) satisfies DisconnectResponse;
   });
 
+  // Ocultar (ou mostrar de novo) uma conta, ex.: poupança que você não usa
+  app.patch('/accounts/:id', { onRequest: verifyJwt }, async (request, reply) => {
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const { hidden } = z.object({ hidden: z.boolean() }).parse(request.body);
+    await uc.setAccountHidden.execute({ userId: request.user.sub, accountId: id, hidden });
+    return reply.status(204).send();
+  });
+
   app.post('/connections/:id/sync', { onRequest: verifyJwt }, async (request) => {
     const { id } = z.object({ id: z.string() }).parse(request.params);
     const connection = await repos.connections.findById(id);

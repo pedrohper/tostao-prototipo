@@ -2,7 +2,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, LessonProgress, Transaction, User } from '../../domain/entities.js';
 import type {
-  AccountsRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, IgnoredSubscriptionsRepository, LessonProgressRepository,
+  AccountData, AccountsRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, IgnoredSubscriptionsRepository, LessonProgressRepository,
   Repositories, TransactionsRepository, UsersRepository,
 } from '../types.js';
 import { DEFAULT_CATEGORIES, DEFAULT_RULES } from '../../lib/defaults.js';
@@ -56,10 +56,14 @@ export class InMemoryAccountsRepository implements AccountsRepository {
     this.items = this.items.filter((a) => a.id !== id);
     if (this.transactions) this.transactions.items = this.transactions.items.filter((t) => t.accountId !== id);
   }
-  async upsertByExternalId(data: Omit<Account, 'id'>) {
+  async setHidden(id: string, hidden: boolean) {
+    const a = this.items.find((x) => x.id === id);
+    if (a) a.hidden = hidden;
+  }
+  async upsertByExternalId(data: AccountData) {
     const found = this.items.find((a) => a.userId === data.userId && a.externalId === data.externalId);
     if (found) { Object.assign(found, data); return found; }
-    const a: Account = { id: randomUUID(), ...data };
+    const a: Account = { id: randomUUID(), hidden: false, ...data };
     this.items.push(a);
     return a;
   }
@@ -68,8 +72,14 @@ export class InMemoryAccountsRepository implements AccountsRepository {
 
 export class InMemoryCategoriesRepository implements CategoriesRepository {
   items: Category[] = DEFAULT_CATEGORIES.map((c) => ({ ...c }));
-  async list() { return this.items; }
+  async list(userId?: string) { return this.items.filter((c) => !c.userId || c.userId === userId); }
   async findById(id: string) { return this.items.find((c) => c.id === id) ?? null; }
+  async create(data: Omit<Category, 'id'> & { userId: string }) {
+    const c: Category = { id: `u-${randomUUID()}`, ...data };
+    this.items.push(c);
+    return c;
+  }
+  async delete(id: string) { this.items = this.items.filter((c) => c.id !== id); }
 }
 
 export class InMemoryCategoryRulesRepository implements CategoryRulesRepository {
@@ -82,6 +92,7 @@ export class InMemoryCategoryRulesRepository implements CategoryRulesRepository 
     this.items.push(r);
     return r;
   }
+  async deleteByCategory(categoryId: string) { this.items = this.items.filter((r) => r.categoryId !== categoryId); }
 }
 
 export class InMemoryTransactionsRepository implements TransactionsRepository {
@@ -107,6 +118,7 @@ export class InMemoryTransactionsRepository implements TransactionsRepository {
     const i = this.items.findIndex((t) => t.id === transaction.id);
     if (i >= 0) this.items[i] = transaction;
   }
+  async clearCategory(categoryId: string) { for (const t of this.items) if (t.categoryId === categoryId) t.categoryId = null; }
 }
 
 export class InMemoryBudgetsRepository implements BudgetsRepository {
@@ -120,6 +132,7 @@ export class InMemoryBudgetsRepository implements BudgetsRepository {
     return b;
   }
   async delete(userId: string, categoryId: string) { this.items = this.items.filter((b) => !(b.userId === userId && b.categoryId === categoryId)); }
+  async deleteByCategory(categoryId: string) { this.items = this.items.filter((b) => b.categoryId !== categoryId); }
 }
 
 export class InMemoryLessonProgressRepository implements LessonProgressRepository {

@@ -1,14 +1,30 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { categorizeBody, manualTransactionBody, monthQuery, type CategoryDTO, type MonthSummaryResponse, type SubscriptionsResponse, ignoreSubscriptionBody } from '@tostao/contracts';
+import { categorizeBody, manualTransactionBody, monthQuery, type CategoryDTO, type MonthSummaryResponse, type SubscriptionsResponse, ignoreSubscriptionBody, createCategoryBody } from '@tostao/contracts';
 import type { UseCases } from '../../use-cases/factories.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
 import { presentTransaction } from '../presenters.js';
 
 export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
-  app.get('/categories', async () => {
-    const { categories } = await uc.listCategories.execute();
-    return { categories: categories.map(({ id, name, emoji, color }) => ({ id, name, emoji, color }) satisfies CategoryDTO) };
+  const categoryDto = ({ id, name, emoji, color, kind, userId }: { id: string; name: string; emoji: string; color: string; kind: CategoryDTO['kind']; userId?: string | null }) =>
+    ({ id, name, emoji, color, kind, custom: !!userId }) satisfies CategoryDTO;
+
+  // Do sistema + as que a pessoa criou
+  app.get('/categories', { onRequest: verifyJwt }, async (request) => {
+    const { categories } = await uc.listCategories.execute({ userId: request.user.sub });
+    return { categories: categories.map(categoryDto) };
+  });
+
+  app.post('/categories', { onRequest: verifyJwt }, async (request, reply) => {
+    const body = createCategoryBody.parse(request.body);
+    const { category } = await uc.createCategory.execute({ ...body, userId: request.user.sub });
+    return reply.status(201).send({ category: categoryDto(category) });
+  });
+
+  app.delete('/categories/:id', { onRequest: verifyJwt }, async (request, reply) => {
+    const { id } = z.object({ id: z.string().min(1) }).parse(request.params);
+    await uc.deleteCategory.execute({ userId: request.user.sub, categoryId: id });
+    return reply.status(204).send();
   });
 
   app.get('/summary', { onRequest: verifyJwt }, async (request) => {

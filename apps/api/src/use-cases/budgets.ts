@@ -1,8 +1,9 @@
 import type { Repositories } from '../repositories/types.js';
 import { monthRange } from '../lib/month.js';
 import { AppError, ResourceNotFoundError } from '../domain/errors.js';
+import { canUseCategory } from './categories.js';
 
-type Deps = Pick<Repositories, 'budgets' | 'categories' | 'transactions'>;
+type Deps = Pick<Repositories, 'budgets' | 'categories' | 'transactions' | 'accounts'>;
 
 /** Limites do mês: quanto você se deu de teto em cada categoria e quanto já foi. */
 export class GetBudgetsUseCase {
@@ -10,14 +11,16 @@ export class GetBudgetsUseCase {
 
   async execute({ userId, month }: { userId: string; month: string }) {
     const { from, to } = monthRange(month);
-    const [budgets, categories, txs] = await Promise.all([
+    const [budgets, categories, txs, accounts] = await Promise.all([
       this.repos.budgets.listByUser(userId),
-      this.repos.categories.list(),
+      this.repos.categories.list(userId),
       this.repos.transactions.findManyInRange(userId, from, to),
+      this.repos.accounts.listByUser(userId),
     ]);
+    const hidden = new Set(accounts.filter((a) => a.hidden).map((a) => a.id));
     const spent = new Map<string, number>();
     for (const t of txs) {
-      if (t.isInternalTransfer || t.amountInCents >= 0 || !t.categoryId) continue;
+      if (t.isInternalTransfer || t.amountInCents >= 0 || !t.categoryId || (t.accountId && hidden.has(t.accountId))) continue;
       spent.set(t.categoryId, (spent.get(t.categoryId) ?? 0) - t.amountInCents);
     }
     const byId = new Map(categories.map((c) => [c.id, c]));
@@ -39,7 +42,7 @@ export class SetBudgetUseCase {
 
   async execute({ userId, categoryId, limitInCents }: { userId: string; categoryId: string; limitInCents: number | null }) {
     const category = await this.repos.categories.findById(categoryId);
-    if (!category) throw new ResourceNotFoundError('Categoria');
+    if (!canUseCategory(category, userId)) throw new ResourceNotFoundError('Categoria');
     if (category.kind !== 'saida') throw new AppError('Limite só faz sentido pra categoria de gasto.', 400);
     if (limitInCents === null) {
       await this.repos.budgets.delete(userId, categoryId);

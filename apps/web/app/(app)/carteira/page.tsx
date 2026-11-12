@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { currentMonth, dayLabel, money, monthName, shiftMonth } from '@/lib/format';
 import { ButtonLink } from '@/components/ui';
 import { Mascote } from '@/components/mascote';
+import { HideAccountButton } from './hide-account-button';
 
 const FILTERS = { tudo: 'Tudo', saidas: 'Saídas', entradas: 'Entradas', pendentes: 'Sem categoria' } as const;
 type Filter = keyof typeof FILTERS;
@@ -55,9 +56,24 @@ export default async function CarteiraPage({ searchParams }: { searchParams: Pro
             <div key={a.id} className="flex min-w-[130px] flex-col rounded-2xl bg-cartao p-3">
               <span className="text-xs font-semibold text-tinta-suave">{a.name}</span>
               <span className="font-bold">{money(a.balanceInCents)}</span>
+              <HideAccountButton accountId={a.id} hidden={false} />
             </div>
           ))}
         </div>
+      )}
+
+      {summary.hiddenAccounts.length > 0 && (
+        <details className="text-[13px] text-tinta-suave">
+          <summary className="cursor-pointer">{summary.hiddenAccounts.length} {summary.hiddenAccounts.length === 1 ? 'conta oculta' : 'contas ocultas'}</summary>
+          <div className="mt-2 flex flex-col gap-1.5">
+            {summary.hiddenAccounts.map((a) => (
+              <div key={a.id} className="flex items-center justify-between rounded-xl bg-papel-2 px-3 py-2">
+                <span>{a.name} · {money(a.balanceInCents)}</span>
+                <HideAccountButton accountId={a.id} hidden />
+              </div>
+            ))}
+          </div>
+        </details>
       )}
 
       <div className="-mx-5 flex gap-2 overflow-x-auto px-5">
@@ -90,7 +106,8 @@ export default async function CarteiraPage({ searchParams }: { searchParams: Pro
 
 function Row({ t, back }: { t: TransactionDTO; back: string }) {
   const pending = !t.categoryId && !t.isInternalTransfer;
-  const sub = t.isInternalTransfer ? 'Entre suas contas · não conta como gasto'
+  const sub = t.categoryId === 'nao-conta' ? `Não conta · ${t.accountName ?? 'anotado na mão'}`
+    : t.isInternalTransfer ? 'Entre suas contas · não conta como gasto'
     : pending ? 'Sem categoria · toque pra categorizar'
       : [t.categoryName, t.accountName ?? 'Anotado na mão'].filter(Boolean).join(' · ');
   return (

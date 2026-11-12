@@ -4,13 +4,11 @@ import type { CategoryDTO } from '@tostao/contracts';
 import { Button, ErrorNote, Field } from '@/components/ui';
 import { createManual, type ActionState } from '../carteira/actions';
 
-const INCOME = new Set(['salario', 'entrada-outros']);
-
 export function AnotarForm({ categories, today }: { categories: CategoryDTO[]; today: string }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(createManual, {});
   const [kind, setKind] = useState<'saida' | 'entrada'>('saida');
   const [cat, setCat] = useState<string | null>(null);
-  const options = categories.filter((c) => (kind === 'entrada') === INCOME.has(c.id));
+  const options = categories.filter((c) => c.kind === kind);
   return (
     <form action={action} className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-1 rounded-full bg-papel-2 p-1">

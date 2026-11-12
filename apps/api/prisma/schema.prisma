@@ -25,6 +25,7 @@ model User {
   budgets      CategoryBudget[]
   lessons      LessonProgress[]
   ignoredSubscriptions IgnoredSubscription[]
+  categories   Category[]
 
   @@map("users")
 }
@@ -55,6 +56,7 @@ model Account {
   type           String  // BANK | CREDIT
   balanceInCents Int     @map("balance_in_cents")
   fingerprint    String? // cartão: "CREDIT:BANDEIRA:final", pra achar o mesmo cartão em duas conexões
+  hidden         Boolean @default(false) // a pessoa ocultou (ex.: poupança que não usa). O sync nunca mexe nisso.
 
   user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   connection   BankConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
@@ -71,8 +73,10 @@ model Category {
   name  String
   emoji String
   color String
-  kind  String @default("saida") // saida | entrada
+  kind   String  @default("saida") // saida | entrada | neutra (não conta)
+  userId String? @map("user_id") // null = do sistema; preenchido = categoria criada pela pessoa
 
+  user         User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]
   rules        CategoryRule[]
   budgets      CategoryBudget[]

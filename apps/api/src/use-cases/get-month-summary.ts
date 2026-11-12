@@ -12,10 +12,13 @@ export class GetMonthSummaryUseCase {
     const { from, to } = monthRange(month);
     const [txs, categories, accounts] = await Promise.all([
       this.repos.transactions.findManyInRange(userId, from, to),
-      this.repos.categories.list(),
+      this.repos.categories.list(userId),
       this.repos.accounts.listByUser(userId),
     ]);
-    const real = txs.filter((t) => !t.isInternalTransfer);
+    // Conta oculta (ex.: poupança parada) some do saldo e das contas, junto com o que passa nela.
+    const hiddenIds = new Set(accounts.filter((a) => a.hidden).map((a) => a.id));
+    const visible = accounts.filter((a) => !a.hidden);
+    const real = txs.filter((t) => !t.isInternalTransfer && !(t.accountId && hiddenIds.has(t.accountId)));
 
     const incomeInCents = real.filter((t) => t.amountInCents > 0).reduce((s, t) => s + t.amountInCents, 0);
     const outs = real.filter((t) => t.amountInCents < 0);
@@ -34,7 +37,7 @@ export class GetMonthSummaryUseCase {
       .sort((a, b) => b.totalInCents - a.totalInCents);
 
     // Saldo = soma das contas correntes. Fatura de cartão fica de fora (ainda não saiu da conta).
-    const bankAccounts = accounts.filter((a) => a.type === 'BANK');
+    const bankAccounts = visible.filter((a) => a.type === 'BANK');
     return {
       month,
       balanceInCents: bankAccounts.length ? bankAccounts.reduce((s, a) => s + a.balanceInCents, 0) : null,
@@ -42,7 +45,8 @@ export class GetMonthSummaryUseCase {
       outcomeInCents,
       uncategorizedCount: real.filter((t) => t.categoryId === null).length,
       byCategory,
-      accounts: accounts.map((a) => ({ id: a.id, name: a.name, balanceInCents: a.balanceInCents })),
+      accounts: visible.map((a) => ({ id: a.id, name: a.name, balanceInCents: a.balanceInCents })),
+      hiddenAccounts: accounts.filter((a) => a.hidden).map((a) => ({ id: a.id, name: a.name, balanceInCents: a.balanceInCents })),
     };
   }
 }

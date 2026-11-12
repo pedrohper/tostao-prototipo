@@ -12,10 +12,12 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { id: 'saude', name: 'Saúde', emoji: '💊', color: '#DDF6E8', kind: 'saida' },
   { id: 'estudo', name: 'Estudo', emoji: '📚', color: '#DCEBFF', kind: 'saida' },
   { id: 'compras', name: 'Compras', emoji: '🛍️', color: '#FFF1C7', kind: 'saida' },
+  { id: 'jogos', name: 'Jogos', emoji: '🎮', color: '#DCEBFF', kind: 'saida' },
   { id: 'apostas', name: 'Apostas', emoji: '🐯', color: '#FFE1E7', kind: 'saida' },
   { id: 'outros', name: 'Outros', emoji: '📦', color: '#F6EFE4', kind: 'saida' },
   { id: 'salario', name: 'Salário e renda', emoji: '💰', color: '#DDF6E8', kind: 'entrada' },
   { id: 'entrada-outros', name: 'Outras entradas', emoji: '📥', color: '#DDF6E8', kind: 'entrada' },
+  { id: 'nao-conta', name: 'Não conta', emoji: '🙈', color: '#F6EFE4', kind: 'neutra' },
 ];
 
 // Padrões em MAIÚSCULAS e sem acento (ver normalizeDescription)
@@ -30,6 +32,7 @@ export const DEFAULT_RULES: { pattern: string; categoryId: string }[] = [
   // Sem palavras que aparecem em pedido de app (PIZZARIA, BURGER...): aí é Delivery.
   ...['PADARIA', 'PANIFICADORA', 'LANCHONETE', 'PASTELARIA', 'CANTINA', 'CAFETERIA', 'STARBUCKS', 'SUBWAY'].map((p) => ({ pattern: p, categoryId: 'comer-fora' })),
   ...['DROGASIL', 'DROGA RAIA', 'PAGUE MENOS', 'FARMACIA', 'DROGARIA'].map((p) => ({ pattern: p, categoryId: 'saude' })),
+  ...['STEAM', 'STEAMGAMES', 'PLAYSTATION', 'PSN', 'XBOX', 'NINTENDO', 'EPIC GAMES', 'RIOT GAMES', 'GARENA', 'BLIZZARD', 'ROBLOX', 'NUUVEM'].map((p) => ({ pattern: p, categoryId: 'jogos' })),
   ...['BET365', 'BLAZE', 'PIXBET', 'ESTRELABET', 'SPORTINGBET', 'BETANO', 'TIGRINHO'].map((p) => ({ pattern: p, categoryId: 'apostas' })),
   ...['SHOPEE', 'SHEIN', 'MERCADOLIVRE', 'MERCADO LIVRE', 'AMAZON', 'ALIEXPRESS', 'MAGALU'].map((p) => ({ pattern: p, categoryId: 'compras' })),
   ...['UDEMY', 'ALURA', 'ROCKETSEAT', 'COURSERA'].map((p) => ({ pattern: p, categoryId: 'estudo' })),

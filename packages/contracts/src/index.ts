@@ -81,7 +81,15 @@ export type TransactionDTO = {
   source: 'bank' | 'manual';
 };
 
-export type CategoryDTO = { id: string; name: string; emoji: string; color: string };
+/** kind "neutra" = "Não conta" (some do gasto e da renda). custom = criada pela pessoa. */
+export type CategoryDTO = { id: string; name: string; emoji: string; color: string; kind: 'saida' | 'entrada' | 'neutra'; custom: boolean };
+
+export const createCategoryBody = z.object({
+  name: z.string().trim().min(2, 'Nome curto demais').max(30, 'Nome longo demais'),
+  emoji: z.string().trim().max(16).default('🏷️'),
+  kind: z.enum(['saida', 'entrada']),
+});
+export type CreateCategoryBody = z.infer<typeof createCategoryBody>;
 
 export type MonthSummaryResponse = {
   month: string;
@@ -91,6 +99,8 @@ export type MonthSummaryResponse = {
   uncategorizedCount: number;
   byCategory: { categoryId: string | null; name: string; color: string; totalInCents: number }[];
   accounts: { id: string; name: string; balanceInCents: number }[];
+  /** Contas que a pessoa ocultou: fora do saldo e da lista. */
+  hiddenAccounts: { id: string; name: string; balanceInCents: number }[];
 };
 
 export type TransactionDetailResponse = { transaction: TransactionDTO; rulePattern: string };

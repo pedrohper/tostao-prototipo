@@ -6,8 +6,6 @@ import { BackLink, Card } from '@/components/ui';
 import { BudgetBar } from '@/components/budget-bar';
 import { BudgetForm } from './budget-form';
 
-const INCOME = new Set(['salario', 'entrada-outros']);
-
 export default async function LimitesPage() {
   const month = currentMonth();
   const [{ budgets }, { categories }] = await Promise.all([
@@ -15,7 +13,7 @@ export default async function LimitesPage() {
     api<{ categories: CategoryDTO[] }>('/categories'),
   ]);
   const byCat = new Map(budgets.map((b) => [b.categoryId, b]));
-  const spending = categories.filter((c) => !INCOME.has(c.id));
+  const spending = categories.filter((c) => c.kind === 'saida');
 
   return (
     <div className="flex flex-col gap-5">

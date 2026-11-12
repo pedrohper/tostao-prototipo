@@ -25,6 +25,9 @@ export function CategorizeForm({ id, back, options, current, rulePattern }: Prop
           ))}
         </div>
       </fieldset>
+      {picked === 'nao-conta' && (
+        <p className="text-sm text-tinta-suave">🙈 Não conta: some do gasto e da renda. Bom pra repasse com a família, dinheiro que é de outra pessoa ou acerto entre amigos.</p>
+      )}
       {rulePattern.length >= 3 && (
         <label className="flex items-center gap-3 rounded-2xl bg-cartao p-3.5 text-[15px]">
           <input type="checkbox" name="remember" defaultChecked className="h-5 w-5 accent-[#FF5A36]" />

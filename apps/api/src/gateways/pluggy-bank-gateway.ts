@@ -9,6 +9,7 @@ type PluggyAccount = {
   name: string;
   marketingName?: string | null;
   type: 'BANK' | 'CREDIT';
+  subtype?: string | null;
   balance: number;
   number?: string | null;
   creditData?: { brand?: string | null } | null;
@@ -92,7 +93,8 @@ export class PluggyBankGateway implements BankGateway {
     return page.results.map((a) => ({
       externalId: a.id,
       // Cartão: o "name" é o produto (ex.: AMAZON MASTERCARD PLATINUM); o marketingName às vezes vem "OUTROS".
-      name: a.type === 'CREDIT' ? a.name || a.marketingName || 'Cartão' : a.marketingName || a.name,
+      // Poupança e corrente do mesmo banco vêm com o mesmo nome; o sufixo separa as duas.
+      name: a.type === 'CREDIT' ? a.name || a.marketingName || 'Cartão' : `${a.marketingName || a.name}${a.subtype === 'SAVINGS_ACCOUNT' ? ' (Poupança)' : ''}`,
       fingerprint: cardFingerprint(a),
       type: a.type,
       // No cartão, "balance" é quanto você deve. Pra gente, dívida é negativo.

@@ -16,11 +16,13 @@ Protótipo funcional pra testar e validar a ideia. Depois, a plataforma de verda
 - Início com saldo, entrou/saiu do mês e pra onde foi
 - Carteira por mês, com filtros
 - Trilha com os **9 módulos e 45 lições** do currículo, em 6 passos cada, com progresso salvo na conta
-- **Raio-X das assinaturas**: acha o que cobra todo mês (Spotify, YouTube, plano anual em 12x...) e soma por mês e por ano
+- **Minhas assinaturas**: acha o que cobra todo mês (Spotify, YouTube, plano anual em 12x...) e soma por mês e por ano
 - **Fechamento do mês**: quanto sobrou, entrou e saiu vs mês anterior, categorias que mais pesaram e maior gasto
 - **Limites por categoria**: teto mensal com barra no Início e aviso quando passa
 - Mesmo cartão vindo de duas conexões (ex.: Bradesco e Bradescard) conta uma vez só
 - Desconectar banco pela tela Conectar
+- **Minhas categorias**: crie categorias de gasto e de entrada; a categoria **Não conta** tira do resumo dinheiro que só passa por você (repasse com a família)
+- Ocultar conta que você não usa (ex.: poupança parada): some da Carteira e do saldo
 - Layout de celular e de desktop, e modo escuro automático
 
 ## Rodando na sua máquina

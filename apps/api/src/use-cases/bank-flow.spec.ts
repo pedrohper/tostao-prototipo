@@ -7,6 +7,8 @@ import { GetMonthSummaryUseCase } from './get-month-summary.js';
 import { CategorizeTransactionUseCase } from './categorize-transaction.js';
 import { ResourceNotFoundError } from '../domain/errors.js';
 import { DisconnectBankUseCase } from './disconnect-bank.js';
+import { CreateCategoryUseCase, DeleteCategoryUseCase } from './categories.js';
+import { makeUseCases } from './factories.js';
 
 const NOW = new Date(Date.UTC(2026, 10, 20, 18)); // 20/11/2026
 const MONTH = '2026-11';
@@ -78,6 +80,64 @@ describe('fluxo do banco (conectar → sincronizar → resumo → categorizar)',
     const broken = Object.assign(new FakeBankGateway(() => NOW), { deleteItem: async () => { throw new Error('fora do ar'); } });
     expect(await new DisconnectBankUseCase(repos.connections, broken).execute({ userId: 'u1', connectionId: connection.id })).toEqual({ providerDeleted: false });
     expect(repos.connections.items).toHaveLength(0);
+  });
+
+  it('"Não conta" tira o repasse do resumo, e a regra pega os próximos sozinha', async () => {
+    await connect.execute({ userId: 'u1', itemId: 'item-123456' });
+    const before = await new GetMonthSummaryUseCase(repos).execute({ userId: 'u1', month: MONTH });
+    const salario = repos.transactions.items.find((t) => t.amountInCents > 0 && !t.isInternalTransfer)!;
+
+    await new CategorizeTransactionUseCase(repos).execute({ userId: 'u1', transactionId: salario.id, categoryId: 'nao-conta', remember: true });
+    const after = await new GetMonthSummaryUseCase(repos).execute({ userId: 'u1', month: MONTH });
+    expect(after.incomeInCents).toBe(before.incomeInCents - salario.amountInCents);
+    expect(repos.transactions.items.find((t) => t.id === salario.id)!.isInternalTransfer).toBe(true);
+
+    // sincronizar de novo não desfaz
+    await sync.execute({ connectionId: repos.connections.items[0]!.id });
+    expect(repos.transactions.items.find((t) => t.id === salario.id)!.isInternalTransfer).toBe(true);
+
+    // mudou de ideia: volta a contar
+    await new CategorizeTransactionUseCase(repos).execute({ userId: 'u1', transactionId: salario.id, categoryId: 'salario', remember: false });
+    const back = await new GetMonthSummaryUseCase(repos).execute({ userId: 'u1', month: MONTH });
+    expect(back.incomeInCents).toBe(before.incomeInCents);
+  });
+
+  it('categoria própria: só o dono vê, usa e apaga; apagar devolve as transações pra pendente', async () => {
+    await connect.execute({ userId: 'u1', itemId: 'item-123456' });
+    const { category } = await new CreateCategoryUseCase(repos).execute({ userId: 'u1', name: 'Freela', emoji: '💻', kind: 'saida' });
+    await expect(new CreateCategoryUseCase(repos).execute({ userId: 'u1', name: 'freela', emoji: '', kind: 'saida' })).rejects.toThrow('Já tem');
+
+    expect((await repos.categories.list('u1')).some((c) => c.id === category.id)).toBe(true);
+    expect((await repos.categories.list('u2')).some((c) => c.id === category.id)).toBe(false);
+
+    const gasto = repos.transactions.items.find((t) => t.amountInCents < 0 && !t.isInternalTransfer)!;
+    await expect(
+      new CategorizeTransactionUseCase(repos).execute({ userId: 'u2', transactionId: gasto.id, categoryId: category.id, remember: false }),
+    ).rejects.toBeInstanceOf(ResourceNotFoundError);
+    await new CategorizeTransactionUseCase(repos).execute({ userId: 'u1', transactionId: gasto.id, categoryId: category.id, remember: true });
+
+    const del = new DeleteCategoryUseCase(repos);
+    await expect(del.execute({ userId: 'u2', categoryId: category.id })).rejects.toBeInstanceOf(ResourceNotFoundError);
+    await expect(del.execute({ userId: 'u1', categoryId: 'mercado' })).rejects.toBeInstanceOf(ResourceNotFoundError); // do sistema, não
+    await del.execute({ userId: 'u1', categoryId: category.id });
+    expect(repos.transactions.items.find((t) => t.id === gasto.id)!.categoryId).toBeNull();
+    expect(repos.rules.items.some((r) => r.categoryId === category.id)).toBe(false);
+  });
+
+  it('conta oculta sai do saldo e da lista, e continua oculta depois do sync', async () => {
+    const { connection } = await connect.execute({ userId: 'u1', itemId: 'item-123456' });
+    const uc = makeUseCases({ repos, bank: new FakeBankGateway(() => NOW) });
+    const before = await new GetMonthSummaryUseCase(repos).execute({ userId: 'u1', month: MONTH });
+    const conta = repos.accounts.items[0]!;
+
+    await expect(uc.setAccountHidden.execute({ userId: 'intruso', accountId: conta.id, hidden: true })).rejects.toBeInstanceOf(ResourceNotFoundError);
+    await uc.setAccountHidden.execute({ userId: 'u1', accountId: conta.id, hidden: true });
+    await sync.execute({ connectionId: connection.id });
+
+    const after = await new GetMonthSummaryUseCase(repos).execute({ userId: 'u1', month: MONTH });
+    expect(after.accounts.map((a) => a.id)).not.toContain(conta.id);
+    expect(after.hiddenAccounts.map((a) => a.id)).toEqual([conta.id]);
+    expect(after.balanceInCents).not.toBe(before.balanceInCents);
   });
 
   describe('mesmo cartão em duas conexões (Bradesco e Bradescard)', () => {

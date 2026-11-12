@@ -1,3 +1,5 @@
+import { ResourceNotFoundError } from '../domain/errors.js';
+import { CreateCategoryUseCase, DeleteCategoryUseCase } from './categories.js';
 // Monta os use cases com as dependências certas. É a única parte que "sabe" de tudo.
 // O controller pede um use case pronto e não se preocupa com o que tem dentro.
 import type { Repositories } from '../repositories/types.js';
@@ -39,7 +41,16 @@ export function makeUseCases({ repos, bank }: Deps) {
     setBudget: new SetBudgetUseCase(repos),
     listLessonProgress: { execute: async ({ userId }: { userId: string }) => ({ done: (await repos.lessons.listByUser(userId)).map((l) => l.lessonId) }) },
     markLessonDone: { execute: ({ userId, lessonId }: { userId: string; lessonId: string }) => repos.lessons.markDone(userId, lessonId) },
-    listCategories: { execute: async () => ({ categories: await repos.categories.list() }) },
+    listCategories: { execute: async ({ userId }: { userId?: string }) => ({ categories: await repos.categories.list(userId) }) },
+    createCategory: new CreateCategoryUseCase(repos),
+    setAccountHidden: {
+      execute: async ({ userId, accountId, hidden }: { userId: string; accountId: string; hidden: boolean }) => {
+        const account = (await repos.accounts.listByUser(userId)).find((a) => a.id === accountId);
+        if (!account) throw new ResourceNotFoundError('Conta');
+        await repos.accounts.setHidden(accountId, hidden);
+      },
+    },
+    deleteCategory: new DeleteCategoryUseCase(repos),
   };
 }
 export type UseCases = ReturnType<typeof makeUseCases>;

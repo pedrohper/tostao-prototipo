@@ -1,6 +1,7 @@
 import type { Repositories } from '../repositories/types.js';
 import { ResourceNotFoundError } from '../domain/errors.js';
 import { categorizeByRules } from '../services/categorize.js';
+import { canUseCategory, isNeutral } from './categories.js';
 
 type Input = {
   userId: string;
@@ -18,7 +19,7 @@ export class CreateManualTransactionUseCase {
   async execute(input: Input) {
     const { transactions, categories, rules } = this.repos;
     let categoryId = input.categoryId ?? null;
-    if (categoryId && !(await categories.findById(categoryId))) throw new ResourceNotFoundError('Categoria');
+    if (categoryId && !canUseCategory(await categories.findById(categoryId), input.userId)) throw new ResourceNotFoundError('Categoria');
     if (!categoryId) categoryId = categorizeByRules(input.description, await rules.listForUser(input.userId));
 
     const transaction = await transactions.create({
@@ -29,7 +30,7 @@ export class CreateManualTransactionUseCase {
       amountInCents: input.kind === 'saida' ? -Math.abs(input.amountInCents) : Math.abs(input.amountInCents),
       occurredAt: input.occurredAt,
       categoryId,
-      isInternalTransfer: false,
+      isInternalTransfer: isNeutral(categoryId),
     });
     return { transaction };
   }

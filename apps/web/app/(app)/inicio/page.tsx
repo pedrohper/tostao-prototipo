@@ -94,7 +94,7 @@ export default async function InicioPage() {
           {activeSubs > 0 && subs && (
             <Link href="/assinaturas" className="flex items-center gap-3 rounded-[20px] bg-amarelo-claro p-3 no-underline">
               <Mascote pose="investigando" size={64} alt="Tostão investigando com uma lupa" />
-              <p className="text-[15px] leading-snug"><b>{activeSubs} {activeSubs === 1 ? 'assinatura cobra' : 'assinaturas cobram'} todo mês</b>: {money(subs.monthlyInCents)}, ou {money(subs.yearlyInCents)} no ano. Toca pra ver o raio-X.</p>
+              <p className="text-[15px] leading-snug"><b>{activeSubs} {activeSubs === 1 ? 'assinatura cobra' : 'assinaturas cobram'} todo mês</b>: {money(subs.monthlyInCents)}, ou {money(subs.yearlyInCents)} no ano. Toca pra ver quais são.</p>
             </Link>
           )}
 

@@ -14,7 +14,9 @@ export default async function CategorizarPage({ params, searchParams }: { params
     api<{ categories: CategoryDTO[] }>('/categories'),
   ]);
   const kind = t.amountInCents > 0 ? 'entrada' : 'saida';
-  const options = categories.filter((c) => (kind === 'entrada') === (c.id === 'salario' || c.id === 'entrada-outros'));
+  // Saída mostra categorias de gasto, entrada mostra as de renda. "Não conta" serve pros dois.
+  const options = categories.filter((c) => c.kind === kind || c.kind === 'neutra');
+  const neutral = t.categoryId === 'nao-conta';
 
   return (
     <div className="flex flex-col gap-5">
@@ -26,7 +28,7 @@ export default async function CategorizarPage({ params, searchParams }: { params
           <span className="shrink-0 font-display text-[26px] font-extrabold">{money(Math.abs(t.amountInCents))}</span>
         </div>
       </div>
-      {t.isInternalTransfer ? (
+      {t.isInternalTransfer && !neutral ? (
         <div className="flex items-center gap-3 rounded-[20px] bg-azul p-3">
           <Mascote pose="investigando" size={72} alt="" />
           <p className="text-[15px]">Isso aqui é dinheiro mudando de bolso entre as suas contas. Não conta como gasto nem como renda.</p>
@@ -35,7 +37,7 @@ export default async function CategorizarPage({ params, searchParams }: { params
         <>
           <div className="flex items-center gap-3 rounded-[20px] bg-cartao p-3">
             <Mascote pose="pensando" size={64} alt="" />
-            <p className="text-[15px]">{t.categoryName ? <>Tá em <b>{t.categoryName}</b>. Quer trocar?</> : <>Não reconheci esse nome. Me ajuda a classificar?</>}</p>
+            <p className="text-[15px]">{neutral ? <>Tá em <b>Não conta</b>: fica fora do gasto e da renda. Quer trocar?</> : t.categoryName ? <>Tá em <b>{t.categoryName}</b>. Quer trocar?</> : <>Não reconheci esse nome. Me ajuda a classificar?</>}</p>
           </div>
           <CategorizeForm id={t.id} back={back} options={options} current={t.categoryId} rulePattern={rulePattern} />
         </>

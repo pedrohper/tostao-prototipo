@@ -27,23 +27,29 @@ export interface AccountsRepository {
   findByFingerprint(userId: string, fingerprint: string): Promise<Account[]>;
   /** Apaga a conta e, em cascata, as transações dela. */
   delete(id: string): Promise<void>;
+  setHidden(id: string, hidden: boolean): Promise<void>;
 }
 
 export interface CategoriesRepository {
-  list(): Promise<Category[]>;
+  /** Do sistema + as criadas por essa pessoa (sem userId: só as do sistema). */
+  list(userId?: string): Promise<Category[]>;
   findById(id: string): Promise<Category | null>;
+  create(data: Omit<Category, 'id'> & { userId: string }): Promise<Category>;
+  delete(id: string): Promise<void>;
 }
 
 export interface CategoryRulesRepository {
   /** Regras do sistema + regras desse usuário */
   listForUser(userId: string): Promise<CategoryRule[]>;
   upsert(data: Omit<CategoryRule, 'id'>): Promise<CategoryRule>;
+  deleteByCategory(categoryId: string): Promise<void>;
 }
 
 export interface BudgetsRepository {
   listByUser(userId: string): Promise<CategoryBudget[]>;
   upsert(data: Omit<CategoryBudget, 'id'>): Promise<CategoryBudget>;
   delete(userId: string, categoryId: string): Promise<void>;
+  deleteByCategory(categoryId: string): Promise<void>;
 }
 
 export interface LessonProgressRepository {
@@ -66,6 +72,8 @@ export interface TransactionsRepository {
   findUncategorized(userId: string): Promise<Transaction[]>;
   create(data: NewTransaction): Promise<Transaction>;
   save(transaction: Transaction): Promise<void>;
+  /** Tira a categoria (volta pra pendente) de todas as transações dela. */
+  clearCategory(categoryId: string): Promise<void>;
 }
 
 export type Repositories = {
