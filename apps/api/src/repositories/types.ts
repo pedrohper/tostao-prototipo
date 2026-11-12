@@ -1,6 +1,6 @@
 // Contratos dos repositórios. O use case pede "alguém que saiba salvar usuário",
 // sem saber se é Postgres ou um array na memória (nos testes).
-import type { Account, BankConnection, Category, CategoryRule, Transaction, User } from '../domain/entities.js';
+import type { Account, BankConnection, Category, CategoryRule, Transaction, User, CategoryBudget, LessonProgress } from '../domain/entities.js';
 
 export type NewUser = Pick<User, 'name' | 'email' | 'passwordHash'>;
 export interface UsersRepository {
@@ -40,6 +40,18 @@ export interface CategoryRulesRepository {
   upsert(data: Omit<CategoryRule, 'id'>): Promise<CategoryRule>;
 }
 
+export interface BudgetsRepository {
+  listByUser(userId: string): Promise<CategoryBudget[]>;
+  upsert(data: Omit<CategoryBudget, 'id'>): Promise<CategoryBudget>;
+  delete(userId: string, categoryId: string): Promise<void>;
+}
+
+export interface LessonProgressRepository {
+  listByUser(userId: string): Promise<LessonProgress[]>;
+  /** Idempotente: marcar de novo não duplica. */
+  markDone(userId: string, lessonId: string): Promise<void>;
+}
+
 export type NewTransaction = Omit<Transaction, 'id' | 'createdAt'>;
 export interface TransactionsRepository {
   findById(id: string): Promise<Transaction | null>;
@@ -58,4 +70,6 @@ export type Repositories = {
   categories: CategoriesRepository;
   rules: CategoryRulesRepository;
   transactions: TransactionsRepository;
+  budgets: BudgetsRepository;
+  lessons: LessonProgressRepository;
 };

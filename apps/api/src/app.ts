@@ -7,6 +7,7 @@ import { errorHandler } from './http/error-handler.js';
 import { authRoutes } from './http/controllers/auth.js';
 import { bankRoutes } from './http/controllers/bank.js';
 import { transactionRoutes } from './http/controllers/transactions.js';
+import { planningRoutes } from './http/controllers/planning.js';
 
 declare module '@fastify/jwt' {
   interface FastifyJWT { user: { sub: string } }
@@ -25,5 +26,6 @@ export async function buildApp({ repos, bank, jwtSecret, webOrigin, logger = fal
   authRoutes(app, uc);
   bankRoutes(app, uc, repos);
   transactionRoutes(app, uc);
+  planningRoutes(app, uc);
   return app;
 }

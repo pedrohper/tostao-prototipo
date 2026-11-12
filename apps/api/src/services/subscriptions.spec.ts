@@ -44,6 +44,10 @@ describe('detectSubscriptions', () => {
     ])).toEqual([['GLOBO*Globoplay', 2190, true, 5]]);
   });
 
+  it('compra parcelada que não é anual fica de fora', () => {
+    expect(names([tx('LOJA X PARC 02/10', -10000, '2026-09-10'), tx('LOJA X PARC 03/10', -10000, '2026-10-10')])).toEqual([]);
+  });
+
   it('ignora Pix pra pessoa e pagamento de fatura, mesmo todo mês', () => {
     expect(names([
       tx('Pix enviado Amanda Costa', -660, '2026-08-28'), tx('Pix enviado Amanda Costa', -660, '2026-09-30'),

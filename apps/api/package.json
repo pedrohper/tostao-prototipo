@@ -12,6 +12,7 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx --env-file=.env prisma/seed.ts",
     "sync": "tsx --env-file=.env src/jobs/run-sync-once.ts",
+    "recompute-transfers": "tsx --env-file=.env src/jobs/recompute-internal-transfers.ts",
     "db:deploy": "prisma migrate deploy",
     "postinstall": "prisma generate"
   },

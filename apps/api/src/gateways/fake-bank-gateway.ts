@@ -31,7 +31,7 @@ export class FakeBankGateway implements BankGateway {
     // dia D do mês atual, sem passar de hoje
     const day = (d: number) => {
       const date = new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), Math.min(d, n.getUTCDate()), 15));
-      return date > n ? n : date; // no dia de hoje antes das 15h, não cria transação no futuro
+      return date > n ? new Date(n.getTime() - 60_000) : date; // hoje antes das 15h: 1 min atrás, nunca no futuro
     };
     const key = accountExternalId.split(':').pop();
     const data: Record<string, [string, number, number][]> = {

@@ -48,14 +48,18 @@ const median = (xs: number[]) => {
 
 /**
  * Acha cobranças que se repetem todo mês: mesma loja (sem códigos), valor parecido (até 25%)
- * e ~1 mês entre elas. Plano parcelado (x/12 com mesmo valor) entra marcado com as parcelas que faltam.
+ * e ~1 mês entre elas. Plano anual parcelado (x/12 com mesmo valor) entra marcado com as parcelas que faltam.
  * Função pura: recebe as transações, devolve as assinaturas.
  */
 export function detectSubscriptions(transactions: Transaction[], now: Date): Subscription[] {
   const groups = new Map<string, Transaction[]>();
   for (const t of transactions) {
     if (t.amountInCents >= 0 || t.isInternalTransfer) continue;
-    if (NOT_SUBSCRIPTION.test(normalizeDescription(t.description))) continue;
+    const text = normalizeDescription(t.description);
+    if (NOT_SUBSCRIPTION.test(text)) continue;
+    // Parcela só entra se for x/12 (plano anual parcelado). Compra em 10x não é assinatura.
+    const parcel = text.match(INSTALLMENT);
+    if (parcel && parcel[2] !== '12') continue;
     const key = subscriptionKey(t.description);
     if (key.length < 3) continue;
     groups.set(key, [...(groups.get(key) ?? []), t]);

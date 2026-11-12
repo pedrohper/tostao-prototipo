@@ -106,3 +106,16 @@ export type SubscriptionDTO = {
   installmentsLeft: number | null; // plano parcelado: quantas parcelas faltam
 };
 export type SubscriptionsResponse = { subscriptions: SubscriptionDTO[]; monthlyInCents: number; yearlyInCents: number };
+
+// ---------- Limites por categoria ----------
+export const setBudgetBody = z.object({
+  // null tira o limite
+  limitInCents: z.number().int().positive('O limite precisa ser maior que zero').max(100_000_000).nullable(),
+});
+export type SetBudgetBody = z.infer<typeof setBudgetBody>;
+export type BudgetDTO = { categoryId: string; name: string; emoji: string; color: string; limitInCents: number; spentInCents: number };
+export type BudgetsResponse = { budgets: BudgetDTO[] };
+
+// ---------- Progresso das lições ----------
+export const lessonIdParam = z.object({ lessonId: z.string().regex(/^m\d+-l\d+$/, 'Lição inválida') });
+export type LessonProgressResponse = { done: string[] };

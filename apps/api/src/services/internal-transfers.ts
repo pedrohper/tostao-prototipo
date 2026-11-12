@@ -35,8 +35,10 @@ export function detectInternalTransfers(transactions: Transaction[]): Set<string
     if (KEYWORDS.some((k) => text.includes(k))) ids.add(t.id);
   }
 
-  const fromBank = transactions.filter((t) => t.accountId !== null && !ids.has(t.id));
-  const outs = fromBank.filter((t) => t.amountInCents < 0);
+  // As já marcadas pela descrição continuam podendo ser o "outro lado" de um par:
+  // "Pagamento recebido" no cartão é o espelho do Pix/boleto que saiu da conta pra pagar a fatura.
+  const fromBank = transactions.filter((t) => t.accountId !== null);
+  const outs = fromBank.filter((t) => t.amountInCents < 0 && !ids.has(t.id));
   const ins = fromBank.filter((t) => t.amountInCents > 0);
   const used = new Set<string>();
 

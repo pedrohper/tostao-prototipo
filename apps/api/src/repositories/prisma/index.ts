@@ -1,9 +1,9 @@
 // Repositórios de verdade, no Postgres via Prisma.
 // Repare que a assinatura é a mesma dos em memória: o use case nem percebe a troca.
 import type { PrismaClient } from '@prisma/client';
-import type { Account, BankConnection, Category, CategoryRule, Transaction } from '../../domain/entities.js';
+import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, Transaction } from '../../domain/entities.js';
 import type {
-  AccountsRepository, BankConnectionsRepository, CategoriesRepository, CategoryRulesRepository,
+  AccountsRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, LessonProgressRepository,
   NewTransaction, NewUser, Repositories, TransactionsRepository, UsersRepository,
 } from '../types.js';
 
@@ -82,6 +82,23 @@ class PrismaTransactionsRepository implements TransactionsRepository {
   }
 }
 
+class PrismaBudgetsRepository implements BudgetsRepository {
+  constructor(private db: PrismaClient) {}
+  listByUser(userId: string): Promise<CategoryBudget[]> { return this.db.categoryBudget.findMany({ where: { userId } }); }
+  upsert({ userId, categoryId, limitInCents }: Omit<CategoryBudget, 'id'>) {
+    return this.db.categoryBudget.upsert({ where: { userId_categoryId: { userId, categoryId } }, create: { userId, categoryId, limitInCents }, update: { limitInCents } });
+  }
+  async delete(userId: string, categoryId: string) { await this.db.categoryBudget.deleteMany({ where: { userId, categoryId } }); }
+}
+
+class PrismaLessonProgressRepository implements LessonProgressRepository {
+  constructor(private db: PrismaClient) {}
+  listByUser(userId: string) { return this.db.lessonProgress.findMany({ where: { userId }, orderBy: { completedAt: 'asc' } }); }
+  async markDone(userId: string, lessonId: string) {
+    await this.db.lessonProgress.upsert({ where: { userId_lessonId: { userId, lessonId } }, create: { userId, lessonId }, update: {} });
+  }
+}
+
 export function makePrismaRepositories(db: PrismaClient): Repositories {
   return {
     users: new PrismaUsersRepository(db),
@@ -90,5 +107,7 @@ export function makePrismaRepositories(db: PrismaClient): Repositories {
     categories: new PrismaCategoriesRepository(db),
     rules: new PrismaCategoryRulesRepository(db),
     transactions: new PrismaTransactionsRepository(db),
+    budgets: new PrismaBudgetsRepository(db),
+    lessons: new PrismaLessonProgressRepository(db),
   };
 }

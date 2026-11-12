@@ -14,6 +14,7 @@ import { ListTransactionsUseCase } from './list-transactions.js';
 import { GetMonthSummaryUseCase } from './get-month-summary.js';
 import { GetTransactionUseCase } from './get-transaction.js';
 import { ListSubscriptionsUseCase } from './list-subscriptions.js';
+import { GetBudgetsUseCase, SetBudgetUseCase } from './budgets.js';
 
 export type Deps = { repos: Repositories; bank: BankGateway };
 
@@ -33,6 +34,10 @@ export function makeUseCases({ repos, bank }: Deps) {
     getMonthSummary: new GetMonthSummaryUseCase(repos),
     getTransaction: new GetTransactionUseCase(repos),
     listSubscriptions: new ListSubscriptionsUseCase(repos),
+    getBudgets: new GetBudgetsUseCase(repos),
+    setBudget: new SetBudgetUseCase(repos),
+    listLessonProgress: { execute: async ({ userId }: { userId: string }) => ({ done: (await repos.lessons.listByUser(userId)).map((l) => l.lessonId) }) },
+    markLessonDone: { execute: ({ userId, lessonId }: { userId: string; lessonId: string }) => repos.lessons.markDone(userId, lessonId) },
     listCategories: { execute: async () => ({ categories: await repos.categories.list() }) },
   };
 }

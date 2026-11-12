@@ -22,6 +22,8 @@ model User {
   accounts     Account[]
   transactions Transaction[]
   rules        CategoryRule[]
+  budgets      CategoryBudget[]
+  lessons      LessonProgress[]
 
   @@map("users")
 }
@@ -72,6 +74,7 @@ model Category {
 
   transactions Transaction[]
   rules        CategoryRule[]
+  budgets      CategoryBudget[]
 
   @@map("categories")
 }
@@ -110,4 +113,30 @@ model Transaction {
   @@unique([userId, externalId])
   @@index([userId, occurredAt])
   @@map("transactions")
+}
+
+// "No máximo R$ 300 em delivery por mês"
+model CategoryBudget {
+  id           String @id @default(uuid())
+  userId       String @map("user_id")
+  categoryId   String @map("category_id")
+  limitInCents Int    @map("limit_in_cents")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@unique([userId, categoryId])
+  @@map("category_budgets")
+}
+
+// Lição concluída (id da lição vem do JSON do currículo, ex.: "m1-l2")
+model LessonProgress {
+  userId      String   @map("user_id")
+  lessonId    String   @map("lesson_id")
+  completedAt DateTime @default(now()) @map("completed_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, lessonId])
+  @@map("lesson_progress")
 }

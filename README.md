@@ -15,7 +15,12 @@ Protótipo funcional pra testar e validar a ideia. Depois, a plataforma de verda
 - Anotar gasto na mão (dinheiro vivo, Pix que ainda não apareceu)
 - Início com saldo, entrou/saiu do mês e pra onde foi
 - Carteira por mês, com filtros
-- Trilha com os **9 módulos e 45 lições** do currículo, em 6 passos cada
+- Trilha com os **9 módulos e 45 lições** do currículo, em 6 passos cada, com progresso salvo na conta
+- **Raio-X das assinaturas**: acha o que cobra todo mês (Spotify, YouTube, plano anual em 12x...) e soma por mês e por ano
+- **Fechamento do mês**: quanto sobrou, entrou e saiu vs mês anterior, categorias que mais pesaram e maior gasto
+- **Limites por categoria**: teto mensal com barra no Início e aviso quando passa
+- Mesmo cartão vindo de duas conexões (ex.: Bradesco e Bradescard) conta uma vez só
+- Desconectar banco pela tela Conectar
 - Layout de celular e de desktop, e modo escuro automático
 
 ## Rodando na sua máquina
@@ -90,11 +95,11 @@ O caminho de uma requisição: **controller** valida com Zod, chama o **use case
 
 | Atalho | Como deveria ser |
 |---|---|
-| Progresso das lições no `localStorage` | Tabela `LessonProgress` + endpoint na API |
 | Só o simulador da lição 1.1 existe | Um simulador por lição |
 | Compromisso da semana não é auditado | Job que confere o extrato e marca cumprido/não cumprido |
 | Cron dentro do processo da API | Worker separado ou cron do provedor |
 | Fuso fixo -03:00 | Fuso do usuário |
 | Transferência interna por par de valores | Pode errar se alguém te mandar o mesmo valor que você mandou pra outra pessoa no mesmo dia |
 | Sem recuperar senha, sem refresh token | E-mail de recuperação e sessão renovável |
-| Chat, Tribunal, Batalha e Fechamento | Ainda só no design (canvas) |
+| Chat, Tribunal e Batalha | Ainda só no design (canvas) |
+| Assinatura detectada por padrão de descrição | Usar a categoria do Pluggy e deixar a pessoa confirmar/ignorar |

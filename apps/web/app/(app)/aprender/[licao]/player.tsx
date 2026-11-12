@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import type { Lesson } from '@/lib/lessons';
-import { markDone } from '@/lib/progress';
+import { markLessonDone } from '../actions';
 import { Mascote, type Pose } from '@/components/mascote';
 import { Button } from '@/components/ui';
 import { SIMULATORS } from './simulators';
@@ -26,7 +26,7 @@ export function LessonPlayer({ lesson, moduleTitle, moduleNumber, nextId }: Prop
   const last = step === STEPS.length - 1;
 
   const advance = () => {
-    if (step === STEPS.length - 2) markDone(lesson.id);
+    if (step === STEPS.length - 2) void markLessonDone(lesson.id);
     setStep(step + 1);
   };
 

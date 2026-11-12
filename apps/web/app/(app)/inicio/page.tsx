@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import type { MonthSummaryResponse, ProfileResponse, SubscriptionsResponse } from '@tostao/contracts';
+import type { BudgetsResponse, MonthSummaryResponse, ProfileResponse, SubscriptionsResponse } from '@tostao/contracts';
+import { BudgetBar } from '@/components/budget-bar';
 import { api } from '@/lib/api';
 import { currentMonth, money, monthName, shiftMonth } from '@/lib/format';
 import { Mascote } from '@/components/mascote';
@@ -7,11 +8,13 @@ import { ButtonLink, Card } from '@/components/ui';
 
 export default async function InicioPage() {
   const month = currentMonth();
-  const [me, s, subs] = await Promise.all([
+  const [me, s, subs, limits] = await Promise.all([
     api<ProfileResponse>('/me'),
     api<MonthSummaryResponse>(`/summary?month=${month}`),
     api<SubscriptionsResponse>('/subscriptions').catch(() => null),
+    api<BudgetsResponse>(`/budgets?month=${month}`).catch(() => ({ budgets: [] })),
   ]);
+  const estourou = limits.budgets.find((b) => b.spentInCents > b.limitInCents);
   const activeSubs = subs?.subscriptions.filter((x) => x.active).length ?? 0;
   const firstName = me.name.split(' ')[0];
   const mes = monthName(month);
@@ -74,6 +77,13 @@ export default async function InicioPage() {
             </div>
           )}
 
+          {estourou && (
+            <Link href="/limites" className="flex items-center gap-3 rounded-[20px] bg-rosa p-3 no-underline">
+              <Mascote pose="chocado" size={64} alt="Tostão chocado" />
+              <p className="text-[15px] leading-snug"><b>{estourou.name} passou do limite</b>: {money(estourou.spentInCents)} de {money(estourou.limitInCents)}. Sem drama, mas segura até o fim do mês?</p>
+            </Link>
+          )}
+
           {showClosing && (
             <Link href="/fechamento" className="flex items-center gap-3 rounded-[20px] bg-menta-clara p-3 no-underline">
               <Mascote pose="professor" size={64} alt="Tostão professor" />
@@ -87,6 +97,16 @@ export default async function InicioPage() {
               <p className="text-[15px] leading-snug"><b>{activeSubs} {activeSubs === 1 ? 'assinatura cobra' : 'assinaturas cobram'} todo mês</b>: {money(subs.monthlyInCents)}, ou {money(subs.yearlyInCents)} no ano. Toca pra ver o raio-X.</p>
             </Link>
           )}
+
+          <Card className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-xl font-extrabold">Limites</h2>
+              <Link href="/limites" className="text-sm font-semibold text-laranja-texto">{limits.budgets.length ? 'Editar' : 'Definir'}</Link>
+            </div>
+            {limits.budgets.length === 0
+              ? <p className="text-sm text-tinta-suave">Põe um teto em delivery, mercado ou no que pesar mais. Eu aviso quando chegar perto.</p>
+              : limits.budgets.slice(0, 3).map((b) => <BudgetBar key={b.categoryId} budget={b} />)}
+          </Card>
 
           <Card>
             <h2 className="mb-3 font-display text-xl font-extrabold">Pra onde foi</h2>

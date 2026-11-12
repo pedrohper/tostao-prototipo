@@ -1,8 +1,8 @@
 // Repositórios em memória: arrays simples. Usados nos testes e pra rodar sem Postgres.
 import { randomUUID } from 'node:crypto';
-import type { Account, BankConnection, Category, CategoryRule, Transaction, User } from '../../domain/entities.js';
+import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, LessonProgress, Transaction, User } from '../../domain/entities.js';
 import type {
-  AccountsRepository, BankConnectionsRepository, CategoriesRepository, CategoryRulesRepository,
+  AccountsRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, LessonProgressRepository,
   Repositories, TransactionsRepository, UsersRepository,
 } from '../types.js';
 import { DEFAULT_CATEGORIES, DEFAULT_RULES } from '../../lib/defaults.js';
@@ -109,6 +109,27 @@ export class InMemoryTransactionsRepository implements TransactionsRepository {
   }
 }
 
+export class InMemoryBudgetsRepository implements BudgetsRepository {
+  items: CategoryBudget[] = [];
+  async listByUser(userId: string) { return this.items.filter((b) => b.userId === userId); }
+  async upsert(data: Omit<CategoryBudget, 'id'>) {
+    const found = this.items.find((b) => b.userId === data.userId && b.categoryId === data.categoryId);
+    if (found) { found.limitInCents = data.limitInCents; return found; }
+    const b: CategoryBudget = { id: randomUUID(), ...data };
+    this.items.push(b);
+    return b;
+  }
+  async delete(userId: string, categoryId: string) { this.items = this.items.filter((b) => !(b.userId === userId && b.categoryId === categoryId)); }
+}
+
+export class InMemoryLessonProgressRepository implements LessonProgressRepository {
+  items: LessonProgress[] = [];
+  async listByUser(userId: string) { return this.items.filter((l) => l.userId === userId); }
+  async markDone(userId: string, lessonId: string) {
+    if (!this.items.some((l) => l.userId === userId && l.lessonId === lessonId)) this.items.push({ userId, lessonId, completedAt: new Date() });
+  }
+}
+
 export function makeInMemoryRepositories() {
   const transactions = new InMemoryTransactionsRepository();
   const accounts = new InMemoryAccountsRepository(transactions);
@@ -119,5 +140,7 @@ export function makeInMemoryRepositories() {
     categories: new InMemoryCategoriesRepository(),
     rules: new InMemoryCategoryRulesRepository(),
     transactions,
+    budgets: new InMemoryBudgetsRepository(),
+    lessons: new InMemoryLessonProgressRepository(),
   } satisfies Repositories;
 }

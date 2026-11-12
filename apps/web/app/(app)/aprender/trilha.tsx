@@ -2,11 +2,20 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import type { Module } from '@/lib/lessons';
-import { getDone } from '@/lib/progress';
+import { takeLegacyDone } from '@/lib/progress';
+import { importLocalProgress } from './actions';
 
-export function Trilha({ modules, colors }: { modules: Module[]; colors: string[] }) {
-  const [done, setDone] = useState<string[]>([]);
-  useEffect(() => setDone(getDone()), []);
+export function Trilha({ modules, colors, done: saved }: { modules: Module[]; colors: string[]; done: string[] }) {
+  const [done, setDone] = useState<string[]>(saved);
+  useEffect(() => setDone(saved), [saved]);
+  // Quem fez lição na versão antiga (progresso no navegador) não perde nada: sobe pro servidor uma vez.
+  useEffect(() => {
+    const legacy = takeLegacyDone().filter((id) => !saved.includes(id));
+    if (legacy.length) {
+      setDone((d) => [...new Set([...d, ...legacy])]);
+      void importLocalProgress(legacy);
+    }
+  }, [saved]);
   const total = modules.reduce((s, m) => s + m.lessons.length, 0);
   const next = modules.flatMap((m) => m.lessons).find((l) => !done.includes(l.id));
 

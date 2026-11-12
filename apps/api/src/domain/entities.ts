@@ -52,3 +52,7 @@ export type Transaction = {
   isInternalTransfer: boolean;
   createdAt: Date;
 };
+
+export type CategoryBudget = { id: string; userId: string; categoryId: string; limitInCents: number };
+
+export type LessonProgress = { userId: string; lessonId: string; completedAt: Date };

@@ -35,4 +35,9 @@ describe('detectInternalTransfers', () => {
     const amiga = tx('mp', -660, 30, 'Pix enviado Amanda Costa');
     expect(detectInternalTransfers([pix, deb, amiga])).toEqual(new Set([pix.id, deb.id]));
   });
+  it('fatura paga por boleto: a saída da conta pareia com o "Pagamento recebido" do cartão', () => {
+    const boleto = tx('bradesco', -23471, 30, 'Pagamento de conta BANCO BRADESCARD S A');
+    const cartao = tx('amazon', 23471, 30, 'Pagamento recebido');
+    expect(detectInternalTransfers([boleto, cartao])).toEqual(new Set([boleto.id, cartao.id]));
+  });
 });
