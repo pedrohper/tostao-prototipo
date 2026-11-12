@@ -51,18 +51,13 @@ export function AuthForm({ mode, invite }: { mode: 'entrar' | 'criar'; invite?: 
       {criar && (
         <label className="flex cursor-pointer items-start gap-2.5 text-[13px] leading-[19px]">
           <input type="checkbox" required className="mt-0 h-5 w-5 shrink-0 accent-tinta" />
-          <span>Tenho 18 anos ou mais e topo usar um protótipo em teste.</span>
+          <span>Tenho 18 anos ou mais e aceito os <Link href="/termos" className="font-semibold underline">Termos de uso</Link> e a <Link href="/privacidade" className="font-semibold underline">Política de privacidade</Link>.</span>
         </label>
       )}
       <ErrorNote message={state.error} />
       <button type="submit" disabled={pending} className="flex h-[54px] items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel transition active:translate-y-px disabled:opacity-50">
         {pending ? 'Só um segundo…' : criar ? 'Criar conta' : 'Entrar'}
       </button>
-      {criar && (
-        <p className="text-center text-[12px] leading-[17px] text-tinta-suave">
-          Ao criar sua conta você concorda com os <Link href="/termos" className="font-semibold underline">Termos de uso</Link> e a <Link href="/privacidade" className="font-semibold underline">Política de privacidade</Link>.
-        </p>
-      )}
       <div className="grow" />
       <p className="text-center text-sm text-tinta-suave">
         {criar ? <>Já tem conta? <Link href="/entrar" className="font-bold text-laranja-texto">Entrar</Link></>
