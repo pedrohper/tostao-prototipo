@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import type { ChatMessageDTO } from '@tostao/contracts';
 import { Mascote } from '@/components/mascote';
@@ -39,7 +40,7 @@ function Pensando() {
   );
 }
 
-export function ChatClient({ initial, firstName }: { initial: ChatMessageDTO[]; firstName: string }) {
+export function ChatClient({ initial, firstName, subtitle }: { initial: ChatMessageDTO[]; firstName: string; subtitle: string }) {
   const [messages, setMessages] = useState(initial);
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -68,24 +69,27 @@ export function ChatClient({ initial, firstName }: { initial: ChatMessageDTO[]; 
 
   return (
     <div className="flex min-h-[calc(100dvh-10rem)] flex-col gap-4">
-      <div className="flex items-center gap-3">
-        <Mascote pose="acenando" size={56} alt="" />
-        <div>
-          <h1 className="font-display text-[26px] leading-tight font-extrabold">Tostão</h1>
-          <p className="text-[13px] text-tinta-suave">Pergunta qualquer coisa sobre o seu dinheiro.</p>
+      <div className="sticky top-0 z-10 -mx-5 -mt-12 flex items-center gap-2 border-b border-linha bg-cartao pt-11 pr-4 pb-3 pl-1.5 md:-mx-8 md:-mt-12 md:pt-6">
+        <Link href="/inicio" aria-label="Voltar" className="flex h-11 w-11 shrink-0 items-center justify-center text-tinta">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+        </Link>
+        <Mascote pose="avatar" size={44} alt="Tostão" />
+        <div className="flex flex-col">
+          <h1 className="font-display text-xl leading-6 font-extrabold">Tostão</h1>
+          <p className="text-xs text-tinta-suave">{subtitle}</p>
         </div>
       </div>
 
       <div className="flex flex-1 flex-col justify-end gap-2.5" aria-live="polite">
         {messages.length === 0 && (
-          <div className="max-w-[86%] self-start rounded-[18px_18px_18px_4px] border border-linha bg-cartao px-3.5 py-3 text-[15px] leading-[22px]">
+          <div className="max-w-[82%] self-start rounded-[18px_18px_18px_4px] border border-linha bg-cartao px-3.5 py-[11px] text-[15px] leading-[22px]">
             Fala, {firstName}! Eu olho seus gastos, assinaturas e limites antes de responder. Manda a dúvida.
           </div>
         )}
         {messages.map((m) => m.role === 'user' ? (
           <div key={m.id} className="max-w-[82%] self-end whitespace-pre-wrap rounded-[18px_18px_4px_18px] bg-tinta px-3.5 py-2.5 text-[15px] leading-[22px] text-papel">{m.content}</div>
         ) : (
-          <div key={m.id} className="max-w-[86%] self-start rounded-[18px_18px_18px_4px] border border-linha bg-cartao px-3.5 py-3 text-[15px] leading-[22px]"><Rich text={m.content} /></div>
+          <div key={m.id} className="max-w-[82%] self-start rounded-[18px_18px_18px_4px] border border-linha bg-cartao px-3.5 py-[11px] text-[15px] leading-[22px]"><Rich text={m.content} /></div>
         ))}
         {pending && <Pensando />}
         <div ref={bottom} />

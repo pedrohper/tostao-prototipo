@@ -148,7 +148,8 @@ export type BudgetsResponse = { budgets: BudgetDTO[] };
 
 // ---------- Progresso das lições ----------
 export const lessonIdParam = z.object({ lessonId: z.string().regex(/^m\d+-l\d+$/, 'Lição inválida') });
-export type LessonProgressResponse = { done: string[] };
+/** streakDays = ofensiva (dias seguidos com lição); doneToday = lições feitas hoje (Brasília). */
+export type LessonProgressResponse = { done: string[]; streakDays: number; doneToday: number };
 
 // Chat com o Tostão
 export const chatBody = z.object({ message: z.string().trim().min(1, 'Escreve alguma coisa').max(1000, 'Pergunta longa demais') });

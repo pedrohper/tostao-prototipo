@@ -1,18 +1,20 @@
 import Link from 'next/link';
-import type { BudgetsResponse, MonthSummaryResponse, ProfileResponse, SubscriptionsResponse } from '@tostao/contracts';
+import type { BudgetsResponse, LessonProgressResponse, MonthSummaryResponse, ProfileResponse, SubscriptionsResponse } from '@tostao/contracts';
+import { NO_PROGRESS } from '@/lib/xp';
 import { BudgetBar } from '@/components/budget-bar';
 import { api } from '@/lib/api';
 import { ago, currentMonth, money, monthName, shiftMonth, shortDate } from '@/lib/format';
 import { Mascote } from '@/components/mascote';
-import { ButtonLink, Card, CardIcon } from '@/components/ui';
+import { ButtonLink, Card, CardIcon, StreakChip } from '@/components/ui';
 
 export default async function InicioPage() {
   const month = currentMonth();
-  const [me, s, subs, limits] = await Promise.all([
+  const [me, s, subs, limits, progress] = await Promise.all([
     api<ProfileResponse>('/me'),
     api<MonthSummaryResponse>(`/summary?month=${month}`),
     api<SubscriptionsResponse>('/subscriptions').catch(() => null),
     api<BudgetsResponse>(`/budgets?month=${month}`).catch(() => ({ budgets: [] })),
+    api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
   ]);
   const estourou = limits.budgets.find((b) => b.spentInCents > b.limitInCents);
   const activeSubs = subs?.subscriptions.filter((x) => x.active).length ?? 0;
@@ -34,9 +36,12 @@ export default async function InicioPage() {
     <div className="flex flex-col gap-4">
       <header className="flex items-end justify-between">
         <h1 className="font-display text-[34px] leading-[38px] font-extrabold">Fala, {firstName}</h1>
-        <Link href="/perfil" aria-label="Abrir seu perfil" className="flex h-12 w-12 items-center justify-center rounded-full bg-rosa">
-          <Mascote pose="avatar" size={38} alt="" />
-        </Link>
+        <div className="flex items-center gap-1.5">
+          <Link href="/aprender" className="text-tinta no-underline"><StreakChip days={progress.streakDays} /></Link>
+          <Link href="/perfil" aria-label="Abrir seu perfil" className="flex h-12 w-12 items-center justify-center rounded-full bg-rosa">
+            <Mascote pose="avatar" size={38} alt="" />
+          </Link>
+        </div>
       </header>
 
       {broken.length > 0 && (

@@ -1,14 +1,19 @@
 import Link from 'next/link';
 import { modules, MODULE_COLORS } from '@/lib/lessons';
 import { Mascote } from '@/components/mascote';
-import { Eyebrow } from '@/components/ui';
-import type { LessonProgressResponse } from '@tostao/contracts';
+import { Eyebrow, StreakChip } from '@/components/ui';
+import type { LessonProgressResponse, MonthSummaryResponse } from '@tostao/contracts';
 import { api } from '@/lib/api';
-import { xpFrom } from '@/lib/xp';
+import { currentMonth } from '@/lib/format';
+import { NO_PROGRESS, xpFrom } from '@/lib/xp';
 import { LegacyProgress } from './legacy-progress';
 
 export default async function AprenderPage() {
-  const { done } = await api<LessonProgressResponse>('/progress').catch(() => ({ done: [] as string[] }));
+  const [{ done, streakDays, doneToday }, summary] = await Promise.all([
+    api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
+    api<MonthSummaryResponse>(`/summary?month=${currentMonth()}`).catch(() => null),
+  ]);
+  const pendentes = summary?.uncategorizedCount ?? 0;
   const { xp } = xpFrom(done.length);
   // Módulo atual = o primeiro que ainda tem lição por fazer
   const atualIdx = modules.findIndex((m) => m.lessons.some((l) => !done.includes(l.id)));
@@ -22,16 +27,20 @@ export default async function AprenderPage() {
       <LegacyProgress saved={done} />
       <div className="flex items-end justify-between">
         <h1 className="font-display text-[34px] leading-[38px] font-extrabold">Aprender</h1>
-        <span className="rounded-full bg-amarelo px-2.5 py-1.5 text-sm font-bold text-[#1E1B18]">{xp} XP</span>
+        <div className="flex gap-1.5">
+          <StreakChip days={streakDays} />
+          <span className="rounded-full bg-amarelo px-2.5 py-1.5 text-sm font-bold text-[#1E1B18]">{xp} XP</span>
+        </div>
       </div>
 
       <div className="flex items-center gap-1.5 rounded-[18px] border border-linha bg-cartao py-3 pr-3.5 pl-1.5">
         <Mascote pose="professor" size={84} alt="Tostão professor" />
-        <div className="flex min-w-0 flex-col gap-1">
-          <Eyebrow>Seu ritmo</Eyebrow>
-          <p className="text-[15px] leading-[21px]">
-            {done.length === 0 ? 'Uma lição por dia, 2 minutos cada. Bora começar?' : <>Você já fez <b>{done.length} {done.length === 1 ? 'lição' : 'lições'}</b>. Uma por dia já muda o jogo.</>}
-          </p>
+        <div className="flex min-w-0 grow flex-col gap-1.5">
+          <Eyebrow>Missões de hoje</Eyebrow>
+          <Missao feita={doneToday > 0} href={proxima ? `/aprender/${proxima.id}` : '/aprender/trilha'}>Fazer 1 lição</Missao>
+          <Missao feita={pendentes === 0} href="/carteira?filtro=pendentes">
+            {pendentes === 0 ? 'Gastos todos categorizados' : `Categorizar ${pendentes} ${pendentes === 1 ? 'gasto' : 'gastos'}`}
+          </Missao>
         </div>
       </div>
 
@@ -85,5 +94,17 @@ export default async function AprenderPage() {
         })}
       </section>
     </div>
+  );
+}
+
+function Missao({ feita, href, children }: { feita: boolean; href: string; children: React.ReactNode }) {
+  return (
+    <Link href={href} className="flex min-h-8 items-center gap-2 text-[15px] text-tinta no-underline">
+      <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-[1.5px] ${feita ? 'border-menta bg-menta text-[#1E1B18]' : 'border-linha'}`} aria-hidden="true">
+        {feita && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5L20 7" /></svg>}
+      </span>
+      <span className={feita ? 'text-tinta-suave line-through' : 'font-semibold'}>{children}</span>
+      <span className="sr-only">{feita ? '(feita)' : '(pendente)'}</span>
+    </Link>
   );
 }

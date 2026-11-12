@@ -5,7 +5,7 @@ import { Mascote } from '@/components/mascote';
 import { BankIcon, CardIcon, Eyebrow } from '@/components/ui';
 import { money } from '@/lib/format';
 import { HideAccountButton } from '../carteira/hide-account-button';
-import { xpFrom } from '@/lib/xp';
+import { NO_PROGRESS, xpFrom } from '@/lib/xp';
 
 const atalhos = [
   { href: '/categorias', label: 'Minhas categorias' },
@@ -27,9 +27,9 @@ function synced(iso: string | null) {
 }
 
 export default async function PerfilPage() {
-  const [me, { done }] = await Promise.all([
+  const [me, { done, streakDays }] = await Promise.all([
     api<ProfileResponse>('/me'),
-    api<LessonProgressResponse>('/progress').catch(() => ({ done: [] as string[] })),
+    api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
   ]);
   const { xp, level } = xpFrom(done.length);
   const rows = 'flex min-h-12 items-center justify-between border-b border-linha text-tinta no-underline';
@@ -43,7 +43,7 @@ export default async function PerfilPage() {
         </div>
         <div className="flex min-w-0 flex-col">
           <span className="truncate text-[17px] font-bold">{me.name}</span>
-          <span className="text-[13px] text-tinta-suave">Nível {level} · {xp} XP · {done.length} {done.length === 1 ? 'lição feita' : 'lições feitas'}</span>
+          <span className="text-[13px] text-tinta-suave">Nível {level} · {xp} XP · {streakDays} {streakDays === 1 ? 'dia' : 'dias'} de ofensiva</span>
         </div>
       </div>
 

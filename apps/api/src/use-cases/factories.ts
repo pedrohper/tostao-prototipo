@@ -1,3 +1,4 @@
+import { ListLessonProgressUseCase } from './lesson-progress.js';
 import { ImportStatementUseCase } from './import-statement.js';
 import { CreateInviteUseCase, ListInvitesUseCase } from './invites.js';
 import { ResetPasswordUseCase } from './password-reset.js';
@@ -47,7 +48,7 @@ export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), chatDailyL
     setSubscriptionIgnored: { execute: ({ userId, key, ignored }: { userId: string; key: string; ignored: boolean }) => repos.ignoredSubscriptions.set(userId, key, ignored) },
     getBudgets: new GetBudgetsUseCase(repos),
     setBudget: new SetBudgetUseCase(repos),
-    listLessonProgress: { execute: async ({ userId }: { userId: string }) => ({ done: (await repos.lessons.listByUser(userId)).map((l) => l.lessonId) }) },
+    listLessonProgress: new ListLessonProgressUseCase(repos),
     markLessonDone: { execute: ({ userId, lessonId }: { userId: string; lessonId: string }) => repos.lessons.markDone(userId, lessonId) },
     listCategories: { execute: async ({ userId }: { userId?: string }) => ({ categories: await repos.categories.list(userId) }) },
     createCategory: new CreateCategoryUseCase(repos),
