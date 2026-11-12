@@ -32,7 +32,7 @@ export function LessonPlayer({ lesson, moduleTitle, moduleNumber, nextId }: Prop
   };
 
   return (
-    <div className={`-mx-5 -mt-12 flex min-h-[calc(100dvh-90px)] flex-col gap-4 px-5 pt-10 pb-6 md:-mx-8 md:rounded-b-3xl md:px-8 ${s.bg}`}>
+    <div className={`-mx-5 -mt-6 flex min-h-[calc(100dvh-90px)] flex-col gap-4 px-5 pt-6 pb-6 md:-mx-8 md:rounded-b-3xl md:px-8 ${s.bg}`}>
       <div className="flex items-center gap-3">
         <Link href="/aprender" aria-label="Sair da lição" className="text-2xl leading-none">×</Link>
         <div className="flex flex-1 gap-1.5" aria-label={`Passo ${step + 1} de ${STEPS.length}`}>

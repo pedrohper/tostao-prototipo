@@ -69,7 +69,7 @@ export function ChatClient({ initial, firstName, subtitle, askIncome = false }: 
 
   return (
     <div className="flex min-h-[calc(100dvh-10rem)] flex-col gap-4">
-      <div className="sticky top-0 z-10 -mx-5 -mt-12 flex items-center gap-2 border-b border-linha bg-cartao pt-11 pr-4 pb-3 pl-1.5 md:-mx-8 md:-mt-12 md:pt-6">
+      <div className="sticky top-0 z-10 -mx-5 -mt-6 flex items-center gap-2 border-b border-linha bg-cartao pt-4 pr-4 pb-3 pl-1.5 md:-mx-8 md:pt-4">
         <Link href="/inicio" aria-label="Voltar" className="flex h-11 w-11 shrink-0 items-center justify-center text-tinta">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
         </Link>

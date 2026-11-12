@@ -34,7 +34,7 @@ export default async function InicioPage() {
   const vazio = s.balanceInCents === null && s.outcomeInCents === 0 && s.incomeInCents === 0;
 
   return (
-    <div className="flex flex-col gap-4 pt-9 md:pt-0">
+    <div className="flex flex-col gap-4">
       <header className="flex items-end justify-between">
         <h1 className="font-display text-[34px] leading-[38px] font-extrabold">Fala, {firstName}</h1>
         <div className="flex items-center gap-1.5">
