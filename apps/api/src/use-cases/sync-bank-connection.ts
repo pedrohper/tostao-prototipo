@@ -129,12 +129,14 @@ const PAYMENT = /pagamento (recebido|de fatura|da fatura)|pgto fatura|pagto fatu
 
 /**
  * Fatura aberta do cartão (negativo = deve).
- * - Banco que marca a fatura de cada transação (billId, ex.: Nubank): soma o que ainda não tem fatura,
+ * - Nubank (marca a fatura de cada transação com billId): soma o que ainda não tem fatura,
  *   até hoje, sem os pagamentos. É o número que aparece no app do banco.
  * - Sem essa marcação: o "balance" é o limite usado; tira as parcelas que caem depois do fechamento estimado.
  */
-export function openBill(remote: Pick<BankAccountData, 'balanceInCents' | 'dueDate'>, fetched: BankTransactionData[], now: Date) {
-  if (fetched.some((t) => t.billId)) {
+export function openBill(remote: Pick<BankAccountData, 'balanceInCents' | 'dueDate' | 'institution'>, fetched: BankTransactionData[], now: Date) {
+  // Só o Nubank deixa as compras da fatura aberta sem billId (conferido com o app dele).
+  // Mercado Pago e Bradescard usam billId de outro jeito: lá o balance menos as parcelas futuras é que bate.
+  if (remote.institution === 'Nubank' && fetched.some((t) => t.billId)) {
     const open = fetched.filter((t) => !t.billId && t.occurredAt <= now && !PAYMENT.test(t.description));
     return Math.min(0, open.reduce((s, t) => s + t.amountInCents, 0));
   }

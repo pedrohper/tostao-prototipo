@@ -46,7 +46,9 @@ describe('cartão pelo MeuPluggy', () => {
       { externalId: 'e', description: 'Discord* Nitro', amountInCents: -2599, occurredAt: d('2026-11-07'), billId: null },
       { externalId: 'f', description: 'AMAZON PRIME 8/12', amountInCents: -1390, occurredAt: d('2026-11-19'), billId: null },
     ];
-    expect(openBill({ balanceInCents: -54973, dueDate: d('2026-11-03') }, fetched, NOW)).toBe(-2599);
+    expect(openBill({ balanceInCents: -54973, dueDate: d('2026-11-03'), institution: 'Nubank' }, fetched, NOW)).toBe(-2599);
+    // Outro emissor: volta pro limite usado menos o que cai depois do fechamento (26/11)
+    expect(openBill({ balanceInCents: -54973, dueDate: d('2026-11-03'), institution: 'Mercado Pago' }, fetched, NOW)).toBe(-54973);
   });
 
   it('nomes', () => {
