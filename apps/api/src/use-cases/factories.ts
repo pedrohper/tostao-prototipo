@@ -9,6 +9,8 @@ import { CreateCategoryUseCase, DeleteCategoryUseCase } from './categories.js';
 import type { Repositories } from '../repositories/types.js';
 import type { BankGateway } from '../gateways/bank-gateway.js';
 import { FakeAiGateway, type AiGateway } from '../gateways/ai-gateway.js';
+import { FakeWhatsAppGateway, type WhatsAppGateway } from '../gateways/whatsapp-gateway.js';
+import { HandleWhatsAppMessageUseCase, WhatsAppLinkUseCase } from './whatsapp.js';
 import { AskTostaoUseCase } from './ask-tostao.js';
 import { RegisterUserUseCase } from './register-user.js';
 import { AuthenticateUseCase } from './authenticate.js';
@@ -27,11 +29,12 @@ import { AutoCategorizeUseCase } from './auto-categorize.js';
 import { SearchTransactionsUseCase } from './search-transactions.js';
 import { ForecastUseCase, GoalDepositUseCase, SaveFinancialPlanUseCase, SetGoalUseCase, SuggestIncomeUseCase } from './financial-plan.js';
 
-export type Deps = { repos: Repositories; bank: BankGateway; ai?: AiGateway; chatDailyLimit?: number };
+export type Deps = { repos: Repositories; bank: BankGateway; ai?: AiGateway; whatsapp?: WhatsAppGateway; chatDailyLimit?: number };
 
-export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), chatDailyLimit = 40 }: Deps) {
+export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), whatsapp = new FakeWhatsAppGateway(), chatDailyLimit = 40 }: Deps) {
   const sync = new SyncBankConnectionUseCase({ ...repos, bank });
   const autoCategorize = new AutoCategorizeUseCase(repos, ai);
+  const askTostao = new AskTostaoUseCase(repos, ai, chatDailyLimit);
   return {
     registerUser: new RegisterUserUseCase(repos),
     createInvite: new CreateInviteUseCase(repos),
@@ -65,7 +68,9 @@ export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), chatDailyL
     createCategory: new CreateCategoryUseCase(repos),
     importStatement: new ImportStatementUseCase(repos),
     autoCategorize,
-    askTostao: new AskTostaoUseCase(repos, ai, chatDailyLimit),
+    askTostao,
+    whatsappLink: new WhatsAppLinkUseCase(repos, whatsapp),
+    whatsappMessage: new HandleWhatsAppMessageUseCase(repos, whatsapp, askTostao),
     chatHistory: { execute: async ({ userId }: { userId: string }) => ({ messages: await repos.chat.listRecent(userId, 60) }) },
     setAccountHidden: {
       execute: async ({ userId, accountId, hidden }: { userId: string; accountId: string; hidden: boolean }) => {

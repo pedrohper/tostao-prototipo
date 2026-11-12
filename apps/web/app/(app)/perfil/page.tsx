@@ -11,6 +11,7 @@ const atalhos = [
   { href: '/renda', label: 'Renda e contas fixas' },
   { href: '/previsao', label: 'Próximos meses' },
   { href: '/meta', label: 'Minha meta' },
+  { href: '/whatsapp', label: 'Tostão no WhatsApp' },
   { href: '/categorias', label: 'Minhas categorias' },
   { href: '/limites', label: 'Limites do mês' },
   { href: '/fechamento', label: 'Fechamento do mês' },

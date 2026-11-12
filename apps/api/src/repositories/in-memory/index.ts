@@ -4,7 +4,7 @@ import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, L
 import type { FinancialPlan } from '@tostao/contracts';
 import type {
   AccountData, AccountsRepository, FinancialPlansRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, ChatMessagesRepository, IgnoredSubscriptionsRepository, InvitesRepository, LessonProgressRepository, PasswordResetsRepository,
-  Repositories, TransactionsRepository, UsersRepository,
+  Repositories, TransactionsRepository, UsersRepository, WhatsappLink, WhatsappLinksRepository,
 } from '../types.js';
 import { DEFAULT_CATEGORIES, DEFAULT_RULES } from '../../lib/defaults.js';
 
@@ -204,6 +204,20 @@ export class InMemoryFinancialPlansRepository implements FinancialPlansRepositor
   async save(userId: string, plan: FinancialPlan) { this.items.set(userId, plan); }
 }
 
+export class InMemoryWhatsappLinksRepository implements WhatsappLinksRepository {
+  items = new Map<string, WhatsappLink>();
+  private row(userId: string) { return this.items.get(userId) ?? { userId, phone: null, code: null, codeExpiresAt: null, linkedAt: null }; }
+  async get(userId: string) { return this.items.get(userId) ?? null; }
+  async findByPhone(phone: string) { return [...this.items.values()].find((l) => l.phone === phone) ?? null; }
+  async findByCode(code: string) { return [...this.items.values()].find((l) => l.code === code) ?? null; }
+  async setCode(userId: string, code: string, expiresAt: Date) { this.items.set(userId, { ...this.row(userId), code, codeExpiresAt: expiresAt }); }
+  async link(userId: string, phone: string, at: Date) {
+    for (const l of this.items.values()) if (l.phone === phone && l.userId !== userId) this.items.set(l.userId, { ...l, phone: null, linkedAt: null });
+    this.items.set(userId, { ...this.row(userId), phone, linkedAt: at, code: null, codeExpiresAt: null });
+  }
+  async unlink(userId: string) { this.items.delete(userId); }
+}
+
 export function makeInMemoryRepositories() {
   const transactions = new InMemoryTransactionsRepository();
   const accounts = new InMemoryAccountsRepository(transactions);
@@ -221,5 +235,6 @@ export function makeInMemoryRepositories() {
     passwordResets: new InMemoryPasswordResetsRepository(),
     chat: new InMemoryChatMessagesRepository(),
     plans: new InMemoryFinancialPlansRepository(),
+    whatsapp: new InMemoryWhatsappLinksRepository(),
   } satisfies Repositories;
 }

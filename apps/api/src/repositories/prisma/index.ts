@@ -5,7 +5,7 @@ import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, T
 import type { FinancialPlan } from '@tostao/contracts';
 import type {
   AccountData, AccountsRepository, FinancialPlansRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, ChatMessagesRepository, IgnoredSubscriptionsRepository, InvitesRepository, LessonProgressRepository, PasswordResetsRepository,
-  NewTransaction, NewUser, Repositories, TransactionsRepository, UsersRepository,
+  NewTransaction, NewUser, Repositories, TransactionsRepository, UsersRepository, WhatsappLinksRepository,
 } from '../types.js';
 
 class PrismaUsersRepository implements UsersRepository {
@@ -163,6 +163,23 @@ class PrismaFinancialPlansRepository implements FinancialPlansRepository {
   }
 }
 
+class PrismaWhatsappLinksRepository implements WhatsappLinksRepository {
+  constructor(private readonly db: PrismaClient) {}
+  get(userId: string) { return this.db.whatsappLink.findUnique({ where: { userId } }); }
+  findByPhone(phone: string) { return this.db.whatsappLink.findUnique({ where: { phone } }); }
+  findByCode(code: string) { return this.db.whatsappLink.findUnique({ where: { code } }); }
+  async setCode(userId: string, code: string, expiresAt: Date) {
+    await this.db.whatsappLink.upsert({ where: { userId }, create: { userId, code, codeExpiresAt: expiresAt }, update: { code, codeExpiresAt: expiresAt } });
+  }
+  async link(userId: string, phone: string, at: Date) {
+    await this.db.$transaction([
+      this.db.whatsappLink.updateMany({ where: { phone, NOT: { userId } }, data: { phone: null, linkedAt: null } }),
+      this.db.whatsappLink.upsert({ where: { userId }, create: { userId, phone, linkedAt: at }, update: { phone, linkedAt: at, code: null, codeExpiresAt: null } }),
+    ]);
+  }
+  async unlink(userId: string) { await this.db.whatsappLink.deleteMany({ where: { userId } }); }
+}
+
 export function makePrismaRepositories(db: PrismaClient): Repositories {
   return {
     users: new PrismaUsersRepository(db),
@@ -178,5 +195,6 @@ export function makePrismaRepositories(db: PrismaClient): Repositories {
     passwordResets: new PrismaPasswordResetsRepository(db),
     chat: new PrismaChatMessagesRepository(db),
     plans: new PrismaFinancialPlansRepository(db),
+    whatsapp: new PrismaWhatsappLinksRepository(db),
   };
 }

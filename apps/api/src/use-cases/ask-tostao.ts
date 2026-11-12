@@ -50,7 +50,7 @@ export class AskTostaoUseCase {
       this.repos.users.findById(userId),
     ]);
     const messages: ChatTurn[] = [
-      { role: 'system', content: `${PERSONA}\n\nA pessoa se chama ${user?.name ?? 'você'}. Hoje é ${now.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.\n\nDADOS:\n${data}` },
+      { role: 'system', content: `${PERSONA}${channel === 'whatsapp' ? `\n- Você está no WhatsApp: mensagem curta, sem tabela. Não liste o saldo de cada conta nem transações uma por uma; dê o número resumido e, pra detalhe, mande abrir o app.` : ''}\n\nA pessoa se chama ${user?.name ?? 'você'}. Hoje é ${now.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.\n\nDADOS:\n${data}` },
       ...history.map((m) => ({ role: m.role, content: m.content }) as ChatTurn),
       { role: 'user', content: text },
     ];

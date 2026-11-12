@@ -105,6 +105,17 @@ export interface FinancialPlansRepository {
   save(userId: string, plan: FinancialPlan): Promise<void>;
 }
 
+export type WhatsappLink = { userId: string; phone: string | null; code: string | null; codeExpiresAt: Date | null; linkedAt: Date | null };
+export interface WhatsappLinksRepository {
+  get(userId: string): Promise<WhatsappLink | null>;
+  findByPhone(phone: string): Promise<WhatsappLink | null>;
+  findByCode(code: string): Promise<WhatsappLink | null>;
+  setCode(userId: string, code: string, expiresAt: Date): Promise<void>;
+  /** Liga o número à conta (tira de outra conta, se estava lá) e apaga o código. */
+  link(userId: string, phone: string, at: Date): Promise<void>;
+  unlink(userId: string): Promise<void>;
+}
+
 export type Repositories = {
   users: UsersRepository;
   connections: BankConnectionsRepository;
@@ -119,4 +130,5 @@ export type Repositories = {
   passwordResets: PasswordResetsRepository;
   chat: ChatMessagesRepository;
   plans: FinancialPlansRepository;
+  whatsapp: WhatsappLinksRepository;
 };

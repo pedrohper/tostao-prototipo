@@ -31,6 +31,7 @@ model User {
   ignoredSubscriptions IgnoredSubscription[]
   categories   Category[]
   plan         FinancialPlan?
+  whatsapp     WhatsappLink?
 
   @@map("users")
 }
@@ -217,4 +218,17 @@ model FinancialPlan {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("financial_plans")
+}
+
+// WhatsApp do Tostão: o número fica ligado à conta depois que a pessoa manda o código gerado no app.
+model WhatsappLink {
+  userId        String    @id @map("user_id")
+  phone         String?   @unique
+  code          String?   @unique
+  codeExpiresAt DateTime? @map("code_expires_at")
+  linkedAt      DateTime? @map("linked_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("whatsapp_links")
 }

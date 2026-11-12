@@ -15,6 +15,15 @@ const schema = z
     DEEPSEEK_API_KEY: z.string().default(''),
     DEEPSEEK_MODEL: z.string().default('deepseek-chat'),
     CHAT_DAILY_LIMIT: z.coerce.number().int().positive().default(40),
+    // WhatsApp Cloud API (Meta). Sem token, o WhatsApp fica desligado.
+    WHATSAPP_TOKEN: z.string().default(''),
+    WHATSAPP_PHONE_NUMBER_ID: z.string().default(''),
+    WHATSAPP_APP_SECRET: z.string().default(''),
+    WHATSAPP_VERIFY_TOKEN: z.string().default(''),
+    WHATSAPP_NUMBER: z.string().regex(/^\d*$/, 'WHATSAPP_NUMBER só com dígitos, com DDI (ex.: 5511999999999)').default(''),
+  })
+  .refine((e) => !e.WHATSAPP_TOKEN || (e.WHATSAPP_PHONE_NUMBER_ID && e.WHATSAPP_APP_SECRET && e.WHATSAPP_VERIFY_TOKEN), {
+    message: 'Com WHATSAPP_TOKEN, preencha WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_APP_SECRET e WHATSAPP_VERIFY_TOKEN',
   })
   .refine((e) => e.BANK_GATEWAY !== 'pluggy' || (e.PLUGGY_CLIENT_ID && e.PLUGGY_CLIENT_SECRET), {
     message: 'Com BANK_GATEWAY=pluggy, preencha PLUGGY_CLIENT_ID e PLUGGY_CLIENT_SECRET',
