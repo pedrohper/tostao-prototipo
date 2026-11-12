@@ -25,7 +25,7 @@ export default async function ImportarPage({ searchParams }: { searchParams: Pro
     <div className="flex flex-col gap-5">
       <BackLink href="/conectar" />
       <div className="flex items-center gap-3">
-        <Mascote pose="investigando" size={72} alt="" />
+        <Mascote pose="conectando" size={72} alt="Tostão ligando dois cabos" />
         <div>
           <h1 className="font-display text-[28px] leading-tight font-extrabold">Importar extrato</h1>
           <p className="text-[15px] text-tinta-suave">Sem Open Finance, sem senha. Só o arquivo.</p>

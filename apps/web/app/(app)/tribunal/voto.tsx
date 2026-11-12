@@ -50,7 +50,7 @@ export function Voto({ initial }: { initial: TribunalResponse }) {
       )}
       <div className="grow" />
       {t.myVote !== null && (
-        <Link href="/aprender" className="flex h-[54px] shrink-0 items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel no-underline">+20 XP garantido. Voltar</Link>
+        <Link href="/aprender" className="flex h-[54px] shrink-0 items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel no-underline">Ganhar +20 XP e voltar</Link>
       )}
     </>
   );
