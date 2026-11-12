@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { type AutoCategorizeResponse, categorizeBody, manualTransactionBody, monthQuery, type CategoryDTO, type MonthSummaryResponse, type SubscriptionsResponse, ignoreSubscriptionBody, createCategoryBody } from '@tostao/contracts';
+import { type AutoCategorizeResponse, searchQuery, type SearchResponse, categorizeBody, manualTransactionBody, monthQuery, type CategoryDTO, type MonthSummaryResponse, type SubscriptionsResponse, ignoreSubscriptionBody, createCategoryBody } from '@tostao/contracts';
 import type { UseCases } from '../../use-cases/factories.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
 import { presentTransaction } from '../presenters.js';
@@ -49,6 +49,13 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
     const { month } = monthQuery.parse(request.query);
     const { transactions } = await uc.listTransactions.execute({ userId: request.user.sub, month });
     return { transactions: transactions.map(presentTransaction) };
+  });
+
+  // Busca (vem antes do /:id pra "search" não virar id)
+  app.get('/transactions/search', { onRequest: verifyJwt }, async (request) => {
+    const query = searchQuery.parse(request.query);
+    const r = await uc.searchTransactions.execute({ ...query, userId: request.user.sub });
+    return { ...r, transactions: r.transactions.map(presentTransaction) } satisfies SearchResponse;
   });
 
   app.get('/transactions/:id', { onRequest: verifyJwt }, async (request) => {

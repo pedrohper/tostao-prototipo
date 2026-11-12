@@ -68,6 +68,15 @@ export const monthQuery = z.object({
   month: z.string().regex(/^\d{4}-\d{2}$/, 'Use AAAA-MM'),
 });
 
+/** Busca na Carteira: texto livre (loja, pessoa, categoria, banco) + filtros. */
+export const searchQuery = z.object({
+  q: z.string().trim().max(80).default(''),
+  period: z.enum(['30d', '3m', '12m', 'tudo']).default('12m'),
+  kind: z.enum(['todas', 'saida', 'entrada']).default('todas'),
+  categoryId: z.string().optional(),
+});
+export type SearchQuery = z.infer<typeof searchQuery>;
+
 export const manualTransactionBody = z.object({
   description: z.string().trim().min(1, 'Diz o que foi'),
   amountInCents: z.number().int().positive('Valor precisa ser maior que zero'),
@@ -96,6 +105,14 @@ export type TransactionDTO = {
   accountName: string | null;
   isInternalTransfer: boolean;
   source: 'bank' | 'manual';
+};
+
+export type SearchResponse = {
+  transactions: TransactionDTO[];
+  /** Total achado (a lista vem cortada em 200). */
+  count: number;
+  outInCents: number;
+  inInCents: number;
 };
 
 /** kind "neutra" = "Não conta" (some do gasto e da renda). custom = criada pela pessoa. */

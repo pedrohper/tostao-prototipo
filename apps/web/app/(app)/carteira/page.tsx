@@ -5,6 +5,7 @@ import { currentMonth, dayLabel, money, monthName, shiftMonth, shortDate } from 
 import { BankIcon, ButtonLink, CardIcon } from '@/components/ui';
 import { Mascote } from '@/components/mascote';
 import { AutoCategorizeButton } from './auto-categorize-button';
+import { Chevron, Row, SearchBar } from './transaction-row';
 
 const FILTERS = { tudo: 'Tudo', saidas: 'Saídas', entradas: 'Entradas', pendentes: 'Sem categoria' } as const;
 type Filter = keyof typeof FILTERS;
@@ -43,6 +44,8 @@ export default async function CarteiraPage({ searchParams }: { searchParams: Pro
         <h1 className="font-display text-[34px] leading-[38px] font-extrabold">Carteira</h1>
         {summary.balanceInCents !== null && <span className="pb-1.5 text-[13px] font-semibold text-tinta-suave">{money(summary.balanceInCents)} em {bancos.length} {bancos.length === 1 ? 'conta' : 'contas'}</span>}
       </div>
+
+      <SearchBar />
 
       <div className="flex items-center justify-between rounded-full bg-papel-2 p-1">
         <Link href={q({ mes: shiftMonth(month, -1) })} aria-label="Mês anterior" className="flex h-9 w-9 items-center justify-center"><Chevron d="M15 18l-6-6 6-6" /></Link>
@@ -108,34 +111,5 @@ export default async function CarteiraPage({ searchParams }: { searchParams: Pro
         Anotar gasto
       </Link>
     </div>
-  );
-}
-
-function Chevron({ d }: { d: string }) {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg>;
-}
-
-function Row({ t, back }: { t: TransactionDTO; back: string }) {
-  const pending = !t.categoryId && !t.isInternalTransfer;
-  const sub = t.categoryId === 'nao-conta' ? `Não conta · ${t.accountName ?? 'anotado na mão'}`
-    : t.isInternalTransfer ? 'Entre suas contas · não conta como gasto'
-    : pending ? 'Sem categoria · toque pra categorizar'
-      : [t.categoryName, t.accountName ?? 'Anotado na mão'].filter(Boolean).join(' · ');
-  const icon = pending ? '?' : t.isInternalTransfer ? '⇄' : t.categoryEmoji ?? (t.amountInCents > 0 ? '↓' : '↑');
-  const bg = pending ? undefined : t.isInternalTransfer ? undefined : t.categoryColor ?? undefined;
-  return (
-    <Link href={`/carteira/${t.id}?voltar=${encodeURIComponent(back)}`}
-      className={`flex min-h-[58px] items-center gap-3 border-b border-linha py-2 text-tinta no-underline last:border-b-0 ${t.isInternalTransfer ? 'opacity-60' : ''}`}>
-      <div className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl text-lg font-bold text-[#1E1B18] ${pending ? 'bg-rosa' : bg ? '' : 'bg-papel-2'}`} style={bg ? { background: bg } : undefined} aria-hidden="true">
-        {icon}
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate text-[15px] font-semibold">{t.description}</span>
-        <span className={`truncate text-xs ${pending ? 'font-semibold text-laranja-texto' : 'text-tinta-suave'}`}>{sub}</span>
-      </div>
-      <span className={`shrink-0 text-[15px] tabular-nums ${t.amountInCents > 0 ? 'font-bold text-verde-texto' : 'font-semibold'}`}>
-        {t.amountInCents > 0 ? '+ ' : ''}{money(Math.abs(t.amountInCents))}
-      </span>
-    </Link>
   );
 }

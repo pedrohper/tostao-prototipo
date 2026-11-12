@@ -24,6 +24,7 @@ import { GetTransactionUseCase } from './get-transaction.js';
 import { ListSubscriptionsUseCase } from './list-subscriptions.js';
 import { GetBudgetsUseCase, SetBudgetUseCase } from './budgets.js';
 import { AutoCategorizeUseCase } from './auto-categorize.js';
+import { SearchTransactionsUseCase } from './search-transactions.js';
 import { ForecastUseCase, SaveFinancialPlanUseCase, SuggestIncomeUseCase } from './financial-plan.js';
 
 export type Deps = { repos: Repositories; bank: BankGateway; ai?: AiGateway; chatDailyLimit?: number };
@@ -45,6 +46,7 @@ export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), chatDailyL
     categorizeTransaction: new CategorizeTransactionUseCase(repos),
     createManualTransaction: new CreateManualTransactionUseCase(repos),
     listTransactions: new ListTransactionsUseCase(repos),
+    searchTransactions: new SearchTransactionsUseCase(repos),
     getMonthSummary: new GetMonthSummaryUseCase(repos),
     getTransaction: new GetTransactionUseCase(repos),
     listSubscriptions: new ListSubscriptionsUseCase(repos),
