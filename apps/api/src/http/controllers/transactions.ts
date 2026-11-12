@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { categorizeBody, manualTransactionBody, monthQuery, type CategoryDTO, type MonthSummaryResponse } from '@tostao/contracts';
+import { categorizeBody, manualTransactionBody, monthQuery, type CategoryDTO, type MonthSummaryResponse, type SubscriptionsResponse } from '@tostao/contracts';
 import type { UseCases } from '../../use-cases/factories.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
 import { presentTransaction } from '../presenters.js';
@@ -14,6 +14,14 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
   app.get('/summary', { onRequest: verifyJwt }, async (request) => {
     const { month } = monthQuery.parse(request.query);
     return (await uc.getMonthSummary.execute({ userId: request.user.sub, month })) satisfies MonthSummaryResponse;
+  });
+
+  app.get('/subscriptions', { onRequest: verifyJwt }, async (request) => {
+    const r = await uc.listSubscriptions.execute({ userId: request.user.sub });
+    return {
+      ...r,
+      subscriptions: r.subscriptions.map((s) => ({ ...s, lastChargedAt: s.lastChargedAt.toISOString(), nextChargeAt: s.nextChargeAt.toISOString() })),
+    } satisfies SubscriptionsResponse;
   });
 
   app.get('/transactions', { onRequest: verifyJwt }, async (request) => {

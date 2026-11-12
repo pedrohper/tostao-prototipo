@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { MonthSummaryResponse, ProfileResponse } from '@tostao/contracts';
+import type { MonthSummaryResponse, ProfileResponse, SubscriptionsResponse } from '@tostao/contracts';
 import { api } from '@/lib/api';
 import { currentMonth, money, monthName } from '@/lib/format';
 import { Mascote } from '@/components/mascote';
@@ -7,10 +7,12 @@ import { ButtonLink, Card } from '@/components/ui';
 
 export default async function InicioPage() {
   const month = currentMonth();
-  const [me, s] = await Promise.all([
+  const [me, s, subs] = await Promise.all([
     api<ProfileResponse>('/me'),
     api<MonthSummaryResponse>(`/summary?month=${month}`),
+    api<SubscriptionsResponse>('/subscriptions').catch(() => null),
   ]);
+  const activeSubs = subs?.subscriptions.filter((x) => x.active).length ?? 0;
   const firstName = me.name.split(' ')[0];
   const mes = monthName(month);
   const top = s.byCategory.filter((c) => c.categoryId);
@@ -67,6 +69,13 @@ export default async function InicioPage() {
                 <Link href="/aprender/m1-l2" className="self-start rounded-full bg-tinta px-4 py-2 text-sm font-semibold text-papel no-underline">Bora ver</Link>
               </div>
             </div>
+          )}
+
+          {activeSubs > 0 && subs && (
+            <Link href="/assinaturas" className="flex items-center gap-3 rounded-[20px] bg-amarelo-claro p-3 no-underline">
+              <Mascote pose="investigando" size={64} alt="Tostão investigando com uma lupa" />
+              <p className="text-[15px] leading-snug"><b>{activeSubs} {activeSubs === 1 ? 'assinatura cobra' : 'assinaturas cobram'} todo mês</b>: {money(subs.monthlyInCents)}, ou {money(subs.yearlyInCents)} no ano. Toca pra ver o raio-X.</p>
+            </Link>
           )}
 
           <Card>

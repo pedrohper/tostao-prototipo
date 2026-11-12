@@ -13,6 +13,7 @@ import { CreateManualTransactionUseCase } from './create-manual-transaction.js';
 import { ListTransactionsUseCase } from './list-transactions.js';
 import { GetMonthSummaryUseCase } from './get-month-summary.js';
 import { GetTransactionUseCase } from './get-transaction.js';
+import { ListSubscriptionsUseCase } from './list-subscriptions.js';
 
 export type Deps = { repos: Repositories; bank: BankGateway };
 
@@ -31,6 +32,7 @@ export function makeUseCases({ repos, bank }: Deps) {
     listTransactions: new ListTransactionsUseCase(repos),
     getMonthSummary: new GetMonthSummaryUseCase(repos),
     getTransaction: new GetTransactionUseCase(repos),
+    listSubscriptions: new ListSubscriptionsUseCase(repos),
     listCategories: { execute: async () => ({ categories: await repos.categories.list() }) },
   };
 }

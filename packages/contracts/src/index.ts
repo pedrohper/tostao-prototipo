@@ -94,3 +94,14 @@ export type MonthSummaryResponse = {
 };
 
 export type TransactionDetailResponse = { transaction: TransactionDTO; rulePattern: string };
+
+// ---------- Assinaturas ----------
+export type SubscriptionDTO = {
+  name: string;
+  amountInCents: number; // positivo: quanto custa por mês
+  chargeCount: number;
+  lastChargedAt: string;
+  nextChargeAt: string;
+  active: boolean; // false = não cobrou no último ciclo
+};
+export type SubscriptionsResponse = { subscriptions: SubscriptionDTO[]; monthlyInCents: number; yearlyInCents: number };
