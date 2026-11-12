@@ -101,7 +101,7 @@ export function RendaForm({ plan, suggestions, banks }: { plan: FinancialPlan | 
         </label>
         <div className="grid grid-cols-[110px_minmax(0,1fr)] items-end gap-2.5">
           <label className="flex flex-col gap-[5px]">
-            <span className="text-[13px] font-semibold">{advanceOn ? 'E o resto?' : 'Que dia cai?'}</span>
+            <span className="text-[13px] font-semibold">Dia do salário</span>
             <input type="number" min={1} max={31} value={payday} onChange={(e) => setPayday(e.target.value)} className={field} />
           </label>
           <div className="flex flex-col gap-[5px]">
@@ -129,7 +129,7 @@ export function RendaForm({ plan, suggestions, banks }: { plan: FinancialPlan | 
               </label>
             </div>
           )}
-          {advanceOn && <span className="text-xs leading-[17px] text-tinta-suave">O valor lá em cima é o total do mês. O resto cai no outro dia.</span>}
+          {advanceOn && <span className="text-xs leading-[17px] text-tinta-suave">O valor lá em cima é o total do mês: o adiantamento mais o que cai no dia do salário.</span>}
         </div>
         <div className="flex flex-col gap-2 rounded-2xl border border-linha bg-cartao px-3.5 py-3">
           <span className="text-[15px] font-semibold">VR e VA <span className="font-normal text-tinta-suave">(se tiver)</span></span>

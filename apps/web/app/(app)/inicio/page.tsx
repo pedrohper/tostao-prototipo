@@ -56,9 +56,9 @@ export default async function InicioPage() {
         <Card className="flex flex-col items-center gap-3 py-8 text-center">
           <Mascote pose="dormindo" size={180} alt="Tostão dormindo" />
           <h2 className="font-display text-2xl font-extrabold">Nada por aqui ainda</h2>
-          <p className="max-w-[300px] text-[15px] text-tinta-suave">Conecta um banco que eu acordo e organizo seus gastos sozinho. Ou anota um gasto na mão, também vale.</p>
+          <p className="max-w-[300px] text-[15px] text-tinta-suave">Conecta o banco ou importa o extrato do app dele, que eu acordo e organizo seus gastos. Ou anota um gasto na mão, também vale.</p>
           <div className="mt-2 flex w-full flex-col gap-2.5">
-            <ButtonLink href="/conectar">Conectar meu banco</ButtonLink>
+            <ButtonLink href="/conectar">Trazer meus gastos</ButtonLink>
             <ButtonLink href="/anotar" variant="outline">Anotar um gasto</ButtonLink>
           </div>
         </Card>

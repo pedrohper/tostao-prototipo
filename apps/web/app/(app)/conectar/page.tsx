@@ -5,6 +5,12 @@ import { Mascote } from '@/components/mascote';
 import { Card } from '@/components/ui';
 import { ConnectPanel, DisconnectButton, SyncButton } from './forms';
 
+const CAMINHOS = [
+  { href: '#banco', emoji: '🔌', bg: 'bg-menta-clara', t: 'Conectar o banco', tag: 'automático', d: 'Pelo Open Finance. Atualiza sozinho todo dia.' },
+  { href: '/importar', emoji: '📄', bg: 'bg-azul', t: 'Importar extrato', tag: 'qualquer banco', d: 'Baixa o arquivo (OFX ou CSV) no app do banco e manda aqui. Uns 3 minutos.' },
+  { href: '/anotar', emoji: '✍️', bg: 'bg-amarelo-claro', t: 'Anotar na mão', tag: null, d: 'Começa anotando o que gastou hoje. Sem banco nenhum.' },
+] as const;
+
 export default async function ConectarPage({ searchParams }: { searchParams: Promise<{ novo?: string }> }) {
   const { novo } = await searchParams;
   const [me, mode] = await Promise.all([
@@ -26,11 +32,28 @@ export default async function ConectarPage({ searchParams }: { searchParams: Pro
           <div className="h-full w-3/4 rounded-full bg-tinta" />
         </div>
       )}
-      <div className="flex justify-center"><Mascote pose="conectando" size={176} alt="Tostão ligando dois cabos" /></div>
-      <div className="flex flex-col gap-2">
-        <h1 className="font-display text-[28px] leading-[33px] font-extrabold">Conecte seu banco em 1 minuto</h1>
-        <p className="text-[15px] leading-[22px] text-tinta-suave">É assim que eu descubro pra onde a sua grana vai, sem você digitar nada.</p>
+      <div className="flex items-center gap-2">
+        <Mascote pose="conectando" size={96} alt="Tostão ligando dois cabos" />
+        <div className="flex flex-col gap-1">
+          <h1 className="font-display text-[26px] leading-[30px] font-extrabold">Como você quer trazer seus gastos?</h1>
+          <p className="text-[14px] leading-[20px] text-tinta-suave">Escolhe um jeito. Dá pra misturar depois.</p>
+        </div>
       </div>
+
+      <div className="flex flex-col gap-2.5">
+        {CAMINHOS.map((c) => (
+          <Link key={c.href} href={c.href} className="flex items-center gap-3 rounded-2xl border border-linha bg-cartao p-3.5 text-tinta no-underline">
+            <span aria-hidden="true" className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl ${c.bg}`}>{c.emoji}</span>
+            <span className="flex grow flex-col gap-0.5">
+              <span className="flex flex-wrap items-center gap-x-2 text-[15px] font-bold">{c.t}{c.tag && <span className="rounded-full bg-amarelo-claro px-2 py-0.5 text-[11px] font-semibold text-tinta">{c.tag}</span>}</span>
+              <span className="text-[13px] leading-[18px] text-tinta-suave">{c.d}</span>
+            </span>
+            <span className="text-tinta-suave" aria-hidden="true">›</span>
+          </Link>
+        ))}
+      </div>
+
+      <h2 id="banco" className="scroll-mt-6 pt-2 font-display text-xl font-extrabold">Conectar o banco</h2>
 
       <div className="flex flex-col gap-3.5">
         {pontos.map((p) => (
@@ -74,11 +97,6 @@ export default async function ConectarPage({ searchParams }: { searchParams: Pro
       </div>
 
       {!mode.down && <ConnectPanel widget={widget} />}
-
-      <Link href="/importar" className="flex items-center justify-between rounded-2xl border border-linha bg-cartao p-4 text-tinta no-underline">
-        <span><b>Importar extrato</b><span className="block text-[13px] text-tinta-suave">OFX ou CSV baixado do app do banco. Funciona com qualquer banco.</span></span>
-        <span className="text-tinta-suave">›</span>
-      </Link>
 
       {me.connections.length > 0 && (
         <section className="flex flex-col gap-2">
