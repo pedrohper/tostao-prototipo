@@ -10,6 +10,8 @@ export interface UsersRepository {
   create(data: NewUser): Promise<User>;
   count(): Promise<number>;
   updatePassword(id: string, passwordHash: string): Promise<void>;
+  /** Apaga a pessoa e, em cascata, tudo que é dela (LGPD: direito de eliminação). */
+  delete(id: string): Promise<void>;
 }
 
 export interface BankConnectionsRepository {

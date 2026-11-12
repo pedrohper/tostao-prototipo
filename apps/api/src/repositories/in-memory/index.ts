@@ -22,6 +22,7 @@ export class InMemoryUsersRepository implements UsersRepository {
     const u = this.items.find((x) => x.id === id);
     if (u) u.passwordHash = passwordHash;
   }
+  async delete(id: string) { this.items = this.items.filter((u) => u.id !== id); }
 }
 
 export class InMemoryBankConnectionsRepository implements BankConnectionsRepository {

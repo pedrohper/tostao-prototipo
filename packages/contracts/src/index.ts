@@ -25,6 +25,11 @@ export const resetPasswordBody = z.object({
   password: z.string().min(8, 'A senha precisa de pelo menos 8 caracteres'),
 });
 
+// Apagar a conta: confirma com a senha.
+export const deleteAccountBody = z.object({
+  password: z.string().min(1, 'Digite sua senha pra confirmar'),
+});
+
 export type InviteDTO = { code: string; createdAt: string; usedAt: string | null; usedBy: string | null };
 export type InvitesResponse = { invites: InviteDTO[] };
 
