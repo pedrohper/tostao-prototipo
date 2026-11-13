@@ -169,6 +169,29 @@ export class GoalDepositUseCase {
 /** Parcela "3/10" na descrição da compra no cartão. */
 const INSTALLMENT = /(?:^|\D)(\d{1,2})\s*\/\s*(\d{1,2})(?:\D|$)/;
 
+export type PendingInstallment = { description: string; accountId: string; n: number; total: number; month: string; amount: number };
+/** Compras parceladas no cartão que ainda têm parcela pra cair (fica só a ocorrência mais recente de cada uma). */
+export function pendingInstallments(txs: Transaction[], cardIds: Set<string>): PendingInstallment[] {
+  const latest = new Map<string, PendingInstallment>();
+  for (const t of txs) {
+    if (t.amountInCents >= 0 || t.isInternalTransfer || !t.accountId || !cardIds.has(t.accountId)) continue;
+    const m = INSTALLMENT.exec(t.description);
+    if (!m) continue;
+    const n = Number(m[1]), total = Number(m[2]);
+    if (total < 2 || n < 1 || n >= total || total > 48) continue;
+    const key = `${patternFromDescription(t.description)}|${t.amountInCents}`;
+    const month = monthOf(t.occurredAt);
+    const prev = latest.get(key);
+    if (!prev || monthsBetween(prev.month, month) > 0 || (month === prev.month && n > prev.n)) {
+      latest.set(key, { description: t.description, accountId: t.accountId, n, total, month, amount: -t.amountInCents });
+    }
+  }
+  return [...latest.values()];
+}
+/** Quanto das parcelas cai num mês. */
+export const installmentsInMonth = (list: PendingInstallment[], month: string) =>
+  list.filter((i) => i.n + monthsBetween(i.month, month) <= i.total).reduce((s, i) => s + i.amount, 0);
+
 /**
  * Previsão dos próximos 3 meses:
  * renda do plano − contas fixas − assinaturas − parcelas que ainda vão cair − dia a dia (média de 3 meses
@@ -191,25 +214,9 @@ export class ForecastUseCase {
       summary.execute({ userId, month: cur }),
     ]);
 
-    // Parcelas: fica só a ocorrência mais recente de cada compra parcelada.
     const cards = new Set(accounts.filter((a) => a.type === 'CREDIT' && !a.hidden).map((a) => a.id));
-    const latest = new Map<string, { n: number; total: number; month: string; amount: number }>();
-    for (const t of recent) {
-      if (t.amountInCents >= 0 || t.isInternalTransfer || !t.accountId || !cards.has(t.accountId)) continue;
-      const m = INSTALLMENT.exec(t.description);
-      if (!m) continue;
-      const n = Number(m[1]), total = Number(m[2]);
-      if (total < 2 || n < 1 || n >= total || total > 48) continue;
-      const key = `${patternFromDescription(t.description)}|${t.amountInCents}`;
-      const month = monthOf(t.occurredAt);
-      const prev = latest.get(key);
-      if (!prev || monthsBetween(prev.month, month) > 0 || (month === prev.month && n > prev.n)) latest.set(key, { n, total, month, amount: -t.amountInCents });
-    }
-    const installmentsIn = (month: string) => {
-      let sum = 0;
-      for (const i of latest.values()) if (i.n + monthsBetween(i.month, month) <= i.total) sum += i.amount;
-      return sum;
-    };
+    const pending = pendingInstallments(recent, cards);
+    const installmentsIn = (month: string) => installmentsInMonth(pending, month);
 
     const income = planIncome(plan);
     const fixed = planFixed(plan);

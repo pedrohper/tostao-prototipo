@@ -1,11 +1,13 @@
 import { Icone } from '@/components/icone';
 import Link from 'next/link';
-import type { MonthSummaryResponse, TransactionDTO } from '@tostao/contracts';
+import type { ForecastResponse, MonthSummaryResponse, TransactionDTO } from '@tostao/contracts';
 import { api } from '@/lib/api';
 import { currentMonth, dayLabel, money, monthName, shiftMonth, shortDate } from '@/lib/format';
 import { ButtonLink } from '@/components/ui';
 import { Mascote } from '@/components/mascote';
+import { Categorias } from '@/components/graficos';
 import { AutoCategorizeButton } from './auto-categorize-button';
+import { Simulacao } from './simulacao';
 import { Chevron, Row, SearchBar } from './transaction-row';
 
 const FILTERS = { tudo: 'Tudo', saidas: 'Saídas', entradas: 'Entradas', pendentes: 'Sem categoria' } as const;
@@ -15,6 +17,13 @@ export default async function CarteiraPage({ searchParams }: { searchParams: Pro
   const sp = await searchParams;
   const month = /^\d{4}-\d{2}$/.test(sp.mes ?? '') ? sp.mes! : currentMonth();
   const filter: Filter = sp.filtro && sp.filtro in FILTERS ? (sp.filtro as Filter) : 'tudo';
+  const hoje = currentMonth();
+  // Mês que ainda não chegou: simulação com a previsão (até 3 meses pra frente).
+  if (month > hoje) {
+    const futuro = month > shiftMonth(hoje, 3) ? shiftMonth(hoje, 3) : month;
+    const forecast = await api<ForecastResponse>('/forecast');
+    return <Simulacao month={futuro} hoje={hoje} forecast={forecast} />;
+  }
 
   const [{ transactions }, summary] = await Promise.all([
     api<{ transactions: TransactionDTO[] }>(`/transactions?month=${month}`),
@@ -33,7 +42,6 @@ export default async function CarteiraPage({ searchParams }: { searchParams: Pro
     groups.set(k, [...(groups.get(k) ?? []), t]);
   }
   const q = (p: Record<string, string>) => `/carteira?${new URLSearchParams({ mes: month, filtro: filter, ...p })}`;
-  const isCurrent = month >= currentMonth();
   const mesTitulo = `${monthName(month)} ${month.slice(0, 4)}`;
   const bancos = summary.accounts.filter((a) => a.type === 'BANK');
   // Contas primeiro, cartões depois (como no design)
@@ -51,9 +59,7 @@ export default async function CarteiraPage({ searchParams }: { searchParams: Pro
       <div className="flex items-center justify-between rounded-full bg-papel-2 p-1">
         <Link href={q({ mes: shiftMonth(month, -1) })} aria-label="Mês anterior" className="flex h-9 w-9 items-center justify-center"><Chevron d="M15 18l-6-6 6-6" /></Link>
         <span className="text-[15px] font-bold capitalize">{mesTitulo}</span>
-        {isCurrent
-          ? <span className="flex h-9 w-9 items-center justify-center text-linha" aria-hidden="true"><Chevron d="M9 18l6-6-6-6" /></span>
-          : <Link href={q({ mes: shiftMonth(month, 1) })} aria-label="Próximo mês" className="flex h-9 w-9 items-center justify-center"><Chevron d="M9 18l6-6-6-6" /></Link>}
+        <Link href={q({ mes: shiftMonth(month, 1) })} aria-label={month === hoje ? 'Simular o mês que vem' : 'Próximo mês'} className="flex h-9 w-9 items-center justify-center"><Chevron d="M9 18l6-6-6-6" /></Link>
       </div>
 
       {contas.length > 0 && (
@@ -61,23 +67,33 @@ export default async function CarteiraPage({ searchParams }: { searchParams: Pro
           {contas.map((a) => {
             const card = a.type === 'CREDIT';
             return (
-              <div key={a.id} className={`flex w-[124px] shrink-0 flex-col gap-0.5 rounded-[14px] border px-3 py-2.5 ${card ? 'border-[#F5CDB8] bg-[#FFF4EE] dark:border-[#5A3526] dark:bg-[#33241D]' : 'border-linha bg-cartao'}`}>
+              <Link key={a.id} href={`/carteira/conta/${a.id}?mes=${month}`} className={`flex w-[124px] shrink-0 flex-col gap-0.5 rounded-[14px] border px-3 py-2.5 text-tinta no-underline ${card ? 'border-[#F5CDB8] bg-[#FFF4EE] dark:border-[#5A3526] dark:bg-[#33241D]' : 'border-linha bg-cartao'}`}>
                 <span className="flex min-w-0 items-center gap-1.5 text-xs font-semibold text-tinta-suave">
                   <Icone src={card ? 'ui/cartao' : 'ui/banco'} size={18} />
                   <span className="truncate">{a.name}</span>
                 </span>
                 <span className="text-[15px] font-bold tabular-nums">{money(card ? Math.max(0, -a.balanceInCents) : a.balanceInCents)}</span>
-                <span className="text-[11px] font-semibold text-tinta-suave">{card ? (a.dueDate ? `Fatura · vence ${shortDate(a.dueDate)}` : 'Fatura atual') : 'Conta'}</span>
-              </div>
+                <span className="text-[11px] font-semibold text-tinta-suave">{card ? (a.dueDate ? `Fatura · vence ${shortDate(a.dueDate)}` : 'Fatura atual') : 'Conta'} ›</span>
+              </Link>
             );
           })}
         </div>
       )}
 
-      {summary.hiddenAccounts.length > 0 && (
-        <Link href="/perfil" className="-mt-2 text-[13px] text-tinta-suave">
-          {summary.hiddenAccounts.length} {summary.hiddenAccounts.length === 1 ? 'conta oculta' : 'contas ocultas'} · mostrar no Perfil
-        </Link>
+      {(summary.outcomeInCents > 0 || summary.incomeInCents > 0) && (
+        <section className="flex flex-col gap-2.5 rounded-2xl border border-linha bg-cartao p-3.5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-col">
+              <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">Saiu em {monthName(month)}</span>
+              <span className="font-display text-[26px] leading-8 font-extrabold tabular-nums">{money(summary.outcomeInCents)}</span>
+            </div>
+            <div className="flex flex-col items-end">
+              <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">Entrou</span>
+              <span className="font-display text-[22px] leading-8 font-extrabold text-verde-texto tabular-nums">{money(summary.incomeInCents)}</span>
+            </div>
+          </div>
+          <Categorias items={summary.byCategory} max={4} />
+        </section>
       )}
 
       <div className="-mx-5 flex gap-2 overflow-x-auto px-5">

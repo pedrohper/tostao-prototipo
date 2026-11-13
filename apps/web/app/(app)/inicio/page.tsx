@@ -212,7 +212,7 @@ export default async function InicioPage() {
                   const fatura = Math.max(0, -c.balanceInCents);
                   const uso = c.creditLimitInCents ? Math.min(100, (fatura / c.creditLimitInCents) * 100) : null;
                   return (
-                    <Link key={c.id} href="/carteira" className="flex min-w-0 flex-col gap-1 rounded-2xl border border-linha bg-cartao p-3 text-tinta no-underline">
+                    <Link key={c.id} href={`/carteira/conta/${c.id}`} className="flex min-w-0 flex-col gap-1 rounded-2xl border border-linha bg-cartao p-3 text-tinta no-underline">
                       <span className="flex min-w-0 items-center gap-1.5 text-[13px] font-semibold text-tinta-suave"><Icone src="ui/cartao" size={18} /><span className="truncate">{c.name}</span></span>
                       <span className="text-[17px] font-bold tabular-nums">{money(fatura)}</span>
                       {uso !== null && (

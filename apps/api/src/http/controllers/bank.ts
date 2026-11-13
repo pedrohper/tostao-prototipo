@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { connectBankBody, importStatementBody, type ImportResponse, type ConnectTokenResponse, type DisconnectResponse, type SyncResponse } from '@tostao/contracts';
+import { connectBankBody, importStatementBody, monthQuery, type AccountDetailResponse, type ImportResponse, type ConnectTokenResponse, type DisconnectResponse, type SyncResponse } from '@tostao/contracts';
 import type { UseCases } from '../../use-cases/factories.js';
 import type { Repositories } from '../../repositories/types.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
@@ -27,6 +27,13 @@ export function bankRoutes(app: FastifyInstance, uc: UseCases, repos: Repositori
   app.delete('/connections/:id', { onRequest: verifyJwt }, async (request) => {
     const { id } = z.object({ id: z.string() }).parse(request.params);
     return (await uc.disconnectBank.execute({ userId: request.user.sub, connectionId: id })) satisfies DisconnectResponse;
+  });
+
+  // Detalhe de uma conta ou cartão no mês
+  app.get('/accounts/:id', { onRequest: verifyJwt }, async (request) => {
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const { month } = monthQuery.parse(request.query);
+    return (await uc.accountDetail.execute({ userId: request.user.sub, accountId: id, month })) satisfies AccountDetailResponse;
   });
 
   // Ocultar (ou mostrar de novo) uma conta, ex.: poupança que você não usa
