@@ -251,12 +251,7 @@ export default async function InicioPage() {
       {missions && <SomDasMissoes day={new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10)} done={missions.missions.filter((m) => m.done).length} streak={missions.streakDays} />}
       <header className="flex items-end justify-between">
         <h1 className="font-display text-[34px] leading-[38px] font-extrabold">Fala, {firstName}</h1>
-        <div className="flex items-center gap-1.5">
-          <Link href="/aprender" className="text-tinta no-underline"><StreakChip days={missions?.streakDays ?? progress.streakDays} /></Link>
-          <Link href="/perfil" aria-label="Abrir seu perfil" className="flex h-12 w-12 items-center justify-center rounded-full bg-rosa">
-            <Mascote pose="avatar" size={38} alt="" />
-          </Link>
-        </div>
+        <Link href="/aprender" className="pb-1 text-tinta no-underline"><StreakChip days={missions?.streakDays ?? progress.streakDays} /></Link>
       </header>
 
       {broken.length > 0 && (
