@@ -16,6 +16,8 @@ export type Subscription = {
   installmentsLeft: number | null;
   /** Onde cobrou da última vez (cartão ou conta). */
   accountId: string | null;
+  /** Mesmo serviço cobrando em dobro (ex.: dois Prime ativos): nome da outra cobrança. */
+  duplicateOf: string | null;
 };
 
 // Parcela no fim/meio da descrição: "5/12", "PARC 03/10", "PARCELA 2 DE 6"
@@ -101,10 +103,24 @@ export function detectSubscriptions(transactions: Transaction[], now: Date): Sub
         active: nextChargeAt.getTime() >= now.getTime() - 3 * DAY && installmentsLeft !== 0,
         installmentsLeft,
         accountId: last.accountId,
+        duplicateOf: null,
       });
     }
   }
-  return found.sort((a, b) => Number(b.active) - Number(a.active) || b.amountInCents - a.amountInCents);
+  return markDuplicates(found).sort((a, b) => Number(b.active) - Number(a.active) || b.amountInCents - a.amountInCents);
+}
+
+/**
+ * O mesmo serviço ativo duas vezes ao mesmo tempo (ex.: dois Prime anuais parcelados no mesmo cartão):
+ * costuma ser cobrança em dobro de verdade. Não esconde nenhuma, marca as duas pra pessoa conferir.
+ */
+function markDuplicates(subs: Subscription[]): Subscription[] {
+  return subs.map((s) => {
+    if (!s.active) return s;
+    const base = s.key.split('#')[0];
+    const twin = subs.find((o) => o !== s && o.active && o.key.split('#')[0] === base);
+    return twin ? { ...s, duplicateOf: twin.name } : s;
+  });
 }
 
 /** Agrupa valores parecidos (até 25% da mediana do grupo), mantendo a ordem por data. */

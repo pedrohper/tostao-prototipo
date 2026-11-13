@@ -44,6 +44,7 @@ export default async function AssinaturasPage() {
                 <div className="flex min-w-0 flex-col items-start">
                   <span className="font-semibold [overflow-wrap:anywhere]">{s.name}</span>
                   <span className="text-[13px] text-tinta-suave">Próxima por volta de {day(s.nextChargeAt)} · {s.installmentsLeft !== null ? `parcelado, ${s.installmentsLeft === 1 ? 'falta 1' : `faltam ${s.installmentsLeft}`}` : `já cobrou ${s.chargeCount}x`}</span>
+                  {s.duplicateOf && <span className="mt-1 rounded-full bg-rosa px-2 py-0.5 text-[12px] font-semibold text-tinta">Cobrança em dobro? Também tem “{s.duplicateOf}”</span>}
                   <IgnoreButton subscriptionKey={s.key} ignored={false} />
                 </div>
                 <span className="shrink-0 font-bold">{money(s.amountInCents)}</span>

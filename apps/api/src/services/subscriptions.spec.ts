@@ -81,3 +81,17 @@ describe('detectSubscriptions', () => {
       .toEqual([['Amazon Prime Canais', 2690, true, null]]);
   });
 });
+
+describe('assinatura em dobro', () => {
+  it('dois Prime ativos ficam os dois, marcados como cobrança em dobro', () => {
+    const now = new Date('2026-11-13T12:00:00Z');
+    const mk = (d: string, desc: string, v: number) => ({ id: d + desc, userId: 'u', accountId: 'c', amountInCents: -v, description: desc, occurredAt: new Date(d), categoryId: null, isInternalTransfer: false, externalId: null }) as never;
+    const subs = detectSubscriptions([
+      mk('2026-08-05T12:00:00Z', 'AMAZON PRIME BR 5/12', 1390), mk('2026-09-05T12:00:00Z', 'AMAZON PRIME BR 6/12', 1390), mk('2026-10-05T12:00:00Z', 'AMAZON PRIME BR 7/12', 1390), mk('2026-11-05T12:00:00Z', 'AMAZON PRIME BR 8/12', 1390),
+      mk('2026-08-15T12:00:00Z', 'Amazon Prime 2/12', 1390), mk('2026-09-15T12:00:00Z', 'Amazon Prime 3/12', 1390), mk('2026-10-15T12:00:00Z', 'Amazon Prime 4/12', 1390),
+    ], now);
+    const prime = subs.filter((s) => s.key.startsWith('AMAZON PRIME'));
+    expect(prime).toHaveLength(2);
+    expect(prime.every((s) => s.duplicateOf)).toBe(true);
+  });
+});
