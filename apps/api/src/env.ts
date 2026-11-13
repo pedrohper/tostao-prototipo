@@ -13,7 +13,8 @@ const schema = z
     BANK_GATEWAY: z.enum(['fake', 'pluggy']).default('fake'),
     PLUGGY_CLIENT_ID: z.string().default(''),
     PLUGGY_CLIENT_SECRET: z.string().default(''),
-    SYNC_CRON: z.string().default('0 6 * * *'),
+    // O Pluggy atualiza cada banco uma vez por dia, em horários diferentes: de 3 em 3 horas pega o mesmo dia.
+    SYNC_CRON: z.string().default('0 6-23/3 * * *'),
     DEEPSEEK_API_KEY: z.string().default(''),
     DEEPSEEK_MODEL: z.string().default('deepseek-chat'),
     CHAT_DAILY_LIMIT: z.coerce.number().int().positive().default(40),

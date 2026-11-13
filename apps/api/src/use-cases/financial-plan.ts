@@ -76,6 +76,25 @@ export class SaveFinancialPlanUseCase {
   }
 }
 
+/** Descrição que o próprio banco usa pra salário: "CREDITO DE SALARIO", "TRANSF SALDO C/SAL P/CC" (portabilidade), folha. */
+const SALARY_SIGNAL = /SALARIO|C\/SAL\b|FOLHA|PROVENTO/;
+
+/**
+ * Quanto entra por mês desse padrão. O mesmo nome pode juntar coisas diferentes
+ * (adiantamento ~R$ 1.000 no dia 15, resto ~R$ 1.200 no fim do mês, um acerto de R$ 3.700 uma vez só):
+ * separa por faixa de valor (12%), soma a mediana de cada faixa que se repete em 2+ meses e ignora o que veio uma vez.
+ */
+export function recurringMonthly(list: Transaction[], months: number): number {
+  const bands: Transaction[][] = [];
+  for (const t of [...list].sort((a, b) => a.amountInCents - b.amountInCents)) {
+    const band = bands.find((b) => { const m = medianOf(b.map((x) => x.amountInCents)); return Math.abs(t.amountInCents - m) <= m * 0.12; });
+    if (band) band.push(t); else bands.push([t]);
+  }
+  const recurring = bands.filter((b) => new Set(b.map((t) => monthOf(t.occurredAt))).size >= 2);
+  if (!recurring.length) return Math.round(list.reduce((s, t) => s + t.amountInCents, 0) / Math.max(1, months));
+  return recurring.reduce((s, b) => s + medianOf(b.map((t) => t.amountInCents)), 0);
+}
+
 /** Entradas que se repetem nos últimos meses: o onboarding mostra pra pessoa dizer o que é salário e o que é repasse. */
 export class SuggestIncomeUseCase {
   constructor(private readonly repos: Pick<Repositories, 'transactions' | 'accounts'>, private readonly now: () => Date = () => new Date()) {}
@@ -98,25 +117,28 @@ export class SuggestIncomeUseCase {
       if (key.length < 3) continue;
       groups.set(key, [...(groups.get(key) ?? []), t]);
     }
-    const suggestions: IncomeSuggestion[] = [];
+    const suggestions: (IncomeSuggestion & { signal: boolean })[] = [];
     for (const [pattern, list] of groups) {
       const total = list.reduce((s, t) => s + t.amountInCents, 0);
       const months = new Set(list.map((t) => monthOf(t.occurredAt))).size;
-      if (months < 2 && total < 50000) continue; // uma entrada pequena e solta não é renda recorrente
+      const signal = SALARY_SIGNAL.test(pattern);
+      // Uma entrada pequena e solta não é renda recorrente (a não ser que o banco diga que é salário).
+      if (months < 2 && total < 50000 && !signal) continue;
       list.sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
       const last = list[0]!;
       suggestions.push({
         pattern,
+        signal,
         sample: last.description,
         bank: last.accountId ? acc.get(last.accountId)?.name ?? null : null,
-        monthlyAvgInCents: Math.round(total / Math.max(1, months)),
+        monthlyAvgInCents: recurringMonthly(list, months),
         months,
         hits: list.slice(0, 6).map((t) => ({ date: t.occurredAt.toISOString(), amountInCents: t.amountInCents })),
         countsAsIncome: last.categoryId !== NEUTRAL_CATEGORY_ID,
       });
     }
-    suggestions.sort((a, b) => b.monthlyAvgInCents - a.monthlyAvgInCents);
-    return { suggestions: suggestions.slice(0, 6) };
+    suggestions.sort((a, b) => Number(b.signal) - Number(a.signal) || b.monthlyAvgInCents - a.monthlyAvgInCents);
+    return { suggestions: suggestions.slice(0, 6).map(({ signal: _, ...x }) => x) };
   }
 }
 
