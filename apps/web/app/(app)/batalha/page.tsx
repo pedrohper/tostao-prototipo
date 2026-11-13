@@ -17,7 +17,7 @@ export default async function BatalhaPage() {
   const titulo = status === 'vencida' ? 'Tigrinho derrotado!' : status === 'perdida' ? 'O Tigrinho levou essa' : '30 dias sem dar um centavo pro Tigrinho';
 
   return (
-    <div className="-mx-5 -mt-6 -mb-28 flex min-h-dvh flex-col gap-3.5 bg-amarelo-claro px-5 pt-6 pb-32 text-[#1E1B18] md:-mx-8 md:px-8">
+    <div className="-mx-5 -mt-6 -mb-28 flex min-h-dvh flex-col gap-3.5 bg-[#FFF1C7] px-5 pt-6 pb-32 text-[#1E1B18] md:-mx-8 md:px-8">
       {status === 'vencida' && b.urubu.status !== 'vencida' && <Confete />}
       <div className="flex items-center justify-between">
         <BackLink href="/aprender" />

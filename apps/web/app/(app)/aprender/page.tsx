@@ -39,7 +39,7 @@ export default async function AprenderPage() {
         <h1 className="font-display text-[34px] leading-[38px] font-extrabold">Aprender</h1>
         <div className="flex gap-1.5">
           <StreakChip days={missions?.streakDays ?? streakDays} />
-          <span className="flex items-center gap-1 rounded-full bg-amarelo px-2.5 py-1.5 text-sm font-bold text-[#1E1B18]"><Icone src="ui/xp" size={18} />{xp} XP</span>
+          <span className="flex items-center gap-1 rounded-full bg-amarelo px-2.5 py-1.5 text-sm font-bold text-tinta"><Icone src="ui/xp" size={18} />{xp} XP</span>
         </div>
       </div>
 
@@ -84,25 +84,25 @@ export default async function AprenderPage() {
       <section className="flex flex-col gap-2">
         <Eyebrow>Jogos da semana</Eyebrow>
         <div className="grid grid-cols-2 gap-2.5">
-          <Link href="/tribunal" className="flex flex-col gap-1 rounded-[18px] bg-azul p-3 text-[#1E1B18] no-underline">
+          <Link href="/tribunal" className="flex flex-col gap-1 rounded-[18px] bg-azul p-3 text-tinta no-underline">
             <Mascote pose="pensando" size={56} alt="" />
-            <span className="flex items-center gap-1 text-[11px] font-bold tracking-[0.08em] text-[#6B635A] uppercase"><Icone src="jogo/tribunal" size={18} />Tribunal</span>
+            <span className="flex items-center gap-1 text-[11px] font-bold tracking-[0.08em] text-tinta-suave uppercase"><Icone src="jogo/tribunal" size={18} />Tribunal</span>
             <span className="text-[15px] leading-[19px] font-bold">{tribunal?.case.title ?? 'O caso da semana'}</span>
-            <span className="text-xs text-[#6B635A]">{tribunal?.myVote != null ? 'Você já votou · ver veredito' : 'Vota e ganha +20 XP'}</span>
+            <span className="text-xs text-tinta-suave">{tribunal?.myVote != null ? 'Você já votou · ver veredito' : 'Vota e ganha +20 XP'}</span>
           </Link>
-          <Link href="/batalha" className="flex flex-col gap-1 rounded-[18px] bg-amarelo-claro p-3 text-[#1E1B18] no-underline">
+          <Link href="/batalha" className="flex flex-col gap-1 rounded-[18px] bg-amarelo-claro p-3 text-tinta no-underline">
             <Mascote pose="caramelo-bravo" size={56} alt="" />
-            <span className="flex items-center gap-1 text-[11px] font-bold tracking-[0.08em] text-[#6B635A] uppercase"><Icone src="jogo/batalha" size={18} />Batalha</span>
+            <span className="flex items-center gap-1 text-[11px] font-bold tracking-[0.08em] text-tinta-suave uppercase"><Icone src="jogo/batalha" size={18} />Batalha</span>
             <span className="text-[15px] leading-[19px] font-bold">{tig?.status === 'vencida' ? 'Tigrinho derrotado' : 'Contra o Tigrinho'}</span>
-            <span className="text-xs text-[#6B635A]">{batalhaLinha}</span>
+            <span className="text-xs text-tinta-suave">{batalhaLinha}</span>
           </Link>
         </div>
-        <Link href="/amigos" className="flex items-center gap-3 rounded-[18px] bg-menta-clara p-3 text-[#1E1B18] no-underline">
+        <Link href="/amigos" className="flex items-center gap-3 rounded-[18px] bg-menta-clara p-3 text-tinta no-underline">
           <Icone src="cat/role" size={44} />
           <span className="flex grow flex-col">
-            <span className="text-[11px] font-bold tracking-[0.08em] text-[#6B635A] uppercase">Desafio com amigos</span>
+            <span className="text-[11px] font-bold tracking-[0.08em] text-tinta-suave uppercase">Desafio com amigos</span>
             <span className="text-[15px] leading-[19px] font-bold">{friends && friends.ranking.length > 1 ? `Você tá em ${friends.ranking.findIndex((p) => p.me) + 1}º de ${friends.ranking.length} na semana` : 'Chama alguém pra disputar a semana'}</span>
-            <span className="text-xs text-[#6B635A]">Quem cumpre mais missões até domingo. Ninguém vê seu dinheiro.</span>
+            <span className="text-xs text-tinta-suave">Quem cumpre mais missões até domingo. Ninguém vê seu dinheiro.</span>
           </span>
         </Link>
       </section>

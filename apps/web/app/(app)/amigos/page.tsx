@@ -5,7 +5,7 @@ import { Icone } from '@/components/icone';
 import { BackLink, Eyebrow } from '@/components/ui';
 import { AdicionarAmigo, Compartilhar, Remover } from './client';
 
-const MEDALHA = ['bg-amarelo', 'bg-papel-2', 'bg-[#F5CDB8]'];
+const MEDALHA = ['bg-amarelo text-[#1E1B18]', 'bg-papel-2 text-tinta', 'bg-[#F5CDB8] text-[#1E1B18]'];
 
 export default async function AmigosPage() {
   const f = await api<FriendsResponse>('/friends');
@@ -28,7 +28,7 @@ export default async function AmigosPage() {
         <div className="flex flex-col rounded-2xl border border-linha bg-cartao px-3.5">
           {f.ranking.map((p, i) => (
             <div key={p.id} className={`flex min-h-[58px] items-center gap-3 border-b border-linha last:border-b-0 ${p.me ? 'font-bold' : ''}`}>
-              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold text-[#1E1B18] ${MEDALHA[i] ?? 'bg-papel-2'}`}>{i + 1}</span>
+              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${MEDALHA[i] ?? 'bg-papel-2 text-tinta'}`}>{i + 1}</span>
               <span className="flex min-w-0 grow flex-col">
                 <span className="truncate text-[15px]">{p.me ? `${p.name} (você)` : p.name}</span>
                 <span className="flex items-center gap-1 text-xs font-normal text-tinta-suave"><Icone src="ui/ofensiva" size={14} />{p.streakDays} {p.streakDays === 1 ? 'dia' : 'dias'} de ofensiva</span>
@@ -41,7 +41,7 @@ export default async function AmigosPage() {
         {sozinho && <p className="text-[13px] text-tinta-suave">Por enquanto é só você. Chama alguém pra ter com quem disputar.</p>}
       </section>
 
-      <section className="flex flex-col gap-3 rounded-2xl bg-amarelo-claro p-3.5 text-[#1E1B18]">
+      <section className="flex flex-col gap-3 rounded-2xl bg-amarelo-claro p-3.5 text-tinta">
         <div className="flex items-center justify-between gap-2">
           <span className="text-[13px] font-semibold">Seu código</span>
           <span className="font-mono text-[17px] font-bold tracking-wide">{f.code}</span>

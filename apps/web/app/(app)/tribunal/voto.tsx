@@ -41,7 +41,7 @@ export function Voto({ initial }: { initial: TribunalResponse }) {
       </div>
       <ErrorNote message={error} />
       {t.verdict ? (
-        <div className="flex flex-col gap-2 rounded-2xl bg-rosa px-3.5 py-3 text-[#1E1B18]">
+        <div className="flex flex-col gap-2 rounded-2xl bg-rosa px-3.5 py-3 text-tinta">
           <span className="text-[13px] font-bold">{t.verdict.title}</span>
           <p className="text-sm leading-5"><Rich text={t.verdict.text} /></p>
         </div>
