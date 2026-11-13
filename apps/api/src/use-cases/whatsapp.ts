@@ -3,6 +3,16 @@ import type { Repositories } from '../repositories/types.js';
 import type { WhatsAppGateway } from '../gateways/whatsapp-gateway.js';
 import { AppError } from '../domain/errors.js';
 import type { AskTostaoUseCase } from './ask-tostao.js';
+import type { CreateManualTransactionUseCase } from './create-manual-transaction.js';
+import type { AutoCategorizeUseCase } from './auto-categorize.js';
+import { parseExpense } from '../services/parse-expense.js';
+
+const brl = (cents: number) => (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+/** Data de hoje (ou de N dias atrás) em São Paulo, ao meio-dia, igual ao "Anotar" do app. */
+const spNoon = (now: Date, daysAgo: number) => {
+  const ymd = new Date(now.getTime() - daysAgo * 86_400_000).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+  return new Date(`${ymd}T12:00:00-03:00`);
+};
 
 const CODE_TTL = 15 * 60 * 1000;
 
@@ -40,7 +50,8 @@ export class WhatsAppLinkUseCase {
 /**
  * Mensagem que chegou no número do Tostão.
  * - Código válido: liga o número à conta.
- * - Número já ligado: responde com o mesmo chat do app (mesmo contexto e mesmo limite por dia).
+ * - Número já ligado e "gastei 25 no ifood": anota na hora (mesmo "Anotar" do app, categoria pelas regras ou pela IA).
+ * - Número já ligado, outra coisa: responde com o mesmo chat do app (mesmo contexto e mesmo limite por dia).
  * - Número desconhecido: explica como ligar. Nunca mostra dado de ninguém pra número não ligado.
  */
 export class HandleWhatsAppMessageUseCase {
@@ -51,6 +62,11 @@ export class HandleWhatsAppMessageUseCase {
     private readonly wa: WhatsAppGateway,
     private readonly ask: Pick<AskTostaoUseCase, 'execute'>,
     private readonly now: () => Date = () => new Date(),
+    private readonly record?: {
+      create: Pick<CreateManualTransactionUseCase, 'execute'>;
+      categorize?: Pick<AutoCategorizeUseCase, 'execute'>;
+      repos: Pick<Repositories, 'transactions' | 'categories'>;
+    },
   ) {}
 
   /**
@@ -78,6 +94,15 @@ export class HandleWhatsAppMessageUseCase {
       await reply('Oi! Eu sou o Tostão 🐷. Pra conversar comigo aqui, abre o app em Perfil > WhatsApp, gera um código e me manda. (Se mandou um código, ele pode ter vencido: gera outro.)');
       return 'desconhecido';
     }
+    const expense = this.record ? parseExpense(text) : null;
+    if (expense && this.record) {
+      try {
+        await reply(await this.recordExpense(link.userId, expense));
+      } catch (e) {
+        await reply(e instanceof AppError ? e.message : 'Não consegui anotar agora. Tenta de novo daqui a pouco, ou anota no app.');
+      }
+      return 'anotado';
+    }
     try {
       const r = await this.ask.execute({ userId: link.userId, message: text.slice(0, 1000), channel: 'whatsapp' });
       await reply(toWhatsApp(r.reply.content));
@@ -85,5 +110,19 @@ export class HandleWhatsAppMessageUseCase {
       await reply(e instanceof AppError ? e.message : 'Travei aqui. Tenta de novo daqui a pouco.');
     }
     return 'respondido';
+  }
+
+  private async recordExpense(userId: string, e: NonNullable<ReturnType<typeof parseExpense>>) {
+    const { create, categorize, repos } = this.record!;
+    const { transaction } = await create.execute({ userId, description: e.description, amountInCents: e.amountInCents, kind: e.kind, occurredAt: spNoon(this.now(), e.daysAgo) });
+    let categoryId = transaction.categoryId;
+    if (!categoryId && categorize) {
+      await categorize.execute({ userId }).catch(() => undefined);
+      categoryId = (await repos.transactions.findById(transaction.id))?.categoryId ?? null;
+    }
+    const category = categoryId ? (await repos.categories.findById(categoryId))?.name : null;
+    const when = e.daysAgo ? 'ontem' : 'hoje';
+    const what = `${e.kind === 'saida' ? 'Saiu' : 'Entrou'} *${brl(e.amountInCents)}*: ${e.description}${category ? ` (${category})` : ''}, ${when}.`;
+    return `Anotado! 🐷 ${what} Errou? Dá pra corrigir ou apagar no app, em Carteira.`;
   }
 }

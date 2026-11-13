@@ -89,7 +89,7 @@ export function sameSecret(expected: string, got: string | undefined) {
  */
 export function normalizeWhatsAppFrom(raw: string): string | null {
   const [user, domain] = raw.trim().split('@');
-  if (domain && domain !== 's.whatsapp.net' && domain !== 'c.us') return null;
+  if (domain && domain !== 's.whatsapp.net' && domain !== 'c.us' && domain !== 'lid') return null;
   const digits = (user ?? '').split(':')[0]!.replace(/\D/g, '');
   return digits.length >= 10 && digits.length <= 15 ? digits : null;
 }

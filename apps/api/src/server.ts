@@ -10,6 +10,7 @@ import { AutoCategorizeUseCase } from './use-cases/auto-categorize.js';
 import { scheduleDailySync, syncAllConnections } from './jobs/daily-sync.js';
 import { DisabledPushGateway, WebPushGateway } from './gateways/push-gateway.js';
 import { scheduleNotifications } from './jobs/notifications.js';
+import { buildN8nBridge, listenN8nBridge } from './http/n8n-bridge.js';
 
 const repos = makePrismaRepositories(prisma);
 const bank = makeBankGateway(env);
@@ -40,4 +41,8 @@ scheduleDailySync(env.SYNC_CRON, async () => {
 scheduleNotifications(repos, push);
 
 await app.listen({ port: env.PORT, host: env.HOST });
+
+if (env.N8N_WHATSAPP_SECRET && env.N8N_LISTEN_HOST) {
+  void listenN8nBridge(buildN8nBridge(app), env.N8N_LISTEN_HOST, env.N8N_LISTEN_PORT, (m) => console.info(m));
+}
 console.log(`🪙 Tostão API em http://localhost:${env.PORT} (banco: ${env.BANK_GATEWAY}, IA: ${ai.enabled ? 'DeepSeek' : 'desligada'}, WhatsApp: ${whatsapp.enabled ? (env.WHATSAPP_TOKEN ? 'Meta' : 'n8n') : 'desligado'}, avisos: ${push.enabled ? 'ligados' : 'desligados'})`);

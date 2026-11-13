@@ -7,6 +7,25 @@ type Incoming = { entry?: { changes?: { value?: { messages?: { id: string; from:
 
 // WhatsApp: telas do app (ligar/desligar) + webhook da Meta (a única rota que fica pública, via Funnel).
 type N8nIncoming = { id?: string; from?: string; text?: string; fromMe?: boolean };
+type EvolutionKey = { id?: string; remoteJid?: string; remoteJidAlt?: string; senderPn?: string; fromMe?: boolean };
+type EvolutionIncoming = { event?: string; data?: { key?: EvolutionKey; message?: { conversation?: string; extendedTextMessage?: { text?: string } } } };
+
+/**
+ * Aceita o formato simples { id, from, text, fromMe } ou o webhook cru da Evolution API (messages.upsert),
+ * pra o n8n poder só repassar o corpo. Com @lid, usa o número real (remoteJidAlt/senderPn) quando vier.
+ */
+export function readN8nMessage(body: unknown): N8nIncoming {
+  const evo = body as EvolutionIncoming;
+  const key = evo?.data?.key;
+  if (key && typeof key === 'object') {
+    const event = (evo.event ?? 'messages.upsert').toLowerCase().replace('_', '.');
+    if (event !== 'messages.upsert') return {};
+    const jid = key.remoteJid?.endsWith('@lid') ? key.remoteJidAlt ?? key.senderPn ?? key.remoteJid : key.remoteJid;
+    const m = evo.data?.message;
+    return { id: key.id, from: jid, fromMe: key.fromMe, text: m?.conversation ?? m?.extendedTextMessage?.text };
+  }
+  return (body ?? {}) as N8nIncoming;
+}
 
 export function whatsappRoutes(app: FastifyInstance, uc: UseCases, wa: WhatsAppGateway, verifyToken: string, n8nSecret = '') {
   app.get('/whatsapp', { onRequest: verifyJwt }, async (request) => uc.whatsappLink.status({ userId: request.user.sub }));
@@ -51,7 +70,7 @@ export function whatsappRoutes(app: FastifyInstance, uc: UseCases, wa: WhatsAppG
   app.post('/whatsapp/n8n', async (request, reply) => {
     if (!n8nSecret) return reply.status(404).send();
     if (!sameSecret(n8nSecret, request.headers['x-tostao-secret'] as string | undefined)) return reply.status(401).send();
-    const body = (request.body ?? {}) as N8nIncoming;
+    const body = readN8nMessage(request.body);
     const from = typeof body.from === 'string' ? normalizeWhatsAppFrom(body.from) : null;
     const text = typeof body.text === 'string' ? body.text : '';
     if (body.fromMe || !from || !text.trim()) return { replies: [] };

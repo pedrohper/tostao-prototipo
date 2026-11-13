@@ -42,6 +42,7 @@ export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), whatsapp =
   const sync = new SyncBankConnectionUseCase({ ...repos, bank });
   const autoCategorize = new AutoCategorizeUseCase(repos, ai);
   const askTostao = new AskTostaoUseCase(repos, ai, chatDailyLimit);
+  const createManualTransaction = new CreateManualTransactionUseCase(repos);
   return {
     registerUser: new RegisterUserUseCase(repos),
     createInvite: new CreateInviteUseCase(repos),
@@ -57,7 +58,7 @@ export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), whatsapp =
     deleteAccount: new DeleteAccountUseCase(repos, bank),
     createConnectToken: { execute: async ({ userId }: { userId: string }) => ({ connectToken: await bank.createConnectToken(userId) }) },
     categorizeTransaction: new CategorizeTransactionUseCase(repos),
-    createManualTransaction: new CreateManualTransactionUseCase(repos),
+    createManualTransaction,
     listTransactions: new ListTransactionsUseCase(repos),
     listPeople: new ListPeopleUseCase(repos),
     ensurePerson: new EnsurePersonUseCase(repos),
@@ -89,7 +90,7 @@ export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), whatsapp =
     autoCategorize,
     askTostao,
     whatsappLink: new WhatsAppLinkUseCase(repos, whatsapp),
-    whatsappMessage: new HandleWhatsAppMessageUseCase(repos, whatsapp, askTostao),
+    whatsappMessage: new HandleWhatsAppMessageUseCase(repos, whatsapp, askTostao, undefined, { create: createManualTransaction, categorize: autoCategorize, repos }),
     chatHistory: { execute: async ({ userId }: { userId: string }) => ({ messages: await repos.chat.listRecent(userId, 60) }) },
     setAccountHidden: {
       execute: async ({ userId, accountId, hidden }: { userId: string; accountId: string; hidden: boolean }) => {
