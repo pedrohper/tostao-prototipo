@@ -23,9 +23,9 @@ declare module '@fastify/jwt' {
   interface FastifyJWT { user: { sub: string } }
 }
 
-type Options = Deps & { jwtSecret: string; webOrigin: string; logger?: boolean; whatsappVerifyToken?: string; push?: PushGateway; rates?: RatesGateway };
+type Options = Deps & { jwtSecret: string; webOrigin: string; logger?: boolean; whatsappVerifyToken?: string; n8nWhatsAppSecret?: string; push?: PushGateway; rates?: RatesGateway };
 
-export async function buildApp({ repos, bank, ai, whatsapp = new FakeWhatsAppGateway(), whatsappVerifyToken = '', chatDailyLimit, jwtSecret, webOrigin, logger = false, push = new DisabledPushGateway(), rates = new ReferenceRatesGateway() }: Options) {
+export async function buildApp({ repos, bank, ai, whatsapp = new FakeWhatsAppGateway(), whatsappVerifyToken = '', n8nWhatsAppSecret = '', chatDailyLimit, jwtSecret, webOrigin, logger = false, push = new DisabledPushGateway(), rates = new ReferenceRatesGateway() }: Options) {
   const app = Fastify({ logger });
   await app.register(cors, { origin: webOrigin });
   await app.register(jwt, { secret: jwtSecret, sign: { expiresIn: '7d' } });
@@ -42,7 +42,7 @@ export async function buildApp({ repos, bank, ai, whatsapp = new FakeWhatsAppGat
   planningRoutes(app, uc);
   gamesRoutes(app, uc);
   chatRoutes(app, uc);
-  whatsappRoutes(app, uc, whatsapp, whatsappVerifyToken);
+  whatsappRoutes(app, uc, whatsapp, whatsappVerifyToken, n8nWhatsAppSecret);
   investRoutes(app, rates);
   return app;
 }

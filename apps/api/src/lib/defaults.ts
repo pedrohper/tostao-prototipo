@@ -37,5 +37,5 @@ export const DEFAULT_RULES: { pattern: string; categoryId: string }[] = [
   ...['SHOPEE', 'SHEIN', 'MERCADOLIVRE', 'MERCADO LIVRE', 'AMAZON', 'ALIEXPRESS', 'MAGALU'].map((p) => ({ pattern: p, categoryId: 'compras' })),
   ...['UDEMY', 'ALURA', 'ROCKETSEAT', 'COURSERA'].map((p) => ({ pattern: p, categoryId: 'estudo' })),
   ...['ENEL', 'SABESP', 'CLARO', 'VIVO', 'TIM ', 'ALUGUEL', 'CONDOMINIO'].map((p) => ({ pattern: p, categoryId: 'casa' })),
-  ...['SALARIO', 'FOLHA PAG', 'PROVENTOS'].map((p) => ({ pattern: p, categoryId: 'salario' })),
+  ...['SALARIO', 'FOLHA PAG', 'PROVENTOS', 'TRANSF SALDO C/SAL'].map((p) => ({ pattern: p, categoryId: 'salario' })),
 ];
