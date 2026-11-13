@@ -1,3 +1,4 @@
+import { cardIdentity } from './card-identity.js';
 import type { AccountDetailResponse } from '@tostao/contracts';
 import type { Repositories } from '../repositories/types.js';
 import { ResourceNotFoundError } from '../domain/errors.js';
@@ -64,6 +65,7 @@ export class AccountDetailUseCase {
         balanceInCents: account.balanceInCents, creditLimitInCents: account.creditLimitInCents ?? null,
         dueDate: account.dueDate ? nextDueDate(account.dueDate, now).toISOString() : null,
         lastSyncedAt: connection?.lastSyncedAt?.toISOString() ?? null, hidden: account.hidden,
+        ...cardIdentity(account.fingerprint),
       },
       month,
       outInCents: sel.outInCents,

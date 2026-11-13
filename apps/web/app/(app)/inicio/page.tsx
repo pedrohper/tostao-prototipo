@@ -1,5 +1,6 @@
 import { SomDasMissoes } from '@/components/sons';
 import { CatIcon, Icone } from '@/components/icone';
+import { Bandeira, SeloBanco } from '@/components/banco';
 import Link from 'next/link';
 import type { BudgetsResponse, ForecastResponse, LessonProgressResponse, MissionsResponse, MonthSummaryResponse, ProfileResponse, RemindersResponse, SubscriptionsResponse, WeeklyResponse } from '@tostao/contracts';
 import { Missoes, Semana, Sobra, VenceLogo } from '@/components/engajamento';
@@ -212,7 +213,7 @@ export default async function InicioPage() {
                   const uso = c.creditLimitInCents ? Math.min(100, (fatura / c.creditLimitInCents) * 100) : null;
                   return (
                     <Link key={c.id} href={`/carteira/conta/${c.id}`} className="flex min-w-0 flex-col gap-1 rounded-2xl border border-linha bg-cartao p-3 text-tinta no-underline">
-                      <span className="flex min-w-0 items-center gap-1.5 text-[13px] font-semibold text-tinta-suave"><Icone src="ui/cartao" size={18} /><span className="truncate">{c.name}</span></span>
+                      <span className="flex min-w-0 items-center gap-1.5 text-[13px] font-semibold text-tinta-suave"><SeloBanco nome={c.name} size={18} /><span className="truncate">{c.name}</span></span>
                       <span className="text-[17px] font-bold tabular-nums">{money(fatura)}</span>
                       {uso !== null && (
                         <div className="h-1.5 rounded-full bg-papel-2" title={`${Math.round(uso)}% do limite`}>
@@ -220,6 +221,7 @@ export default async function InicioPage() {
                         </div>
                       )}
                       <span className="text-xs font-medium text-tinta-suave">{c.dueDate ? `Fatura vence ${shortDate(c.dueDate)}` : 'Fatura atual'}</span>
+                      <Bandeira brand={c.brand} last4={c.last4} />
                     </Link>
                   );
                 })}

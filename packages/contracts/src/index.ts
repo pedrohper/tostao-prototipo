@@ -140,7 +140,7 @@ export type MonthSummaryResponse = {
   uncategorizedCount: number;
   byCategory: { categoryId: string | null; name: string; color: string; totalInCents: number }[];
   /** BANK = conta corrente (entra no saldo); CREDIT = cartão (balance = fatura em aberto). */
-  accounts: { id: string; name: string; type: 'BANK' | 'CREDIT'; balanceInCents: number; creditLimitInCents: number | null; dueDate: string | null }[];
+  accounts: { id: string; name: string; type: 'BANK' | 'CREDIT'; balanceInCents: number; creditLimitInCents: number | null; dueDate: string | null; brand: string | null; last4: string | null }[];
   /** Contas que a pessoa ocultou: fora do saldo e da lista. */
   hiddenAccounts: { id: string; name: string; balanceInCents: number }[];
 };
@@ -154,6 +154,8 @@ export type AccountDetailResponse = {
     /** Cartão: negativo = fatura em aberto. */
     balanceInCents: number; creditLimitInCents: number | null; dueDate: string | null;
     lastSyncedAt: string | null; hidden: boolean;
+    /** Cartão: bandeira (VISA, MASTERCARD, ELO...) e final, quando o banco manda. */
+    brand: string | null; last4: string | null;
   };
   month: string;
   outInCents: number;
