@@ -33,7 +33,8 @@ describe('Renda e previsão', () => {
     const { suggestions } = await new SuggestIncomeUseCase(repos, () => NOW).execute({ userId: 'u1' });
     expect(suggestions).toHaveLength(1);
     expect(suggestions[0]!.months).toBe(2);
-    expect(suggestions[0]!.monthlyAvgInCents).toBe(Math.round((125055 + 100000 + 370180) / 2));
+    // Nada se repete ainda: valor típico de uma entrada; o acerto de R$ 3.701 não infla a renda.
+    expect(suggestions[0]!.monthlyAvgInCents).toBe(125055);
   });
 
   it('"só repasso" vira Não conta (sai da renda) e o salário vai pra Salário e renda', async () => {

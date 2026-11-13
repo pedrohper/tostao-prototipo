@@ -36,5 +36,10 @@ Nest.js talvez depois. PWA primeiro. Modelo: uso próprio agora, freemium depois
 Homelab Ubuntu Server 24.04 headless, acessado via Tailscale (pasta `~/homelab/tostao-prototipo`). Postgres já existente em container na 5432. Setup: `bash scripts/homelab-setup.sh` (pm2 + `tailscale serve` com HTTPS).
 Login exige HTTPS (cookie secure em produção).
 
+## Passagem entre agentes (AGENT_SYNC.md)
+- **Antes de codar:** leia `AGENT_SYNC.md` na raiz (Plano, Execução, Code Review). Veja se alguém já está mexendo no mesmo lugar e se há achado de review aberto pra você.
+- **Ao terminar:** registre em `AGENT_SYNC.md` > Execução o que mudou, migration/env nova, como validou e o que ficou de fora, no mesmo PR. Tire o item do Plano.
+- O Gemini revisa o `git diff` da entrega e escreve em Code Review. Achado bloqueante aberto se resolve antes da próxima feature.
+
 ## Pendências conhecidas
 Atalhos do protótipo listados no README. Chat com IA: DeepSeek (`DEEPSEEK_API_KEY`), contexto montado em `use-cases/ask-tostao.ts`. Ainda só no design: Tribunal, Batalha. Comando `pnpm --filter @tostao/api recompute-transfers` reaplica a regra de transferência interna no histórico.

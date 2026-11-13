@@ -7,7 +7,7 @@ import { makePrismaRepositories } from './repositories/prisma/index.js';
 import { makeBankGateway } from './gateways/make-bank-gateway.js';
 import { SyncBankConnectionUseCase } from './use-cases/sync-bank-connection.js';
 import { AutoCategorizeUseCase } from './use-cases/auto-categorize.js';
-import { scheduleDailySync, syncAllConnections } from './jobs/daily-sync.js';
+import { isSyncStale, scheduleDailySync, syncAllConnections } from './jobs/daily-sync.js';
 import { DisabledPushGateway, WebPushGateway } from './gateways/push-gateway.js';
 import { scheduleNotifications } from './jobs/notifications.js';
 import { buildN8nBridge, listenN8nBridge } from './http/n8n-bridge.js';
@@ -25,7 +25,7 @@ const app = await buildApp({ repos, bank, ai, whatsapp, push, whatsappVerifyToke
 
 const sync = new SyncBankConnectionUseCase({ ...repos, bank });
 const autoCategorize = new AutoCategorizeUseCase(repos, ai);
-scheduleDailySync(env.SYNC_CRON, async () => {
+const syncEverything = async () => {
   await syncAllConnections(repos, sync);
   const users = new Set((await repos.connections.listActive()).map((c) => c.userId));
   for (const userId of users) {
@@ -36,7 +36,13 @@ scheduleDailySync(env.SYNC_CRON, async () => {
       console.error('[ia] categoria automática falhou:', (err as Error).message);
     }
   }
-});
+};
+scheduleDailySync(env.SYNC_CRON, syncEverything);
+// Subiu depois de muito tempo parado? Sincroniza já, sem esperar o próximo horário.
+if (await isSyncStale(repos, 6 * 3600_000).catch(() => false)) {
+  console.info('[sync] última sincronização tem mais de 6 h: rodando agora');
+  void syncEverything().catch((err) => console.error('[sync] falhou:', (err as Error).message));
+}
 
 scheduleNotifications(repos, push);
 
