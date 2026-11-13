@@ -53,7 +53,10 @@ export class HandleWhatsAppMessageUseCase {
     private readonly now: () => Date = () => new Date(),
   ) {}
 
-  async execute({ id, from, text }: { id: string; from: string; text: string }) {
+  /**
+   * `reply` troca o jeito de responder: no n8n a resposta volta no retorno do POST, em vez de sair pelo gateway.
+   */
+  async execute({ id, from, text }: { id: string; from: string; text: string }, reply: (text: string) => Promise<void> = (t) => this.wa.send(from, t)) {
     // A Meta reenvia quando demora: não responder duas vezes a mesma mensagem.
     if (this.seen.has(id)) return 'duplicada';
     this.seen.add(id);
@@ -65,21 +68,21 @@ export class HandleWhatsAppMessageUseCase {
       if (link?.codeExpiresAt && link.codeExpiresAt > this.now()) {
         await this.repos.whatsapp.link(link.userId, from, this.now());
         const user = await this.repos.users.findById(link.userId);
-        await this.wa.send(from, `Fechou, ${user?.name?.split(' ')[0] ?? 'tamo junto'}! 🐷 Agora é só me perguntar por aqui: "quanto gastei com delivery?", "dá pra comprar um tênis de R$ 300?". Pra desligar, é no app em Perfil > WhatsApp.`);
+        await reply(`Fechou, ${user?.name?.split(' ')[0] ?? 'tamo junto'}! 🐷 Agora é só me perguntar por aqui: "quanto gastei com delivery?", "dá pra comprar um tênis de R$ 300?". Pra desligar, é no app em Perfil > WhatsApp.`);
         return 'ligado';
       }
     }
 
     const link = await this.repos.whatsapp.findByPhone(from);
     if (!link) {
-      await this.wa.send(from, 'Oi! Eu sou o Tostão 🐷. Pra conversar comigo aqui, abre o app em Perfil > WhatsApp, gera um código e me manda. (Se mandou um código, ele pode ter vencido: gera outro.)');
+      await reply('Oi! Eu sou o Tostão 🐷. Pra conversar comigo aqui, abre o app em Perfil > WhatsApp, gera um código e me manda. (Se mandou um código, ele pode ter vencido: gera outro.)');
       return 'desconhecido';
     }
     try {
       const r = await this.ask.execute({ userId: link.userId, message: text.slice(0, 1000), channel: 'whatsapp' });
-      await this.wa.send(from, toWhatsApp(r.reply.content));
+      await reply(toWhatsApp(r.reply.content));
     } catch (e) {
-      await this.wa.send(from, e instanceof AppError ? e.message : 'Travei aqui. Tenta de novo daqui a pouco.');
+      await reply(e instanceof AppError ? e.message : 'Travei aqui. Tenta de novo daqui a pouco.');
     }
     return 'respondido';
   }

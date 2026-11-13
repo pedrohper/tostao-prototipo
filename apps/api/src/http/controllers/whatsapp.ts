@@ -1,12 +1,14 @@
 import type { FastifyInstance } from 'fastify';
 import type { UseCases } from '../../use-cases/factories.js';
-import type { WhatsAppGateway } from '../../gateways/whatsapp-gateway.js';
+import { normalizeWhatsAppFrom, sameSecret, type WhatsAppGateway } from '../../gateways/whatsapp-gateway.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
 
 type Incoming = { entry?: { changes?: { value?: { messages?: { id: string; from: string; type: string; text?: { body?: string } }[] } }[] }[] };
 
 // WhatsApp: telas do app (ligar/desligar) + webhook da Meta (a única rota que fica pública, via Funnel).
-export function whatsappRoutes(app: FastifyInstance, uc: UseCases, wa: WhatsAppGateway, verifyToken: string) {
+type N8nIncoming = { id?: string; from?: string; text?: string; fromMe?: boolean };
+
+export function whatsappRoutes(app: FastifyInstance, uc: UseCases, wa: WhatsAppGateway, verifyToken: string, n8nSecret = '') {
   app.get('/whatsapp', { onRequest: verifyJwt }, async (request) => uc.whatsappLink.status({ userId: request.user.sub }));
   app.post('/whatsapp/code', { onRequest: verifyJwt }, async (request) => uc.whatsappLink.createCode({ userId: request.user.sub }));
   app.delete('/whatsapp', { onRequest: verifyJwt }, async (request, reply) => {
@@ -42,5 +44,20 @@ export function whatsappRoutes(app: FastifyInstance, uc: UseCases, wa: WhatsAppG
       }
       return reply.status(200).send();
     });
+  });
+
+  // Ponte com o n8n (API não oficial). O n8n manda { id, from, text } com o header X-Tostao-Secret
+  // e recebe { replies: string[] } pra mandar de volta no WhatsApp. Fica só na rede local.
+  app.post('/whatsapp/n8n', async (request, reply) => {
+    if (!n8nSecret) return reply.status(404).send();
+    if (!sameSecret(n8nSecret, request.headers['x-tostao-secret'] as string | undefined)) return reply.status(401).send();
+    const body = (request.body ?? {}) as N8nIncoming;
+    const from = typeof body.from === 'string' ? normalizeWhatsAppFrom(body.from) : null;
+    const text = typeof body.text === 'string' ? body.text : '';
+    if (body.fromMe || !from || !text.trim()) return { replies: [] };
+    const replies: string[] = [];
+    const id = typeof body.id === 'string' && body.id ? body.id : `${from}:${Date.now()}`;
+    await uc.whatsappMessage.execute({ id, from, text }, async (t) => { replies.push(t); });
+    return { replies };
   });
 }
