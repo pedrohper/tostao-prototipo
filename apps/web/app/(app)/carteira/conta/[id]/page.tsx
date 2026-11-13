@@ -45,16 +45,16 @@ export default async function ContaPage({ params, searchParams }: { params: Prom
       </div>
 
       {/* Número principal: fatura (cartão) ou saldo (conta) */}
-      <section className={`flex flex-col gap-3 rounded-[20px] p-4 text-[#1E1B18] ${card ? 'bg-[#FFE7DC]' : 'bg-menta-clara dark:text-tinta'}`}>
+      <section className={`flex flex-col gap-3 rounded-[20px] p-4 text-tinta ${card ? 'bg-[#FFE7DC] dark:bg-[#33241D]' : 'bg-menta-clara'}`}>
         <div className="flex items-end justify-between gap-3">
           <div className="flex flex-col">
-            <span className="text-xs font-semibold tracking-[0.08em] text-[#6B635A] uppercase dark:text-tinta-suave">{card ? 'Fatura atual' : 'Saldo agora'}</span>
+            <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">{card ? 'Fatura atual' : 'Saldo agora'}</span>
             <span className="font-display text-[34px] leading-10 font-extrabold tabular-nums">{money(card ? fatura : a.balanceInCents)}</span>
           </div>
-          {card && a.dueDate && <span className="rounded-full bg-[#FFFDF9] px-3 py-1 text-[13px] font-semibold">Vence {shortDate(a.dueDate)}</span>}
+          {card && a.dueDate && <span className="rounded-full bg-cartao px-3 py-1 text-[13px] font-semibold">Vence {shortDate(a.dueDate)}</span>}
         </div>
         {card && a.creditLimitInCents ? <LimiteBarra usado={fatura + parcelasFuturas} limite={a.creditLimitInCents} /> : null}
-        {card && parcelasFuturas > 0 && <span className="text-[13px] text-[#6B635A]">O limite usado inclui {money(parcelasFuturas)} de parcelas que ainda vão cair.</span>}
+        {card && parcelasFuturas > 0 && <span className="text-[13px] text-tinta-suave">O limite usado inclui {money(parcelasFuturas)} de parcelas que ainda vão cair.</span>}
       </section>
 
       <div className="flex items-center justify-between rounded-full bg-papel-2 p-1">

@@ -7,10 +7,10 @@ import { createManual, type ActionState } from '../carteira/actions';
 
 const field = 'h-12 rounded-xl border-[1.5px] border-linha bg-cartao px-4 text-base text-tinta outline-none focus:border-tinta';
 
-// As 6 que mais aparecem no dia a dia (igual ao artefato). O resto fica atrás do "Mais".
-const PRINCIPAIS = ['delivery', 'mercado', 'transporte', 'role', 'casa', 'outros'];
+// As 8 que mais aparecem no dia a dia (igual ao artefato). O resto fica atrás do "Mais".
+const PRINCIPAIS = ['delivery', 'comer-fora', 'mercado', 'transporte', 'compras', 'role', 'casa', 'outros'];
 
-export function AnotarForm({ categories, contas, today }: { categories: CategoryDTO[]; contas: { id: string; name: string; auto: boolean }[]; today: string }) {
+export function AnotarForm({ categories, contas, today, children }: { categories: CategoryDTO[]; contas: { id: string; name: string; auto: boolean }[]; today: string; children?: React.ReactNode }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(createManual, {});
   const [kind, setKind] = useState<'saida' | 'entrada'>('saida');
   const [cat, setCat] = useState<string | null>(null);
@@ -21,7 +21,9 @@ export function AnotarForm({ categories, contas, today }: { categories: Category
   const options = todas || kind === 'entrada' || principais.length < 3 ? doTipo : [...principais, ...doTipo.filter((c) => c.id === cat && !PRINCIPAIS.includes(c.id))];
   const escolhida = contas.find((c) => c.id === conta);
   return (
-    <form action={action} className="flex grow flex-col gap-3.5">
+    <form action={action} className="flex min-h-0 grow flex-col">
+      <div className="mx-auto flex min-h-0 w-full max-w-[520px] grow flex-col gap-3.5 overflow-y-auto px-5 pt-1 pb-4">
+      {children}
       <div className="grid grid-cols-2 gap-1 rounded-full bg-papel-2 p-1">
         {(['saida', 'entrada'] as const).map((k) => (
           <label key={k} className={`flex h-10 cursor-pointer items-center justify-center rounded-full text-[15px] font-semibold ${kind === k ? 'bg-tinta text-papel' : 'text-tinta'}`}>
@@ -48,10 +50,10 @@ export function AnotarForm({ categories, contas, today }: { categories: Category
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-2 text-[13px] font-semibold">Categoria <span className="font-normal text-tinta-suave">(opcional, eu tento adivinhar)</span></legend>
         <input type="hidden" name="categoryId" value={cat ?? ''} />
-        <div className="grid grid-cols-3 gap-2">
+        <div className="flex flex-wrap gap-2">
           {options.map((c) => (
-            <button type="button" key={c.id} onClick={() => setCat(cat === c.id ? null : c.id)} className={pill(cat === c.id)}>
-              <span className="truncate">{c.name}</span>
+            <button type="button" key={c.id} onClick={() => setCat(cat === c.id ? null : c.id)} className={`${pill(cat === c.id)} h-11 shrink-0 px-4 whitespace-nowrap`}>
+              <span>{c.name}</span>
             </button>
           ))}
         </div>
@@ -65,8 +67,8 @@ export function AnotarForm({ categories, contas, today }: { categories: Category
           <input type="hidden" name="accountId" value={conta ?? ''} />
           <div className="flex flex-wrap gap-2">
             {[{ id: null, name: 'Dinheiro' }, ...contas].map((c) => (
-              <button type="button" key={c.id ?? 'dinheiro'} onClick={() => setConta(c.id)} className={`${pill(conta === c.id)} px-3.5`}>
-                <span className="truncate">{c.name}</span>
+              <button type="button" key={c.id ?? 'dinheiro'} onClick={() => setConta(c.id)} className={`${pill(conta === c.id)} h-11 shrink-0 px-4 whitespace-nowrap`}>
+                <span>{c.name}</span>
               </button>
             ))}
           </div>
@@ -74,10 +76,12 @@ export function AnotarForm({ categories, contas, today }: { categories: Category
         </fieldset>
       )}
       <ErrorNote message={state.error} />
-      <div className="grow" />
-      <button type="submit" disabled={pending} className="flex h-[54px] shrink-0 items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel disabled:opacity-50">
-        {pending ? 'Anotando…' : 'Salvar'}
-      </button>
+      </div>
+      <div className="shrink-0 border-t border-linha bg-cartao px-5 pt-3 pb-[max(28px,env(safe-area-inset-bottom))]">
+        <button type="submit" disabled={pending} className="mx-auto flex h-[54px] w-full max-w-[480px] items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel disabled:opacity-50">
+          {pending ? 'Anotando…' : 'Salvar'}
+        </button>
+      </div>
     </form>
   );
 }

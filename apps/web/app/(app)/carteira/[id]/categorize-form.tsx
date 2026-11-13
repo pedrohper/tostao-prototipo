@@ -18,11 +18,11 @@ export function CategorizeForm({ id, back, options, current, rulePattern }: Prop
       <input type="hidden" name="back" value={back} />
       <fieldset className="flex flex-col gap-2.5">
         <legend className="mb-2.5 text-[13px] font-semibold text-tinta-suave">Categoria</legend>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="flex flex-wrap gap-2">
           {options.map((c) => (
-            <label key={c.id} className={`${pill(picked === c.id)} h-11 cursor-pointer`}>
+            <label key={c.id} className={`${pill(picked === c.id)} h-11 shrink-0 cursor-pointer px-4 whitespace-nowrap`}>
               <input type="radio" name="categoryId" value={c.id} checked={picked === c.id} onChange={() => setPicked(c.id)} className="sr-only" />
-              <span className="truncate">{c.name}</span>
+              <span>{c.name}</span>
             </label>
           ))}
         </div>
