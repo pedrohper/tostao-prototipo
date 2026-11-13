@@ -8,6 +8,10 @@ import type { BankAccountData, BankGateway, BankItemData, BankTransactionData } 
 export class FakeBankGateway implements BankGateway {
   constructor(private readonly now: () => Date = () => new Date()) {}
 
+  async listInstitutionLogos() {
+    return [];
+  }
+
   async createConnectToken(): Promise<string | null> {
     return null; // sem widget: a tela mostra só o campo de texto
   }

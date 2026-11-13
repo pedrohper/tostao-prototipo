@@ -147,6 +147,9 @@ export type MonthSummaryResponse = {
 
 export type TransactionDetailResponse = { transaction: TransactionDTO; rulePattern: string };
 
+/** Logo oficial de cada banco (GET /institutions/logos). */
+export type InstitutionLogosResponse = { logos: { name: string; imageUrl: string; color: string | null }[] };
+
 /** Detalhe de uma conta ou cartão num mês (GET /accounts/:id?month=). */
 export type AccountDetailResponse = {
   account: {

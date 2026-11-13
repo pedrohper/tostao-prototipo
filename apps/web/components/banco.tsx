@@ -2,7 +2,42 @@
  * Selo do banco: a inicial na cor do banco, sem usar o logo de ninguém.
  * O Pluggy (via Meu Pluggy) não manda logo, então a gente reconhece pelo nome.
  */
+import type { InstitutionLogosResponse } from '@tostao/contracts';
+import { api } from '@/lib/api';
+
 type Visual = { sigla: string; bg: string; fg: string };
+export type Logo = InstitutionLogosResponse['logos'][number];
+
+/** Logos oficiais (vêm da lista de bancos do Pluggy). Se falhar, o app usa o selo com a inicial. */
+export async function logosBancos(): Promise<Logo[]> {
+  try {
+    return (await api<InstitutionLogosResponse>('/institutions/logos')).logos;
+  } catch {
+    return [];
+  }
+}
+
+const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+const temPalavra = (texto: string, termo: string) => ` ${texto} `.includes(` ${termo} `);
+const GENERICAS = new Set(['banco', 'conta', 'cartao', 'credito', 'bank', 'pay', 'digital']);
+
+/** Acha o logo pelo nome da conta: primeiro o nome inteiro do banco, depois a primeira palavra forte (ex.: "Caixa"). */
+export function logoDo(logos: Logo[], ...nomes: (string | null | undefined)[]): Logo | null {
+  const texto = norm(nomes.filter(Boolean).join(' '));
+  if (!texto || logos.length === 0) return null;
+  let melhor: Logo | null = null;
+  let tam = 0;
+  for (const l of logos) {
+    const n = norm(l.name);
+    if (n.length > tam && temPalavra(texto, n)) { melhor = l; tam = n.length; }
+  }
+  if (melhor) return melhor;
+  const porPalavra = logos
+    .map((l) => ({ l, palavras: norm(l.name).split(' ') }))
+    .filter(({ palavras }) => palavras[0] && palavras[0].length >= 4 && !GENERICAS.has(palavras[0]) && temPalavra(texto, palavras[0]))
+    .sort((a, b) => a.palavras.length - b.palavras.length);
+  return porPalavra[0]?.l ?? null;
+}
 
 const BANCOS: [RegExp, Visual][] = [
   [/nubank|\bnu\b/i, { sigla: 'nu', bg: '#820AD1', fg: '#FFFFFF' }],
@@ -38,7 +73,16 @@ export function visualDoBanco(...nomes: (string | null | undefined)[]): Visual &
   return { sigla: base.charAt(0).toUpperCase() || '?', bg: cor, fg: cor === '#FFC233' || cor === '#3DD6A0' ? '#1E1B18' : '#FFFFFF', conhecido: false };
 }
 
-export function SeloBanco({ nome, instituicao, size = 20, quadrado = false }: { nome: string; instituicao?: string | null; size?: number; quadrado?: boolean }) {
+export function SeloBanco({ nome, instituicao, size = 20, quadrado = false, logos = [] }: { nome: string; instituicao?: string | null; size?: number; quadrado?: boolean; logos?: Logo[] }) {
+  const logo = logoDo(logos, nome, instituicao);
+  if (logo) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={logo.imageUrl} alt="" aria-hidden="true" width={size} height={size} loading="lazy"
+        className={`shrink-0 bg-white object-cover ring-1 ring-black/5 dark:ring-white/10 ${quadrado ? 'rounded-[30%]' : 'rounded-full'}`}
+        style={{ width: size, height: size }} />
+    );
+  }
   const v = visualDoBanco(instituicao, nome);
   const fonte = Math.round(size * (v.sigla.length >= 3 ? 0.34 : v.sigla.length === 2 ? 0.42 : 0.52));
   return (
