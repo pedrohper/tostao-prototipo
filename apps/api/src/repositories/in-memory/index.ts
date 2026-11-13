@@ -1,10 +1,10 @@
 // Repositórios em memória: arrays simples. Usados nos testes e pra rodar sem Postgres.
 import { randomUUID } from 'node:crypto';
-import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, LessonProgress, Transaction, User, Invite, PasswordReset, ChatMessage, TribunalVote, Battle, BattleKind } from '../../domain/entities.js';
+import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, LessonProgress, Transaction, User, Invite, PasswordReset, ChatMessage, TribunalVote, Battle, BattleKind, Person } from '../../domain/entities.js';
 import type { FinancialPlan } from '@tostao/contracts';
 import type {
   AccountData, AccountsRepository, FinancialPlansRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, ChatMessagesRepository, IgnoredSubscriptionsRepository, InvitesRepository, GamesRepository, EngagementRepository, PushSub, LessonProgressRepository, PasswordResetsRepository,
-  Repositories, TransactionsRepository, UsersRepository, WhatsappLink, WhatsappLinksRepository,
+  PeopleRepository, Repositories, TransactionsRepository, UsersRepository, WhatsappLink, WhatsappLinksRepository,
 } from '../types.js';
 import { DEFAULT_CATEGORIES, DEFAULT_RULES } from '../../lib/defaults.js';
 
@@ -127,6 +127,9 @@ export class InMemoryTransactionsRepository implements TransactionsRepository {
   }
   async clearCategory(categoryId: string) { for (const t of this.items) if (t.categoryId === categoryId) t.categoryId = null; }
   async delete(id: string) { this.items = this.items.filter((t) => t.id !== id); }
+  async findByPerson(userId: string, personId: string) {
+    return this.items.filter((t) => t.userId === userId && t.personId === personId).sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
+  }
   async deleteSeriesFrom(userId: string, seriesId: string, from: Date) {
     const before = this.items.length;
     this.items = this.items.filter((t) => !(t.userId === userId && t.seriesId === seriesId && t.occurredAt >= from));
@@ -278,6 +281,15 @@ export class InMemoryEngagementRepository implements EngagementRepository {
   }
 }
 
+export class InMemoryPeopleRepository implements PeopleRepository {
+  items: Person[] = [];
+  async listByUser(userId: string) { return this.items.filter((p) => p.userId === userId).sort((a, b) => a.name.localeCompare(b.name)); }
+  async findById(id: string) { return this.items.find((p) => p.id === id) ?? null; }
+  async findByName(userId: string, name: string) { return this.items.find((p) => p.userId === userId && p.name.toLowerCase() === name.toLowerCase()) ?? null; }
+  async create(data: { userId: string; name: string }) { const p = { id: randomUUID(), createdAt: new Date(), ...data }; this.items.push(p); return p; }
+  async delete(id: string) { this.items = this.items.filter((p) => p.id !== id); }
+}
+
 export function makeInMemoryRepositories() {
   const transactions = new InMemoryTransactionsRepository();
   const accounts = new InMemoryAccountsRepository(transactions);
@@ -298,5 +310,6 @@ export function makeInMemoryRepositories() {
     whatsapp: new InMemoryWhatsappLinksRepository(),
     games: new InMemoryGamesRepository(),
     engagement: new InMemoryEngagementRepository(),
+    people: new InMemoryPeopleRepository(),
   } satisfies Repositories;
 }

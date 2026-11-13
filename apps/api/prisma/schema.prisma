@@ -21,6 +21,7 @@ model User {
   connections  BankConnection[]
   accounts     Account[]
   transactions Transaction[]
+  people       Person[]
   rules        CategoryRule[]
   budgets      CategoryBudget[]
   lessons      LessonProgress[]
@@ -127,16 +128,34 @@ model Transaction {
   isInternalTransfer Boolean  @default(false) @map("is_internal_transfer")
   // Anotado com "todo mês" ou "parcelado": as próximas já ficam lançadas nos meses seguintes, com o mesmo seriesId.
   seriesId           String?  @map("series_id")
+  // Acerto com alguém (emprestei o cartão, emprestei/peguei grana, me pagou): não é gasto nem renda.
+  personId           String?  @map("person_id")
   createdAt          DateTime @default(now()) @map("created_at")
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   account  Account?  @relation(fields: [accountId], references: [id], onDelete: Cascade)
   category Category? @relation(fields: [categoryId], references: [id])
+  person   Person?   @relation(fields: [personId], references: [id], onDelete: SetNull)
 
   @@unique([userId, externalId])
   @@index([userId, occurredAt])
   @@index([seriesId])
+  @@index([personId])
   @@map("transactions")
+}
+
+// Caderninho de acertos: quem te deve e pra quem você deve.
+model Person {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@unique([userId, name])
+  @@map("people")
 }
 
 // "No máximo R$ 300 em delivery por mês"

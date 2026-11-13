@@ -117,7 +117,26 @@ export type TransactionDTO = {
   source: 'bank' | 'manual';
   /** Faz parte de um "todo mês" ou "parcelado" anotado à mão. */
   seriesId: string | null;
+  /** Acerto com alguém (empréstimo, cartão emprestado): fora do gasto e da renda. */
+  personId: string | null;
 };
+
+// ---------- Acertos (quem te deve / pra quem você deve) ----------
+/** saldo > 0: a pessoa te deve. saldo < 0: você deve pra ela. */
+export type PersonDTO = { id: string; name: string; balanceInCents: number; count: number; lastAt: string | null };
+export type PeopleResponse = { people: PersonDTO[]; owedToYouInCents: number; youOweInCents: number };
+export type PersonDetailResponse = { person: PersonDTO; transactions: TransactionDTO[] };
+/** Liga o lançamento a uma pessoa pelo nome (cria se não existir). null desfaz. */
+export const createPersonBody = z.object({ name: z.string().trim().min(1, 'Diz o nome').max(40, 'Nome curto, até 40 letras') });
+export const linkPersonBody = z.object({ personName: z.string().trim().min(1, 'Diz o nome').max(40, 'Nome curto, até 40 letras').nullable() });
+/** Acerto anotado à mão (dinheiro vivo, combinado de boca). */
+export const personEntryBody = z.object({
+  kind: z.enum(['emprestei', 'peguei', 'recebi', 'paguei']),
+  amountInCents: z.number().int().positive('Valor precisa ser maior que zero').max(100_000_000),
+  description: z.string().trim().max(80).optional(),
+  occurredAt: z.iso.date(),
+});
+export type PersonEntryBody = z.infer<typeof personEntryBody>;
 
 export type SearchResponse = {
   transactions: TransactionDTO[];
