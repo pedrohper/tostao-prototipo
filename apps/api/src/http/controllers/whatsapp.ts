@@ -1,12 +1,33 @@
 import type { FastifyInstance } from 'fastify';
 import type { UseCases } from '../../use-cases/factories.js';
-import type { WhatsAppGateway } from '../../gateways/whatsapp-gateway.js';
+import { normalizeWhatsAppFrom, sameSecret, type WhatsAppGateway } from '../../gateways/whatsapp-gateway.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
 
 type Incoming = { entry?: { changes?: { value?: { messages?: { id: string; from: string; type: string; text?: { body?: string } }[] } }[] }[] };
 
 // WhatsApp: telas do app (ligar/desligar) + webhook da Meta (a única rota que fica pública, via Funnel).
-export function whatsappRoutes(app: FastifyInstance, uc: UseCases, wa: WhatsAppGateway, verifyToken: string) {
+type N8nIncoming = { id?: string; from?: string; text?: string; fromMe?: boolean };
+type EvolutionKey = { id?: string; remoteJid?: string; remoteJidAlt?: string; senderPn?: string; fromMe?: boolean };
+type EvolutionIncoming = { event?: string; data?: { key?: EvolutionKey; message?: { conversation?: string; extendedTextMessage?: { text?: string } } } };
+
+/**
+ * Aceita o formato simples { id, from, text, fromMe } ou o webhook cru da Evolution API (messages.upsert),
+ * pra o n8n poder só repassar o corpo. Com @lid, usa o número real (remoteJidAlt/senderPn) quando vier.
+ */
+export function readN8nMessage(body: unknown): N8nIncoming {
+  const evo = body as EvolutionIncoming;
+  const key = evo?.data?.key;
+  if (key && typeof key === 'object') {
+    const event = (evo.event ?? 'messages.upsert').toLowerCase().replace('_', '.');
+    if (event !== 'messages.upsert') return {};
+    const jid = key.remoteJid?.endsWith('@lid') ? key.remoteJidAlt ?? key.senderPn ?? key.remoteJid : key.remoteJid;
+    const m = evo.data?.message;
+    return { id: key.id, from: jid, fromMe: key.fromMe, text: m?.conversation ?? m?.extendedTextMessage?.text };
+  }
+  return (body ?? {}) as N8nIncoming;
+}
+
+export function whatsappRoutes(app: FastifyInstance, uc: UseCases, wa: WhatsAppGateway, verifyToken: string, n8nSecret = '') {
   app.get('/whatsapp', { onRequest: verifyJwt }, async (request) => uc.whatsappLink.status({ userId: request.user.sub }));
   app.post('/whatsapp/code', { onRequest: verifyJwt }, async (request) => uc.whatsappLink.createCode({ userId: request.user.sub }));
   app.delete('/whatsapp', { onRequest: verifyJwt }, async (request, reply) => {
@@ -42,5 +63,20 @@ export function whatsappRoutes(app: FastifyInstance, uc: UseCases, wa: WhatsAppG
       }
       return reply.status(200).send();
     });
+  });
+
+  // Ponte com o n8n (API não oficial). O n8n manda { id, from, text } com o header X-Tostao-Secret
+  // e recebe { replies: string[] } pra mandar de volta no WhatsApp. Fica só na rede local.
+  app.post('/whatsapp/n8n', async (request, reply) => {
+    if (!n8nSecret) return reply.status(404).send();
+    if (!sameSecret(n8nSecret, request.headers['x-tostao-secret'] as string | undefined)) return reply.status(401).send();
+    const body = readN8nMessage(request.body);
+    const from = typeof body.from === 'string' ? normalizeWhatsAppFrom(body.from) : null;
+    const text = typeof body.text === 'string' ? body.text : '';
+    if (body.fromMe || !from || !text.trim()) return { replies: [] };
+    const replies: string[] = [];
+    const id = typeof body.id === 'string' && body.id ? body.id : `${from}:${Date.now()}`;
+    await uc.whatsappMessage.execute({ id, from, text }, async (t) => { replies.push(t); });
+    return { replies };
   });
 }

@@ -27,6 +27,12 @@ const schema = z
     WHATSAPP_PHONE_NUMBER_ID: z.string().default(''),
     WHATSAPP_APP_SECRET: z.string().default(''),
     WHATSAPP_VERIFY_TOKEN: z.string().default(''),
+    // Ou WhatsApp via n8n (API não oficial). O segredo vai no header X-Tostao-Secret nos dois sentidos.
+    N8N_WHATSAPP_SECRET: z.string().refine((v) => !v || v.length >= 16, 'N8N_WHATSAPP_SECRET precisa de pelo menos 16 caracteres').default(''),
+    N8N_WHATSAPP_SEND_URL: z.string().refine((v) => !v || /^https?:\/\//.test(v), 'N8N_WHATSAPP_SEND_URL precisa ser uma URL http(s)').default(''),
+    // Porta extra só pro n8n no Docker (no servidor: N8N_LISTEN_HOST=172.18.0.1, gateway da homelab_default). Vazio = sem porta extra.
+    N8N_LISTEN_HOST: z.string().default(''),
+    N8N_LISTEN_PORT: z.coerce.number().int().default(3334),
     WHATSAPP_NUMBER: z.string().regex(/^\d*$/, 'WHATSAPP_NUMBER só com dígitos, com DDI (ex.: 5511999999999)').default(''),
   })
   .refine((e) => !e.WHATSAPP_TOKEN || (e.WHATSAPP_PHONE_NUMBER_ID && e.WHATSAPP_APP_SECRET && e.WHATSAPP_VERIFY_TOKEN), {
