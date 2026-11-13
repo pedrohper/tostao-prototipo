@@ -9,7 +9,9 @@ import { normalizeDescription } from '../lib/text.js';
  */
 export function categorizeByRules(description: string, rules: CategoryRule[]): string | null {
   const text = normalizeDescription(description);
-  const matches = rules.filter((r) => text.includes(r.pattern));
+  // O padrão salvo não tem números ("PIX ENVIADO - DES FULANO / - DOCTO:"), então compara também sem eles.
+  const bare = text.replace(/\d+/g, ' ').replace(/\s+/g, ' ');
+  const matches = rules.filter((r) => text.includes(r.pattern) || bare.includes(r.pattern));
   if (matches.length === 0) return null;
   matches.sort((a, b) => {
     const userA = a.userId ? 1 : 0;
