@@ -21,6 +21,7 @@ import { SyncBankConnectionUseCase } from './sync-bank-connection.js';
 import { ConnectBankUseCase } from './connect-bank.js';
 import { DisconnectBankUseCase } from './disconnect-bank.js';
 import { InstitutionLogosUseCase } from './institution-logos.js';
+import { DeleteTransactionUseCase } from './delete-transaction.js';
 import { DeleteAccountUseCase } from './delete-account.js';
 import { CategorizeTransactionUseCase } from './categorize-transaction.js';
 import { CreateManualTransactionUseCase } from './create-manual-transaction.js';
@@ -50,6 +51,7 @@ export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), whatsapp =
     syncBankConnection: sync,
     connectBank: new ConnectBankUseCase(repos.connections, bank, sync),
     institutionLogos: new InstitutionLogosUseCase(bank),
+    deleteTransaction: new DeleteTransactionUseCase(repos),
     disconnectBank: new DisconnectBankUseCase(repos.connections, bank),
     deleteAccount: new DeleteAccountUseCase(repos, bank),
     createConnectToken: { execute: async ({ userId }: { userId: string }) => ({ connectToken: await bank.createConnectToken(userId) }) },

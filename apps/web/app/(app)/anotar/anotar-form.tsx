@@ -16,6 +16,8 @@ export function AnotarForm({ categories, contas, today, children }: { categories
   const [cat, setCat] = useState<string | null>(null);
   const [todas, setTodas] = useState(false);
   const [conta, setConta] = useState<string | null>(null);
+  const [repete, setRepete] = useState<'nao' | 'mensal' | 'parcelado'>('nao');
+  const [vezes, setVezes] = useState(2);
   const doTipo = categories.filter((c) => c.kind === kind);
   const principais = doTipo.filter((c) => PRINCIPAIS.includes(c.id)).sort((a, b) => PRINCIPAIS.indexOf(a.id) - PRINCIPAIS.indexOf(b.id));
   const options = todas || kind === 'entrada' || principais.length < 3 ? doTipo : [...principais, ...doTipo.filter((c) => c.id === cat && !PRINCIPAIS.includes(c.id))];
@@ -47,6 +49,29 @@ export function AnotarForm({ categories, contas, today, children }: { categories
         <span className="text-[13px] font-semibold">Quando?</span>
         <input name="occurredAt" type="date" defaultValue={today} max={today} required className={field} />
       </label>
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-2 text-[13px] font-semibold">Repete?</legend>
+        <input type="hidden" name="repeat" value={repete} />
+        <div className="grid grid-cols-3 gap-1 rounded-full bg-papel-2 p-1">
+          {([['nao', 'Não'], ['mensal', 'Todo mês'], ['parcelado', 'Parcelado']] as const).map(([v, l]) => (
+            <button type="button" key={v} onClick={() => setRepete(v)} aria-pressed={repete === v}
+              className={`flex h-10 items-center justify-center rounded-full text-[14px] font-semibold whitespace-nowrap ${repete === v ? 'bg-tinta text-papel' : 'text-tinta'}`}>{l}</button>
+          ))}
+        </div>
+        {repete === 'parcelado' && (
+          <div className="flex items-center justify-between gap-3 rounded-xl border-[1.5px] border-linha bg-cartao px-3 py-2">
+            <span className="text-[14px]">Em quantas vezes?</span>
+            <div className="flex items-center gap-2">
+              <button type="button" aria-label="Menos uma vez" onClick={() => setVezes((v) => Math.max(2, v - 1))} className="flex h-10 w-10 items-center justify-center rounded-full bg-papel-2 text-xl font-bold">−</button>
+              <input name="times" value={vezes} readOnly aria-label="Vezes" className="w-10 bg-transparent text-center text-lg font-bold tabular-nums" />
+              <button type="button" aria-label="Mais uma vez" onClick={() => setVezes((v) => Math.min(48, v + 1))} className="flex h-10 w-10 items-center justify-center rounded-full bg-papel-2 text-xl font-bold">+</button>
+            </div>
+          </div>
+        )}
+        <p className="text-[12px] leading-[17px] text-tinta-suave">
+          {repete === 'nao' ? 'Só dessa vez.' : repete === 'mensal' ? 'Já deixo lançado nos próximos 12 meses, e entra na previsão. Dá pra apagar a série depois.' : `O valor é o total: divido em ${vezes}x, uma parcela por mês a partir dessa data.`}
+        </p>
+      </fieldset>
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-2 text-[13px] font-semibold">Categoria <span className="font-normal text-tinta-suave">(opcional, eu tento adivinhar)</span></legend>
         <input type="hidden" name="categoryId" value={cat ?? ''} />

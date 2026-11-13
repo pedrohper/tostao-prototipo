@@ -4,6 +4,7 @@ import { dayLabel, money } from '@/lib/format';
 import { Sheet } from '@/components/sheet';
 import { Mascote } from '@/components/mascote';
 import { CategorizeForm } from './categorize-form';
+import { apagarLancamento } from '../actions';
 
 export default async function CategorizarPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ voltar?: string }> }) {
   const { id } = await params;
@@ -40,6 +41,15 @@ export default async function CategorizarPage({ params, searchParams }: { params
           </div>
           <CategorizeForm id={t.id} back={back} options={options} current={t.categoryId} rulePattern={rulePattern} />
         </>
+      )}
+      {t.source === 'manual' && (
+        <form action={apagarLancamento} className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-linha pt-3">
+          <input type="hidden" name="id" value={t.id} />
+          <input type="hidden" name="back" value={back} />
+          {t.seriesId && <span className="w-full text-[13px] text-tinta-suave">{/\(\d+\/\d+\)$/.test(t.description) ? 'Faz parte de uma compra parcelada.' : 'Repete todo mês.'}</span>}
+          <button type="submit" name="serie" value="0" className="flex h-11 items-center text-[14px] font-semibold text-vermelho-texto">Apagar este</button>
+          {t.seriesId && <button type="submit" name="serie" value="1" className="flex h-11 items-center text-[14px] font-semibold text-vermelho-texto">Apagar este e os próximos</button>}
+        </form>
       )}
     </Sheet>
   );

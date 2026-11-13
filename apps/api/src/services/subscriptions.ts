@@ -14,6 +14,8 @@ export type Subscription = {
   active: boolean; // false = não cobrou no último ciclo (cancelou?)
   /** Plano/compra em parcelas (ex.: "Globoplay 7/12"): quantas faltam. null = assinatura comum. */
   installmentsLeft: number | null;
+  /** Onde cobrou da última vez (cartão ou conta). */
+  accountId: string | null;
 };
 
 // Parcela no fim/meio da descrição: "5/12", "PARC 03/10", "PARCELA 2 DE 6"
@@ -56,7 +58,8 @@ const median = (xs: number[]) => {
 export function detectSubscriptions(transactions: Transaction[], now: Date): Subscription[] {
   const groups = new Map<string, Transaction[]>();
   for (const t of transactions) {
-    if (t.amountInCents >= 0 || t.isInternalTransfer) continue;
+    // "Todo mês" anotado à mão já entra na previsão pela série: não conta de novo como assinatura.
+    if (t.amountInCents >= 0 || t.isInternalTransfer || t.seriesId) continue;
     const text = normalizeDescription(t.description);
     if (NOT_SUBSCRIPTION.test(text)) continue;
     // Parcela só entra se for x/12 (plano anual parcelado). Compra em 10x não é assinatura.
@@ -97,6 +100,7 @@ export function detectSubscriptions(transactions: Transaction[], now: Date): Sub
         // 3 dias de folga: o banco às vezes lança atrasado. Parcelado que acabou também não está mais ativo.
         active: nextChargeAt.getTime() >= now.getTime() - 3 * DAY && installmentsLeft !== 0,
         installmentsLeft,
+        accountId: last.accountId,
       });
     }
   }

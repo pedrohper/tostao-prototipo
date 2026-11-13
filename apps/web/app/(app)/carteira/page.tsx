@@ -21,8 +21,8 @@ export default async function CarteiraPage({ searchParams }: { searchParams: Pro
   // Mês que ainda não chegou: simulação com a previsão (até 3 meses pra frente).
   if (month > hoje) {
     const futuro = month > shiftMonth(hoje, 3) ? shiftMonth(hoje, 3) : month;
-    const forecast = await api<ForecastResponse>('/forecast');
-    return <Simulacao month={futuro} hoje={hoje} forecast={forecast} />;
+    const [forecast, logos] = await Promise.all([api<ForecastResponse>('/forecast'), logosBancos()]);
+    return <Simulacao month={futuro} hoje={hoje} forecast={forecast} logos={logos} />;
   }
 
   const [{ transactions }, summary, logos] = await Promise.all([

@@ -14,6 +14,7 @@ export function presentTransaction(t: Transaction & { categoryName: string | nul
     categoryColor: t.categoryColor ?? null,
     accountName: t.accountName,
     isInternalTransfer: t.isInternalTransfer,
-    source: t.accountId ? 'bank' : 'manual',
+    source: t.externalId ? 'bank' : 'manual',
+    seriesId: t.seriesId ?? null,
   };
 }

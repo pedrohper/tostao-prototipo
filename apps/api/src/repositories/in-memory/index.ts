@@ -126,6 +126,12 @@ export class InMemoryTransactionsRepository implements TransactionsRepository {
     if (i >= 0) this.items[i] = transaction;
   }
   async clearCategory(categoryId: string) { for (const t of this.items) if (t.categoryId === categoryId) t.categoryId = null; }
+  async delete(id: string) { this.items = this.items.filter((t) => t.id !== id); }
+  async deleteSeriesFrom(userId: string, seriesId: string, from: Date) {
+    const before = this.items.length;
+    this.items = this.items.filter((t) => !(t.userId === userId && t.seriesId === seriesId && t.occurredAt >= from));
+    return before - this.items.length;
+  }
 }
 
 export class InMemoryBudgetsRepository implements BudgetsRepository {

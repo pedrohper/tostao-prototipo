@@ -1,14 +1,32 @@
 import Link from 'next/link';
-import type { ForecastResponse } from '@tostao/contracts';
+import type { ForecastItem, ForecastResponse } from '@tostao/contracts';
 import { money, monthName, shiftMonth } from '@/lib/format';
 import { ButtonLink, Eyebrow } from '@/components/ui';
 import { Mascote } from '@/components/mascote';
 import { Chevron } from './transaction-row';
+import { SeloBanco, type Logo } from '@/components/banco';
+
+const ROTULO: Record<ForecastItem['kind'], string> = { renda: 'Renda', conta: 'Conta fixa', assinatura: 'Assinatura', parcela: 'Parcela', anotado: 'Todo mês' };
+
+function Linha({ i }: { i: ForecastItem }) {
+  return (
+    <li className="flex min-h-12 items-center gap-3 border-b border-linha last:border-b-0">
+      <span className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-[10px] bg-papel-2 leading-none">
+        {i.day ? <><span className="text-[9px] font-semibold text-tinta-suave uppercase">dia</span><span className="text-[14px] font-bold tabular-nums">{i.day}</span></> : <span className="text-[11px] font-bold text-tinta-suave">—</span>}
+      </span>
+      <span className="flex min-w-0 grow flex-col">
+        <span className="truncate text-[15px] font-semibold">{i.title}</span>
+        <span className="text-xs text-tinta-suave">{ROTULO[i.kind]}{i.detail ? ` ${i.detail}` : ''}</span>
+      </span>
+      <span className={`shrink-0 text-[15px] font-semibold tabular-nums ${i.entrada ? 'text-verde-texto' : ''}`}>{i.entrada ? '+ ' : ''}{money(i.amountInCents)}</span>
+    </li>
+  );
+}
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /** Carteira num mês que ainda não chegou: como deve ficar, pela previsão. */
-export function Simulacao({ month, hoje, forecast }: { month: string; hoje: string; forecast: ForecastResponse }) {
+export function Simulacao({ month, hoje, forecast, logos = [] }: { month: string; hoje: string; forecast: ForecastResponse; logos?: Logo[] }) {
   const m = forecast.months.find((x) => x.month === month);
   const ultimo = shiftMonth(hoje, 3);
   const max = Math.max(1, ...forecast.months.map((x) => Math.abs(x.leftInCents)));
@@ -17,13 +35,15 @@ export function Simulacao({ month, hoje, forecast }: { month: string; hoje: stri
     ['Contas fixas', -m.fixedInCents],
     ['Assinaturas', -m.subscriptionsInCents],
     ['Parcelas do cartão', -m.installmentsInCents],
+    ['Anotados (todo mês e parcelas)', m.scheduledInInCents - m.scheduledOutInCents],
     ['Dia a dia (média de 3 meses)', -m.dailyInCents],
   ] : [];
-  const gastos = m ? m.fixedInCents + m.subscriptionsInCents + m.installmentsInCents + m.dailyInCents : 0;
+  const gastos = m ? m.fixedInCents + m.subscriptionsInCents + m.installmentsInCents + m.scheduledOutInCents + m.dailyInCents : 0;
   const fatias = m ? [
     { nome: 'Contas fixas', v: m.fixedInCents, cor: '#DCEBFF' },
     { nome: 'Assinaturas', v: m.subscriptionsInCents, cor: '#E9DDFF' },
     { nome: 'Parcelas', v: m.installmentsInCents, cor: '#FFE7DC' },
+    { nome: 'Anotados', v: m.scheduledOutInCents, cor: '#DDF6E8' },
     { nome: 'Dia a dia', v: m.dailyInCents, cor: '#FFF1C7' },
   ].filter((f) => f.v > 0) : [];
 
@@ -55,6 +75,44 @@ export function Simulacao({ month, hoje, forecast }: { month: string; hoje: stri
               <span className="font-display text-[32px] leading-9 font-extrabold tabular-nums">{money(Math.abs(m.leftInCents))}</span>
             </div>
           </section>
+
+          {m.cards.length > 0 && (
+            <section className="flex flex-col gap-2">
+              <h2 className="font-display text-xl leading-[26px] font-extrabold">Faturas de {monthName(month)}</h2>
+              {m.cards.map((c) => {
+                const itens = m.items.filter((i) => i.cardId === c.id && !i.entrada);
+                return (
+                  <details key={c.id} className="group rounded-2xl border border-linha bg-cartao" open={m.cards.length === 1}>
+                    <summary className="flex min-h-[60px] cursor-pointer list-none items-center gap-3 px-3.5 py-2.5 [&::-webkit-details-marker]:hidden">
+                      <SeloBanco nome={c.name} size={36} quadrado logos={logos} />
+                      <span className="flex min-w-0 grow flex-col">
+                        <span className="truncate text-[15px] font-semibold">{c.name}</span>
+                        <span className="text-xs text-tinta-suave">{c.dueDay ? `Vence dia ${c.dueDay}` : 'Fatura prevista'} · {itens.length} {itens.length === 1 ? 'item' : 'itens'}</span>
+                      </span>
+                      <span className="shrink-0 font-display text-[19px] font-extrabold tabular-nums">{money(c.totalInCents)}</span>
+                      <span aria-hidden="true" className="text-tinta-suave transition-transform group-open:rotate-90">›</span>
+                    </summary>
+                    <ul className="flex flex-col border-t border-linha px-3.5">{itens.map((i, k) => <Linha key={`${i.title}${k}`} i={i} />)}</ul>
+                  </details>
+                );
+              })}
+              <p className="text-[12px] leading-[17px] text-tinta-suave">Só o que já dá pra saber: parcelas que faltam, assinaturas que renovam e o que você anotou no cartão. Compra nova ainda vai somar.</p>
+            </section>
+          )}
+
+          {m.items.some((i) => !i.cardId && !i.entrada) && (
+            <section className="flex flex-col gap-1">
+              <h2 className="font-display text-xl leading-[26px] font-extrabold">Sai da conta</h2>
+              <ul className="flex flex-col rounded-2xl border border-linha bg-cartao px-3.5">{m.items.filter((i) => !i.cardId && !i.entrada).map((i, k) => <Linha key={`${i.title}${k}`} i={i} />)}</ul>
+            </section>
+          )}
+
+          {m.items.some((i) => i.entrada) && (
+            <section className="flex flex-col gap-1">
+              <h2 className="font-display text-xl leading-[26px] font-extrabold">Entra</h2>
+              <ul className="flex flex-col rounded-2xl border border-linha bg-cartao px-3.5">{m.items.filter((i) => i.entrada).map((i, k) => <Linha key={`${i.title}${k}`} i={i} />)}</ul>
+            </section>
+          )}
 
           <section className="flex flex-col gap-2.5 rounded-2xl border border-linha bg-cartao p-3.5">
             <Eyebrow>Na ponta do lápis</Eyebrow>
@@ -95,7 +153,7 @@ export function Simulacao({ month, hoje, forecast }: { month: string; hoje: stri
                 </Link>
               ))}
             </div>
-            <p className="text-[13px] text-tinta-suave">Verde sobra, rosa falta. É estimativa: renda que você contou menos contas, assinaturas, parcelas já feitas e a média do dia a dia.</p>
+            <p className="text-[13px] text-tinta-suave">Verde sobra, rosa falta. Contas, assinaturas e parcelas são certas; o dia a dia é a média dos últimos 3 meses.</p>
           </section>
 
           <div className="grid grid-cols-2 gap-2 pb-24 md:pb-0">

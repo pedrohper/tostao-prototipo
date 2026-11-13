@@ -1,4 +1,4 @@
-import type { FinancialPlan, ForecastMonth, Goal, GoalStatus, IncomeSuggestion, ThisMonthForecast } from '@tostao/contracts';
+import type { FinancialPlan, ForecastItem, ForecastMonth, Goal, GoalStatus, IncomeSuggestion, ThisMonthForecast } from '@tostao/contracts';
 import type { Repositories } from '../repositories/types.js';
 import type { Transaction } from '../domain/entities.js';
 import { NEUTRAL_CATEGORY_ID } from '../domain/entities.js';
@@ -174,7 +174,8 @@ export type PendingInstallment = { description: string; accountId: string; n: nu
 export function pendingInstallments(txs: Transaction[], cardIds: Set<string>): PendingInstallment[] {
   const latest = new Map<string, PendingInstallment>();
   for (const t of txs) {
-    if (t.amountInCents >= 0 || t.isInternalTransfer || !t.accountId || !cardIds.has(t.accountId)) continue;
+    // Anotado à mão como parcelado já tem as próximas parcelas lançadas: não projeta de novo.
+    if (t.amountInCents >= 0 || t.isInternalTransfer || !t.accountId || !cardIds.has(t.accountId) || t.seriesId) continue;
     const m = INSTALLMENT.exec(t.description);
     if (!m) continue;
     const n = Number(m[1]), total = Number(m[2]);
@@ -188,9 +189,17 @@ export function pendingInstallments(txs: Transaction[], cardIds: Set<string>): P
   }
   return [...latest.values()];
 }
+/** Parcelas que caem num mês, com o número de cada uma. */
+export const installmentsOfMonth = (list: PendingInstallment[], month: string) =>
+  list.flatMap((i) => {
+    const n = i.n + monthsBetween(i.month, month);
+    return n >= i.n && n <= i.total ? [{ ...i, n }] : [];
+  });
 /** Quanto das parcelas cai num mês. */
 export const installmentsInMonth = (list: PendingInstallment[], month: string) =>
   list.filter((i) => i.n + monthsBetween(i.month, month) <= i.total).reduce((s, i) => s + i.amount, 0);
+/** Dia do mês em Brasília. */
+const brDay = (d: Date) => new Date(d.getTime() - 3 * 60 * 60 * 1000).getUTCDate();
 
 /**
  * Previsão dos próximos 3 meses:
@@ -206,38 +215,73 @@ export class ForecastUseCase {
     const now = this.now();
     const cur = currentMonth(now);
     const summary = new GetMonthSummaryUseCase(this.repos);
-    const [past, subs, accounts, recent, curSummary] = await Promise.all([
+    const firstFuture = new Date(`${shiftMonth(cur, 1)}-01T03:00:00Z`);
+    const afterLast = new Date(`${shiftMonth(cur, months + 1)}-01T03:00:00Z`);
+    const [past, subs, accounts, recent, curSummary, scheduled] = await Promise.all([
       Promise.all([1, 2, 3].map((k) => summary.execute({ userId, month: shiftMonth(cur, -k) }))),
       new ListSubscriptionsUseCase(this.repos, () => now).execute({ userId }),
       this.repos.accounts.listByUser(userId),
       this.repos.transactions.findManyInRange(userId, new Date(now.getTime() - 62 * DAY), new Date(now.getTime() + DAY)),
       summary.execute({ userId, month: cur }),
+      this.repos.transactions.findManyInRange(userId, firstFuture, afterLast),
     ]);
 
-    const cards = new Set(accounts.filter((a) => a.type === 'CREDIT' && !a.hidden).map((a) => a.id));
+    const cardAccounts = accounts.filter((a) => a.type === 'CREDIT' && !a.hidden);
+    const cards = new Set(cardAccounts.map((a) => a.id));
     const pending = pendingInstallments(recent, cards);
     const installmentsIn = (month: string) => installmentsInMonth(pending, month);
 
     const income = planIncome(plan);
     const fixed = planFixed(plan);
+    const activeSubs = subs.subscriptions.filter((x) => x.active && x.installmentsLeft !== 0);
     const subscriptions = subs.monthlyInCents;
     const withData = past.filter((s) => s.outcomeInCents > 0);
     const avgOut = withData.length ? Math.round(withData.reduce((s, x) => s + x.outcomeInCents, 0) / withData.length) : 0;
     const daily = Math.max(0, avgOut - subscriptions - fixed - installmentsIn(cur));
+    const cardOf = (accountId: string | null | undefined) => (accountId && cards.has(accountId) ? accountId : null);
 
     const out: ForecastMonth[] = [];
     for (let k = 1; k <= months; k++) {
       const month = shiftMonth(cur, k);
+      const inMonth = scheduled.filter((t) => currentMonth(t.occurredAt) === month && !t.isInternalTransfer);
+      const items: ForecastItem[] = [];
+      if (plan.salary?.amountInCents) items.push({ kind: 'renda', title: 'Salário', amountInCents: plan.salary.amountInCents, entrada: true, day: plan.salary.payday ?? null, cardId: null, detail: null });
+      for (const o of plan.otherIncomes.filter((i) => i.countsAsIncome)) items.push({ kind: 'renda', title: o.name, amountInCents: o.amountInCents, entrada: true, day: o.day ?? null, cardId: null, detail: null });
+      for (const f of plan.fixedExpenses) items.push({ kind: 'conta', title: f.name, amountInCents: f.amountInCents, entrada: false, day: f.day, cardId: null, detail: null });
+      for (const x of activeSubs) {
+        // Parcelado anual (x/12) que acaba antes desse mês não cobra mais.
+        if (x.installmentsLeft !== null && x.installmentsLeft < k) continue;
+        items.push({ kind: 'assinatura', title: x.name, amountInCents: x.amountInCents, entrada: false, day: brDay(x.nextChargeAt), cardId: cardOf(x.accountId), detail: null });
+      }
+      for (const i of installmentsOfMonth(pending, month)) {
+        items.push({ kind: 'parcela', title: i.description.replace(/\s*\(?\b\d{1,2}\s*\/\s*\d{1,2}\b\)?/, '').trim(), amountInCents: i.amount, entrada: false, day: null, cardId: i.accountId, detail: `${i.n}/${i.total}` });
+      }
+      for (const t of inMonth) {
+        const m = /\((\d{1,2})\/(\d{1,2})\)$/.exec(t.description);
+        items.push({ kind: m ? 'parcela' : 'anotado', title: m ? t.description.replace(/\s*\(\d{1,2}\/\d{1,2}\)$/, '') : t.description, amountInCents: Math.abs(t.amountInCents), entrada: t.amountInCents > 0, day: brDay(t.occurredAt), cardId: cardOf(t.accountId), detail: m ? `${m[1]}/${m[2]}` : null });
+      }
+      items.sort((a, b) => Number(b.entrada) - Number(a.entrada) || (a.day ?? 99) - (b.day ?? 99) || b.amountInCents - a.amountInCents);
+
+      const subsTotal = items.filter((i) => i.kind === 'assinatura').reduce((s, i) => s + i.amountInCents, 0);
       const inst = installmentsIn(month);
+      const scheduledOut = inMonth.filter((t) => t.amountInCents < 0).reduce((s, t) => s - t.amountInCents, 0);
+      const scheduledIn = inMonth.filter((t) => t.amountInCents > 0).reduce((s, t) => s + t.amountInCents, 0);
+      const cardTotals = cardAccounts
+        .map((a) => ({ id: a.id, name: a.name, dueDay: a.dueDate ? brDay(a.dueDate) : null, totalInCents: items.filter((i) => i.cardId === a.id && !i.entrada).reduce((s, i) => s + i.amountInCents, 0) }))
+        .filter((c) => c.totalInCents > 0);
       out.push({
         month,
         incomeInCents: income,
         fixedInCents: fixed,
-        subscriptionsInCents: subscriptions,
+        subscriptionsInCents: subsTotal,
         installmentsInCents: inst,
         dailyInCents: daily,
-        leftInCents: income - fixed - subscriptions - inst - daily,
+        scheduledOutInCents: scheduledOut,
+        scheduledInInCents: scheduledIn,
+        leftInCents: income + scheduledIn - fixed - subsTotal - inst - scheduledOut - daily,
         benefitsInCents: (plan.benefits ?? []).reduce((s, b) => s + b.amountInCents, 0),
+        items,
+        cards: cardTotals,
       });
     }
     // Mês atual: o que já entrou/saiu de verdade + o que ainda deve sair até o último dia.

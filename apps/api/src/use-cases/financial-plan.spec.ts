@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { FinancialPlan } from '@tostao/contracts';
 import { makeInMemoryRepositories } from '../repositories/in-memory/index.js';
 import { ForecastUseCase, SaveFinancialPlanUseCase, SuggestIncomeUseCase } from './financial-plan.js';
+import { CreateManualTransactionUseCase } from './create-manual-transaction.js';
+import { DeleteTransactionUseCase } from './delete-transaction.js';
 
 const NOW = new Date('2026-11-12T12:00:00Z');
 
@@ -92,5 +94,51 @@ describe('Meta', () => {
     const f = await new ForecastUseCase(repos, () => NOW).execute({ userId: 'u1' });
     expect(f.goal!.amountInCents).toBe(120000);
     expect(f.goal!.monthlyNeededInCents).toBe(Math.ceil(113000 / 2));
+  });
+});
+
+describe('Previsão item por item', () => {
+  it('lista parcelas por cartão, o "todo mês" anotado e a fatura prevista', async () => {
+    const { repos, add } = setup();
+    await repos.accounts.upsertByExternalId({ userId: 'u1', connectionId: 'c1', externalId: 'card', name: 'Nubank Gold', type: 'CREDIT', balanceInCents: 0, fingerprint: null });
+    const card = (await repos.accounts.listByUser('u1'))[0]!.id;
+    await add('AMAZON MKTPLACE 9/10', -10000, '2026-11-03', card);
+    const manual = new CreateManualTransactionUseCase(repos);
+    await manual.execute({ userId: 'u1', description: 'Academia', amountInCents: 9990, kind: 'saida', occurredAt: new Date('2026-11-10T15:00:00Z'), repeat: 'mensal' });
+    await manual.execute({ userId: 'u1', description: 'Fone', amountInCents: 30000, kind: 'saida', occurredAt: new Date('2026-11-05T15:00:00Z'), accountId: card, repeat: 'parcelado', times: 3 });
+    await new SaveFinancialPlanUseCase(repos, () => NOW).execute({ userId: 'u1', plan: plan() });
+    const f = await new ForecastUseCase(repos, () => NOW).execute({ userId: 'u1' });
+    const dez = f.months[0]!;
+    expect(dez.items.find((i) => i.title === 'AMAZON MKTPLACE')).toMatchObject({ kind: 'parcela', detail: '10/10', cardId: card, amountInCents: 10000 });
+    expect(dez.items.find((i) => i.title === 'Fone')).toMatchObject({ kind: 'parcela', detail: '2/3', cardId: card, amountInCents: 10000 });
+    expect(dez.items.find((i) => i.title === 'Academia')).toMatchObject({ kind: 'anotado', day: 10, cardId: null, amountInCents: 9990 });
+    expect(dez.cards).toEqual([{ id: card, name: 'Nubank Gold', dueDay: null, totalInCents: 20000 }]);
+    // Fone 3/3 em janeiro; em fevereiro acabou. Academia continua.
+    expect(f.months[1]!.items.some((i) => i.title === 'Fone' && i.detail === '3/3')).toBe(true);
+    expect(f.months[2]!.items.some((i) => i.title === 'Fone')).toBe(false);
+    expect(f.months[2]!.items.some((i) => i.title === 'Academia')).toBe(true);
+  });
+});
+
+describe('Anotar com repetição', () => {
+  it('parcelado divide o total e o resto vai na primeira; dá pra apagar a série dali pra frente', async () => {
+    const { repos } = setup();
+    const uc = new CreateManualTransactionUseCase(repos);
+    const r = await uc.execute({ userId: 'u1', description: 'Celular', amountInCents: 100000, kind: 'saida', occurredAt: new Date('2026-01-31T15:00:00Z'), repeat: 'parcelado', times: 3 });
+    expect(r.count).toBe(3);
+    const all = repos.transactions.items.filter((t) => t.seriesId === r.transaction.seriesId).sort((a, b) => a.occurredAt.getTime() - b.occurredAt.getTime());
+    expect(all.map((t) => t.amountInCents)).toEqual([-33334, -33333, -33333]);
+    expect(all.map((t) => t.description)).toEqual(['Celular (1/3)', 'Celular (2/3)', 'Celular (3/3)']);
+    expect(all[1]!.occurredAt.toISOString().slice(0, 10)).toBe('2026-02-28'); // dia 31 vira o último dia de fevereiro
+    const del = await new DeleteTransactionUseCase(repos).execute({ userId: 'u1', transactionId: all[1]!.id, series: true });
+    expect(del.deleted).toBe(2);
+    expect(repos.transactions.items.filter((t) => t.seriesId === r.transaction.seriesId)).toHaveLength(1);
+  });
+
+  it('não apaga lançamento do banco', async () => {
+    const { repos, add } = setup();
+    const t = await repos.transactions.create({ userId: 'u1', accountId: 'a1', externalId: 'x1', description: 'PIX', amountInCents: -100, occurredAt: new Date(), categoryId: null, isInternalTransfer: false });
+    void add;
+    await expect(new DeleteTransactionUseCase(repos).execute({ userId: 'u1', transactionId: t.id })).rejects.toThrow();
   });
 });
