@@ -82,6 +82,22 @@ export default async function AprenderPage() {
       )}
 
       <section className="flex flex-col gap-2">
+        <Eyebrow>Contas na mão</Eyebrow>
+        <div className="grid grid-cols-2 gap-2.5">
+          <Link href="/compensa" className="flex flex-col gap-1 rounded-[18px] border border-linha bg-cartao p-3 text-tinta no-underline">
+            <Mascote pose="investigando" size={56} alt="" />
+            <span className="text-[15px] leading-[19px] font-bold">Compensa parcelar?</span>
+            <span className="text-xs text-tinta-suave">Acha os juros escondidos da compra</span>
+          </Link>
+          <Link href="/investir" className="flex flex-col gap-1 rounded-[18px] border border-linha bg-cartao p-3 text-tinta no-underline">
+            <Mascote pose="professor" size={56} alt="" />
+            <span className="text-[15px] leading-[19px] font-bold">Onde investir</span>
+            <span className="text-xs text-tinta-suave">O caminho pros seus primeiros reais</span>
+          </Link>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-2">
         <Eyebrow>Jogos da semana</Eyebrow>
         <div className="grid grid-cols-2 gap-2.5">
           <Link href="/tribunal" className="flex flex-col gap-1 rounded-[18px] bg-azul p-3 text-tinta no-underline">

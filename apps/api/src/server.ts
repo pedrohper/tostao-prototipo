@@ -10,6 +10,7 @@ import { AutoCategorizeUseCase } from './use-cases/auto-categorize.js';
 import { scheduleDailySync, syncAllConnections } from './jobs/daily-sync.js';
 import { DisabledPushGateway, WebPushGateway } from './gateways/push-gateway.js';
 import { scheduleNotifications } from './jobs/notifications.js';
+import { BcbRatesGateway } from './gateways/rates-gateway.js';
 
 const repos = makePrismaRepositories(prisma);
 const bank = makeBankGateway(env);
@@ -18,7 +19,7 @@ const whatsapp = env.WHATSAPP_TOKEN
   ? new CloudApiWhatsAppGateway(env.WHATSAPP_TOKEN, env.WHATSAPP_PHONE_NUMBER_ID, env.WHATSAPP_APP_SECRET, env.WHATSAPP_NUMBER || null)
   : new FakeWhatsAppGateway();
 const push = env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY ? new WebPushGateway(env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY, env.VAPID_SUBJECT) : new DisabledPushGateway();
-const app = await buildApp({ repos, bank, ai, whatsapp, push, whatsappVerifyToken: env.WHATSAPP_VERIFY_TOKEN, chatDailyLimit: env.CHAT_DAILY_LIMIT, jwtSecret: env.JWT_SECRET, webOrigin: env.WEB_ORIGIN, logger: true });
+const app = await buildApp({ repos, bank, ai, whatsapp, push, rates: new BcbRatesGateway(), whatsappVerifyToken: env.WHATSAPP_VERIFY_TOKEN, chatDailyLimit: env.CHAT_DAILY_LIMIT, jwtSecret: env.JWT_SECRET, webOrigin: env.WEB_ORIGIN, logger: true });
 
 const sync = new SyncBankConnectionUseCase({ ...repos, bank });
 const autoCategorize = new AutoCategorizeUseCase(repos, ai);

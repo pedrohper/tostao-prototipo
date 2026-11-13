@@ -2,6 +2,7 @@
 // Tudo que atravessa a rede passa por aqui: o schema Zod valida na API
 // e o tipo inferido (z.infer) tipa a web. Um lugar só pra mudar.
 import { z } from 'zod';
+export * from './juros';
 
 // ---------- Auth ----------
 export const registerBody = z.object({
