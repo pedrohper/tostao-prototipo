@@ -365,6 +365,8 @@ export type ThisMonthForecast = {
   fixedLeftInCents: number;
   subscriptionsLeftInCents: number;
   dailyLeftInCents: number;
+  /** Ritmo do dia a dia por dia usado no resto do mês (sem assinaturas e contas grandes). */
+  dailyPaceInCents?: number;
   leftInCents: number;
 };
 /** Um mês do passado visto pela previsão: quanto saiu, quanto veio de dinheiro extra e quanto conta como dia a dia normal. */

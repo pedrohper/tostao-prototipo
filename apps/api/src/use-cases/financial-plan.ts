@@ -235,20 +235,26 @@ const medianOf = (xs: number[]) => {
 const EXTRA_INCOME_FACTOR = 1.3;
 /** Gasto acima disso (x renda normal) sem dinheiro extra pra cobrir é aperto. */
 const OVERSPEND_FACTOR = 1.1;
+/** Saída acima disso (x renda) é conta grande que cai uma vez no mês, não ritmo do dia a dia. */
+const BIG_SPEND_FACTOR = 0.15;
 
 /**
  * Base do dia a dia que entende de onde saiu o dinheiro.
- * Mês com entrada bem acima da renda normal guarda o excesso num "pote extra". Nos meses seguintes,
- * o que passar da renda normal é pago primeiro com esse pote e sai da base (é exceção, não hábito).
+ * Entrada bem acima da renda normal vai pra um "pote extra" (somado na janela toda). O que passar da renda
+ * normal em qualquer mês da janela é pago primeiro com esse pote e sai da base (é exceção, não hábito).
  * O que sobrar acima da renda sem pote pra cobrir continua na base: aí é aperto de verdade.
  * `history` em ordem do mais antigo pro mais recente.
  */
-export function spendingBase(history: { month: string; incomeInCents: number; outcomeInCents: number }[], normalIncome: number): SpendingBase {
+export function spendingBase(history: { month: string; incomeInCents: number; outcomeInCents: number; partial?: boolean }[], normalIncome: number): SpendingBase {
   const income = normalIncome > 0 ? normalIncome : medianOf(history.filter((h) => h.incomeInCents > 0).map((h) => h.incomeInCents));
-  let pool = 0;
-  const months: SpendingBaseMonth[] = history.map((h) => {
-    const extra = income > 0 && h.incomeInCents > income * EXTRA_INCOME_FACTOR ? h.incomeInCents - income : 0;
-    pool += extra;
+  // Mês em que os dados começam no meio (conectou o banco dia 14) não diz quanto se gasta num mês inteiro.
+  const full = history.some((h) => !h.partial && h.outcomeInCents > 0) ? history.filter((h) => !h.partial) : history;
+  const extraOf = (h: { incomeInCents: number }) => (income > 0 && h.incomeInCents > income * EXTRA_INCOME_FACTOR ? h.incomeInCents - income : 0);
+  // O pote é o extra da janela toda: acerto que caiu no mês seguinte também paga o excesso do mês anterior
+  // (a compra no cartão de setembro é paga com o dinheiro que entrou em outubro).
+  let pool = full.reduce((s, h) => s + extraOf(h), 0);
+  const months: SpendingBaseMonth[] = full.map((h) => {
+    const extra = extraOf(h);
     const over = income > 0 ? Math.max(0, h.outcomeInCents - income) : 0;
     const paid = Math.min(pool, over);
     pool -= paid;
@@ -281,15 +287,19 @@ export class ForecastUseCase {
     const summary = new GetMonthSummaryUseCase(this.repos);
     const firstFuture = new Date(`${shiftMonth(cur, 1)}-01T03:00:00Z`);
     const afterLast = new Date(`${shiftMonth(cur, months + 1)}-01T03:00:00Z`);
-    const [past, subs, accounts, recent, curSummary, scheduled] = await Promise.all([
+    const [past, subs, accounts, txWindow, curSummary, scheduled] = await Promise.all([
       Promise.all([6, 5, 4, 3, 2, 1].map((k) => summary.execute({ userId, month: shiftMonth(cur, -k) }))),
       new ListSubscriptionsUseCase(this.repos, () => now).execute({ userId }),
       this.repos.accounts.listByUser(userId),
-      this.repos.transactions.findManyInRange(userId, new Date(now.getTime() - 62 * DAY), new Date(now.getTime() + DAY)),
+      this.repos.transactions.findManyInRange(userId, new Date(`${shiftMonth(cur, -6)}-01T03:00:00Z`), new Date(now.getTime() + DAY)),
       summary.execute({ userId, month: cur }),
       this.repos.transactions.findManyInRange(userId, firstFuture, afterLast),
     ]);
 
+    const recent = txWindow.filter((t) => t.occurredAt.getTime() >= now.getTime() - 62 * DAY);
+    // Primeiro dia com dado: se o banco foi ligado no meio do mês, esse mês fica de fora da base.
+    const first = txWindow.reduce<Date | null>((min, t) => (t.accountId && (!min || t.occurredAt < min) ? t.occurredAt : min), null);
+    const partialMonth = first && brDay(first) > 5 ? currentMonth(first) : null;
     const cardAccounts = accounts.filter((a) => a.type === 'CREDIT' && !a.hidden);
     const cards = new Set(cardAccounts.map((a) => a.id));
     // Plano anual parcelado (Prime 5/12) já entra como assinatura: não conta de novo como parcela.
@@ -301,7 +311,7 @@ export class ForecastUseCase {
     const fixed = planFixed(plan);
     const activeSubs = subs.subscriptions.filter((x) => x.active && x.installmentsLeft !== 0);
     const subscriptions = subs.monthlyInCents;
-    const base = spendingBase(past.map((p, i) => ({ month: shiftMonth(cur, i - past.length), incomeInCents: p.incomeInCents, outcomeInCents: p.outcomeInCents })), income);
+    const base = spendingBase(past.map((p, i) => ({ month: shiftMonth(cur, i - past.length), incomeInCents: p.incomeInCents, outcomeInCents: p.outcomeInCents, partial: shiftMonth(cur, i - past.length) === partialMonth })), income);
     const daily = Math.max(0, base.typicalInCents - subscriptions - fixed - installmentsIn(cur));
     const cardOf = (accountId: string | null | undefined) => (accountId && cards.has(accountId) ? accountId : null);
 
@@ -359,7 +369,18 @@ export class ForecastUseCase {
     const subsLeft = subs.subscriptions
       .filter((x) => x.active && new Date(x.nextChargeAt) > now && new Date(x.nextChargeAt) < endOfMonth)
       .reduce((sum, x) => sum + x.amountInCents, 0);
-    const dailyLeft = Math.round((daily * daysLeft) / daysInMonth);
+    // Resto do mês no ritmo de agora: só o miúdo do dia a dia (sem assinatura, sem conta grande que cai uma vez,
+    // como o Pix do aluguel). Antes de uma semana de dados, usa a base dos meses anteriores proporcional aos dias.
+    const accountIds = new Set(accounts.filter((a) => !a.hidden).map((a) => a.id));
+    const subKeysActive = new Set(subs.subscriptions.map((x) => x.key.split('#')[0]));
+    const big = Math.max(20000, Math.round(income * BIG_SPEND_FACTOR));
+    const monthStart = new Date(`${cur}-01T03:00:00Z`);
+    const everyday = txWindow
+      .filter((t) => t.occurredAt >= monthStart && t.occurredAt <= now && t.amountInCents < 0 && !t.isInternalTransfer && (!t.accountId || accountIds.has(t.accountId)))
+      .filter((t) => -t.amountInCents < big && !subKeysActive.has(subscriptionKey(t.description)))
+      .reduce((sum, t) => sum - t.amountInCents, 0);
+    const pacePerDay = today >= 7 ? Math.round(everyday / today) : Math.round(daily / daysInMonth);
+    const dailyLeft = pacePerDay * daysLeft;
     const incomeNow = Math.max(income, curSummary.incomeInCents);
     const thisMonth: ThisMonthForecast = {
       month: cur,
@@ -369,6 +390,7 @@ export class ForecastUseCase {
       fixedLeftInCents: fixedLeft,
       subscriptionsLeftInCents: subsLeft,
       dailyLeftInCents: dailyLeft,
+      dailyPaceInCents: pacePerDay,
       leftInCents: incomeNow - curSummary.outcomeInCents - fixedLeft - subsLeft - dailyLeft,
     };
 

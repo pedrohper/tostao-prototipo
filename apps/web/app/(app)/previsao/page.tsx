@@ -122,7 +122,7 @@ function EsteMes({ t }: { t: ThisMonthForecast }) {
     ['Já saiu', -t.spentInCents],
     ['Contas fixas que faltam', -t.fixedLeftInCents],
     ['Assinaturas que faltam', -t.subscriptionsLeftInCents],
-    [`Dia a dia (${t.daysLeft} ${t.daysLeft === 1 ? 'dia' : 'dias'})`, -t.dailyLeftInCents],
+    [`Dia a dia (${t.daysLeft} ${t.daysLeft === 1 ? 'dia' : 'dias'}${t.dailyPaceInCents ? ` × ${money(t.dailyPaceInCents)}` : ''})`, -t.dailyLeftInCents],
   ];
   return (
     <section className="flex flex-col gap-2 rounded-2xl border border-linha bg-cartao p-3.5">

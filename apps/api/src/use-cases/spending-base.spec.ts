@@ -11,8 +11,19 @@ describe('spendingBase', () => {
       { month: '2026-10', incomeInCents: R(5410), outcomeInCents: R(4013) }, // outra entrada grande cobre o mês
     ], R(2000));
     expect(b.status).toBe('excecao');
-    expect(b.months[1]!.paidWithExtraInCents).toBe(R(2641));
-    expect(b.typicalInCents).toBe(R(2249));
+    // O pote é da janela toda: o acerto de outubro também paga o que passou em setembro.
+    expect(b.months[1]!.paidWithExtraInCents).toBe(R(2962));
+    expect(b.typicalInCents).toBe(R(2000));
+  });
+
+  it('mês em que o banco foi ligado no meio fica de fora da base', () => {
+    const b = spendingBase([
+      { month: '2026-08', incomeInCents: R(2391), outcomeInCents: R(2249), partial: true },
+      { month: '2026-09', incomeInCents: R(2000), outcomeInCents: R(1700) },
+      { month: '2026-10', incomeInCents: R(2000), outcomeInCents: R(1800) },
+    ], R(2000));
+    expect(b.months.map((m) => m.month)).toEqual(['2026-09', '2026-10']);
+    expect(b.typicalInCents).toBe(R(1750));
   });
 
   it('gastar mais que a renda sem dinheiro extra, mês após mês, é aperto', () => {

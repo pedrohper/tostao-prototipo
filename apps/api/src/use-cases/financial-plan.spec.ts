@@ -64,6 +64,20 @@ describe('Renda e previsão', () => {
     expect(f.months[1]!.leftInCents).toBe(320000 - 90000 - f.months[1]!.subscriptionsInCents - f.months[1]!.dailyInCents);
   });
 
+  it('resto do mês vai no ritmo do miúdo: o Pix grande que já caiu não se repete nos dias que faltam', async () => {
+    const { repos, add } = setup();
+    await repos.accounts.upsertByExternalId({ userId: 'u1', connectionId: 'c1', externalId: 'mp', name: 'Mercado Pago', type: 'BANK', balanceInCents: 0, fingerprint: null });
+    const mp = (await repos.accounts.listByUser('u1'))[0]!.id;
+    await add('Pagamento com Pix CASA', -56619, '2026-11-04', mp); // conta grande do mês
+    for (let d = 1; d <= 12; d++) await add(`Uber ${d}`, -4000, `2026-11-${String(d).padStart(2, '0')}`, mp); // R$ 40/dia
+    await new SaveFinancialPlanUseCase(repos, () => NOW).execute({ userId: 'u1', plan: plan({ fixedExpenses: [], salary: { ...plan().salary!, amountInCents: 200000 } }) });
+    const t = (await new ForecastUseCase(repos, () => NOW).execute({ userId: 'u1' })).thisMonth!;
+    expect(t.spentInCents).toBe(56619 + 12 * 4000);
+    expect(t.dailyPaceInCents).toBe(Math.round((12 * 4000) / 12));
+    expect(t.dailyLeftInCents).toBe(4000 * t.daysLeft);
+    expect(t.leftInCents).toBe(200000 - t.spentInCents - t.subscriptionsLeftInCents - t.dailyLeftInCents);
+  });
+
   it('sem plano, a previsão avisa que falta a renda', async () => {
     const { repos } = setup();
     expect(await new ForecastUseCase(repos, () => NOW).execute({ userId: 'u1' })).toEqual({ hasPlan: false, months: [], goal: null, thisMonth: null, base: null });
