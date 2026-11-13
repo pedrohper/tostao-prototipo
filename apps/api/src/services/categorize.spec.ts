@@ -19,6 +19,10 @@ describe('categorizeByRules', () => {
   it('regra do usuário vence regra do sistema', () => {
     expect(categorizeByRules('UBER *TRIP', [...rules, rule('UBER', 'estudo', 'u1')])).toBe('estudo');
   });
+  it('regra criada de descrição com data no meio bate na próxima', () => {
+    const r = rule(patternFromDescription('PIX ENVIADO - DES FULANO DE TAL 02/09 - DOCTO: 1757'), 'nao-conta', 'u1');
+    expect(categorizeByRules('PIX ENVIADO - DES FULANO DE TAL 21/10 - DOCTO: 1635', [r])).toBe('nao-conta');
+  });
 });
 
 describe('patternFromDescription', () => {
