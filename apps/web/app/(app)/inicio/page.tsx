@@ -103,11 +103,12 @@ export default async function InicioPage() {
           )}
           {!aberto(dicaKey) ? null : delivery && delivery.totalInCents >= 10000 ? (
             <Fechavel id={dicaKey}>
-            <div className="flex items-center gap-2 rounded-2xl bg-rosa py-3.5 pr-10 pl-2">
+            <div className="relative flex items-center gap-2 rounded-2xl bg-rosa py-3.5 pr-10 pl-2 text-tinta">
+              <Link href="/aprender/m1-l2" aria-label="Ver a lição sobre delivery" className="absolute inset-0 rounded-2xl" />
               <Mascote pose="preocupado" size={92} alt="Tostão preocupado lendo um recibo" />
               <div className="flex min-w-0 flex-col gap-2.5">
                 <p className="text-[15px] leading-[21px]">Eita, <b>{money(delivery.totalInCents)} em delivery</b> esse mês. Tem uma lição de 2 minutos sobre isso.</p>
-                <div className="flex flex-wrap gap-2">
+                <div className="relative z-[1] flex flex-wrap gap-2">
                   <Link href="/aprender/m1-l2" className="flex h-9 items-center rounded-full bg-tinta px-4 text-sm font-semibold text-papel no-underline">Bora ver</Link>
                   <Link href="/chat" className="flex h-9 items-center rounded-full border-[1.5px] border-tinta px-4 text-sm font-semibold text-tinta no-underline">Pergunte ao Tostão</Link>
                 </div>
@@ -116,13 +117,13 @@ export default async function InicioPage() {
             </Fechavel>
           ) : (
             <Fechavel id={dicaKey}>
-            <div className="flex items-center gap-2 rounded-2xl bg-amarelo-claro py-3.5 pr-10 pl-2">
+            <Link href="/chat" className="flex items-center gap-2 rounded-2xl bg-amarelo-claro py-3.5 pr-10 pl-2 text-tinta no-underline">
               <Mascote pose="pensando" size={84} alt="Tostão pensando" />
               <div className="flex min-w-0 flex-col gap-2.5">
                 <p className="text-[15px] leading-[21px]">Ficou com dúvida sobre algum gasto ou quer saber se dá pra comprar algo? <b>Pergunta pra mim.</b></p>
-                <Link href="/chat" className="flex h-9 items-center self-start rounded-full bg-tinta px-4 text-sm font-semibold text-papel no-underline">Pergunte ao Tostão</Link>
+                <span className="flex h-9 items-center self-start rounded-full bg-tinta px-4 text-sm font-semibold text-papel">Pergunte ao Tostão</span>
               </div>
-            </div>
+            </Link>
             </Fechavel>
           )}
           {estourou && aberto(`estourou:${estourou.categoryId}:${month}`) && (
@@ -156,15 +157,16 @@ export default async function InicioPage() {
           {<section className="flex flex-col gap-3">
             <div className="flex items-baseline justify-between">
               <h2 className="font-display text-xl leading-[26px] font-extrabold">Pra onde foi</h2>
-              {lastSync && <span className="text-xs font-medium text-tinta-suave">atualizado {ago(lastSync)}</span>}
+              <Link href="/carteira?filtro=saidas#lista" className="text-[13px] font-semibold text-laranja-texto">Ver tudo</Link>
             </div>
+            {lastSync && <span className="-mt-2 text-xs font-medium text-tinta-suave">atualizado {ago(lastSync)}</span>}
             {top.length === 0 && <p className="text-sm text-tinta-suave">Nenhum gasto categorizado em {mes} ainda.</p>}
             <div className="flex flex-col gap-3">
               {top.slice(0, 5).map((c, i) => (
-                <div key={c.categoryId} className="flex flex-col gap-1.5">
-                  <div className="flex justify-between text-[15px] font-semibold"><span>{c.name}</span><span className="tabular-nums">{money(c.totalInCents)}</span></div>
+                <Link key={c.categoryId} href={`/carteira?${new URLSearchParams({ mes: month, cat: c.categoryId ?? 'sem' })}#lista`} className="flex flex-col gap-1.5 text-tinta no-underline">
+                  <div className="flex justify-between text-[15px] font-semibold"><span>{c.name}</span><span className="tabular-nums">{money(c.totalInCents)} ›</span></div>
                   <div className="h-2.5 rounded-full bg-papel-2"><div className={`bar-fill h-full rounded-full ${i === 0 ? 'bg-laranja' : 'bg-tinta'}`} style={{ width: `${Math.max(2, (c.totalInCents / max) * 100)}%` }} /></div>
-                </div>
+                </Link>
               ))}
             </div>
           </section>}
@@ -233,15 +235,15 @@ export default async function InicioPage() {
     ),
     'limites': (
       <>
-          {<Card className="flex flex-col gap-3">
+          {<Link href="/limites" className="flex flex-col gap-3 rounded-[20px] border border-linha bg-cartao p-4 text-tinta no-underline">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-xl font-extrabold">Limites</h2>
-              <Link href="/limites" className="text-[13px] font-semibold text-laranja-texto">{limits.budgets.length ? 'Editar' : 'Definir'}</Link>
+              <span className="text-[13px] font-semibold text-laranja-texto">{limits.budgets.length ? 'Editar' : 'Definir'}</span>
             </div>
             {limits.budgets.length === 0
               ? <p className="text-sm text-tinta-suave">Põe um teto em delivery, mercado ou no que pesar mais. Eu aviso quando chegar perto.</p>
               : limits.budgets.slice(0, 3).map((b) => <BudgetBar key={b.categoryId} budget={b} />)}
-          </Card>}
+          </Link>}
       </>
     ),
   };
@@ -275,16 +277,17 @@ export default async function InicioPage() {
       {vazio && missions && <Missoes data={missions} compact />}
       {!vazio && (
         <>
-          <div className="flex flex-col gap-3.5 rounded-[22px] border border-linha bg-cartao p-[18px]">
+          <div className="relative flex flex-col gap-3.5 rounded-[22px] border border-linha bg-cartao p-[18px]">
+            <Link href="/carteira" aria-label="Abrir a Carteira" className="absolute inset-0 rounded-[22px]" />
             {s.balanceInCents !== null ? (
               <div className="flex flex-col gap-0.5">
-                <span className="text-[13px] font-semibold text-tinta-suave">Saldo em {bancos.length} {bancos.length === 1 ? 'conta' : 'contas'}</span>
+                <span className="text-[13px] font-semibold text-tinta-suave">Saldo em {bancos.length} {bancos.length === 1 ? 'conta' : 'contas'} ›</span>
                 <span className="font-display text-[40px] leading-[44px] font-extrabold tracking-[-0.5px] tabular-nums">{money(s.balanceInCents)}</span>
               </div>
             ) : (
               <span className="text-[13px] font-semibold text-tinta-suave">Sem banco conectado, contando só o que você anotou</span>
             )}
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="relative z-[1] grid grid-cols-2 gap-2.5">
               <Link href="/carteira?filtro=entradas#lista" className="flex flex-col gap-0.5 rounded-[14px] bg-papel-2 px-3 py-2.5 text-tinta no-underline"><span className="text-xs font-semibold text-tinta-suave">Entrou em {mes} ›</span><span className="text-[17px] font-bold text-verde-texto tabular-nums">+ {money(s.incomeInCents)}</span></Link>
               <Link href="/carteira?filtro=saidas#lista" className="flex flex-col gap-0.5 rounded-[14px] bg-papel-2 px-3 py-2.5 text-tinta no-underline"><span className="text-xs font-semibold text-tinta-suave">Saiu em {mes} ›</span><span className="text-[17px] font-bold tabular-nums">{money(s.outcomeInCents)}</span></Link>
             </div>
