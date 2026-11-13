@@ -2,7 +2,7 @@ import { SonsSwitch } from '@/components/sons';
 import { Avisos } from '@/components/avisos';
 import type { PushKeyResponse } from '@tostao/contracts';
 import { Icone } from '@/components/icone';
-import { SeloBanco } from '@/components/banco';
+import { logosBancos, SeloBanco } from '@/components/banco';
 import Link from 'next/link';
 import type { LessonProgressResponse, ProfileResponse } from '@tostao/contracts';
 import { api } from '@/lib/api';
@@ -37,10 +37,11 @@ function synced(iso: string | null) {
 }
 
 export default async function PerfilPage() {
-  const [me, { done, streakDays, bonusXp = 0 }, push] = await Promise.all([
+  const [me, { done, streakDays, bonusXp = 0 }, push, logos] = await Promise.all([
     api<ProfileResponse>('/me'),
     api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
     api<PushKeyResponse>('/push/key').catch(() => null),
+    logosBancos(),
   ]);
   const { xp, level } = xpFrom(done.length, bonusXp);
   const rows = 'flex min-h-12 items-center justify-between border-b border-linha text-tinta no-underline';
@@ -74,7 +75,7 @@ export default async function PerfilPage() {
                 </Link>
                 {c.accounts.map((a) => (
                   <div key={a.id} className={`flex min-h-9 items-center gap-2 pb-1 text-[13px] ${a.hidden ? 'text-tinta-suave' : ''}`}>
-                    <SeloBanco nome={a.name} instituicao={c.displayName} size={20} />
+                    <SeloBanco nome={a.name} instituicao={c.displayName} size={20} logos={logos} />
                     <span className={`min-w-0 grow truncate ${a.hidden ? 'line-through' : ''}`}>{a.name}</span>
                     <span className="shrink-0 tabular-nums">{money(a.type === 'CREDIT' ? Math.max(0, -a.balanceInCents) : a.balanceInCents)}</span>
                     <HideAccountButton accountId={a.id} hidden={a.hidden} />

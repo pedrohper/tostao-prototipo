@@ -1,5 +1,5 @@
 import { BankConnectionError } from '../domain/errors.js';
-import type { BankAccountData, BankGateway, BankItemData, BankTransactionData } from './bank-gateway.js';
+import type { BankAccountData, BankGateway, BankItemData, BankTransactionData, InstitutionLogo } from './bank-gateway.js';
 import { bankNameFromTransferNumber, prettyName } from '../services/bank-names.js';
 
 const BASE_URL = 'https://api.pluggy.ai';
@@ -76,6 +76,14 @@ export class PluggyBankGateway implements BankGateway {
     if (res.status === 404) throw new BankConnectionError('Esse Item ID não existe ou expirou no Pluggy.');
     if (!res.ok) throw new BankConnectionError(`Pluggy respondeu ${res.status} em ${path.split('?')[0]}.`);
     return (await res.json()) as T;
+  }
+
+  // Lista pública de conectores: cada banco tem o logo oficial (imageUrl) e a cor. Não depende do MeuPluggy.
+  async listInstitutionLogos(): Promise<InstitutionLogo[]> {
+    const page = await this.get<{ results: { name: string; imageUrl?: string | null; primaryColor?: string | null; isSandbox?: boolean }[] }>('/connectors?countries=BR');
+    return page.results
+      .filter((c) => c.imageUrl && !c.isSandbox && !/pluggy/i.test(c.name))
+      .map((c) => ({ name: c.name, imageUrl: c.imageUrl!, color: c.primaryColor ? `#${c.primaryColor.replace(/^#/, '')}` : null }));
   }
 
   // O connect token é o que o navegador recebe: ele só abre o widget, não dá acesso à API.

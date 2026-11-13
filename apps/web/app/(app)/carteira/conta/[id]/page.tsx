@@ -3,7 +3,7 @@ import type { AccountDetailResponse, TransactionDTO } from '@tostao/contracts';
 import { api } from '@/lib/api';
 import { ago, currentMonth, dayLabel, money, monthName, shiftMonth, shortDate } from '@/lib/format';
 import { BackLink, Eyebrow } from '@/components/ui';
-import { Bandeira, SeloBanco } from '@/components/banco';
+import { Bandeira, logosBancos, SeloBanco } from '@/components/banco';
 import { Mascote } from '@/components/mascote';
 import { BarrasMeses, Categorias, LimiteBarra } from '@/components/graficos';
 import { Chevron, Row } from '../../transaction-row';
@@ -15,7 +15,7 @@ export default async function ContaPage({ params, searchParams }: { params: Prom
   const sp = await searchParams;
   const hoje = currentMonth();
   const month = /^\d{4}-\d{2}$/.test(sp.mes ?? '') && sp.mes! <= hoje ? sp.mes! : hoje;
-  const d = await api<AccountDetailResponse>(`/accounts/${id}?month=${month}`);
+  const [d, logos] = await Promise.all([api<AccountDetailResponse>(`/accounts/${id}?month=${month}`), logosBancos()]);
   const a = d.account;
   const card = a.type === 'CREDIT';
   const fatura = Math.max(0, -a.balanceInCents);
@@ -35,7 +35,7 @@ export default async function ContaPage({ params, searchParams }: { params: Prom
       <BackLink href={`/carteira?mes=${month}`} label="Carteira" />
 
       <div className="flex items-center gap-3">
-        <SeloBanco nome={a.name} instituicao={a.institution} size={48} quadrado />
+        <SeloBanco nome={a.name} instituicao={a.institution} size={48} quadrado logos={logos} />
         <div className="flex min-w-0 flex-col">
           <h1 className="truncate font-display text-[28px] leading-8 font-extrabold">{a.name}</h1>
           <span className="flex flex-wrap items-center gap-x-1.5 text-[13px] text-tinta-suave">{card ? 'Cartão de crédito' : 'Conta'}{a.institution ? ` · ${a.institution}` : ''}{a.lastSyncedAt ? ` · atualizado ${ago(a.lastSyncedAt)}` : ''}</span>

@@ -12,6 +12,7 @@ describe('cartão pelo MeuPluggy', () => {
   it('fatura aberta = limite usado menos parcelas futuras; parcela futura não vira gasto; banco vem do código', async () => {
     const repos = makeInMemoryRepositories();
     const bank: BankGateway = {
+      listInstitutionLogos: async () => [],
       createConnectToken: async () => 'x',
       deleteItem: async () => {},
       fetchItem: async () => ({ institution: 'MeuPluggy' }),

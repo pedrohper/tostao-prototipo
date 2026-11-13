@@ -31,7 +31,12 @@ export type BankTransactionData = {
   billId?: string | null;
 };
 
+/** Logo oficial de cada instituição (lista de conectores do provedor). */
+export type InstitutionLogo = { name: string; imageUrl: string; color: string | null };
+
 export interface BankGateway {
+  /** Logos das instituições. [] quando o provedor não tem (o fake). */
+  listInstitutionLogos(): Promise<InstitutionLogo[]>;
   /**
    * Token curto (uns 30 min) pro widget Pluggy Connect abrir no navegador.
    * null = esse gateway não tem widget (o fake), então a tela usa só o campo manual.
