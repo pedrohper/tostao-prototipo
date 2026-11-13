@@ -1,3 +1,4 @@
+import { Visita } from '@/components/visita';
 import type { SubscriptionsResponse } from '@tostao/contracts';
 import { api } from '@/lib/api';
 import { money } from '@/lib/format';
@@ -15,6 +16,7 @@ export default async function AssinaturasPage() {
 
   return (
     <div className="flex flex-col gap-5">
+      <Visita kind="visita:assinaturas" />
       <BackLink href="/inicio" />
       <div>
         <h1 className="font-display text-[28px] leading-tight font-extrabold">Minhas assinaturas</h1>

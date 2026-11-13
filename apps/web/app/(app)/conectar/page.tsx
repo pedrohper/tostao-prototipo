@@ -123,8 +123,9 @@ export default async function ConectarPage({ searchParams }: { searchParams: Pro
       )}
 
       {novo && (
-        <div className="flex items-center justify-end">
-          <Link href="/inicio" className="flex h-11 items-center text-sm font-semibold text-tinta-suave no-underline">Agora não, só explorar</Link>
+        <div className="flex items-center justify-between gap-2">
+          <Link href="/renda" className="flex h-11 items-center text-sm font-semibold text-laranja-texto no-underline">Sem banco: só contar minha renda</Link>
+          <Link href="/inicio" className="flex h-11 items-center text-sm font-semibold text-tinta-suave no-underline">Agora não</Link>
         </div>
       )}
     </div>

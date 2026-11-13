@@ -1,6 +1,7 @@
 import { CatIcon, Icone } from '@/components/icone';
 import Link from 'next/link';
-import type { BudgetsResponse, ForecastResponse, LessonProgressResponse, MonthSummaryResponse, ProfileResponse, SubscriptionsResponse } from '@tostao/contracts';
+import type { BudgetsResponse, ForecastResponse, LessonProgressResponse, MissionsResponse, MonthSummaryResponse, ProfileResponse, RemindersResponse, SubscriptionsResponse, WeeklyResponse } from '@tostao/contracts';
+import { Missoes, Semana, Sobra, VenceLogo } from '@/components/engajamento';
 import { NO_PROGRESS } from '@/lib/xp';
 import { BudgetBar } from '@/components/budget-bar';
 import { api } from '@/lib/api';
@@ -10,13 +11,16 @@ import { ButtonLink, Card, StreakChip } from '@/components/ui';
 
 export default async function InicioPage() {
   const month = currentMonth();
-  const [me, s, subs, limits, progress, forecast] = await Promise.all([
+  const [me, s, subs, limits, progress, forecast, missions, reminders, weekly] = await Promise.all([
     api<ProfileResponse>('/me'),
     api<MonthSummaryResponse>(`/summary?month=${month}`),
     api<SubscriptionsResponse>('/subscriptions').catch(() => null),
     api<BudgetsResponse>(`/budgets?month=${month}`).catch(() => ({ budgets: [] })),
     api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
     api<ForecastResponse>('/forecast').catch(() => null),
+    api<MissionsResponse>('/missions').catch(() => null),
+    api<RemindersResponse>('/reminders').catch(() => ({ reminders: [] })),
+    api<WeeklyResponse>('/weekly').catch(() => null),
   ]);
   const estourou = limits.budgets.find((b) => b.spentInCents > b.limitInCents);
   const activeSubs = subs?.subscriptions.filter((x) => x.active).length ?? 0;
@@ -39,7 +43,7 @@ export default async function InicioPage() {
       <header className="flex items-end justify-between">
         <h1 className="font-display text-[34px] leading-[38px] font-extrabold">Fala, {firstName}</h1>
         <div className="flex items-center gap-1.5">
-          <Link href="/aprender" className="text-tinta no-underline"><StreakChip days={progress.streakDays} /></Link>
+          <Link href="/aprender" className="text-tinta no-underline"><StreakChip days={missions?.streakDays ?? progress.streakDays} /></Link>
           <Link href="/perfil" aria-label="Abrir seu perfil" className="flex h-12 w-12 items-center justify-center rounded-full bg-rosa">
             <Mascote pose="avatar" size={38} alt="" />
           </Link>
@@ -63,7 +67,9 @@ export default async function InicioPage() {
             <ButtonLink href="/anotar" variant="outline">Anotar um gasto</ButtonLink>
           </div>
         </Card>
-      ) : (
+      ) : null}
+      {vazio && missions && <Missoes data={missions} compact />}
+      {!vazio && (
         <>
           <div className="flex flex-col gap-3.5 rounded-[22px] border border-linha bg-cartao p-[18px]">
             {s.balanceInCents !== null ? (
@@ -79,6 +85,10 @@ export default async function InicioPage() {
               <div className="flex flex-col gap-0.5 rounded-[14px] bg-papel-2 px-3 py-2.5"><span className="text-xs font-semibold text-tinta-suave">Saiu em {mes}</span><span className="text-[17px] font-bold tabular-nums">{money(s.outcomeInCents)}</span></div>
             </div>
           </div>
+
+          {forecast?.thisMonth && <Sobra forecast={forecast} />}
+          {missions && <Missoes data={missions} compact />}
+          <VenceLogo reminders={reminders.reminders} />
 
           {s.uncategorizedCount > 0 && (
             <Link href="/carteira?filtro=pendentes" className="flex items-center gap-2 rounded-2xl bg-azul py-3 pr-3.5 pl-2 no-underline">
@@ -138,7 +148,9 @@ export default async function InicioPage() {
             </div>
           </section>
 
-          {forecast && (() => {
+          {weekly && <Semana w={weekly} />}
+
+          {forecast && !forecast.thisMonth && (() => {
             const [prox, depois] = forecast.months;
             const chevron = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-tinta-suave"><path d="M9 18l6-6-6-6" /></svg>;
             if (!forecast.hasPlan || !prox) {

@@ -26,7 +26,9 @@ export default function PrivacidadePage() {
           <tr><td>Nome, e-mail e senha (guardada só como hash)</td><td>Você, ao criar a conta</td></tr>
           <tr><td>Contas, saldos, transações, faturas e limites de cartão</td><td>Seus bancos, pela Pluggy (Open Finance), ou o extrato que você importa</td></tr>
           <tr><td>Gastos anotados na mão, categorias, limites, renda, dia do salário, contas fixas e meta</td><td>Você, dentro do app</td></tr>
-          <tr><td>Progresso nas lições e respostas dos desafios</td><td>Seu uso do app</td></tr>
+          <tr><td>Progresso nas lições, missões feitas por dia, ofensiva e respostas dos desafios</td><td>Seu uso do app</td></tr>
+          <tr><td>Amigos que você adicionou (por código ou convite)</td><td>Você</td></tr>
+          <tr><td>Endereço de avisos do navegador (só se você ligar os avisos no celular)</td><td>Seu navegador</td></tr>
           <tr><td>Mensagens da conversa com o Tostão</td><td>Você, no app ou no WhatsApp</td></tr>
           <tr><td>Número do WhatsApp (só se você ligar essa função)</td><td>Você</td></tr>
           <tr><td>Cookie de sessão, endereço IP e horário de acesso</td><td>Seu navegador, automaticamente</td></tr>
@@ -53,10 +55,12 @@ export default function PrivacidadePage() {
         <li><b>Pluggy</b> (Brasil): faz a conexão com os bancos pelo Open Finance e nos entrega as transações. Recebe a sua autorização de acesso; não recebe seu nome nem sua senha do Tostão.</li>
         <li><b>DeepSeek</b> (China): serviço de inteligência artificial usado na conversa com o Tostão e na categoria automática. Recebe seu primeiro nome, suas mensagens e um resumo dos seus números (saldos, gastos por categoria, renda, assinaturas, limites e meta) ou a descrição e o valor das transações sem categoria. Não recebe e-mail, senha nem dados de acesso ao banco.</li>
         <li><b>Meta / WhatsApp</b> (Estados Unidos): só se você ligar o Tostão no WhatsApp. As mensagens dessa conversa passam pela plataforma do WhatsApp.</li>
+        <li><b>Seus amigos no Tostão</b>: só quem você adicionou vê seu primeiro nome, sua ofensiva e quantas missões você fez na semana. Nunca saldo, gasto ou banco.</li>
+        <li><b>Serviço de avisos do seu navegador</b> (Google, Apple ou Mozilla, conforme o aparelho): só se você ligar os avisos. Leva o texto do aviso (ex.: "Fatura vence em 2 dias") até o seu celular.</li>
         <li><b>Tailscale</b> (Estados Unidos): rede que entrega o site até o servidor. O tráfego vai criptografado (HTTPS) e ela não guarda o conteúdo.</li>
         <li><b>Autoridades</b>, se uma lei ou ordem judicial obrigar.</li>
       </ul>
-      <p><b>Transferência internacional.</b> DeepSeek, Meta e Tailscale ficam fora do Brasil. Essa transferência acontece pra executar o serviço que você pediu (LGPD, art. 33, inciso IX). Se você não quiser que seus números saiam do Brasil, basta não usar a conversa com o Tostão nem a categoria automática.</p>
+      <p><b>Transferência internacional.</b> DeepSeek, Meta, Tailscale e o serviço de avisos do navegador ficam fora do Brasil. Essa transferência acontece pra executar o serviço que você pediu (LGPD, art. 33, inciso IX). Se você não quiser que seus números saiam do Brasil, basta não usar a conversa com o Tostão nem a categoria automática.</p>
 
       <h2 className={disp}>5. Onde e por quanto tempo guardamos</h2>
       <ul>

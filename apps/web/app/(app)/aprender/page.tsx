@@ -1,6 +1,7 @@
 import { Icone } from '@/components/icone';
 import Link from 'next/link';
 import { modules } from '@/lib/lessons';
+import type { FriendsResponse, MissionsResponse } from '@tostao/contracts';
 import { Mascote } from '@/components/mascote';
 import { Eyebrow, StreakChip } from '@/components/ui';
 import type { BattlesResponse, LessonProgressResponse, MonthSummaryResponse, TribunalResponse } from '@tostao/contracts';
@@ -10,11 +11,13 @@ import { NO_PROGRESS, xpFrom } from '@/lib/xp';
 import { LegacyProgress } from './legacy-progress';
 
 export default async function AprenderPage() {
-  const [{ done, streakDays, doneToday, bonusXp = 0 }, summary, tribunal, battles] = await Promise.all([
+  const [{ done, streakDays, doneToday, bonusXp = 0 }, summary, tribunal, battles, missions, friends] = await Promise.all([
     api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
     api<MonthSummaryResponse>(`/summary?month=${currentMonth()}`).catch(() => null),
     api<TribunalResponse>('/tribunal').catch(() => null),
     api<BattlesResponse>('/battles').catch(() => null),
+    api<MissionsResponse>('/missions').catch(() => null),
+    api<FriendsResponse>('/friends').catch(() => null),
   ]);
   const tig = battles?.tigrinho;
   const batalhaLinha = !tig ? '30 dias sem bet' : tig.status === 'ativa' ? `Dia ${tig.day} de ${tig.totalDays}` : tig.status === 'vencida' ? (battles?.urubu.status === 'vencida' ? 'Dois vilões vencidos' : 'Próximo: Urubu do Pix') : 'Bora de novo?';
@@ -33,7 +36,7 @@ export default async function AprenderPage() {
       <div className="flex items-end justify-between">
         <h1 className="font-display text-[34px] leading-[38px] font-extrabold">Aprender</h1>
         <div className="flex gap-1.5">
-          <StreakChip days={streakDays} />
+          <StreakChip days={missions?.streakDays ?? streakDays} />
           <span className="flex items-center gap-1 rounded-full bg-amarelo px-2.5 py-1.5 text-sm font-bold text-[#1E1B18]"><Icone src="ui/xp" size={18} />{xp} XP</span>
         </div>
       </div>
@@ -42,10 +45,13 @@ export default async function AprenderPage() {
         <Mascote pose="professor" size={84} alt="Tostão professor" />
         <div className="flex min-w-0 grow flex-col gap-[9px]">
           <Eyebrow>Missões de hoje</Eyebrow>
-          <Missao feita={doneToday > 0} href={proxima ? `/aprender/${proxima.id}` : '/aprender/trilha'}>Fazer 1 lição</Missao>
-          <Missao feita={pendentes === 0} href="/carteira?filtro=pendentes">
-            {pendentes === 0 ? 'Gastos todos categorizados' : `Categorizar ${pendentes} ${pendentes === 1 ? 'gasto' : 'gastos'}`}
-          </Missao>
+          {missions ? missions.missions.map((m) => (
+            <Missao key={m.id} feita={m.done} href={m.id === 'licao' && proxima ? `/aprender/${proxima.id}` : m.href}>
+              {m.id === 'gastos' && pendentes > 0 && !m.done ? `Categorizar ${pendentes} ${pendentes === 1 ? 'gasto' : 'gastos'}` : m.title}
+            </Missao>
+          )) : (
+            <Missao feita={doneToday > 0} href={proxima ? `/aprender/${proxima.id}` : '/aprender/trilha'}>Fazer 1 lição</Missao>
+          )}
         </div>
       </div>
 
@@ -89,6 +95,14 @@ export default async function AprenderPage() {
             <span className="text-xs text-[#6B635A]">{batalhaLinha}</span>
           </Link>
         </div>
+        <Link href="/amigos" className="flex items-center gap-3 rounded-[18px] bg-menta-clara p-3 text-[#1E1B18] no-underline">
+          <Icone src="cat/role" size={44} />
+          <span className="flex grow flex-col">
+            <span className="text-[11px] font-bold tracking-[0.08em] text-[#6B635A] uppercase">Desafio com amigos</span>
+            <span className="text-[15px] leading-[19px] font-bold">{friends && friends.ranking.length > 1 ? `Você tá em ${friends.ranking.findIndex((p) => p.me) + 1}º de ${friends.ranking.length} na semana` : 'Chama alguém pra disputar a semana'}</span>
+            <span className="text-xs text-[#6B635A]">Quem cumpre mais missões até domingo. Ninguém vê seu dinheiro.</span>
+          </span>
+        </Link>
       </section>
 
       <section className="flex flex-col">

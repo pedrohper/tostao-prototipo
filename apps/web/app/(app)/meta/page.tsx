@@ -13,7 +13,7 @@ const prazo = (m: string) => `${monthName(m).slice(0, 3)}/${m.slice(2, 4)}`;
 export default async function MetaPage({ searchParams }: { searchParams: Promise<{ editar?: string }> }) {
   const { editar } = await searchParams;
   const [f, { plan }] = await Promise.all([
-    api<ForecastResponse>('/forecast').catch((): ForecastResponse => ({ hasPlan: false, months: [], goal: null })),
+    api<ForecastResponse>('/forecast').catch((): ForecastResponse => ({ hasPlan: false, months: [], goal: null, thisMonth: null })),
     api<FinancialPlanResponse>('/plan').catch(() => ({ plan: null })),
   ]);
   const g = f.goal;

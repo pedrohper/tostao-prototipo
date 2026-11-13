@@ -1,3 +1,5 @@
+import { Avisos } from '@/components/avisos';
+import type { PushKeyResponse } from '@tostao/contracts';
 import { Icone } from '@/components/icone';
 import Link from 'next/link';
 import type { LessonProgressResponse, ProfileResponse } from '@tostao/contracts';
@@ -18,7 +20,8 @@ const atalhos = [
   { href: '/fechamento', icon: 'ui/meta-batida', label: 'Fechamento do mês' },
   { href: '/assinaturas', icon: 'cat/assinaturas', label: 'Minhas assinaturas' },
   { href: '/importar', icon: 'conectar/extrato', label: 'Importar extrato' },
-  { href: '/convites', icon: 'cat/role', label: 'Convidar alguém' },
+  { href: '/amigos', icon: 'cat/role', label: 'Amigos e desafio' },
+  { href: '/convites', icon: 'ui/whatsapp-chat', label: 'Convidar alguém' },
 ];
 
 function synced(iso: string | null) {
@@ -32,9 +35,10 @@ function synced(iso: string | null) {
 }
 
 export default async function PerfilPage() {
-  const [me, { done, streakDays, bonusXp = 0 }] = await Promise.all([
+  const [me, { done, streakDays, bonusXp = 0 }, push] = await Promise.all([
     api<ProfileResponse>('/me'),
     api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
+    api<PushKeyResponse>('/push/key').catch(() => null),
   ]);
   const { xp, level } = xpFrom(done.length, bonusXp);
   const rows = 'flex min-h-12 items-center justify-between border-b border-linha text-tinta no-underline';
@@ -83,6 +87,8 @@ export default async function PerfilPage() {
           </Link>
         </div>
       </section>
+
+      <Avisos publicKey={push?.publicKey ?? null} />
 
       <section className="flex flex-col gap-2">
         <Eyebrow>Atalhos</Eyebrow>

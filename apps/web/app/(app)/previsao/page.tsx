@@ -1,5 +1,6 @@
+import { Visita } from '@/components/visita';
 import Link from 'next/link';
-import type { FinancialPlanResponse, ForecastResponse } from '@tostao/contracts';
+import type { FinancialPlanResponse, ForecastResponse, ThisMonthForecast } from '@tostao/contracts';
 import { api } from '@/lib/api';
 import { money, monthName } from '@/lib/format';
 import { Mascote } from '@/components/mascote';
@@ -10,13 +11,14 @@ const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 
 export default async function PrevisaoPage() {
   const [f, { plan }] = await Promise.all([
-    api<ForecastResponse>('/forecast').catch((): ForecastResponse => ({ hasPlan: false, months: [], goal: null })),
+    api<ForecastResponse>('/forecast').catch((): ForecastResponse => ({ hasPlan: false, months: [], goal: null, thisMonth: null })),
     api<FinancialPlanResponse>('/plan').catch(() => ({ plan: null })),
   ]);
 
   if (!f.hasPlan || !f.months.length) {
     return (
       <div className="flex flex-col gap-3.5">
+      <Visita kind="visita:previsao" />
         <BackLink href="/inicio" />
         <h1 className="font-display text-[30px] leading-[34px] font-extrabold">Próximos meses</h1>
         <div className="flex flex-col items-center gap-3 rounded-[20px] border border-linha bg-cartao p-6 text-center">
@@ -37,8 +39,10 @@ export default async function PrevisaoPage() {
 
   return (
     <div className="flex flex-col gap-3.5">
+      <Visita kind="visita:previsao" />
       <BackLink href="/inicio" />
       <h1 className="font-display text-[30px] leading-[34px] font-extrabold">Próximos meses</h1>
+      {f.thisMonth && <EsteMes t={f.thisMonth} />}
       <div className={`flex items-center gap-1.5 rounded-2xl py-3 pr-3.5 pl-1.5 ${aperta ? 'bg-rosa' : 'bg-menta-clara'}`}>
         <Mascote pose={aperta ? 'preocupado' : 'comemorando'} size={76} alt={aperta ? 'Tostão preocupado' : 'Tostão comemorando'} />
         <p className="text-[15px] leading-[21px]">
@@ -56,6 +60,7 @@ export default async function PrevisaoPage() {
           const h = Math.max(6, Math.round((Math.abs(m.leftInCents) / max) * 52));
           return (
             <div key={m.month} className="flex flex-1 flex-col items-center gap-1.5">
+      <Visita kind="visita:previsao" />
               <span className={`text-[13px] font-bold tabular-nums ${neg ? 'text-vermelho-texto' : 'text-verde-texto'}`}>{neg ? '− ' : '+ '}{money(Math.abs(m.leftInCents))}</span>
               <div className="flex h-[110px] w-full flex-col">
                 <div className="flex h-[55px] items-end">{!neg && <div className="bar-up w-full rounded-[10px] bg-menta" style={{ height: h }} />}</div>
@@ -103,8 +108,34 @@ export default async function PrevisaoPage() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex min-h-10 items-center justify-between border-b border-linha text-sm">
+      <Visita kind="visita:previsao" />
       <span>{label}</span>
       <span className="font-semibold tabular-nums">{value}</span>
     </div>
+  );
+}
+
+/** O mês que está rolando, linha por linha: de onde sai a sobra. */
+function EsteMes({ t }: { t: ThisMonthForecast }) {
+  const rows: [string, number][] = [
+    ['Entra no mês', t.incomeInCents],
+    ['Já saiu', -t.spentInCents],
+    ['Contas fixas que faltam', -t.fixedLeftInCents],
+    ['Assinaturas que faltam', -t.subscriptionsLeftInCents],
+    [`Dia a dia (${t.daysLeft} ${t.daysLeft === 1 ? 'dia' : 'dias'})`, -t.dailyLeftInCents],
+  ];
+  return (
+    <section className="flex flex-col gap-2 rounded-2xl border border-linha bg-cartao p-3.5">
+      <Eyebrow>Até o fim de {monthName(t.month)}</Eyebrow>
+      <div className="flex flex-col text-[14px]">
+        {rows.filter(([, v], i) => i < 2 || v !== 0).map(([l, v]) => (
+          <div key={l} className="flex justify-between border-b border-linha py-1.5"><span className="text-tinta-suave">{l}</span><span className="tabular-nums">{v < 0 ? '− ' : '+ '}{money(Math.abs(v))}</span></div>
+        ))}
+        <div className="flex justify-between pt-2 text-[15px] font-bold">
+          <span>{t.leftInCents >= 0 ? 'Deve sobrar' : 'Deve faltar'}</span>
+          <span className={`tabular-nums ${t.leftInCents >= 0 ? 'text-verde-texto' : 'text-vermelho-texto'}`}>{money(Math.abs(t.leftInCents))}</span>
+        </div>
+      </div>
+    </section>
   );
 }

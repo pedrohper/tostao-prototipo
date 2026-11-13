@@ -16,7 +16,7 @@ export function Nav() {
     <nav className="fixed inset-x-0 bottom-0 z-10 grid grid-cols-5 border-t border-linha bg-cartao px-2 pt-2 pb-[max(16px,env(safe-area-inset-bottom))] md:static md:inset-auto md:flex md:w-56 md:flex-col md:gap-1 md:border-t-0 md:border-r md:bg-papel md:px-4 md:pt-8">
       <img src="/wordmark.png" alt="Tostão" className="mb-6 hidden h-9 w-auto self-start md:block" />
       {items.map((it) => {
-        const active = path.startsWith(it.href) || (it.href === '/aprender' && (path.startsWith('/tribunal') || path.startsWith('/batalha')));
+        const active = path.startsWith(it.href) || (it.href === '/aprender' && (path.startsWith('/tribunal') || path.startsWith('/batalha') || path.startsWith('/amigos')));
         return (
           <Link key={it.href} href={it.href} aria-current={active ? 'page' : undefined}
             className={`flex flex-col items-center gap-1 py-1.5 text-xs md:flex-row md:gap-3 md:rounded-2xl md:px-3 md:py-2.5 md:text-[15px] ${active ? 'font-bold text-tinta md:bg-papel-2' : 'font-semibold text-tinta-suave'}`}>

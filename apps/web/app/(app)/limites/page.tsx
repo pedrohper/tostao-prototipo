@@ -1,3 +1,4 @@
+import { Visita } from '@/components/visita';
 import { CatIcon, Icone } from '@/components/icone';
 import type { BudgetsResponse, CategoryDTO } from '@tostao/contracts';
 import { api } from '@/lib/api';
@@ -18,6 +19,7 @@ export default async function LimitesPage() {
 
   return (
     <div className="flex flex-col gap-5">
+      <Visita kind="visita:limites" />
       <BackLink href="/inicio" />
       <div className="flex items-center gap-3">
         <Mascote pose="professor" size={72} alt="Tostão professor" />
@@ -39,6 +41,7 @@ export default async function LimitesPage() {
           const b = byCat.get(c.id);
           return (
             <div key={c.id} className="flex flex-col gap-2 p-4">
+      <Visita kind="visita:limites" />
               <div className="flex justify-between text-[15px]">
                 <span className="flex items-center gap-1.5 font-semibold"><CatIcon id={c.id} emoji={c.emoji} size={20} /> {c.name}</span>
                 {b && <span className="text-tinta-suave">já foi {money(b.spentInCents)}</span>}
