@@ -91,7 +91,6 @@ export function Landing({ contaApagada = false }: { contaApagada?: boolean }) {
         <div className={s.wrap}>
           <span className={s.eyebrow}>A turma</span>
           <h2 className={s.disp}>Dois amigos do seu lado, dois vilões que todo mundo de 20 anos já encontrou</h2>
-          <img src="/elenco/turma.webp" alt="Urubu do Pix, Caramelo, Tostão e Tigrinho lado a lado" style={{ width: '100%', maxWidth: 720, height: 'auto', margin: '8px auto 20px', display: 'block' }} />
           <div className={s.vils}>
             <div className={s.vil} style={{ background: '#FFE1E7' }}><img src="/elenco/orgulhoso.webp" alt="Tostão orgulhoso de braços cruzados" /><span className={s.tag}>Herói</span><h3 className={s.disp}>Tostão</h3><p>Cofrinho que já quebrou e se remendou. Fala a real sobre dinheiro, sem sermão.</p></div>
             <div className={s.vil} style={{ background: '#DDF6E8' }}><img src="/elenco/caramelo.webp" alt="Caramelo sentado, sorrindo" /><span className={s.tag}>Herói</span><h3 className={s.disp}>Caramelo</h3><p>Vira-lata de rua que fareja pechincha, chorinho no Pix e desperdício no mercado.</p></div>
