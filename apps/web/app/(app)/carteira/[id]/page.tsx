@@ -1,4 +1,5 @@
-import type { CategoryDTO, TransactionDetailResponse } from '@tostao/contracts';
+import type { CategoryDTO, PeopleResponse, TransactionDetailResponse } from '@tostao/contracts';
+import { Acerto } from './acerto';
 import { api } from '@/lib/api';
 import { dayLabel, money } from '@/lib/format';
 import { Sheet } from '@/components/sheet';
@@ -6,21 +7,23 @@ import { Mascote } from '@/components/mascote';
 import { CategorizeForm } from './categorize-form';
 import { apagarLancamento } from '../actions';
 
-export default async function CategorizarPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ voltar?: string }> }) {
+export default async function CategorizarPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ voltar?: string; erro?: string }> }) {
   const { id } = await params;
-  const { voltar } = await searchParams;
+  const { voltar, erro } = await searchParams;
   const back = voltar?.startsWith('/') ? voltar : '/carteira';
-  const [{ transaction: t, rulePattern }, { categories }] = await Promise.all([
+  const [{ transaction: t, rulePattern }, { categories }, { people }] = await Promise.all([
     api<TransactionDetailResponse>(`/transactions/${id}`),
     api<{ categories: CategoryDTO[] }>('/categories'),
+    api<PeopleResponse>('/people').catch((): PeopleResponse => ({ people: [], owedToYouInCents: 0, youOweInCents: 0 })),
   ]);
   const kind = t.amountInCents > 0 ? 'entrada' : 'saida';
   // Saída mostra categorias de gasto, entrada mostra as de renda. "Não conta" serve pros dois.
   const options = categories.filter((c) => c.kind === kind || c.kind === 'neutra');
   const neutral = t.categoryId === 'nao-conta';
+  const acerto = !!t.personId;
 
   return (
-    <Sheet back={back} top={t.isInternalTransfer && !neutral ? 260 : 120}>
+    <Sheet back={back} top={t.isInternalTransfer && !neutral && !acerto ? 260 : 120}>
       <div className="flex flex-col gap-1">
         <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">{dayLabel(t.occurredAt)} · {t.accountName ?? 'Anotado na mão'}</span>
         <div className="flex items-baseline justify-between gap-3">
@@ -28,7 +31,9 @@ export default async function CategorizarPage({ params, searchParams }: { params
           <span className="shrink-0 font-display text-2xl font-extrabold tabular-nums">{money(Math.abs(t.amountInCents))}</span>
         </div>
       </div>
-      {t.isInternalTransfer && !neutral ? (
+      {acerto ? (
+        <Acerto t={t} people={people} back={back} erro={erro} />
+      ) : t.isInternalTransfer && !neutral ? (
         <div className="flex items-center gap-2.5 rounded-[14px] bg-azul px-3 py-2.5">
           <Mascote pose="investigando" size={40} alt="" />
           <p className="text-sm leading-5">Isso aqui é dinheiro mudando de bolso entre as suas contas. Não conta como gasto nem como renda.</p>
@@ -40,6 +45,7 @@ export default async function CategorizarPage({ params, searchParams }: { params
             <p className="text-sm leading-5">{neutral ? <>Tá em <b>Não conta</b>: fica fora do gasto e da renda. Quer trocar?</> : t.categoryName ? <>Tá em <b>{t.categoryName}</b>. Quer trocar?</> : <>Não reconheci esse nome. Me ajuda a classificar?</>}</p>
           </div>
           <CategorizeForm id={t.id} back={back} options={options} current={t.categoryId} rulePattern={rulePattern} />
+          <Acerto t={t} people={people} back={back} erro={erro} />
         </>
       )}
       {t.source === 'manual' && (

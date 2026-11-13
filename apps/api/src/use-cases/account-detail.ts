@@ -55,7 +55,7 @@ export class AccountDetailUseCase {
         return {
           id: t.id, description: t.description, amountInCents: t.amountInCents, occurredAt: t.occurredAt.toISOString(),
           categoryId: t.categoryId, categoryName: c?.name ?? null, categoryEmoji: c?.emoji ?? null, categoryColor: c?.color ?? null,
-          accountName: account.name, isInternalTransfer: t.isInternalTransfer, source: t.externalId ? 'bank' as const : 'manual' as const, seriesId: t.seriesId ?? null,
+          accountName: account.name, isInternalTransfer: t.isInternalTransfer, source: t.externalId ? 'bank' as const : 'manual' as const, seriesId: t.seriesId ?? null, personId: t.personId ?? null,
         };
       });
 

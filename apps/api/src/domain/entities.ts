@@ -61,8 +61,12 @@ export type Transaction = {
   isInternalTransfer: boolean;
   /** "Todo mês" ou "parcelado" anotado à mão: as ocorrências futuras têm o mesmo seriesId. */
   seriesId?: string | null;
+  /** Acerto com alguém: sai do gasto e da renda e entra no saldo dessa pessoa. */
+  personId?: string | null;
   createdAt: Date;
 };
+
+export type Person = { id: string; userId: string; name: string; createdAt: Date };
 
 export type CategoryBudget = { id: string; userId: string; categoryId: string; limitInCents: number };
 

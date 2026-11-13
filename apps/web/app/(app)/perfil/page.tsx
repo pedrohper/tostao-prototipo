@@ -21,6 +21,7 @@ const atalhos = [
   { href: '/limites', icon: 'modulo/9', label: 'Limites do mês' },
   { href: '/fechamento', icon: 'ui/meta-batida', label: 'Fechamento do mês' },
   { href: '/assinaturas', icon: 'cat/assinaturas', label: 'Minhas assinaturas' },
+  { href: '/acertos', icon: 'cat/role', label: 'Acertos (quem te deve)' },
   { href: '/importar', icon: 'conectar/extrato', label: 'Importar extrato' },
   { href: '/amigos', icon: 'cat/role', label: 'Amigos e desafio' },
   { href: '/convites', icon: 'ui/whatsapp-chat', label: 'Convidar alguém' },

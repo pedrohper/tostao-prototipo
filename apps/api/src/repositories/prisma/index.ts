@@ -1,11 +1,11 @@
 // Repositórios de verdade, no Postgres via Prisma.
 // Repare que a assinatura é a mesma dos em memória: o use case nem percebe a troca.
 import type { Prisma, PrismaClient } from '@prisma/client';
-import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, Transaction, Invite, PasswordReset, ChatMessage, Battle, BattleKind } from '../../domain/entities.js';
+import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, Transaction, Invite, PasswordReset, ChatMessage, Battle, BattleKind, Person } from '../../domain/entities.js';
 import type { FinancialPlan } from '@tostao/contracts';
 import type {
   AccountData, AccountsRepository, FinancialPlansRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, ChatMessagesRepository, IgnoredSubscriptionsRepository, InvitesRepository, GamesRepository, EngagementRepository, PushSub, LessonProgressRepository, PasswordResetsRepository,
-  NewTransaction, NewUser, Repositories, TransactionsRepository, UsersRepository, WhatsappLinksRepository,
+  NewTransaction, NewUser, PeopleRepository, Repositories, TransactionsRepository, UsersRepository, WhatsappLinksRepository,
 } from '../types.js';
 
 class PrismaUsersRepository implements UsersRepository {
@@ -94,8 +94,11 @@ class PrismaTransactionsRepository implements TransactionsRepository {
     return this.db.transaction.findMany({ where: { userId, categoryId: null, isInternalTransfer: false } });
   }
   create(data: NewTransaction): Promise<Transaction> { return this.db.transaction.create({ data }); }
-  async save({ id, categoryId, isInternalTransfer, description, amountInCents }: Transaction) {
-    await this.db.transaction.update({ where: { id }, data: { categoryId, isInternalTransfer, description, amountInCents } });
+  async save({ id, categoryId, isInternalTransfer, description, amountInCents, personId }: Transaction) {
+    await this.db.transaction.update({ where: { id }, data: { categoryId, isInternalTransfer, description, amountInCents, ...(personId !== undefined ? { personId } : {}) } });
+  }
+  findByPerson(userId: string, personId: string): Promise<Transaction[]> {
+    return this.db.transaction.findMany({ where: { userId, personId }, orderBy: { occurredAt: 'desc' } });
   }
   async clearCategory(categoryId: string) { await this.db.transaction.updateMany({ where: { categoryId }, data: { categoryId: null } }); }
   async delete(id: string) { await this.db.transaction.delete({ where: { id } }); }
@@ -237,6 +240,17 @@ class PrismaEngagementRepository implements EngagementRepository {
   }
 }
 
+class PrismaPeopleRepository implements PeopleRepository {
+  constructor(private db: PrismaClient) {}
+  listByUser(userId: string): Promise<Person[]> { return this.db.person.findMany({ where: { userId }, orderBy: { name: 'asc' } }); }
+  findById(id: string): Promise<Person | null> { return this.db.person.findUnique({ where: { id } }); }
+  findByName(userId: string, name: string): Promise<Person | null> {
+    return this.db.person.findFirst({ where: { userId, name: { equals: name, mode: 'insensitive' } } });
+  }
+  create(data: { userId: string; name: string }): Promise<Person> { return this.db.person.create({ data }); }
+  async delete(id: string) { await this.db.person.delete({ where: { id } }); }
+}
+
 export function makePrismaRepositories(db: PrismaClient): Repositories {
   return {
     users: new PrismaUsersRepository(db),
@@ -255,5 +269,6 @@ export function makePrismaRepositories(db: PrismaClient): Repositories {
     whatsapp: new PrismaWhatsappLinksRepository(db),
     games: new PrismaGamesRepository(db),
     engagement: new PrismaEngagementRepository(db),
+    people: new PrismaPeopleRepository(db),
   };
 }

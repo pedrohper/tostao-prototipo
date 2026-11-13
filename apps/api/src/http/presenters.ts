@@ -16,5 +16,6 @@ export function presentTransaction(t: Transaction & { categoryName: string | nul
     isInternalTransfer: t.isInternalTransfer,
     source: t.externalId ? 'bank' : 'manual',
     seriesId: t.seriesId ?? null,
+    personId: t.personId ?? null,
   };
 }

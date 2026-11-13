@@ -1,6 +1,6 @@
 // Contratos dos repositórios. O use case pede "alguém que saiba salvar usuário",
 // sem saber se é Postgres ou um array na memória (nos testes).
-import type { Account, BankConnection, Category, CategoryRule, Transaction, User, CategoryBudget, LessonProgress, Invite, PasswordReset, ChatMessage, TribunalVote, Battle, BattleKind } from '../domain/entities.js';
+import type { Account, BankConnection, Category, CategoryRule, Transaction, User, CategoryBudget, LessonProgress, Invite, PasswordReset, ChatMessage, TribunalVote, Battle, BattleKind, Person } from '../domain/entities.js';
 import type { FinancialPlan } from '@tostao/contracts';
 
 export type NewUser = Pick<User, 'name' | 'email' | 'passwordHash'>;
@@ -94,6 +94,15 @@ export interface TransactionsRepository {
   delete(id: string): Promise<void>;
   /** Apaga as ocorrências da série a partir de uma data (inclusive). Devolve quantas. */
   deleteSeriesFrom(userId: string, seriesId: string, from: Date): Promise<number>;
+  findByPerson(userId: string, personId: string): Promise<Transaction[]>;
+}
+
+export interface PeopleRepository {
+  listByUser(userId: string): Promise<Person[]>;
+  findById(id: string): Promise<Person | null>;
+  findByName(userId: string, name: string): Promise<Person | null>;
+  create(data: { userId: string; name: string }): Promise<Person>;
+  delete(id: string): Promise<void>;
 }
 
 export interface InvitesRepository {
@@ -173,4 +182,5 @@ export type Repositories = {
   whatsapp: WhatsappLinksRepository;
   games: GamesRepository;
   engagement: EngagementRepository;
+  people: PeopleRepository;
 };

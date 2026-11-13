@@ -36,7 +36,8 @@ export function detectInternalTransfers(transactions: Transaction[]): Set<string
 
   const neutral = new Set<string>();
   for (const t of transactions) {
-    if (t.categoryId === NEUTRAL_CATEGORY_ID) {
+    // "Não conta" e acerto com alguém (empréstimo, cartão emprestado) nunca são gasto nem renda.
+    if (t.categoryId === NEUTRAL_CATEGORY_ID || t.personId) {
       ids.add(t.id);
       neutral.add(t.id);
       continue;

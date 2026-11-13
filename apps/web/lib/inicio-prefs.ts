@@ -13,6 +13,7 @@ export const SECOES = [
   { id: 'pra-onde-foi', nome: 'Pra onde foi', dica: 'Gastos por categoria' },
   { id: 'semana', nome: 'Sua semana', dica: 'Últimos 7 dias' },
   { id: 'meta', nome: 'Meta', dica: 'Quanto falta pra sua meta' },
+  { id: 'acertos', nome: 'Acertos', dica: 'Quem te deve e pra quem você deve' },
   { id: 'cartoes', nome: 'Cartões de crédito', dica: 'Fatura e limite' },
   { id: 'limites', nome: 'Limites', dica: 'Teto por categoria' },
 ] as const;
