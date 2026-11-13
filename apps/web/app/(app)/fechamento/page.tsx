@@ -1,3 +1,4 @@
+import { Visita } from '@/components/visita';
 import Link from 'next/link';
 import type { LessonProgressResponse, MonthSummaryResponse, SubscriptionsResponse, TransactionDTO } from '@tostao/contracts';
 import { api } from '@/lib/api';
@@ -118,6 +119,7 @@ export default async function FechamentoPage({ searchParams }: { searchParams: P
 
   return (
     <div className="fixed inset-0 z-30 overflow-y-auto bg-laranja text-[#1E1B18]">
+      <Visita kind="visita:fechamento" />
       <div className="mx-auto flex min-h-full max-w-[520px] flex-col gap-3.5 px-5 pt-11 pb-7">
         {vazio ? (
           <>

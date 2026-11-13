@@ -284,6 +284,58 @@ export type GoalStatus = {
   fits: boolean | null;
   reached: boolean;
 };
-export type ForecastResponse = { hasPlan: boolean; months: ForecastMonth[]; goal: GoalStatus | null };
+/** O mês que está rolando: quanto ainda deve sobrar até o último dia. */
+export type ThisMonthForecast = {
+  month: string;
+  daysLeft: number;
+  incomeInCents: number;
+  spentInCents: number;
+  fixedLeftInCents: number;
+  subscriptionsLeftInCents: number;
+  dailyLeftInCents: number;
+  leftInCents: number;
+};
+export type ForecastResponse = { hasPlan: boolean; months: ForecastMonth[]; goal: GoalStatus | null; thisMonth: ThisMonthForecast | null };
 /** Quantas pendentes a IA categorizou (das que ela olhou). */
 export type AutoCategorizeResponse = { categorized: number; asked: number };
+
+// ---------- Missões, ofensiva, amigos, avisos e resumo da semana ----------
+/** O que conta como missão feita. "visita:*" vem das telas que a missão do dia manda abrir. */
+export const ACTIVITY_KINDS = ['licao', 'categorizar', 'anotar', 'tribunal', 'batalha', 'meta', 'limites', 'assinaturas', 'chat',
+  'visita:previsao', 'visita:assinaturas', 'visita:limites', 'visita:fechamento'] as const;
+export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
+export const activityBody = z.object({ kind: z.enum(ACTIVITY_KINDS) });
+
+export type MissionDTO = { id: string; title: string; href: string; done: boolean };
+export type MissionsResponse = {
+  missions: MissionDTO[];
+  streakDays: number;
+  /** Hoje já tem alguma missão feita? (a ofensiva de hoje está garantida) */
+  todayKept: boolean;
+  /** Dias da semana (seg a dom) com pelo menos uma missão. */
+  week: { day: string; done: number }[];
+};
+
+export type FriendDTO = { id: string; name: string; streakDays: number; weekScore: number; me: boolean };
+export type FriendsResponse = { code: string; challenge: { title: string; endsAt: string }; ranking: FriendDTO[] };
+export const addFriendBody = z.object({ code: z.string().trim().min(4).max(20) });
+
+export type ReminderDTO = { key: string; kind: 'fatura' | 'conta' | 'assinatura'; title: string; amountInCents: number | null; dueDate: string; daysLeft: number };
+export type RemindersResponse = { reminders: ReminderDTO[] };
+
+export type WeeklyResponse = {
+  from: string;
+  to: string;
+  spentInCents: number;
+  prevSpentInCents: number;
+  top: { categoryId: string | null; name: string; totalInCents: number } | null;
+  missionsDone: number;
+  streakDays: number;
+};
+
+export const pushSubscriptionBody = z.object({
+  endpoint: z.string().url().max(1000),
+  keys: z.object({ p256dh: z.string().min(1).max(200), auth: z.string().min(1).max(100) }),
+});
+export const pushUnsubscribeBody = z.object({ endpoint: z.string().url().max(1000) });
+export type PushKeyResponse = { publicKey: string | null; subscribed: number };

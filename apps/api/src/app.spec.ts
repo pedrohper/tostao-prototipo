@@ -83,6 +83,6 @@ describe('API', () => {
     expect((await app.inject({ method: 'POST', url: '/progress/m1-l2', headers: auth })).statusCode).toBe(204);
     await app.inject({ method: 'POST', url: '/progress/m1-l2', headers: auth });
     expect((await app.inject({ method: 'POST', url: '/progress/qualquer', headers: auth })).statusCode).toBe(400);
-    expect((await app.inject({ method: 'GET', url: '/progress', headers: auth })).json()).toEqual({ done: ['m1-l2'], streakDays: 1, doneToday: 1, bonusXp: 0 });
+    expect((await app.inject({ method: 'GET', url: '/progress', headers: auth })).json()).toEqual({ done: ['m1-l2'], streakDays: 1, doneToday: 1, bonusXp: 5 }) // +5 da missão de conferir limites;
   });
 });

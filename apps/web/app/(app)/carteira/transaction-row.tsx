@@ -1,3 +1,4 @@
+import { CatIcon, Icone } from '@/components/icone';
 import Link from 'next/link';
 import type { TransactionDTO } from '@tostao/contracts';
 import { money, shortDate } from '@/lib/format';
@@ -25,7 +26,7 @@ export function Row({ t, back, showDate = false }: { t: TransactionDTO; back: st
     : pending ? 'Sem categoria · toque pra categorizar'
       : [t.categoryName, t.accountName ?? 'Anotado na mão'].filter(Boolean).join(' · ');
   const line = showDate ? `${shortDate(t.occurredAt)} · ${sub}` : sub;
-  const icon = pending ? '?' : t.isInternalTransfer ? '⇄' : t.categoryEmoji ?? (t.amountInCents > 0 ? '↓' : '↑');
+  const icon = pending ? <Icone src="cat/sem-categoria" size={26} /> : t.isInternalTransfer ? '⇄' : t.categoryId ? <CatIcon id={t.categoryId} emoji={t.categoryEmoji} size={26} /> : (t.amountInCents > 0 ? '↓' : '↑');
   const bg = pending ? undefined : t.isInternalTransfer ? undefined : t.categoryColor ?? undefined;
   return (
     <Link href={`/carteira/${t.id}?voltar=${encodeURIComponent(back)}`}

@@ -1,4 +1,5 @@
 'use client';
+import { CatIcon, Icone } from '@/components/icone';
 import { useActionState } from 'react';
 import { autoCategorize, type AutoState } from './actions';
 
@@ -11,7 +12,7 @@ export function AutoCategorizeButton() {
         <strong>Deixa que eu tento?</strong> Eu reconheço loja, app e serviço. Pix pra pessoa fica com você.
       </p>
       <button type="submit" disabled={pending} className="self-start rounded-full bg-tinta px-4 py-2 text-[13px] font-semibold text-papel disabled:opacity-60">
-        {pending ? 'Categorizando…' : '✨ Categorizar pra mim'}
+        {pending ? 'Categorizando…' : <span className="flex items-center gap-1.5"><Icone src="ui/categorizar-ia" size={18} />Categorizar pra mim</span>}
       </button>
       {state.message && <p role="status" className="text-[13px] text-tinta-suave">{state.message}</p>}
     </form>

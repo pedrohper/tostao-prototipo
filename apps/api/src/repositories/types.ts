@@ -129,6 +129,30 @@ export interface WhatsappLinksRepository {
   unlink(userId: string): Promise<void>;
 }
 
+export type PushSub = { endpoint: string; userId: string; p256dh: string; auth: string };
+
+/** Missões, amigos e avisos: o que faz a pessoa voltar. */
+export interface EngagementRepository {
+  /** Idempotente: a mesma missão no mesmo dia conta uma vez. */
+  markActivity(userId: string, day: string, kind: string): Promise<void>;
+  /** Linhas a partir de sinceDay (inclusive), "YYYY-MM-DD". */
+  listActivity(userId: string, sinceDay: string): Promise<{ day: string; kind: string }[]>;
+  countActivity(userId: string): Promise<number>;
+  getFriendCode(userId: string): Promise<string | null>;
+  setFriendCode(userId: string, code: string): Promise<void>;
+  findUserByFriendCode(code: string): Promise<string | null>;
+  /** Guarda nos dois sentidos. */
+  addFriend(a: string, b: string): Promise<void>;
+  removeFriend(a: string, b: string): Promise<void>;
+  listFriendIds(userId: string): Promise<string[]>;
+  savePush(sub: PushSub): Promise<void>;
+  deletePush(endpoint: string): Promise<void>;
+  listPush(userId: string): Promise<PushSub[]>;
+  listPushUserIds(): Promise<string[]>;
+  /** true se marcou agora; false se já tinha mandado esse aviso. */
+  claimNotification(userId: string, key: string): Promise<boolean>;
+}
+
 export type Repositories = {
   users: UsersRepository;
   connections: BankConnectionsRepository;
@@ -145,4 +169,5 @@ export type Repositories = {
   plans: FinancialPlansRepository;
   whatsapp: WhatsappLinksRepository;
   games: GamesRepository;
+  engagement: EngagementRepository;
 };

@@ -1,4 +1,5 @@
 'use client';
+import { CatIcon, Icone } from '@/components/icone';
 import { useActionState, useState } from 'react';
 import type { CategoryDTO } from '@tostao/contracts';
 import { ErrorNote } from '@/components/ui';
@@ -27,7 +28,7 @@ export function CategorizeForm({ id, back, options, current, rulePattern }: Prop
         </div>
       </fieldset>
       {picked === 'nao-conta' && (
-        <p className="text-sm text-tinta-suave">🙈 Não conta: some do gasto e da renda. Bom pra repasse com a família, dinheiro que é de outra pessoa ou acerto entre amigos.</p>
+        <p className="flex gap-2 text-sm text-tinta-suave"><Icone src="cat/nao-conta" size={20} /><span>Não conta: some do gasto e da renda. Bom pra repasse com a família, dinheiro que é de outra pessoa ou acerto entre amigos.</span></p>
       )}
       {rulePattern.length >= 3 && (
         <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-[14px] bg-papel-2 px-3.5 py-2 text-sm leading-5">

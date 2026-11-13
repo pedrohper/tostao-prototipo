@@ -63,7 +63,7 @@ describe('Renda e previsão', () => {
 
   it('sem plano, a previsão avisa que falta a renda', async () => {
     const { repos } = setup();
-    expect(await new ForecastUseCase(repos, () => NOW).execute({ userId: 'u1' })).toEqual({ hasPlan: false, months: [], goal: null });
+    expect(await new ForecastUseCase(repos, () => NOW).execute({ userId: 'u1' })).toEqual({ hasPlan: false, months: [], goal: null, thisMonth: null });
   });
 });
 

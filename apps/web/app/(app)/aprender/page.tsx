@@ -1,5 +1,7 @@
+import { Icone } from '@/components/icone';
 import Link from 'next/link';
-import { modules, MODULE_COLORS } from '@/lib/lessons';
+import { modules } from '@/lib/lessons';
+import type { FriendsResponse, MissionsResponse } from '@tostao/contracts';
 import { Mascote } from '@/components/mascote';
 import { Eyebrow, StreakChip } from '@/components/ui';
 import type { BattlesResponse, LessonProgressResponse, MonthSummaryResponse, TribunalResponse } from '@tostao/contracts';
@@ -9,11 +11,13 @@ import { NO_PROGRESS, xpFrom } from '@/lib/xp';
 import { LegacyProgress } from './legacy-progress';
 
 export default async function AprenderPage() {
-  const [{ done, streakDays, doneToday, bonusXp = 0 }, summary, tribunal, battles] = await Promise.all([
+  const [{ done, streakDays, doneToday, bonusXp = 0 }, summary, tribunal, battles, missions, friends] = await Promise.all([
     api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
     api<MonthSummaryResponse>(`/summary?month=${currentMonth()}`).catch(() => null),
     api<TribunalResponse>('/tribunal').catch(() => null),
     api<BattlesResponse>('/battles').catch(() => null),
+    api<MissionsResponse>('/missions').catch(() => null),
+    api<FriendsResponse>('/friends').catch(() => null),
   ]);
   const tig = battles?.tigrinho;
   const batalhaLinha = !tig ? '30 dias sem bet' : tig.status === 'ativa' ? `Dia ${tig.day} de ${tig.totalDays}` : tig.status === 'vencida' ? (battles?.urubu.status === 'vencida' ? 'Dois vilões vencidos' : 'Próximo: Urubu do Pix') : 'Bora de novo?';
@@ -32,8 +36,8 @@ export default async function AprenderPage() {
       <div className="flex items-end justify-between">
         <h1 className="font-display text-[34px] leading-[38px] font-extrabold">Aprender</h1>
         <div className="flex gap-1.5">
-          <StreakChip days={streakDays} />
-          <span className="rounded-full bg-amarelo px-2.5 py-1.5 text-sm font-bold text-[#1E1B18]">{xp} XP</span>
+          <StreakChip days={missions?.streakDays ?? streakDays} />
+          <span className="flex items-center gap-1 rounded-full bg-amarelo px-2.5 py-1.5 text-sm font-bold text-[#1E1B18]"><Icone src="ui/xp" size={18} />{xp} XP</span>
         </div>
       </div>
 
@@ -41,10 +45,13 @@ export default async function AprenderPage() {
         <Mascote pose="professor" size={84} alt="Tostão professor" />
         <div className="flex min-w-0 grow flex-col gap-[9px]">
           <Eyebrow>Missões de hoje</Eyebrow>
-          <Missao feita={doneToday > 0} href={proxima ? `/aprender/${proxima.id}` : '/aprender/trilha'}>Fazer 1 lição</Missao>
-          <Missao feita={pendentes === 0} href="/carteira?filtro=pendentes">
-            {pendentes === 0 ? 'Gastos todos categorizados' : `Categorizar ${pendentes} ${pendentes === 1 ? 'gasto' : 'gastos'}`}
-          </Missao>
+          {missions ? missions.missions.map((m) => (
+            <Missao key={m.id} feita={m.done} href={m.id === 'licao' && proxima ? `/aprender/${proxima.id}` : m.href}>
+              {m.id === 'gastos' && pendentes > 0 && !m.done ? `Categorizar ${pendentes} ${pendentes === 1 ? 'gasto' : 'gastos'}` : m.title}
+            </Missao>
+          )) : (
+            <Missao feita={doneToday > 0} href={proxima ? `/aprender/${proxima.id}` : '/aprender/trilha'}>Fazer 1 lição</Missao>
+          )}
         </div>
       </div>
 
@@ -77,17 +84,25 @@ export default async function AprenderPage() {
         <div className="grid grid-cols-2 gap-2.5">
           <Link href="/tribunal" className="flex flex-col gap-1 rounded-[18px] bg-azul p-3 text-[#1E1B18] no-underline">
             <Mascote pose="pensando" size={56} alt="" />
-            <span className="text-[11px] font-bold tracking-[0.08em] text-[#6B635A] uppercase">Tribunal</span>
+            <span className="flex items-center gap-1 text-[11px] font-bold tracking-[0.08em] text-[#6B635A] uppercase"><Icone src="jogo/tribunal" size={18} />Tribunal</span>
             <span className="text-[15px] leading-[19px] font-bold">{tribunal?.case.title ?? 'O caso da semana'}</span>
             <span className="text-xs text-[#6B635A]">{tribunal?.myVote != null ? 'Você já votou · ver veredito' : 'Vota e ganha +20 XP'}</span>
           </Link>
           <Link href="/batalha" className="flex flex-col gap-1 rounded-[18px] bg-amarelo-claro p-3 text-[#1E1B18] no-underline">
             <Mascote pose="caramelo-bravo" size={56} alt="" />
-            <span className="text-[11px] font-bold tracking-[0.08em] text-[#6B635A] uppercase">Batalha</span>
+            <span className="flex items-center gap-1 text-[11px] font-bold tracking-[0.08em] text-[#6B635A] uppercase"><Icone src="jogo/batalha" size={18} />Batalha</span>
             <span className="text-[15px] leading-[19px] font-bold">{tig?.status === 'vencida' ? 'Tigrinho derrotado' : 'Contra o Tigrinho'}</span>
             <span className="text-xs text-[#6B635A]">{batalhaLinha}</span>
           </Link>
         </div>
+        <Link href="/amigos" className="flex items-center gap-3 rounded-[18px] bg-menta-clara p-3 text-[#1E1B18] no-underline">
+          <Icone src="cat/role" size={44} />
+          <span className="flex grow flex-col">
+            <span className="text-[11px] font-bold tracking-[0.08em] text-[#6B635A] uppercase">Desafio com amigos</span>
+            <span className="text-[15px] leading-[19px] font-bold">{friends && friends.ranking.length > 1 ? `Você tá em ${friends.ranking.findIndex((p) => p.me) + 1}º de ${friends.ranking.length} na semana` : 'Chama alguém pra disputar a semana'}</span>
+            <span className="text-xs text-[#6B635A]">Quem cumpre mais missões até domingo. Ninguém vê seu dinheiro.</span>
+          </span>
+        </Link>
       </section>
 
       <section className="flex flex-col">
@@ -99,11 +114,10 @@ export default async function AprenderPage() {
           </Link>
         </div>
         {proximos.map((m) => {
-          const i = modules.indexOf(m);
           const começou = m.lessons.some((l) => done.includes(l.id));
           return (
             <Link key={m.id} href="/aprender/trilha" className="flex min-h-14 items-center gap-3 border-b border-linha text-tinta no-underline last:border-b-0">
-              <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] text-sm font-bold text-[#1E1B18]" style={{ background: MODULE_COLORS[i] }}>{m.number}</div>
+              <Icone src={`modulo/${m.number}`} size={38} alt={`Módulo ${m.number}`} />
               <div className="flex min-w-0 grow flex-col py-2">
                 <span className="text-[15px] font-semibold">{m.title}{m.optional ? ' · opcional' : ''}</span>
                 <span className="truncate text-xs text-tinta-suave">{m.goal}</span>

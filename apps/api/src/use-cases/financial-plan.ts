@@ -1,4 +1,4 @@
-import type { FinancialPlan, ForecastMonth, Goal, GoalStatus, IncomeSuggestion } from '@tostao/contracts';
+import type { FinancialPlan, ForecastMonth, Goal, GoalStatus, IncomeSuggestion, ThisMonthForecast } from '@tostao/contracts';
 import type { Repositories } from '../repositories/types.js';
 import type { Transaction } from '../domain/entities.js';
 import { NEUTRAL_CATEGORY_ID } from '../domain/entities.js';
@@ -177,17 +177,18 @@ const INSTALLMENT = /(?:^|\D)(\d{1,2})\s*\/\s*(\d{1,2})(?:\D|$)/;
 export class ForecastUseCase {
   constructor(private readonly repos: Repositories, private readonly now: () => Date = () => new Date()) {}
 
-  async execute({ userId, months = 3 }: { userId: string; months?: number }): Promise<{ hasPlan: boolean; months: ForecastMonth[]; goal: GoalStatus | null }> {
+  async execute({ userId, months = 3 }: { userId: string; months?: number }): Promise<{ hasPlan: boolean; months: ForecastMonth[]; goal: GoalStatus | null; thisMonth: ThisMonthForecast | null }> {
     const plan = await this.repos.plans.get(userId);
-    if (!plan) return { hasPlan: false, months: [], goal: null };
+    if (!plan) return { hasPlan: false, months: [], goal: null, thisMonth: null };
     const now = this.now();
     const cur = currentMonth(now);
     const summary = new GetMonthSummaryUseCase(this.repos);
-    const [past, subs, accounts, recent] = await Promise.all([
+    const [past, subs, accounts, recent, curSummary] = await Promise.all([
       Promise.all([1, 2, 3].map((k) => summary.execute({ userId, month: shiftMonth(cur, -k) }))),
       new ListSubscriptionsUseCase(this.repos, () => now).execute({ userId }),
       this.repos.accounts.listByUser(userId),
       this.repos.transactions.findManyInRange(userId, new Date(now.getTime() - 62 * DAY), new Date(now.getTime() + DAY)),
+      summary.execute({ userId, month: cur }),
     ]);
 
     // Parcelas: fica só a ocorrência mais recente de cada compra parcelada.
@@ -232,10 +233,34 @@ export class ForecastUseCase {
         benefitsInCents: (plan.benefits ?? []).reduce((s, b) => s + b.amountInCents, 0),
       });
     }
+    // Mês atual: o que já entrou/saiu de verdade + o que ainda deve sair até o último dia.
+    const br = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+    const today = br.getUTCDate();
+    const daysInMonth = new Date(Date.UTC(br.getUTCFullYear(), br.getUTCMonth() + 1, 0)).getUTCDate();
+    const daysLeft = daysInMonth - today;
+    const fixedLeft = plan.fixedExpenses.filter((f) => f.day > today).reduce((sum, f) => sum + f.amountInCents, 0);
+    const endOfMonth = new Date(Date.UTC(br.getUTCFullYear(), br.getUTCMonth() + 1, 1, 3));
+    const subsLeft = subs.subscriptions
+      .filter((x) => x.active && new Date(x.nextChargeAt) > now && new Date(x.nextChargeAt) < endOfMonth)
+      .reduce((sum, x) => sum + x.amountInCents, 0);
+    const dailyLeft = Math.round((daily * daysLeft) / daysInMonth);
+    const incomeNow = Math.max(income, curSummary.incomeInCents);
+    const thisMonth: ThisMonthForecast = {
+      month: cur,
+      daysLeft,
+      incomeInCents: incomeNow,
+      spentInCents: curSummary.outcomeInCents,
+      fixedLeftInCents: fixedLeft,
+      subscriptionsLeftInCents: subsLeft,
+      dailyLeftInCents: dailyLeft,
+      leftInCents: incomeNow - curSummary.outcomeInCents - fixedLeft - subsLeft - dailyLeft,
+    };
+
     // Sem salário informado (ex.: só criou a meta), a previsão não tem base: não diz se cabe.
     const hasIncome = income > 0;
     return {
       hasPlan: hasIncome || fixed > 0,
+      thisMonth: hasIncome ? thisMonth : null,
       months: hasIncome || fixed > 0 ? out : [],
       goal: plan.goal ? goalStatus(plan.goal, cur, hasIncome ? out[0]?.leftInCents ?? null : null) : null,
     };

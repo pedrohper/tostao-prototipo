@@ -1,21 +1,26 @@
+import { CatIcon, Icone } from '@/components/icone';
 import Link from 'next/link';
-import type { BudgetsResponse, ForecastResponse, LessonProgressResponse, MonthSummaryResponse, ProfileResponse, SubscriptionsResponse } from '@tostao/contracts';
+import type { BudgetsResponse, ForecastResponse, LessonProgressResponse, MissionsResponse, MonthSummaryResponse, ProfileResponse, RemindersResponse, SubscriptionsResponse, WeeklyResponse } from '@tostao/contracts';
+import { Missoes, Semana, Sobra, VenceLogo } from '@/components/engajamento';
 import { NO_PROGRESS } from '@/lib/xp';
 import { BudgetBar } from '@/components/budget-bar';
 import { api } from '@/lib/api';
 import { ago, currentMonth, money, monthName, shiftMonth, shortDate } from '@/lib/format';
 import { Mascote } from '@/components/mascote';
-import { ButtonLink, Card, CardIcon, StreakChip } from '@/components/ui';
+import { ButtonLink, Card, StreakChip } from '@/components/ui';
 
 export default async function InicioPage() {
   const month = currentMonth();
-  const [me, s, subs, limits, progress, forecast] = await Promise.all([
+  const [me, s, subs, limits, progress, forecast, missions, reminders, weekly] = await Promise.all([
     api<ProfileResponse>('/me'),
     api<MonthSummaryResponse>(`/summary?month=${month}`),
     api<SubscriptionsResponse>('/subscriptions').catch(() => null),
     api<BudgetsResponse>(`/budgets?month=${month}`).catch(() => ({ budgets: [] })),
     api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
     api<ForecastResponse>('/forecast').catch(() => null),
+    api<MissionsResponse>('/missions').catch(() => null),
+    api<RemindersResponse>('/reminders').catch(() => ({ reminders: [] })),
+    api<WeeklyResponse>('/weekly').catch(() => null),
   ]);
   const estourou = limits.budgets.find((b) => b.spentInCents > b.limitInCents);
   const activeSubs = subs?.subscriptions.filter((x) => x.active).length ?? 0;
@@ -38,7 +43,7 @@ export default async function InicioPage() {
       <header className="flex items-end justify-between">
         <h1 className="font-display text-[34px] leading-[38px] font-extrabold">Fala, {firstName}</h1>
         <div className="flex items-center gap-1.5">
-          <Link href="/aprender" className="text-tinta no-underline"><StreakChip days={progress.streakDays} /></Link>
+          <Link href="/aprender" className="text-tinta no-underline"><StreakChip days={missions?.streakDays ?? progress.streakDays} /></Link>
           <Link href="/perfil" aria-label="Abrir seu perfil" className="flex h-12 w-12 items-center justify-center rounded-full bg-rosa">
             <Mascote pose="avatar" size={38} alt="" />
           </Link>
@@ -62,7 +67,9 @@ export default async function InicioPage() {
             <ButtonLink href="/anotar" variant="outline">Anotar um gasto</ButtonLink>
           </div>
         </Card>
-      ) : (
+      ) : null}
+      {vazio && missions && <Missoes data={missions} compact />}
+      {!vazio && (
         <>
           <div className="flex flex-col gap-3.5 rounded-[22px] border border-linha bg-cartao p-[18px]">
             {s.balanceInCents !== null ? (
@@ -78,6 +85,10 @@ export default async function InicioPage() {
               <div className="flex flex-col gap-0.5 rounded-[14px] bg-papel-2 px-3 py-2.5"><span className="text-xs font-semibold text-tinta-suave">Saiu em {mes}</span><span className="text-[17px] font-bold tabular-nums">{money(s.outcomeInCents)}</span></div>
             </div>
           </div>
+
+          {forecast?.thisMonth && <Sobra forecast={forecast} />}
+          {missions && <Missoes data={missions} compact />}
+          <VenceLogo reminders={reminders.reminders} />
 
           {s.uncategorizedCount > 0 && (
             <Link href="/carteira?filtro=pendentes" className="flex items-center gap-2 rounded-2xl bg-azul py-3 pr-3.5 pl-2 no-underline">
@@ -137,7 +148,9 @@ export default async function InicioPage() {
             </div>
           </section>
 
-          {forecast && (() => {
+          {weekly && <Semana w={weekly} />}
+
+          {forecast && !forecast.thisMonth && (() => {
             const [prox, depois] = forecast.months;
             const chevron = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-tinta-suave"><path d="M9 18l6-6-6-6" /></svg>;
             if (!forecast.hasPlan || !prox) {
@@ -175,13 +188,13 @@ export default async function InicioPage() {
                 </div>
                 <div className="h-2.5 overflow-hidden rounded-full bg-papel-2"><div className="bar-fill h-full rounded-full bg-menta" style={{ width: `${pct}%` }} /></div>
                 <span className="text-[13px] text-tinta-suave">
-                  {g.reached ? 'Meta batida! 🎉' : `${money(g.savedInCents)}${g.amountInCents ? ` de ${money(g.amountInCents)}` : ''}${g.monthlyNeededInCents !== null ? ` · guardar ${money(g.monthlyNeededInCents)}/mês` : ''}`}
+                  {g.reached ? <span className="inline-flex items-center gap-1"><Icone src="ui/meta-batida" size={18} />Meta batida!</span> : `${money(g.savedInCents)}${g.amountInCents ? ` de ${money(g.amountInCents)}` : ''}${g.monthlyNeededInCents !== null ? ` · guardar ${money(g.monthlyNeededInCents)}/mês` : ''}`}
                 </span>
               </Link>
             );
           })() : (
             <Link href="/meta" className="flex items-center gap-3 rounded-2xl border border-dashed border-linha p-3.5 text-[15px] text-tinta no-underline">
-              <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-menta-clara text-lg">🎯</span>
+              <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-menta-clara"><Icone src="meta/outro" size={26} /></span>
               <span className="grow"><b>Juntar pra alguma coisa?</b> Cria uma meta e eu te digo quanto guardar por mês.</span>
             </Link>
           ))}
@@ -198,7 +211,7 @@ export default async function InicioPage() {
                   const uso = c.creditLimitInCents ? Math.min(100, (fatura / c.creditLimitInCents) * 100) : null;
                   return (
                     <Link key={c.id} href="/carteira" className="flex min-w-0 flex-col gap-1 rounded-2xl border border-linha bg-cartao p-3 text-tinta no-underline">
-                      <span className="flex min-w-0 items-center gap-1.5 text-[13px] font-semibold text-tinta-suave"><CardIcon className="shrink-0" /><span className="truncate">{c.name}</span></span>
+                      <span className="flex min-w-0 items-center gap-1.5 text-[13px] font-semibold text-tinta-suave"><Icone src="ui/cartao" size={18} /><span className="truncate">{c.name}</span></span>
                       <span className="text-[17px] font-bold tabular-nums">{money(fatura)}</span>
                       {uso !== null && (
                         <div className="h-1.5 rounded-full bg-papel-2" title={`${Math.round(uso)}% do limite`}>

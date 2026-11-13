@@ -34,6 +34,12 @@ model User {
   categories   Category[]
   plan         FinancialPlan?
   whatsapp     WhatsappLink?
+  activities   UserActivity[]
+  friendCode   FriendCode?
+  friendships  Friendship[]    @relation("FriendOf")
+  friendOf     Friendship[]    @relation("FriendIs")
+  pushSubscriptions PushSubscription[]
+  sentNotifications SentNotification[]
 
   @@map("users")
 }
@@ -262,4 +268,65 @@ model Battle {
 
   @@id([userId, kind])
   @@map("battles")
+}
+
+/// Missão feita num dia (Brasília). Uma linha por tipo por dia: a ofensiva conta dias com pelo menos uma.
+model UserActivity {
+  userId String   @map("user_id")
+  day    String
+  kind   String
+  at     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, day, kind])
+  @@map("user_activities")
+}
+
+/// Código que a pessoa passa pros amigos (TOST-XXXX).
+model FriendCode {
+  userId String @id @map("user_id")
+  code   String @unique
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("friend_codes")
+}
+
+/// Amizade guardada nos dois sentidos (A→B e B→A).
+model Friendship {
+  userId    String   @map("user_id")
+  friendId  String   @map("friend_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user   User @relation("FriendOf", fields: [userId], references: [id], onDelete: Cascade)
+  friend User @relation("FriendIs", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@id([userId, friendId])
+  @@map("friendships")
+}
+
+model PushSubscription {
+  endpoint  String   @id
+  userId    String   @map("user_id")
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+/// Aviso que já foi mandado (pra não repetir).
+model SentNotification {
+  userId String   @map("user_id")
+  key    String
+  sentAt DateTime @default(now()) @map("sent_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, key])
+  @@map("sent_notifications")
 }

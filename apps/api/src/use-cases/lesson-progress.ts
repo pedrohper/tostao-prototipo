@@ -1,4 +1,5 @@
 import type { Repositories } from '../repositories/types.js';
+import { missionXp, streakFromDays } from './engagement.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 /** Dia em Brasília (UTC−3), como "2026-11-12". */
@@ -17,18 +18,22 @@ export function streakFrom(completedAt: Date[], now: Date) {
 }
 
 export class ListLessonProgressUseCase {
-  constructor(private readonly repos: Pick<Repositories, 'lessons' | 'games'>, private readonly now: () => Date = () => new Date()) {}
+  constructor(private readonly repos: Pick<Repositories, 'lessons' | 'games' | 'engagement'>, private readonly now: () => Date = () => new Date()) {}
 
   async execute({ userId }: { userId: string }) {
-    const [rows, votes, battles] = await Promise.all([this.repos.lessons.listByUser(userId), this.repos.games.countUserVotes(userId), this.repos.games.listBattles(userId)]);
     const now = this.now();
     const today = brDay(now);
+    const [rows, votes, battles, activity] = await Promise.all([
+      this.repos.lessons.listByUser(userId), this.repos.games.countUserVotes(userId), this.repos.games.listBattles(userId),
+      this.repos.engagement.listActivity(userId, brDay(new Date(now.getTime() - 400 * DAY))),
+    ]);
     return {
       done: rows.map((l) => l.lessonId),
-      streakDays: streakFrom(rows.map((l) => l.completedAt), now),
+      // Ofensiva: dias com qualquer missão (lição, anotar, categorizar, jogo...)
+      streakDays: streakFromDays(new Set([...rows.map((l) => brDay(l.completedAt)), ...activity.map((a) => a.day)]), now),
       doneToday: rows.filter((l) => brDay(l.completedAt) === today).length,
       // XP dos jogos: 20 por voto no Tribunal, 100 por batalha vencida
-      bonusXp: votes * 20 + battles.filter((b) => b.status === 'vencida').length * 100,
+      bonusXp: votes * 20 + battles.filter((b) => b.status === 'vencida').length * 100 + missionXp(activity),
     };
   }
 }
