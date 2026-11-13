@@ -91,9 +91,10 @@ export function Landing({ contaApagada = false }: { contaApagada?: boolean }) {
         <div className={s.wrap}>
           <span className={s.eyebrow}>A turma</span>
           <h2 className={s.disp}>Dois amigos do seu lado, dois vilões que todo mundo de 20 anos já encontrou</h2>
+          <img src="/elenco/turma.webp" alt="Urubu do Pix, Caramelo, Tostão e Tigrinho lado a lado" style={{ width: '100%', maxWidth: 720, height: 'auto', margin: '8px auto 20px', display: 'block' }} />
           <div className={s.vils}>
             <div className={s.vil} style={{ background: '#FFE1E7' }}><img src="/elenco/acenando.webp" alt="Tostão acenando" /><span className={s.tag}>Herói</span><h3 className={s.disp}>Tostão</h3><p>Cofrinho que já quebrou e se remendou. Fala a real sobre dinheiro, sem sermão.</p></div>
-            <div className={s.vil} style={{ background: '#DDF6E8' }}><img src="/elenco/caramelo-farejando.webp" alt="Caramelo farejando o chão" /><span className={s.tag}>Herói</span><h3 className={s.disp}>Caramelo</h3><p>Vira-lata de rua que fareja pechincha, chorinho no Pix e desperdício no mercado.</p></div>
+            <div className={s.vil} style={{ background: '#DDF6E8' }}><img src="/elenco/caramelo.webp" alt="Caramelo sentado, sorrindo" /><span className={s.tag}>Herói</span><h3 className={s.disp}>Caramelo</h3><p>Vira-lata de rua que fareja pechincha, chorinho no Pix e desperdício no mercado.</p></div>
             <div className={s.vil} style={{ background: '#FFF1C7' }}><img src="/elenco/tigrinho.webp" alt="Tigrinho de óculos escuros e correntes de ouro" /><span className={s.tag}>Vilão</span><h3 className={s.disp}>Tigrinho</h3><p>Ostenta, canta e jura que hoje a cartinha solta. É a bet que nunca devolve.</p></div>
             <div className={s.vil} style={{ background: '#DCEBFF' }}><img src="/elenco/urubu-pix.webp" alt="Urubu do Pix mostrando o celular" /><span className={s.tag}>Vilão</span><h3 className={s.disp}>Urubu do Pix</h3><p>Robô que rende 10% ao dia, falsa central, pirâmide do amigo. Some quando você precisa.</p></div>
           </div>
@@ -119,7 +120,7 @@ export function Landing({ contaApagada = false }: { contaApagada?: boolean }) {
             <p style={{ margin: 0, fontSize: 18, lineHeight: '27px', maxWidth: 520 }}>Grátis pra começar. Leva 2 minutos pra fazer a primeira lição, mesmo sem conectar banco.</p>
             <Link href="/criar-conta" className={cta}>Começar grátis</Link>
           </div>
-          <img src="/elenco/comemorando.webp" alt="Tostão comemorando" />
+          <img src="/elenco/dupla.webp" alt="Tostão e Caramelo lado a lado" />
         </section>
         <SiteFooter />
       </div>

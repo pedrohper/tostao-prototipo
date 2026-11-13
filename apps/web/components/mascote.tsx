@@ -3,9 +3,9 @@ export type Pose =
   | 'acenando' | 'avatar' | 'chocado' | 'comemorando' | 'conectando' | 'dormindo' | 'investigando'
   | 'orgulhoso' | 'pensando' | 'preocupado' | 'professor' | 'sem-graca' | 'triste'
   | 'caramelo' | 'caramelo-acenando' | 'caramelo-bravo' | 'caramelo-dormindo' | 'caramelo-farejando' | 'caramelo-feliz' | 'caramelo-moeda'
-  | 'tigrinho' | 'urubu' | 'urubu-pix' | 'urubu-fugindo';
+  | 'tigrinho' | 'urubu' | 'urubu-pix' | 'urubu-fugindo' | 'dupla';
 
-const FESTA: Pose[] = ['comemorando', 'orgulhoso', 'caramelo-feliz'];
+const FESTA: Pose[] = ['comemorando', 'orgulhoso', 'caramelo-feliz', 'dupla'];
 
 /** Por padrão o personagem "respira" (bem leve). still = parado (ex.: avatar pequeno). */
 export function Mascote({ pose, size = 120, alt = '', className = '', still = false }: { pose: Pose; size?: number; alt?: string; className?: string; still?: boolean }) {

@@ -1,3 +1,4 @@
+import { SomDasMissoes } from '@/components/sons';
 import { CatIcon, Icone } from '@/components/icone';
 import Link from 'next/link';
 import type { BudgetsResponse, ForecastResponse, LessonProgressResponse, MissionsResponse, MonthSummaryResponse, ProfileResponse, RemindersResponse, SubscriptionsResponse, WeeklyResponse } from '@tostao/contracts';
@@ -40,6 +41,7 @@ export default async function InicioPage() {
 
   return (
     <div className="flex flex-col gap-4">
+      {missions && <SomDasMissoes day={new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10)} done={missions.missions.filter((m) => m.done).length} streak={missions.streakDays} />}
       <header className="flex items-end justify-between">
         <h1 className="font-display text-[34px] leading-[38px] font-extrabold">Fala, {firstName}</h1>
         <div className="flex items-center gap-1.5">

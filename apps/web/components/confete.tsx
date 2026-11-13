@@ -1,9 +1,11 @@
 // Chuva de confete de uma vez (meta batida, lição fechada). Só CSS; some com "reduzir movimento".
+import { SomAoAparecer } from './sons';
 const CORES = ['#FF5A36', '#FFC233', '#3DD6A0', '#DCEBFF', '#FFE1E7'];
 
 export function Confete({ n = 28 }: { n?: number }) {
   return (
     <div className="confete" aria-hidden="true">
+      <SomAoAparecer som="festa" />
       {Array.from({ length: n }, (_, i) => {
         // Determinístico (sem Math.random) pra servidor e cliente desenharem igual.
         const left = (i * 37) % 100;

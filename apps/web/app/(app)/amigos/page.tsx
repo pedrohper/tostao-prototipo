@@ -20,7 +20,7 @@ export default async function AmigosPage() {
           <h1 className="font-display text-[30px] leading-[34px] font-extrabold">Desafio com amigos</h1>
           <p className="text-sm leading-5 text-tinta-suave">{f.challenge.title}. Acaba {dias === 0 ? 'hoje' : `em ${dias} ${dias === 1 ? 'dia' : 'dias'}`}, domingo à noite.</p>
         </div>
-        <Mascote pose="comemorando" size={84} alt="Tostão comemorando" />
+        <Mascote pose="dupla" size={92} alt="Tostão e Caramelo" />
       </div>
 
       <section className="flex flex-col gap-2">
