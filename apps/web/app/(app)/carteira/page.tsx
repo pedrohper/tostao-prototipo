@@ -13,7 +13,7 @@ import { Chevron, Row, SearchBar } from './transaction-row';
 const FILTERS = { tudo: 'Tudo', saidas: 'Saídas', entradas: 'Entradas', pendentes: 'Sem categoria' } as const;
 type Filter = keyof typeof FILTERS;
 
-export default async function CarteiraPage({ searchParams }: { searchParams: Promise<{ mes?: string; filtro?: string }> }) {
+export default async function CarteiraPage({ searchParams }: { searchParams: Promise<{ mes?: string; filtro?: string; cat?: string }> }) {
   const sp = await searchParams;
   const month = /^\d{4}-\d{2}$/.test(sp.mes ?? '') ? sp.mes! : currentMonth();
   const filter: Filter = sp.filtro && sp.filtro in FILTERS ? (sp.filtro as Filter) : 'tudo';
@@ -31,8 +31,12 @@ export default async function CarteiraPage({ searchParams }: { searchParams: Pro
     logosBancos(),
   ]);
 
+  // Categoria escolhida no "Pra onde foi": só os gastos dela ("sem" = sem categoria).
+  const cat = sp.cat && /^[\w-]{1,60}$/.test(sp.cat) ? sp.cat : null;
+  const catInfo = cat ? summary.byCategory.find((c) => (c.categoryId ?? 'sem') === cat) ?? null : null;
   const shown = transactions.filter((t) =>
-    filter === 'saidas' ? t.amountInCents < 0 && !t.isInternalTransfer
+    cat ? !t.isInternalTransfer && (t.categoryId ?? 'sem') === cat && (cat !== 'sem' || t.amountInCents < 0)
+    : filter === 'saidas' ? t.amountInCents < 0 && !t.isInternalTransfer
       : filter === 'entradas' ? t.amountInCents > 0 && !t.isInternalTransfer
         : filter === 'pendentes' ? !t.categoryId && !t.isInternalTransfer
           : true,
@@ -42,7 +46,9 @@ export default async function CarteiraPage({ searchParams }: { searchParams: Pro
     const k = dayLabel(t.occurredAt);
     groups.set(k, [...(groups.get(k) ?? []), t]);
   }
-  const q = (p: Record<string, string>) => `/carteira?${new URLSearchParams({ mes: month, filtro: filter, ...p })}`;
+  const q = (p: Record<string, string>) => `/carteira?${new URLSearchParams({ mes: month, filtro: filter, ...(cat ? { cat } : {}), ...p })}`;
+  const semCat = `/carteira?${new URLSearchParams({ mes: month, filtro: filter })}`;
+  const porCat = (id: string | null) => `/carteira?${new URLSearchParams({ mes: month, cat: id ?? 'sem' })}#lista`;
   const mesTitulo = `${monthName(month)} ${month.slice(0, 4)}`;
   const bancos = summary.accounts.filter((a) => a.type === 'BANK');
   // Contas primeiro, cartões depois (como no design)
@@ -93,19 +99,30 @@ export default async function CarteiraPage({ searchParams }: { searchParams: Pro
               <span className="font-display text-[22px] leading-8 font-extrabold text-verde-texto tabular-nums">{money(summary.incomeInCents)}</span>
             </div>
           </div>
-          <Categorias items={summary.byCategory} max={4} />
+          <Categorias items={summary.byCategory} max={6} href={porCat} ativa={cat} />
         </section>
       )}
 
-      <div className="-mx-5 flex gap-2 overflow-x-auto px-5">
+      {cat ? (
+        <div id="lista" className="flex scroll-mt-4 items-center gap-2 rounded-2xl bg-papel-2 py-2 pr-1.5 pl-3">
+          <i className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: catInfo?.categoryId ? catInfo.color : '#FFB4C2' }} />
+          <span className="flex min-w-0 grow flex-col">
+            <span className="truncate text-[15px] font-bold">{catInfo?.name ?? (cat === 'sem' ? 'Sem categoria' : 'Categoria')}</span>
+            <span className="text-xs text-tinta-suave">{money(catInfo?.totalInCents ?? 0)} em {shown.length} {shown.length === 1 ? 'lançamento' : 'lançamentos'} em {monthName(month)}</span>
+          </span>
+          <Link href={semCat} aria-label="Tirar o filtro de categoria" className="flex h-10 shrink-0 items-center rounded-full bg-cartao px-3 text-[13px] font-semibold text-tinta no-underline">Ver tudo ✕</Link>
+        </div>
+      ) : (
+      <div id="lista" className="-mx-5 flex scroll-mt-4 gap-2 overflow-x-auto px-5">
         {(Object.keys(FILTERS) as Filter[]).map((f) => (
           <Link key={f} href={q({ filtro: f })} className={`shrink-0 rounded-full px-3 py-1.5 text-[13px] font-semibold no-underline ${filter === f ? 'bg-tinta text-papel' : f === 'pendentes' && summary.uncategorizedCount > 0 ? 'bg-rosa text-tinta' : 'bg-papel-2 text-tinta'}`}>
             {f === 'pendentes' ? `${summary.uncategorizedCount} sem categoria` : FILTERS[f]}
           </Link>
         ))}
       </div>
+      )}
 
-      {filter === 'pendentes' && shown.some((t) => t.amountInCents !== 0) && <AutoCategorizeButton />}
+      {!cat && filter === 'pendentes' && shown.some((t) => t.amountInCents !== 0) && <AutoCategorizeButton />}
 
       {shown.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-10 text-center">
