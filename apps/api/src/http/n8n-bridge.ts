@@ -1,4 +1,4 @@
-// Porta extra só com POST /whatsapp/n8n, escutando no IP da ponte do Docker (ex.: 172.17.0.1).
+// Porta extra só com POST /whatsapp/n8n, escutando no IP da ponte do Docker (no servidor, 172.18.0.1 da rede homelab_default).
 // Assim o n8n (em container) alcança o Tostão sem a API inteira sair do 127.0.0.1.
 import Fastify, { type FastifyInstance } from 'fastify';
 

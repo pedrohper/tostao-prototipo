@@ -9,7 +9,6 @@ Regra: **leia este arquivo antes de codar** e **registre o relatório ao termina
 
 O que está pra ser feito agora, por quem e em que branch. Tire daqui quando for pra Execução.
 
-- [ ] **WhatsApp via n8n + Evolution API**: rota `POST /whatsapp/n8n` (header `X-Tostao-Secret`), etapa 1 = chat com o Tostão + anotar gasto por texto; etapa 2 = avisos ativos via `N8N_WHATSAPP_SEND_URL`. Claude, thread "Ligar WhatsApp do n8n no Tostão", branch `claude/project-thread-lss5y7`.
 - [ ] **"É pagamento de fatura" / "Transferi pra outra conta minha"** no detalhe do lançamento: liga ao cartão ou à conta, sai do gasto e aparece no lugar certo. Claude, thread "Deixar o Tostão pronto pros testadores". Aguardando o Pedro terminar a descrição da transferência entre bancos.
 - [ ] **"Vale a pena parcelar?" e "Escada do dinheiro"** (onde investir, só educativo). Claude, thread "Ensinar juros e onde investir".
 
@@ -24,6 +23,15 @@ Relatório do que foi feito. Modelo:
 - Como validei (testes, rota, tela).
 - O que ficou de fora / riscos.
 ```
+
+### 2026-11-13 · Claude · PR #22 (claude/project-thread-lss5y7)
+- WhatsApp via n8n + Evolution API. Rota `POST /whatsapp/n8n` (header `X-Tostao-Secret`, comparação em tempo constante) aceita `{ id, from, text, fromMe }` ou o webhook cru da Evolution (`messages.upsert`, `@lid` usa `remoteJidAlt`/`senderPn`) e devolve `{ replies: string[] }`. Grupo, `fromMe` e texto vazio são ignorados; id repetido não responde de novo.
+- Anotar por texto: `services/parse-expense.ts` (sem IA) entende "gastei 25 no ifood", "paguei R$ 32,50 de uber ontem", "recebi 100 do pai" e cria via `CreateManualTransactionUseCase` (categoria por regra, senão `AutoCategorize`). Não conta no limite do chat. Resto vai pro `AskTostao`.
+- `http/n8n-bridge.ts`: porta extra (`N8N_LISTEN_HOST`, `N8N_LISTEN_PORT`=3334) só com essa rota, repassando via `app.inject`; API segue no 127.0.0.1. Retenta a cada 30 s se o IP ainda não existir no boot.
+- `N8nWhatsAppGateway.send()` posta `{ to, text }` em `N8N_WHATSAPP_SEND_URL` (etapa 2, avisos; nada dispara ainda).
+- Sem migration. Env nova: `N8N_WHATSAPP_SECRET` (16+), `N8N_LISTEN_HOST` (no servidor `172.18.0.1`, gateway da `homelab_default`; o docker0 está DOWN), `N8N_LISTEN_PORT`, `N8N_WHATSAPP_SEND_URL`; reaproveita `WHATSAPP_NUMBER`.
+- Validei com Vitest (144 passando, `whatsapp.spec.ts` + `parse-expense.spec.ts`) e `tsc`. Falta: deploy, .env no servidor e o fluxo no n8n; teste ponta a ponta com a Evolution.
+- Riscos: parser é por regex (frase fora do padrão cai no chat); API não oficial pode ter o número banido (número dedicado).
 
 ### 2026-11-13 · Claude · PR #24 e #25 (claude/project-thread-3oru9b)
 - `apps/api/src/jobs/daily-sync.ts`, `server.ts`, `env.ts`: o cron do sync não disparava (job sem referência). Agora guarda o job, loga início/fim/próximo, roda `0 6-23/3 * * *` e sincroniza no boot se a última tiver mais de 6 h. No servidor, a linha `SYNC_CRON` do `.env` foi comentada.
