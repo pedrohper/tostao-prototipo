@@ -1,5 +1,6 @@
 'use client';
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
+import { tocar } from '@/lib/sons';
 import { useFormStatus } from 'react-dom';
 import type { GoalStatus } from '@tostao/contracts';
 import { deposit, saveGoal, type GoalState } from './actions';
@@ -47,6 +48,7 @@ export function DepositForm() {
   const [state, action] = useActionState<GoalState, FormData>(deposit, {});
   const [dir, setDir] = useState<'guardei' | 'tirei'>('guardei');
   const [amount, setAmount] = useState('');
+  useEffect(() => { if (state.message) tocar('moeda'); else if (state.error) tocar('erro'); }, [state]);
   return (
     <form action={async (f) => { await action(f); setAmount(''); }} className="flex flex-col gap-2.5 rounded-2xl border border-linha bg-cartao p-3.5">
       <input type="hidden" name="dir" value={dir} />

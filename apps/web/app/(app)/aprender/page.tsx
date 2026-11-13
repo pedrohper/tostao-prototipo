@@ -1,3 +1,4 @@
+import { SomDasMissoes } from '@/components/sons';
 import { Icone } from '@/components/icone';
 import Link from 'next/link';
 import { modules } from '@/lib/lessons';
@@ -33,6 +34,7 @@ export default async function AprenderPage() {
   return (
     <div className="flex flex-col gap-3.5">
       <LegacyProgress saved={done} />
+      {missions && <SomDasMissoes day={new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10)} done={missions.missions.filter((m) => m.done).length} streak={missions.streakDays} />}
       <div className="flex items-end justify-between">
         <h1 className="font-display text-[34px] leading-[38px] font-extrabold">Aprender</h1>
         <div className="flex gap-1.5">

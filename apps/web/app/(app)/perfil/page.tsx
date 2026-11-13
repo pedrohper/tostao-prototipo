@@ -1,3 +1,4 @@
+import { SonsSwitch } from '@/components/sons';
 import { Avisos } from '@/components/avisos';
 import type { PushKeyResponse } from '@tostao/contracts';
 import { Icone } from '@/components/icone';
@@ -89,6 +90,7 @@ export default async function PerfilPage() {
       </section>
 
       <Avisos publicKey={push?.publicKey ?? null} />
+      <SonsSwitch />
 
       <section className="flex flex-col gap-2">
         <Eyebrow>Atalhos</Eyebrow>
