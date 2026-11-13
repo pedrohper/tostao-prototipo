@@ -52,4 +52,10 @@ describe('recurringMonthly', () => {
     const list = [t('2026-08-15', 648.4), t('2026-09-11', 3701.8), t('2026-09-30', 1150), t('2026-10-01', 1250.55), t('2026-10-16', 1000), t('2026-10-31', 1159.23), t('2026-11-13', 1000)];
     expect(recurringMonthly(list, 4)).toBe(100000 + 115923);
   });
+
+  it('caso real: salário de setembro caiu em 01/10 e o de outubro em 31/10; acerto e trocados ficam de fora', () => {
+    const t = (d: string, v: number) => ({ id: d, userId: 'u', accountId: 'b', externalId: d, description: 'TRANSF SALDO C/SAL P/CC', amountInCents: Math.round(v * 100), occurredAt: new Date(`${d}T12:00:00Z`), categoryId: 'salario', isInternalTransfer: false, createdAt: new Date() });
+    const list = [t('2026-08-10', 648.4), t('2026-08-20', 791.13), t('2026-09-11', 3701.8), t('2026-09-19', 358.93), t('2026-10-01', 1250.55), t('2026-10-16', 1000), t('2026-10-29', 17.84), t('2026-10-31', 1159.23)];
+    expect(recurringMonthly(list, 3)).toBe(Math.round((125055 + 115923) / 2));
+  });
 });

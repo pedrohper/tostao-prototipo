@@ -84,14 +84,17 @@ const SALARY_SIGNAL = /SALARIO|C\/SAL\b|FOLHA|PROVENTO/;
  * (adiantamento ~R$ 1.000 no dia 15, resto ~R$ 1.200 no fim do mês, um acerto de R$ 3.700 uma vez só):
  * separa por faixa de valor (12%), soma a mediana de cada faixa que se repete em 2+ meses e ignora o que veio uma vez.
  */
-export function recurringMonthly(list: Transaction[], months: number): number {
+export function recurringMonthly(list: Transaction[], _months: number): number {
   const bands: Transaction[][] = [];
   for (const t of [...list].sort((a, b) => a.amountInCents - b.amountInCents)) {
     const band = bands.find((b) => { const m = medianOf(b.map((x) => x.amountInCents)); return Math.abs(t.amountInCents - m) <= m * 0.12; });
     if (band) band.push(t); else bands.push([t]);
   }
-  const recurring = bands.filter((b) => new Set(b.map((t) => monthOf(t.occurredAt))).size >= 2);
-  if (!recurring.length) return Math.round(list.reduce((s, t) => s + t.amountInCents, 0) / Math.max(1, months));
+  // Repete = 2+ vezes com pelo menos ~3 semanas entre a primeira e a última (o salário de setembro pode cair dia 01/10).
+  const span = (b: Transaction[]) => Math.max(...b.map((t) => t.occurredAt.getTime())) - Math.min(...b.map((t) => t.occurredAt.getTime()));
+  const recurring = bands.filter((b) => b.length >= 2 && span(b) >= 20 * DAY);
+  // Nada se repete ainda: o valor típico de uma entrada (mediana), não o total do mês, que mistura acerto e atraso.
+  if (!recurring.length) return list.length ? medianOf(list.map((t) => t.amountInCents)) : 0;
   return recurring.reduce((s, b) => s + medianOf(b.map((t) => t.amountInCents)), 0);
 }
 
