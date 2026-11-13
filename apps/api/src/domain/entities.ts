@@ -59,6 +59,8 @@ export type Transaction = {
   occurredAt: Date;
   categoryId: string | null;
   isInternalTransfer: boolean;
+  /** "Todo mês" ou "parcelado" anotado à mão: as ocorrências futuras têm o mesmo seriesId. */
+  seriesId?: string | null;
   createdAt: Date;
 };
 

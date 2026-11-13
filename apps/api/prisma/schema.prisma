@@ -125,6 +125,8 @@ model Transaction {
   occurredAt         DateTime @map("occurred_at")
   categoryId         String?  @map("category_id")
   isInternalTransfer Boolean  @default(false) @map("is_internal_transfer")
+  // Anotado com "todo mês" ou "parcelado": as próximas já ficam lançadas nos meses seguintes, com o mesmo seriesId.
+  seriesId           String?  @map("series_id")
   createdAt          DateTime @default(now()) @map("created_at")
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -133,6 +135,7 @@ model Transaction {
 
   @@unique([userId, externalId])
   @@index([userId, occurredAt])
+  @@index([seriesId])
   @@map("transactions")
 }
 

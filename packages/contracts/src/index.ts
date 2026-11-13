@@ -90,7 +90,10 @@ export const manualTransactionBody = z.object({
   categoryId: z.string().nullable().optional(),
   /** "Pago com": null = dinheiro vivo. */
   accountId: z.string().nullable().optional(),
-});
+  /** nao = só esse; mensal = repete todo mês (12 meses lançados); parcelado = o valor é o total, dividido em `times` meses. */
+  repeat: z.enum(['nao', 'mensal', 'parcelado']).default('nao'),
+  times: z.number().int().min(2, 'Parcela em pelo menos 2x').max(48, 'No máximo 48x').optional(),
+}).refine((b) => b.repeat !== 'parcelado' || (b.times ?? 0) >= 2, { message: 'Diz em quantas vezes', path: ['times'] });
 export type ManualTransactionBody = z.infer<typeof manualTransactionBody>;
 
 export const categorizeBody = z.object({
@@ -112,6 +115,8 @@ export type TransactionDTO = {
   accountName: string | null;
   isInternalTransfer: boolean;
   source: 'bank' | 'manual';
+  /** Faz parte de um "todo mês" ou "parcelado" anotado à mão. */
+  seriesId: string | null;
 };
 
 export type SearchResponse = {
@@ -296,6 +301,25 @@ export type ForecastMonth = {
   leftInCents: number;
   /** VR/VA do mês: informativo, não entra no leftInCents. */
   benefitsInCents: number;
+  /** Lançamentos anotados que já estão marcados pra esse mês (todo mês / parcelas). */
+  scheduledOutInCents: number;
+  scheduledInInCents: number;
+  /** O que cai de verdade no mês, item por item (o dia a dia fica de fora: é estimativa). */
+  items: ForecastItem[];
+  /** Fatura prevista de cada cartão: parcelas + assinaturas + o que foi anotado nele. */
+  cards: { id: string; name: string; dueDay: number | null; totalInCents: number }[];
+};
+export type ForecastItem = {
+  kind: 'renda' | 'conta' | 'assinatura' | 'parcela' | 'anotado';
+  title: string;
+  /** Sempre positivo; `entrada` diz o sentido. */
+  amountInCents: number;
+  entrada: boolean;
+  day: number | null;
+  /** Cai na fatura desse cartão (null = sai da conta). */
+  cardId: string | null;
+  /** Parcela: "4/10". */
+  detail: string | null;
 };
 /** Situação da meta: quanto falta e quanto guardar por mês pra chegar no prazo. */
 export type GoalStatus = {

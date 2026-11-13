@@ -29,6 +29,8 @@ export async function createManual(_: ActionState, form: FormData): Promise<Acti
     occurredAt: form.get('occurredAt'),
     categoryId: form.get('categoryId') || null,
     accountId: form.get('accountId') || null,
+    repeat: form.get('repeat') || 'nao',
+    times: form.get('repeat') === 'parcelado' ? Number(form.get('times') || 0) : undefined,
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
   try {
@@ -64,4 +66,18 @@ export async function autoCategorize(_: AutoState): Promise<AutoState> {
   } catch {
     return { message: 'Não consegui agora. Tenta de novo daqui a pouco.' };
   }
+}
+
+/** Apaga um lançamento anotado à mão (com serie=1, também os próximos do "todo mês"/parcelado). */
+export async function apagarLancamento(form: FormData) {
+  const id = String(form.get('id') ?? '');
+  const serie = form.get('serie') === '1';
+  const back = String(form.get('back') || '/carteira');
+  if (id) {
+    try {
+      await api(`/transactions/${encodeURIComponent(id)}${serie ? '?serie=1' : ''}`, { method: 'DELETE' });
+    } catch { /* se falhar, o lançamento continua lá */ }
+  }
+  revalidatePath('/', 'layout');
+  redirect(back.startsWith('/') ? back : '/carteira');
 }

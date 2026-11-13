@@ -98,6 +98,10 @@ class PrismaTransactionsRepository implements TransactionsRepository {
     await this.db.transaction.update({ where: { id }, data: { categoryId, isInternalTransfer, description, amountInCents } });
   }
   async clearCategory(categoryId: string) { await this.db.transaction.updateMany({ where: { categoryId }, data: { categoryId: null } }); }
+  async delete(id: string) { await this.db.transaction.delete({ where: { id } }); }
+  async deleteSeriesFrom(userId: string, seriesId: string, from: Date) {
+    return (await this.db.transaction.deleteMany({ where: { userId, seriesId, occurredAt: { gte: from } } })).count;
+  }
 }
 
 class PrismaBudgetsRepository implements BudgetsRepository {

@@ -74,6 +74,13 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
     return reply.status(201).send({ id: transaction.id });
   });
 
+  // Apaga um lançamento anotado (com ?serie=1, também os próximos do "todo mês"/parcelado)
+  app.delete('/transactions/:id', { onRequest: verifyJwt }, async (request) => {
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const { serie } = z.object({ serie: z.enum(['0', '1']).optional() }).parse(request.query);
+    return uc.deleteTransaction.execute({ userId: request.user.sub, transactionId: id, series: serie === '1' });
+  });
+
   app.patch('/transactions/:id/category', { onRequest: verifyJwt }, async (request) => {
     const { id } = z.object({ id: z.string() }).parse(request.params);
     const body = categorizeBody.parse(request.body);

@@ -91,6 +91,9 @@ export interface TransactionsRepository {
   save(transaction: Transaction): Promise<void>;
   /** Tira a categoria (volta pra pendente) de todas as transações dela. */
   clearCategory(categoryId: string): Promise<void>;
+  delete(id: string): Promise<void>;
+  /** Apaga as ocorrências da série a partir de uma data (inclusive). Devolve quantas. */
+  deleteSeriesFrom(userId: string, seriesId: string, from: Date): Promise<number>;
 }
 
 export interface InvitesRepository {
