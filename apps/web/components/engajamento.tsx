@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { ForecastResponse, MissionsResponse, ReminderDTO, WeeklyResponse } from '@tostao/contracts';
 import { money, monthName } from '@/lib/format';
 import { Icone } from './icone';
+import { fecharAviso } from '@/lib/inicio-actions';
 
 const chevron = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-tinta-suave"><path d="M9 18l6-6-6-6" /></svg>;
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -69,6 +70,12 @@ export function VenceLogo({ reminders }: { reminders: ReminderDTO[] }) {
               <span className={`text-xs ${r.daysLeft <= 1 ? 'font-semibold text-laranja-texto' : 'text-tinta-suave'}`}>Vence {QUANDO(r.daysLeft)}</span>
             </div>
             {r.amountInCents !== null && <span className="shrink-0 text-[15px] font-semibold tabular-nums">{money(r.amountInCents)}</span>}
+            <form action={fecharAviso.bind(null, r.key)} className="-mr-2 shrink-0">
+              <button type="submit" aria-label={`Já paguei ${r.title}, fechar`} title="Já paguei"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-tinta-suave hover:bg-tinta/10">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+              </button>
+            </form>
           </div>
         ))}
       </div>
@@ -82,12 +89,12 @@ export function Semana({ w }: { w: WeeklyResponse }) {
   const diff = w.spentInCents - w.prevSpentInCents;
   const melhor = diff <= 0;
   return (
-    <section id="semana" className="flex scroll-mt-4 flex-col gap-2 rounded-2xl bg-azul p-3.5 text-[#1E1B18]">
-      <span className="text-xs font-semibold tracking-[0.08em] text-[#6B635A] uppercase">Sua semana · últimos 7 dias</span>
+    <section id="semana" className="flex scroll-mt-4 flex-col gap-2 rounded-2xl bg-azul p-3.5 text-tinta">
+      <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">Sua semana · últimos 7 dias</span>
       <div className="flex items-baseline justify-between gap-2">
         <span className="font-display text-[28px] leading-8 font-extrabold tabular-nums">{money(w.spentInCents)}</span>
         {w.prevSpentInCents > 0 && (
-          <span className={`rounded-full px-2.5 py-1 text-[13px] font-bold ${melhor ? 'bg-menta' : 'bg-rosa'}`}>
+          <span className={`rounded-full px-2.5 py-1 text-[13px] font-bold ${melhor ? 'bg-menta text-[#1E1B18]' : 'bg-rosa'}`}>
             {melhor ? '↓' : '↑'} {money(Math.abs(diff))}
           </span>
         )}
@@ -110,17 +117,17 @@ export function Sobra({ forecast }: { forecast: ForecastResponse }) {
   if (!t) return null;
   const sobra = t.leftInCents >= 0;
   return (
-    <Link href="/previsao" className={`flex items-center gap-3 rounded-2xl p-3.5 text-[#1E1B18] no-underline ${sobra ? 'bg-menta-clara' : 'bg-rosa'}`}>
+    <Link href="/previsao" className={`flex items-center gap-3 rounded-2xl p-3.5 text-tinta no-underline ${sobra ? 'bg-menta-clara' : 'bg-rosa'}`}>
       <div className="flex grow flex-col gap-1">
-        <span className="text-xs font-semibold tracking-[0.08em] text-[#6B635A] uppercase">Até o fim de {monthName(t.month)}</span>
+        <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">Até o fim de {monthName(t.month)}</span>
         <span className="text-[15px] leading-[21px]">
           {sobra ? <>Devem sobrar uns <b className="font-display text-[22px] font-extrabold">{money(t.leftInCents)}</b></> : <>Devem faltar uns <b className="font-display text-[22px] font-extrabold">{money(-t.leftInCents)}</b></>}
         </span>
-        <span className="text-[13px] text-[#6B635A]">
+        <span className="text-[13px] text-tinta-suave">
           {t.daysLeft} {t.daysLeft === 1 ? 'dia' : 'dias'} pela frente · já saiu {money(t.spentInCents)}
           {t.fixedLeftInCents + t.subscriptionsLeftInCents > 0 ? ` · ainda vem ${money(t.fixedLeftInCents + t.subscriptionsLeftInCents)} de contas` : ''}
         </span>
-        {prox && <span className="text-[13px] text-[#6B635A]">{cap(monthName(prox.month))}: {prox.leftInCents >= 0 ? `sobram uns ${money(prox.leftInCents)}` : `faltam uns ${money(-prox.leftInCents)}`}</span>}
+        {prox && <span className="text-[13px] text-tinta-suave">{cap(monthName(prox.month))}: {prox.leftInCents >= 0 ? `sobram uns ${money(prox.leftInCents)}` : `faltam uns ${money(-prox.leftInCents)}`}</span>}
       </div>
       {chevron}
     </Link>

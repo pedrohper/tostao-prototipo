@@ -47,10 +47,10 @@ export function Simulacao({ month, hoje, forecast }: { month: string; hoje: stri
         </div>
       ) : (
         <>
-          <section className={`flex items-center gap-2 rounded-[20px] py-3 pr-4 pl-2 text-[#1E1B18] ${m.leftInCents >= 0 ? 'bg-menta-clara' : 'bg-rosa'}`}>
+          <section className={`flex items-center gap-2 rounded-[20px] py-3 pr-4 pl-2 text-tinta ${m.leftInCents >= 0 ? 'bg-menta-clara' : 'bg-rosa'}`}>
             <Mascote pose={m.leftInCents >= 0 ? 'comemorando' : 'preocupado'} size={84} alt="" />
             <div className="flex flex-col">
-              <span className="text-xs font-semibold tracking-[0.08em] text-[#6B635A] uppercase">{cap(monthName(month))}, se seguir assim</span>
+              <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">{cap(monthName(month))}, se seguir assim</span>
               <span className="text-[15px]">{m.leftInCents >= 0 ? 'Devem sobrar uns' : 'Devem faltar uns'}</span>
               <span className="font-display text-[32px] leading-9 font-extrabold tabular-nums">{money(Math.abs(m.leftInCents))}</span>
             </div>
