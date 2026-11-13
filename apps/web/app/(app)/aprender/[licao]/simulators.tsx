@@ -1,11 +1,14 @@
 'use client';
 import { useState } from 'react';
+import { TAXAS_REFERENCIA } from '@tostao/contracts';
 import { money } from '@/lib/format';
+import { CompensaParcelar } from '@/components/juros';
 
-// Simuladores interativos. Por enquanto só o da lição 1.1 existe de verdade.
+// Simuladores interativos.
 // Cada um novo entra aqui com o id da lição.
 export const SIMULATORS: Record<string, () => React.ReactNode> = {
   'm1-l1': RaloDoCafezinho,
+  'm2-l3': () => <CompensaParcelar taxas={TAXAS_REFERENCIA} compacto />,
 };
 
 function RaloDoCafezinho() {
