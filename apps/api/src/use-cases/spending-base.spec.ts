@@ -44,3 +44,12 @@ describe('spendingBase', () => {
     expect(b.typicalInCents).toBe(R(1000));
   });
 });
+
+import { recurringMonthly } from './financial-plan.js';
+describe('recurringMonthly', () => {
+  it('adiantamento + resto do salário somam, o acerto que veio uma vez fica de fora', () => {
+    const t = (d: string, v: number) => ({ id: d, userId: 'u', accountId: 'b', externalId: d, description: 'TRANSF SALDO C/SAL P/CC', amountInCents: v * 100, occurredAt: new Date(`${d}T12:00:00Z`), categoryId: 'salario', isInternalTransfer: false, createdAt: new Date() });
+    const list = [t('2026-08-15', 648.4), t('2026-09-11', 3701.8), t('2026-09-30', 1150), t('2026-10-01', 1250.55), t('2026-10-16', 1000), t('2026-10-31', 1159.23), t('2026-11-13', 1000)];
+    expect(recurringMonthly(list, 4)).toBe(100000 + 115923);
+  });
+});
