@@ -2,7 +2,7 @@ import { SomDasMissoes } from '@/components/sons';
 import { CatIcon, Icone } from '@/components/icone';
 import { Bandeira, logosBancos, SeloBanco } from '@/components/banco';
 import Link from 'next/link';
-import type { BudgetsResponse, ForecastResponse, LessonProgressResponse, MissionsResponse, MonthSummaryResponse, ProfileResponse, RemindersResponse, SubscriptionsResponse, WeeklyResponse } from '@tostao/contracts';
+import type { BudgetsResponse, ForecastResponse, PeopleResponse, LessonProgressResponse, MissionsResponse, MonthSummaryResponse, ProfileResponse, RemindersResponse, SubscriptionsResponse, WeeklyResponse } from '@tostao/contracts';
 import { Missoes, Semana, Sobra, VenceLogo } from '@/components/engajamento';
 import { NO_PROGRESS } from '@/lib/xp';
 import { BudgetBar } from '@/components/budget-bar';
@@ -20,7 +20,7 @@ export default async function InicioPage() {
   const prefs = await lerPrefs();
   const ver = (id: SecaoId) => !prefs.ocultos.includes(id);
   const aberto = (key: string) => !prefs.fechados.includes(key);
-  const [me, s, subs, limits, progress, forecast, missions, reminders, weekly, logos] = await Promise.all([
+  const [me, s, subs, limits, progress, forecast, missions, reminders, weekly, logos, acertos] = await Promise.all([
     api<ProfileResponse>('/me'),
     api<MonthSummaryResponse>(`/summary?month=${month}`),
     api<SubscriptionsResponse>('/subscriptions').catch(() => null),
@@ -31,6 +31,7 @@ export default async function InicioPage() {
     api<RemindersResponse>('/reminders').catch(() => ({ reminders: [] })),
     api<WeeklyResponse>('/weekly').catch(() => null),
     logosBancos(),
+    api<PeopleResponse>('/people').catch(() => null),
   ]);
   const estourou = limits.budgets.find((b) => b.spentInCents > b.limitInCents);
   const activeSubs = subs?.subscriptions.filter((x) => x.active).length ?? 0;
@@ -200,6 +201,24 @@ export default async function InicioPage() {
               <span className="grow"><b>Juntar pra alguma coisa?</b> Cria uma meta e eu te digo quanto guardar por mês.</span>
             </Link>
           ))}
+      </>
+    ),
+    'acertos': (
+      <>
+          {acertos && (acertos.owedToYouInCents > 0 || acertos.youOweInCents > 0) && (() => {
+            const devem = acertos.people.filter((p) => p.balanceInCents > 0);
+            const devo = acertos.people.filter((p) => p.balanceInCents < 0);
+            return (
+              <Link href="/acertos" className="flex flex-col gap-1.5 rounded-2xl border border-linha bg-cartao p-3.5 text-tinta no-underline">
+                <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">Acertos ›</span>
+                <div className="flex items-baseline justify-between gap-3">
+                  {acertos.owedToYouInCents > 0 && <span className="text-[15px]">Te devem <b className="text-verde-texto tabular-nums">{money(acertos.owedToYouInCents)}</b></span>}
+                  {acertos.youOweInCents > 0 && <span className="text-[15px]">Você deve <b className="text-vermelho-texto tabular-nums">{money(acertos.youOweInCents)}</b></span>}
+                </div>
+                <span className="truncate text-[13px] text-tinta-suave">{[...devem, ...devo].slice(0, 3).map((p) => `${p.name} ${money(Math.abs(p.balanceInCents))}`).join(' · ')}</span>
+              </Link>
+            );
+          })()}
       </>
     ),
     'cartoes': (

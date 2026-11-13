@@ -1,3 +1,4 @@
+import { AddPersonEntryUseCase, DeletePersonUseCase, EnsurePersonUseCase, GetPersonUseCase, LinkTransactionPersonUseCase, ListPeopleUseCase } from './people.js';
 import { ListLessonProgressUseCase } from './lesson-progress.js';
 import { GamesUseCase } from './games.js';
 import { EngagementUseCase } from './engagement.js';
@@ -58,6 +59,12 @@ export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), whatsapp =
     categorizeTransaction: new CategorizeTransactionUseCase(repos),
     createManualTransaction: new CreateManualTransactionUseCase(repos),
     listTransactions: new ListTransactionsUseCase(repos),
+    listPeople: new ListPeopleUseCase(repos),
+    ensurePerson: new EnsurePersonUseCase(repos),
+    getPerson: new GetPersonUseCase(repos),
+    linkTransactionPerson: new LinkTransactionPersonUseCase(repos),
+    addPersonEntry: new AddPersonEntryUseCase(repos),
+    deletePerson: new DeletePersonUseCase(repos),
     searchTransactions: new SearchTransactionsUseCase(repos),
     getMonthSummary: new GetMonthSummaryUseCase(repos),
     accountDetail: new AccountDetailUseCase(repos),
