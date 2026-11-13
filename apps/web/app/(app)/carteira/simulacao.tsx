@@ -5,6 +5,7 @@ import { ButtonLink, Eyebrow } from '@/components/ui';
 import { Mascote } from '@/components/mascote';
 import { Chevron } from './transaction-row';
 import { SeloBanco, type Logo } from '@/components/banco';
+import { BaseDiaADia } from '@/components/base-dia-a-dia';
 
 const ROTULO: Record<ForecastItem['kind'], string> = { renda: 'Renda', conta: 'Conta fixa', assinatura: 'Assinatura', parcela: 'Parcela', anotado: 'Todo mês' };
 
@@ -36,7 +37,7 @@ export function Simulacao({ month, hoje, forecast, logos = [] }: { month: string
     ['Assinaturas', -m.subscriptionsInCents],
     ['Parcelas do cartão', -m.installmentsInCents],
     ['Anotados (todo mês e parcelas)', m.scheduledInInCents - m.scheduledOutInCents],
-    ['Dia a dia (média de 3 meses)', -m.dailyInCents],
+    ['Dia a dia (seu normal)', -m.dailyInCents],
   ] : [];
   const gastos = m ? m.fixedInCents + m.subscriptionsInCents + m.installmentsInCents + m.scheduledOutInCents + m.dailyInCents : 0;
   const fatias = m ? [
@@ -153,8 +154,10 @@ export function Simulacao({ month, hoje, forecast, logos = [] }: { month: string
                 </Link>
               ))}
             </div>
-            <p className="text-[13px] text-tinta-suave">Verde sobra, rosa falta. Contas, assinaturas e parcelas são certas; o dia a dia é a média dos últimos 3 meses.</p>
+            <p className="text-[13px] text-tinta-suave">Verde sobra, rosa falta. Contas, assinaturas e parcelas são certas; o dia a dia é o seu normal dos últimos 3 meses.</p>
           </section>
+
+          {forecast.base && <BaseDiaADia base={forecast.base} dailyInCents={m.dailyInCents} />}
 
           <div className="grid grid-cols-2 gap-2 pb-24 md:pb-0">
             <ButtonLink href="/previsao" variant="outline">Ver previsão</ButtonLink>

@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { money, monthName } from '@/lib/format';
 import { Mascote } from '@/components/mascote';
 import { BackLink, Eyebrow } from '@/components/ui';
+import { BaseDiaADia } from '@/components/base-dia-a-dia';
 
 const short = (m: string) => monthName(m).slice(0, 3);
 const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
@@ -60,7 +61,6 @@ export default async function PrevisaoPage() {
           const h = Math.max(6, Math.round((Math.abs(m.leftInCents) / max) * 52));
           return (
             <div key={m.month} className="flex flex-1 flex-col items-center gap-1.5">
-      <Visita kind="visita:previsao" />
               <span className={`text-[13px] font-bold tabular-nums ${neg ? 'text-vermelho-texto' : 'text-verde-texto'}`}>{neg ? '− ' : '+ '}{money(Math.abs(m.leftInCents))}</span>
               <div className="flex h-[110px] w-full flex-col">
                 <div className="flex h-[55px] items-end">{!neg && <div className="bar-up w-full rounded-[10px] bg-menta" style={{ height: h }} />}</div>
@@ -80,13 +80,14 @@ export default async function PrevisaoPage() {
           <Row label="Contas fixas" value={`− ${money(first.fixedInCents)}`} />
           <Row label="Assinaturas" value={`− ${money(first.subscriptionsInCents)}`} />
           <Row label="Parcelas que ainda caem" value={`− ${money(first.installmentsInCents)}`} />
-          <Row label="Dia a dia (média de 3 meses)" value={`− ${money(first.dailyInCents)}`} />
+          <Row label="Dia a dia (seu normal)" value={`− ${money(first.dailyInCents)}`} />
           <div className="flex min-h-12 items-center justify-between">
             <span className="text-[15px] font-bold">{first.leftInCents >= 0 ? 'Deve sobrar' : 'Deve faltar'}</span>
             <span className={`font-display text-[22px] font-extrabold tabular-nums ${first.leftInCents >= 0 ? 'text-verde-texto' : 'text-vermelho-texto'}`}>{money(Math.abs(first.leftInCents))}</span>
           </div>
         </div>
       </section>
+      {f.base && <BaseDiaADia base={f.base} dailyInCents={first.dailyInCents} />}
       {first.benefitsInCents > 0 && (
         <div className="flex items-center justify-between rounded-2xl bg-amarelo-claro px-3.5 py-3 text-sm">
           <span>VR e VA <span className="text-tinta-suave">(só pra comida, fora da conta)</span></span>
@@ -108,7 +109,6 @@ export default async function PrevisaoPage() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex min-h-10 items-center justify-between border-b border-linha text-sm">
-      <Visita kind="visita:previsao" />
       <span>{label}</span>
       <span className="font-semibold tabular-nums">{value}</span>
     </div>

@@ -188,6 +188,8 @@ export type SubscriptionDTO = {
   nextChargeAt: string;
   active: boolean; // false = não cobrou no último ciclo
   installmentsLeft: number | null; // plano parcelado: quantas parcelas faltam
+  /** Mesmo serviço cobrando mais de uma vez (ex.: dois Prime): nome da outra cobrança. */
+  duplicateOf: string | null;
 };
 export type SubscriptionsResponse = { subscriptions: SubscriptionDTO[]; ignored: SubscriptionDTO[]; monthlyInCents: number; yearlyInCents: number };
 export const ignoreSubscriptionBody = z.object({ key: z.string().min(1).max(200), ignored: z.boolean() });
@@ -345,7 +347,31 @@ export type ThisMonthForecast = {
   dailyLeftInCents: number;
   leftInCents: number;
 };
-export type ForecastResponse = { hasPlan: boolean; months: ForecastMonth[]; goal: GoalStatus | null; thisMonth: ThisMonthForecast | null };
+/** Um mês do passado visto pela previsão: quanto saiu, quanto veio de dinheiro extra e quanto conta como dia a dia normal. */
+export type SpendingBaseMonth = {
+  month: string;
+  incomeInCents: number;
+  outcomeInCents: number;
+  /** Entrada bem acima da renda normal (acerto, 13º, restituição...). */
+  extraIncomeInCents: number;
+  /** Parte do gasto que passou da renda e foi paga com dinheiro extra: sai da base. */
+  paidWithExtraInCents: number;
+  /** O que fica pra base do dia a dia. */
+  baseInCents: number;
+};
+/**
+ * De onde vem o "dia a dia" da previsão.
+ * ok = gasto dentro da renda; excecao = gastou mais, mas com dinheiro extra (acerto etc.);
+ * aperto = gastou mais que a renda em 2+ dos últimos 3 meses sem dinheiro extra pra cobrir.
+ */
+export type SpendingBase = {
+  normalIncomeInCents: number;
+  /** Mediana da base dos últimos 3 meses com gasto. */
+  typicalInCents: number;
+  status: 'ok' | 'excecao' | 'aperto';
+  months: SpendingBaseMonth[];
+};
+export type ForecastResponse = { hasPlan: boolean; months: ForecastMonth[]; goal: GoalStatus | null; thisMonth: ThisMonthForecast | null; base?: SpendingBase | null };
 /** Quantas pendentes a IA categorizou (das que ela olhou). */
 export type AutoCategorizeResponse = { categorized: number; asked: number };
 

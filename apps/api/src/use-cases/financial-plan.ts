@@ -1,4 +1,4 @@
-import type { FinancialPlan, ForecastItem, ForecastMonth, Goal, GoalStatus, IncomeSuggestion, ThisMonthForecast } from '@tostao/contracts';
+import type { FinancialPlan, ForecastItem, ForecastMonth, Goal, GoalStatus, IncomeSuggestion, SpendingBase, SpendingBaseMonth, ThisMonthForecast } from '@tostao/contracts';
 import type { Repositories } from '../repositories/types.js';
 import type { Transaction } from '../domain/entities.js';
 import { NEUTRAL_CATEGORY_ID } from '../domain/entities.js';
@@ -8,6 +8,7 @@ import { normalizeDescription } from '../lib/text.js';
 import { patternFromDescription } from '../services/categorize.js';
 import { GetMonthSummaryUseCase } from './get-month-summary.js';
 import { ListSubscriptionsUseCase } from './list-subscriptions.js';
+import { subscriptionKey } from '../services/subscriptions.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const SALARY_CATEGORY_ID = 'salario';
@@ -198,27 +199,65 @@ export const installmentsOfMonth = (list: PendingInstallment[], month: string) =
 /** Quanto das parcelas cai num mês. */
 export const installmentsInMonth = (list: PendingInstallment[], month: string) =>
   list.filter((i) => i.n + monthsBetween(i.month, month) <= i.total).reduce((s, i) => s + i.amount, 0);
+const medianOf = (xs: number[]) => {
+  if (!xs.length) return 0;
+  const s = [...xs].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m]! : Math.round((s[m - 1]! + s[m]!) / 2);
+};
+
+/** Entrada acima disso (x renda normal) é dinheiro extra: acerto, 13º, restituição, venda. */
+const EXTRA_INCOME_FACTOR = 1.3;
+/** Gasto acima disso (x renda normal) sem dinheiro extra pra cobrir é aperto. */
+const OVERSPEND_FACTOR = 1.1;
+
+/**
+ * Base do dia a dia que entende de onde saiu o dinheiro.
+ * Mês com entrada bem acima da renda normal guarda o excesso num "pote extra". Nos meses seguintes,
+ * o que passar da renda normal é pago primeiro com esse pote e sai da base (é exceção, não hábito).
+ * O que sobrar acima da renda sem pote pra cobrir continua na base: aí é aperto de verdade.
+ * `history` em ordem do mais antigo pro mais recente.
+ */
+export function spendingBase(history: { month: string; incomeInCents: number; outcomeInCents: number }[], normalIncome: number): SpendingBase {
+  const income = normalIncome > 0 ? normalIncome : medianOf(history.filter((h) => h.incomeInCents > 0).map((h) => h.incomeInCents));
+  let pool = 0;
+  const months: SpendingBaseMonth[] = history.map((h) => {
+    const extra = income > 0 && h.incomeInCents > income * EXTRA_INCOME_FACTOR ? h.incomeInCents - income : 0;
+    pool += extra;
+    const over = income > 0 ? Math.max(0, h.outcomeInCents - income) : 0;
+    const paid = Math.min(pool, over);
+    pool -= paid;
+    return { month: h.month, incomeInCents: h.incomeInCents, outcomeInCents: h.outcomeInCents, extraIncomeInCents: extra, paidWithExtraInCents: paid, baseInCents: h.outcomeInCents - paid };
+  });
+  const last3 = months.filter((m) => m.outcomeInCents > 0).slice(-3);
+  const typical = medianOf(last3.map((m) => m.baseInCents));
+  // Compara com o que entrou de renda comum naquele mês (sem o extra): se o mês rendeu mais, gastar mais cabe.
+  const overspent = income > 0 ? last3.filter((m) => m.baseInCents > Math.max(income, m.incomeInCents - m.extraIncomeInCents) * OVERSPEND_FACTOR).length : 0;
+  const status: SpendingBase['status'] = overspent >= 2 ? 'aperto' : last3.some((m) => m.paidWithExtraInCents > 0) ? 'excecao' : 'ok';
+  return { normalIncomeInCents: income, typicalInCents: typical, status, months: last3 };
+}
+
 /** Dia do mês em Brasília. */
 const brDay = (d: Date) => new Date(d.getTime() - 3 * 60 * 60 * 1000).getUTCDate();
 
 /**
  * Previsão dos próximos 3 meses:
- * renda do plano − contas fixas − assinaturas − parcelas que ainda vão cair − dia a dia (média de 3 meses
- * já sem assinaturas, contas fixas e parcelas, pra não contar duas vezes). É estimativa, e a tela diz isso.
+ * renda do plano − contas fixas − assinaturas − parcelas que ainda vão cair − dia a dia (mediana de 3 meses,
+ * sem o que foi pago com dinheiro extra e já sem assinaturas, contas fixas e parcelas, pra não contar duas vezes). É estimativa, e a tela diz isso.
  */
 export class ForecastUseCase {
   constructor(private readonly repos: Repositories, private readonly now: () => Date = () => new Date()) {}
 
-  async execute({ userId, months = 3 }: { userId: string; months?: number }): Promise<{ hasPlan: boolean; months: ForecastMonth[]; goal: GoalStatus | null; thisMonth: ThisMonthForecast | null }> {
+  async execute({ userId, months = 3 }: { userId: string; months?: number }): Promise<{ hasPlan: boolean; months: ForecastMonth[]; goal: GoalStatus | null; thisMonth: ThisMonthForecast | null; base: SpendingBase | null }> {
     const plan = await this.repos.plans.get(userId);
-    if (!plan) return { hasPlan: false, months: [], goal: null, thisMonth: null };
+    if (!plan) return { hasPlan: false, months: [], goal: null, thisMonth: null, base: null };
     const now = this.now();
     const cur = currentMonth(now);
     const summary = new GetMonthSummaryUseCase(this.repos);
     const firstFuture = new Date(`${shiftMonth(cur, 1)}-01T03:00:00Z`);
     const afterLast = new Date(`${shiftMonth(cur, months + 1)}-01T03:00:00Z`);
     const [past, subs, accounts, recent, curSummary, scheduled] = await Promise.all([
-      Promise.all([1, 2, 3].map((k) => summary.execute({ userId, month: shiftMonth(cur, -k) }))),
+      Promise.all([6, 5, 4, 3, 2, 1].map((k) => summary.execute({ userId, month: shiftMonth(cur, -k) }))),
       new ListSubscriptionsUseCase(this.repos, () => now).execute({ userId }),
       this.repos.accounts.listByUser(userId),
       this.repos.transactions.findManyInRange(userId, new Date(now.getTime() - 62 * DAY), new Date(now.getTime() + DAY)),
@@ -228,16 +267,17 @@ export class ForecastUseCase {
 
     const cardAccounts = accounts.filter((a) => a.type === 'CREDIT' && !a.hidden);
     const cards = new Set(cardAccounts.map((a) => a.id));
-    const pending = pendingInstallments(recent, cards);
+    // Plano anual parcelado (Prime 5/12) já entra como assinatura: não conta de novo como parcela.
+    const subKeys = new Set(subs.subscriptions.filter((x) => x.installmentsLeft !== null).map((x) => x.key.split('#')[0]));
+    const pending = pendingInstallments(recent, cards).filter((i) => !subKeys.has(subscriptionKey(i.description)));
     const installmentsIn = (month: string) => installmentsInMonth(pending, month);
 
     const income = planIncome(plan);
     const fixed = planFixed(plan);
     const activeSubs = subs.subscriptions.filter((x) => x.active && x.installmentsLeft !== 0);
     const subscriptions = subs.monthlyInCents;
-    const withData = past.filter((s) => s.outcomeInCents > 0);
-    const avgOut = withData.length ? Math.round(withData.reduce((s, x) => s + x.outcomeInCents, 0) / withData.length) : 0;
-    const daily = Math.max(0, avgOut - subscriptions - fixed - installmentsIn(cur));
+    const base = spendingBase(past.map((p, i) => ({ month: shiftMonth(cur, i - past.length), incomeInCents: p.incomeInCents, outcomeInCents: p.outcomeInCents })), income);
+    const daily = Math.max(0, base.typicalInCents - subscriptions - fixed - installmentsIn(cur));
     const cardOf = (accountId: string | null | undefined) => (accountId && cards.has(accountId) ? accountId : null);
 
     const out: ForecastMonth[] = [];
@@ -314,6 +354,7 @@ export class ForecastUseCase {
       thisMonth: hasIncome ? thisMonth : null,
       months: hasIncome || fixed > 0 ? out : [],
       goal: plan.goal ? goalStatus(plan.goal, cur, hasIncome ? out[0]?.leftInCents ?? null : null) : null,
+      base: hasIncome || fixed > 0 ? base : null,
     };
   }
 }
