@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, LessonProgress, Transaction, User, Invite, PasswordReset, ChatMessage, TribunalVote, Battle, BattleKind } from '../../domain/entities.js';
 import type { FinancialPlan } from '@tostao/contracts';
 import type {
-  AccountData, AccountsRepository, FinancialPlansRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, ChatMessagesRepository, IgnoredSubscriptionsRepository, InvitesRepository, GamesRepository, LessonProgressRepository, PasswordResetsRepository,
+  AccountData, AccountsRepository, FinancialPlansRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, ChatMessagesRepository, IgnoredSubscriptionsRepository, InvitesRepository, GamesRepository, EngagementRepository, PushSub, LessonProgressRepository, PasswordResetsRepository,
   Repositories, TransactionsRepository, UsersRepository, WhatsappLink, WhatsappLinksRepository,
 } from '../types.js';
 import { DEFAULT_CATEGORIES, DEFAULT_RULES } from '../../lib/defaults.js';
@@ -241,6 +241,37 @@ export class InMemoryWhatsappLinksRepository implements WhatsappLinksRepository 
   async unlink(userId: string) { this.items.delete(userId); }
 }
 
+export class InMemoryEngagementRepository implements EngagementRepository {
+  activity: { userId: string; day: string; kind: string }[] = [];
+  codes = new Map<string, string>();
+  friends: { userId: string; friendId: string }[] = [];
+  push: PushSub[] = [];
+  sent = new Set<string>();
+  async markActivity(userId: string, day: string, kind: string) {
+    if (!this.activity.some((a) => a.userId === userId && a.day === day && a.kind === kind)) this.activity.push({ userId, day, kind });
+  }
+  async listActivity(userId: string, sinceDay: string) { return this.activity.filter((a) => a.userId === userId && a.day >= sinceDay).map(({ day, kind }) => ({ day, kind })); }
+  async countActivity(userId: string) { return this.activity.filter((a) => a.userId === userId).length; }
+  async getFriendCode(userId: string) { return this.codes.get(userId) ?? null; }
+  async setFriendCode(userId: string, code: string) { this.codes.set(userId, code); }
+  async findUserByFriendCode(code: string) { return [...this.codes].find(([, c]) => c === code)?.[0] ?? null; }
+  async addFriend(a: string, b: string) {
+    for (const [x, y] of [[a, b], [b, a]] as const) if (!this.friends.some((f) => f.userId === x && f.friendId === y)) this.friends.push({ userId: x, friendId: y });
+  }
+  async removeFriend(a: string, b: string) { this.friends = this.friends.filter((f) => !((f.userId === a && f.friendId === b) || (f.userId === b && f.friendId === a))); }
+  async listFriendIds(userId: string) { return this.friends.filter((f) => f.userId === userId).map((f) => f.friendId); }
+  async savePush(sub: PushSub) { this.push = [...this.push.filter((p) => p.endpoint !== sub.endpoint), sub]; }
+  async deletePush(endpoint: string) { this.push = this.push.filter((p) => p.endpoint !== endpoint); }
+  async listPush(userId: string) { return this.push.filter((p) => p.userId === userId); }
+  async listPushUserIds() { return [...new Set(this.push.map((p) => p.userId))]; }
+  async claimNotification(userId: string, key: string) {
+    const k = `${userId}|${key}`;
+    if (this.sent.has(k)) return false;
+    this.sent.add(k);
+    return true;
+  }
+}
+
 export function makeInMemoryRepositories() {
   const transactions = new InMemoryTransactionsRepository();
   const accounts = new InMemoryAccountsRepository(transactions);
@@ -260,5 +291,6 @@ export function makeInMemoryRepositories() {
     plans: new InMemoryFinancialPlansRepository(),
     whatsapp: new InMemoryWhatsappLinksRepository(),
     games: new InMemoryGamesRepository(),
+    engagement: new InMemoryEngagementRepository(),
   } satisfies Repositories;
 }

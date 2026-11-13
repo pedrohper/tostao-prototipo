@@ -18,6 +18,10 @@ const schema = z
     DEEPSEEK_MODEL: z.string().default('deepseek-chat'),
     CHAT_DAILY_LIMIT: z.coerce.number().int().positive().default(40),
     // WhatsApp Cloud API (Meta). Sem token, o WhatsApp fica desligado.
+    // Avisos no celular (Web Push). Gere com: pnpm --filter @tostao/api vapid
+    VAPID_PUBLIC_KEY: z.string().default(''),
+    VAPID_PRIVATE_KEY: z.string().default(''),
+    VAPID_SUBJECT: z.string().default('mailto:pedrohper.business@gmail.com'),
     WHATSAPP_TOKEN: z.string().default(''),
     WHATSAPP_PHONE_NUMBER_ID: z.string().default(''),
     WHATSAPP_APP_SECRET: z.string().default(''),

@@ -4,7 +4,7 @@ import type { Prisma, PrismaClient } from '@prisma/client';
 import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, Transaction, Invite, PasswordReset, ChatMessage, Battle, BattleKind } from '../../domain/entities.js';
 import type { FinancialPlan } from '@tostao/contracts';
 import type {
-  AccountData, AccountsRepository, FinancialPlansRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, ChatMessagesRepository, IgnoredSubscriptionsRepository, InvitesRepository, GamesRepository, LessonProgressRepository, PasswordResetsRepository,
+  AccountData, AccountsRepository, FinancialPlansRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, ChatMessagesRepository, IgnoredSubscriptionsRepository, InvitesRepository, GamesRepository, EngagementRepository, PushSub, LessonProgressRepository, PasswordResetsRepository,
   NewTransaction, NewUser, Repositories, TransactionsRepository, UsersRepository, WhatsappLinksRepository,
 } from '../types.js';
 
@@ -202,6 +202,37 @@ class PrismaWhatsappLinksRepository implements WhatsappLinksRepository {
   async unlink(userId: string) { await this.db.whatsappLink.deleteMany({ where: { userId } }); }
 }
 
+class PrismaEngagementRepository implements EngagementRepository {
+  constructor(private db: PrismaClient) {}
+  async markActivity(userId: string, day: string, kind: string) {
+    await this.db.userActivity.upsert({ where: { userId_day_kind: { userId, day, kind } }, create: { userId, day, kind }, update: {} });
+  }
+  listActivity(userId: string, sinceDay: string) {
+    return this.db.userActivity.findMany({ where: { userId, day: { gte: sinceDay } }, select: { day: true, kind: true } });
+  }
+  countActivity(userId: string) { return this.db.userActivity.count({ where: { userId } }); }
+  async getFriendCode(userId: string) { return (await this.db.friendCode.findUnique({ where: { userId } }))?.code ?? null; }
+  async setFriendCode(userId: string, code: string) { await this.db.friendCode.upsert({ where: { userId }, create: { userId, code }, update: { code } }); }
+  async findUserByFriendCode(code: string) { return (await this.db.friendCode.findUnique({ where: { code } }))?.userId ?? null; }
+  async addFriend(a: string, b: string) {
+    await this.db.friendship.createMany({ data: [{ userId: a, friendId: b }, { userId: b, friendId: a }], skipDuplicates: true });
+  }
+  async removeFriend(a: string, b: string) {
+    await this.db.friendship.deleteMany({ where: { OR: [{ userId: a, friendId: b }, { userId: b, friendId: a }] } });
+  }
+  async listFriendIds(userId: string) { return (await this.db.friendship.findMany({ where: { userId }, select: { friendId: true } })).map((f) => f.friendId); }
+  async savePush(sub: PushSub) {
+    await this.db.pushSubscription.upsert({ where: { endpoint: sub.endpoint }, create: sub, update: { userId: sub.userId, p256dh: sub.p256dh, auth: sub.auth } });
+  }
+  async deletePush(endpoint: string) { await this.db.pushSubscription.deleteMany({ where: { endpoint } }); }
+  listPush(userId: string) { return this.db.pushSubscription.findMany({ where: { userId }, select: { endpoint: true, userId: true, p256dh: true, auth: true } }); }
+  async listPushUserIds() { return (await this.db.pushSubscription.findMany({ distinct: ['userId'], select: { userId: true } })).map((p) => p.userId); }
+  async claimNotification(userId: string, key: string) {
+    const r = await this.db.sentNotification.createMany({ data: [{ userId, key }], skipDuplicates: true });
+    return r.count === 1;
+  }
+}
+
 export function makePrismaRepositories(db: PrismaClient): Repositories {
   return {
     users: new PrismaUsersRepository(db),
@@ -219,5 +250,6 @@ export function makePrismaRepositories(db: PrismaClient): Repositories {
     plans: new PrismaFinancialPlansRepository(db),
     whatsapp: new PrismaWhatsappLinksRepository(db),
     games: new PrismaGamesRepository(db),
+    engagement: new PrismaEngagementRepository(db),
   };
 }
