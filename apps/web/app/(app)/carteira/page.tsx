@@ -90,14 +90,14 @@ export default async function CarteiraPage({ searchParams }: { searchParams: Pro
       {(summary.outcomeInCents > 0 || summary.incomeInCents > 0) && (
         <section className="flex flex-col gap-2.5 rounded-2xl border border-linha bg-cartao p-3.5">
           <div className="flex items-start justify-between gap-3">
-            <div className="flex flex-col">
-              <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">Saiu em {monthName(month)}</span>
+            <Link href={`/carteira?${new URLSearchParams({ mes: month, filtro: 'saidas' })}#lista`} className="flex flex-col text-tinta no-underline">
+              <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">Saiu em {monthName(month)} ›</span>
               <span className="font-display text-[26px] leading-8 font-extrabold tabular-nums">{money(summary.outcomeInCents)}</span>
-            </div>
-            <div className="flex flex-col items-end">
-              <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">Entrou</span>
+            </Link>
+            <Link href={`/carteira?${new URLSearchParams({ mes: month, filtro: 'entradas' })}#lista`} className="flex flex-col items-end text-tinta no-underline">
+              <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">Entrou ›</span>
               <span className="font-display text-[22px] leading-8 font-extrabold text-verde-texto tabular-nums">{money(summary.incomeInCents)}</span>
-            </div>
+            </Link>
           </div>
           <Categorias items={summary.byCategory} max={6} href={porCat} ativa={cat} />
         </section>

@@ -285,8 +285,8 @@ export default async function InicioPage() {
               <span className="text-[13px] font-semibold text-tinta-suave">Sem banco conectado, contando só o que você anotou</span>
             )}
             <div className="grid grid-cols-2 gap-2.5">
-              <div className="flex flex-col gap-0.5 rounded-[14px] bg-papel-2 px-3 py-2.5"><span className="text-xs font-semibold text-tinta-suave">Entrou em {mes}</span><span className="text-[17px] font-bold text-verde-texto tabular-nums">+ {money(s.incomeInCents)}</span></div>
-              <div className="flex flex-col gap-0.5 rounded-[14px] bg-papel-2 px-3 py-2.5"><span className="text-xs font-semibold text-tinta-suave">Saiu em {mes}</span><span className="text-[17px] font-bold tabular-nums">{money(s.outcomeInCents)}</span></div>
+              <Link href="/carteira?filtro=entradas#lista" className="flex flex-col gap-0.5 rounded-[14px] bg-papel-2 px-3 py-2.5 text-tinta no-underline"><span className="text-xs font-semibold text-tinta-suave">Entrou em {mes} ›</span><span className="text-[17px] font-bold text-verde-texto tabular-nums">+ {money(s.incomeInCents)}</span></Link>
+              <Link href="/carteira?filtro=saidas#lista" className="flex flex-col gap-0.5 rounded-[14px] bg-papel-2 px-3 py-2.5 text-tinta no-underline"><span className="text-xs font-semibold text-tinta-suave">Saiu em {mes} ›</span><span className="text-[17px] font-bold tabular-nums">{money(s.outcomeInCents)}</span></Link>
             </div>
           </div>
 
