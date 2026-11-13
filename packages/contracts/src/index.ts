@@ -147,6 +147,27 @@ export type MonthSummaryResponse = {
 
 export type TransactionDetailResponse = { transaction: TransactionDTO; rulePattern: string };
 
+/** Detalhe de uma conta ou cartão num mês (GET /accounts/:id?month=). */
+export type AccountDetailResponse = {
+  account: {
+    id: string; name: string; type: 'BANK' | 'CREDIT'; institution: string | null;
+    /** Cartão: negativo = fatura em aberto. */
+    balanceInCents: number; creditLimitInCents: number | null; dueDate: string | null;
+    lastSyncedAt: string | null; hidden: boolean;
+  };
+  month: string;
+  outInCents: number;
+  inInCents: number;
+  byCategory: { categoryId: string | null; name: string; color: string; totalInCents: number }[];
+  /** Últimos 6 meses até o mês pedido (sem transferência interna). */
+  history: { month: string; outInCents: number; inInCents: number }[];
+  transactions: TransactionDTO[];
+  /** Cartão: compras parceladas que ainda têm parcela pra cair. */
+  installments: { description: string; amountInCents: number; n: number; total: number; left: number }[];
+  /** Cartão: parcelas já contratadas nos próximos 3 meses. */
+  upcoming: { month: string; amountInCents: number }[];
+};
+
 // ---------- Assinaturas ----------
 export type SubscriptionDTO = {
   key: string;

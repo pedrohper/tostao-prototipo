@@ -25,6 +25,7 @@ import { CategorizeTransactionUseCase } from './categorize-transaction.js';
 import { CreateManualTransactionUseCase } from './create-manual-transaction.js';
 import { ListTransactionsUseCase } from './list-transactions.js';
 import { GetMonthSummaryUseCase } from './get-month-summary.js';
+import { AccountDetailUseCase } from './account-detail.js';
 import { GetTransactionUseCase } from './get-transaction.js';
 import { ListSubscriptionsUseCase } from './list-subscriptions.js';
 import { GetBudgetsUseCase, SetBudgetUseCase } from './budgets.js';
@@ -55,6 +56,7 @@ export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), whatsapp =
     listTransactions: new ListTransactionsUseCase(repos),
     searchTransactions: new SearchTransactionsUseCase(repos),
     getMonthSummary: new GetMonthSummaryUseCase(repos),
+    accountDetail: new AccountDetailUseCase(repos),
     getTransaction: new GetTransactionUseCase(repos),
     listSubscriptions: new ListSubscriptionsUseCase(repos),
     setSubscriptionIgnored: { execute: ({ userId, key, ignored }: { userId: string; key: string; ignored: boolean }) => repos.ignoredSubscriptions.set(userId, key, ignored) },
