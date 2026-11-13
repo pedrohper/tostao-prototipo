@@ -2,6 +2,7 @@ import { SonsSwitch } from '@/components/sons';
 import { Avisos } from '@/components/avisos';
 import type { PushKeyResponse } from '@tostao/contracts';
 import { Icone } from '@/components/icone';
+import { SeloBanco } from '@/components/banco';
 import Link from 'next/link';
 import type { LessonProgressResponse, ProfileResponse } from '@tostao/contracts';
 import { api } from '@/lib/api';
@@ -73,7 +74,7 @@ export default async function PerfilPage() {
                 </Link>
                 {c.accounts.map((a) => (
                   <div key={a.id} className={`flex min-h-9 items-center gap-2 pb-1 text-[13px] ${a.hidden ? 'text-tinta-suave' : ''}`}>
-                    <Icone src={a.type === 'CREDIT' ? 'ui/cartao' : 'ui/banco'} size={20} />
+                    <SeloBanco nome={a.name} instituicao={c.displayName} size={20} />
                     <span className={`min-w-0 grow truncate ${a.hidden ? 'line-through' : ''}`}>{a.name}</span>
                     <span className="shrink-0 tabular-nums">{money(a.type === 'CREDIT' ? Math.max(0, -a.balanceInCents) : a.balanceInCents)}</span>
                     <HideAccountButton accountId={a.id} hidden={a.hidden} />

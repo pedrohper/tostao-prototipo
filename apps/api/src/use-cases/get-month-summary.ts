@@ -1,3 +1,4 @@
+import { cardIdentity } from './card-identity.js';
 import type { Repositories } from '../repositories/types.js';
 import { monthRange } from '../lib/month.js';
 
@@ -46,7 +47,7 @@ export class GetMonthSummaryUseCase {
       uncategorizedCount: real.filter((t) => t.categoryId === null).length,
       byCategory,
       accounts: visible.map((a) => ({ id: a.id, name: a.name, type: a.type === 'CREDIT' ? 'CREDIT' as const : 'BANK' as const, balanceInCents: a.balanceInCents,
-        creditLimitInCents: a.creditLimitInCents ?? null, dueDate: a.dueDate ? nextDueDate(a.dueDate, new Date()).toISOString() : null })),
+        creditLimitInCents: a.creditLimitInCents ?? null, dueDate: a.dueDate ? nextDueDate(a.dueDate, new Date()).toISOString() : null, ...cardIdentity(a.fingerprint) })),
       hiddenAccounts: accounts.filter((a) => a.hidden).map((a) => ({ id: a.id, name: a.name, balanceInCents: a.balanceInCents })),
     };
   }

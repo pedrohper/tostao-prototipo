@@ -1,4 +1,4 @@
-import { Icone } from '@/components/icone';
+import { SeloBanco } from '@/components/banco';
 import Link from 'next/link';
 import type { ForecastResponse, MonthSummaryResponse, TransactionDTO } from '@tostao/contracts';
 import { api } from '@/lib/api';
@@ -69,11 +69,11 @@ export default async function CarteiraPage({ searchParams }: { searchParams: Pro
             return (
               <Link key={a.id} href={`/carteira/conta/${a.id}?mes=${month}`} className={`flex w-[124px] shrink-0 flex-col gap-0.5 rounded-[14px] border px-3 py-2.5 text-tinta no-underline ${card ? 'border-[#F5CDB8] bg-[#FFF4EE] dark:border-[#5A3526] dark:bg-[#33241D]' : 'border-linha bg-cartao'}`}>
                 <span className="flex min-w-0 items-center gap-1.5 text-xs font-semibold text-tinta-suave">
-                  <Icone src={card ? 'ui/cartao' : 'ui/banco'} size={18} />
+                  <SeloBanco nome={a.name} size={18} />
                   <span className="truncate">{a.name}</span>
                 </span>
                 <span className="text-[15px] font-bold tabular-nums">{money(card ? Math.max(0, -a.balanceInCents) : a.balanceInCents)}</span>
-                <span className="text-[11px] font-semibold text-tinta-suave">{card ? (a.dueDate ? `Fatura · vence ${shortDate(a.dueDate)}` : 'Fatura atual') : 'Conta'} ›</span>
+                <span className="truncate text-[11px] font-semibold text-tinta-suave">{card ? (a.dueDate ? `Vence ${shortDate(a.dueDate)}` : 'Fatura atual') : 'Conta'}{card && a.last4 ? ` · •• ${a.last4}` : ''} ›</span>
               </Link>
             );
           })}
