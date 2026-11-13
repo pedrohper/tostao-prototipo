@@ -12,14 +12,16 @@ const DIAS = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
 export function Missoes({ data, compact = false }: { data: MissionsResponse; compact?: boolean }) {
   const feitas = data.missions.filter((m) => m.done).length;
   return (
-    <section className="flex flex-col gap-2.5 rounded-[18px] border border-linha bg-cartao p-3.5">
+    <section className="relative flex flex-col gap-2.5 rounded-[18px] border border-linha bg-cartao p-3.5">
+      {/* O card inteiro leva pro Aprender; cada missão por cima leva pro lugar dela. */}
+      <Link href="/aprender" aria-label="Ver missões e ofensiva" className="absolute inset-0 rounded-[18px]" />
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">Missões de hoje · {feitas}/{data.missions.length}</span>
+        <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">Missões de hoje · {feitas}/{data.missions.length} ›</span>
         <span className="flex items-center gap-1 text-[13px] font-bold"><Icone src="ui/ofensiva" size={18} />{data.streakDays} {data.streakDays === 1 ? 'dia' : 'dias'}</span>
       </div>
       <ul className="flex flex-col">
         {data.missions.map((m) => (
-          <li key={m.id}>
+          <li key={m.id} className="relative z-[1]">
             <Link href={m.href} className="flex min-h-11 items-center gap-2.5 text-tinta no-underline">
               {m.done
                 ? <Icone src="jogo/dia-cumprido" size={24} alt="feita" />
@@ -52,6 +54,12 @@ export function Missoes({ data, compact = false }: { data: MissionsResponse; com
 const QUANDO = (d: number) => (d === 0 ? 'hoje' : d === 1 ? 'amanhã' : `em ${d} dias`);
 const KIND_ICON: Record<ReminderDTO['kind'], string> = { fatura: 'ui/cartao', conta: 'cat/casa', assinatura: 'cat/assinaturas' };
 
+/** Pra onde cada aviso leva: fatura abre o cartão, conta fixa abre a renda, assinatura abre a lista. */
+const destinoAviso = (r: ReminderDTO) => {
+  if (r.kind === 'fatura') { const id = r.key.split(':')[1]; return id ? `/carteira/conta/${id}` : '/carteira'; }
+  return r.kind === 'assinatura' ? '/assinaturas' : '/renda';
+};
+
 /** O que vence nos próximos 7 dias. */
 export function VenceLogo({ reminders }: { reminders: ReminderDTO[] }) {
   if (!reminders.length) return null;
@@ -63,13 +71,15 @@ export function VenceLogo({ reminders }: { reminders: ReminderDTO[] }) {
       </div>
       <div className="flex flex-col rounded-2xl border border-linha bg-cartao px-3.5">
         {reminders.slice(0, 4).map((r) => (
-          <div key={r.key} className="flex min-h-[54px] items-center gap-3 border-b border-linha last:border-b-0">
-            <Icone src={KIND_ICON[r.kind]} size={28} />
-            <div className="flex min-w-0 grow flex-col">
-              <span className="truncate text-[15px] font-semibold">{r.title}</span>
-              <span className={`text-xs ${r.daysLeft <= 1 ? 'font-semibold text-laranja-texto' : 'text-tinta-suave'}`}>Vence {QUANDO(r.daysLeft)}</span>
-            </div>
-            {r.amountInCents !== null && <span className="shrink-0 text-[15px] font-semibold tabular-nums">{money(r.amountInCents)}</span>}
+          <div key={r.key} className="flex min-h-[54px] items-center gap-1 border-b border-linha last:border-b-0">
+            <Link href={destinoAviso(r)} className="flex min-h-[54px] min-w-0 grow items-center gap-3 text-tinta no-underline">
+              <Icone src={KIND_ICON[r.kind]} size={28} />
+              <div className="flex min-w-0 grow flex-col">
+                <span className="truncate text-[15px] font-semibold">{r.title}</span>
+                <span className={`text-xs ${r.daysLeft <= 1 ? 'font-semibold text-laranja-texto' : 'text-tinta-suave'}`}>Vence {QUANDO(r.daysLeft)}</span>
+              </div>
+              {r.amountInCents !== null && <span className="shrink-0 text-[15px] font-semibold tabular-nums">{money(r.amountInCents)}</span>}
+            </Link>
             <form action={fecharAviso.bind(null, r.key)} className="-mr-2 shrink-0">
               <button type="submit" aria-label={`Já paguei ${r.title}, fechar`} title="Já paguei"
                 className="flex h-9 w-9 items-center justify-center rounded-full text-tinta-suave hover:bg-tinta/10">
@@ -89,8 +99,8 @@ export function Semana({ w }: { w: WeeklyResponse }) {
   const diff = w.spentInCents - w.prevSpentInCents;
   const melhor = diff <= 0;
   return (
-    <section id="semana" className="flex scroll-mt-4 flex-col gap-2 rounded-2xl bg-azul p-3.5 text-tinta">
-      <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">Sua semana · últimos 7 dias</span>
+    <Link href="/carteira?filtro=saidas#lista" id="semana" className="flex scroll-mt-4 flex-col gap-2 rounded-2xl bg-azul p-3.5 pr-10 text-tinta no-underline">
+      <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">Sua semana · últimos 7 dias ›</span>
       <div className="flex items-baseline justify-between gap-2">
         <span className="font-display text-[28px] leading-8 font-extrabold tabular-nums">{money(w.spentInCents)}</span>
         {w.prevSpentInCents > 0 && (
@@ -106,7 +116,7 @@ export function Semana({ w }: { w: WeeklyResponse }) {
         {w.top && <> Onde mais foi: <b>{w.top.name}</b> ({money(w.top.totalInCents)}).</>}
         {' '}{w.missionsDone} {w.missionsDone === 1 ? 'missão feita' : 'missões feitas'}.
       </p>
-    </section>
+    </Link>
   );
 }
 
