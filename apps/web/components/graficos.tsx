@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { money, monthName } from '@/lib/format';
 
 const curto = (m: string) => monthName(m).slice(0, 3);
@@ -48,7 +49,8 @@ export function BarrasMeses({ data, atual, entrada = false, altura = 112 }: {
 }
 
 /** Barra empilhada + lista: pra onde foi o dinheiro. */
-export function Categorias({ items, max = 6 }: { items: { categoryId: string | null; name: string; color: string; totalInCents: number }[]; max?: number }) {
+/** Com `href`, cada categoria vira link (pra ver só os gastos dela). */
+export function Categorias({ items, max = 6, href, ativa }: { items: { categoryId: string | null; name: string; color: string; totalInCents: number }[]; max?: number; href?: (categoryId: string | null) => string; ativa?: string | null }) {
   const total = items.reduce((s, c) => s + c.totalInCents, 0);
   if (!total) return null;
   const top = items.slice(0, max);
@@ -60,14 +62,24 @@ export function Categorias({ items, max = 6 }: { items: { categoryId: string | n
         {lista.map((c) => <div key={c.categoryId ?? 'sem'} style={{ width: `${(c.totalInCents / total) * 100}%`, background: c.categoryId ? c.color : '#FFB4C2' }} className="border-r-2 border-cartao last:border-r-0" />)}
       </div>
       <ul className="flex flex-col">
-        {lista.map((c) => (
-          <li key={c.categoryId ?? 'sem'} className="flex min-h-8 items-center gap-2 text-sm">
-            <i className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c.categoryId ? c.color : '#FFB4C2' }} />
-            <span className="grow truncate">{c.name}</span>
-            <span className="text-xs text-tinta-suave tabular-nums">{Math.round((c.totalInCents / total) * 100)}%</span>
-            <span className="w-[92px] text-right font-semibold tabular-nums">{money(c.totalInCents)}</span>
-          </li>
-        ))}
+        {lista.map((c) => {
+          const conteudo = (
+            <>
+              <i className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c.categoryId ? c.color : '#FFB4C2' }} />
+              <span className={`grow truncate ${ativa && ativa === (c.categoryId ?? 'sem') ? 'font-bold' : ''}`}>{c.name}</span>
+              <span className="text-xs text-tinta-suave tabular-nums">{Math.round((c.totalInCents / total) * 100)}%</span>
+              <span className="w-[92px] text-right font-semibold tabular-nums">{money(c.totalInCents)}</span>
+              {href && c.categoryId !== '_resto' && <span aria-hidden="true" className="-mr-1 text-tinta-suave">›</span>}
+            </>
+          );
+          return (
+            <li key={c.categoryId ?? 'sem'}>
+              {href && c.categoryId !== '_resto'
+                ? <Link href={href(c.categoryId)} className="flex min-h-10 items-center gap-2 text-sm text-tinta no-underline">{conteudo}</Link>
+                : <span className="flex min-h-8 items-center gap-2 text-sm">{conteudo}</span>}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
