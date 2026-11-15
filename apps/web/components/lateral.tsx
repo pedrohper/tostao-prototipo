@@ -1,7 +1,4 @@
 import Link from 'next/link';
-import type { MissionsResponse } from '@tostao/contracts';
-import { Missoes } from './engajamento';
-import { Mascote } from './mascote';
 
 /** Só no desktop: ofensiva e XP no pé do menu, com o atalho de Anotar gasto. */
 export function RodapeMenu({ xp, level, streakDays }: { xp: number; level: number; streakDays: number }) {
@@ -18,20 +15,5 @@ export function RodapeMenu({ xp, level, streakDays }: { xp: number; level: numbe
         Anotar gasto
       </Link>
     </div>
-  );
-}
-
-/** Coluna da direita (telas largas): lição em andamento e missões de hoje. */
-export function ColunaDireita({ missions }: { missions: MissionsResponse | null }) {
-  return (
-    <aside className="hidden w-80 shrink-0 flex-col gap-4 border-l border-linha px-6 pt-9 pb-10 xl:flex">
-      <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">Aprender</span>
-      <div className="flex flex-col gap-2.5 rounded-[20px] bg-amarelo-claro p-4">
-        <Mascote pose="professor" size={88} alt="Tostão professor" />
-        <span className="font-display text-[22px] leading-[26px] font-extrabold">Bora aprender um pouquinho?</span>
-        <Link href="/aprender" className="flex h-11 items-center justify-center rounded-full bg-tinta text-sm font-semibold text-papel no-underline">Continuar lição</Link>
-      </div>
-      {missions && <Missoes data={missions} compact />}
-    </aside>
   );
 }
