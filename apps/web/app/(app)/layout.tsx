@@ -16,7 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="md:flex md:min-h-dvh">
       <Nav footer={<RodapeMenu xp={xp} level={level} streakDays={progress.streakDays} />} />
       <SonsDoToque />
-      <main className="mx-auto w-full max-w-[640px] min-w-0 px-5 pt-6 pb-28 md:max-w-[820px] md:px-9 lg:max-w-[1040px] md:pt-9 md:pb-12">{children}</main>
+      <main className="mx-auto w-full max-w-[640px] min-w-0 px-5 pt-6 pb-28 md:max-w-5xl md:px-9 md:pt-9 md:pb-12">{children}</main>
     </div>
   );
 }
