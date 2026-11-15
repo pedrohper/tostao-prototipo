@@ -24,7 +24,7 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
-### 2026-11-15 · Claude · PR #28 (claude/project-thread-3oru9b)
+### 2026-11-15 · Claude · PR #29 (claude/project-thread-3oru9b)
 - Missões: quando todas do dia estão feitas, o card encolhe pra "Tudo certo por hoje" (menta, uma linha). `components/engajamento.tsx` (`MissoesFeitas`, usado pelo `Missoes` no Início) e `app/(app)/aprender/page.tsx` (Tostão comemorando no lugar do professor).
 - Sem migration nem env. `tsc` da web ok. Artefato: tela 12 (Aprender) espelha.
 
