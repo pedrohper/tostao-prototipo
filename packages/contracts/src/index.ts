@@ -104,6 +104,21 @@ export const categorizeBody = z.object({
 });
 export type CategorizeBody = z.infer<typeof categorizeBody>;
 
+export const updateTransactionBody = z.object({
+  isInternalTransfer: z.boolean().optional(),
+  description: z.string().trim().min(1, 'Diz o que foi').optional(),
+  amountInCents: z.number().int().refine((n) => n !== 0, 'Valor precisa ser diferente de zero').optional(),
+  occurredAt: z.iso.date().optional(),
+});
+export type UpdateTransactionBody = z.infer<typeof updateTransactionBody>;
+
+export const createManualAccountBody = z.object({
+  name: z.string().trim().min(2, 'Nome muito curto').max(40, 'Nome muito longo'),
+  type: z.enum(['BANK', 'CREDIT']),
+  balanceInCents: z.number().int().default(0),
+});
+export type CreateManualAccountBody = z.infer<typeof createManualAccountBody>;
+
 export type TransactionDTO = {
   id: string;
   description: string;

@@ -94,8 +94,8 @@ class PrismaTransactionsRepository implements TransactionsRepository {
     return this.db.transaction.findMany({ where: { userId, categoryId: null, isInternalTransfer: false } });
   }
   create(data: NewTransaction): Promise<Transaction> { return this.db.transaction.create({ data }); }
-  async save({ id, categoryId, isInternalTransfer, description, amountInCents, personId }: Transaction) {
-    await this.db.transaction.update({ where: { id }, data: { categoryId, isInternalTransfer, description, amountInCents, ...(personId !== undefined ? { personId } : {}) } });
+  async save({ id, categoryId, isInternalTransfer, description, amountInCents, occurredAt, personId }: Transaction) {
+    await this.db.transaction.update({ where: { id }, data: { categoryId, isInternalTransfer, description, amountInCents, occurredAt, ...(personId !== undefined ? { personId } : {}) } });
   }
   findByPerson(userId: string, personId: string): Promise<Transaction[]> {
     return this.db.transaction.findMany({ where: { userId, personId }, orderBy: { occurredAt: 'desc' } });

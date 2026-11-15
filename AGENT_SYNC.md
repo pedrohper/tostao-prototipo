@@ -10,7 +10,6 @@ Regra: **leia este arquivo antes de codar** e **registre o relatório ao termina
 O que está pra ser feito agora, por quem e em que branch. Tire daqui quando for pra Execução.
 
 - [ ] **"É pagamento de fatura" / "Transferi pra outra conta minha"** no detalhe do lançamento: liga ao cartão ou à conta, sai do gasto e aparece no lugar certo. Claude, thread "Deixar o Tostão pronto pros testadores". Aguardando o Pedro terminar a descrição da transferência entre bancos.
-- [ ] **"Vale a pena parcelar?" e "Escada do dinheiro"** (onde investir, só educativo). Claude, thread "Ensinar juros e onde investir".
 
 ## Execução
 

@@ -1,7 +1,7 @@
 'use server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { categorizeBody, manualTransactionBody, type AutoCategorizeResponse } from '@tostao/contracts';
+import { categorizeBody, createManualAccountBody, manualTransactionBody, updateTransactionBody, type AutoCategorizeResponse } from '@tostao/contracts';
 import { api, ApiError } from '@/lib/api';
 import { parseMoney } from '@/lib/format';
 
@@ -80,4 +80,55 @@ export async function apagarLancamento(form: FormData) {
   }
   revalidatePath('/', 'layout');
   redirect(back.startsWith('/') ? back : '/carteira');
+}
+
+export async function toggleInternalTransfer(form: FormData) {
+  const id = String(form.get('id') ?? '');
+  const isInternalTransfer = form.get('isInternalTransfer') === 'true';
+  const back = String(form.get('back') || '/carteira');
+  if (id) {
+    try {
+      await api(`/transactions/${encodeURIComponent(id)}`, { method: 'PATCH', body: { isInternalTransfer } });
+    } catch { /* se falhar, mantém o estado atual */ }
+  }
+  revalidatePath('/', 'layout');
+  redirect(back.startsWith('/') ? back : '/carteira');
+}
+
+export async function updateManualTransaction(_: ActionState, form: FormData): Promise<ActionState> {
+  const id = String(form.get('id') ?? '');
+  const back = String(form.get('back') || '/carteira');
+  const cents = parseMoney(String(form.get('amount') ?? ''));
+  const kind = String(form.get('kind') || 'saida');
+  if (!cents || cents <= 0) return { error: 'Valor precisa ser maior que zero.' };
+  const parsed = updateTransactionBody.safeParse({
+    description: form.get('description'),
+    amountInCents: kind === 'entrada' ? cents : -cents,
+    occurredAt: form.get('occurredAt'),
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message };
+  try {
+    await api(`/transactions/${encodeURIComponent(id)}`, { method: 'PATCH', body: parsed.data });
+  } catch (e) {
+    return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
+  }
+  revalidatePath('/', 'layout');
+  redirect(back.startsWith('/') ? back : '/carteira');
+}
+
+export async function createManualAccount(_: ActionState, form: FormData): Promise<ActionState> {
+  const cents = parseMoney(String(form.get('balance') ?? '')) ?? 0;
+  const parsed = createManualAccountBody.safeParse({
+    name: form.get('name'),
+    type: form.get('type') === 'CREDIT' ? 'CREDIT' : 'BANK',
+    balanceInCents: cents,
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message };
+  try {
+    await api('/accounts', { method: 'POST', body: parsed.data });
+  } catch (e) {
+    return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
+  }
+  revalidatePath('/', 'layout');
+  return {};
 }

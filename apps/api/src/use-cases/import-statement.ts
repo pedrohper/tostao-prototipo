@@ -6,8 +6,9 @@ import { parseStatement, StatementParseError } from '../services/statement-parse
 
 const DAY = 24 * 60 * 60 * 1000;
 export const IMPORT_PREFIX = 'import:';
+export const MANUAL_PREFIX = 'manual:';
 
-export const isImportConnection = (itemId: string) => itemId.startsWith(IMPORT_PREFIX);
+export const isImportConnection = (itemId: string) => itemId.startsWith(IMPORT_PREFIX) || itemId.startsWith(MANUAL_PREFIX);
 
 const slug = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
 

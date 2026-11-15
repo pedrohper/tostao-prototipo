@@ -5,7 +5,8 @@ import { dayLabel, money } from '@/lib/format';
 import { Sheet } from '@/components/sheet';
 import { Mascote } from '@/components/mascote';
 import { CategorizeForm } from './categorize-form';
-import { apagarLancamento } from '../actions';
+import { EditManualForm } from './edit-manual-form';
+import { apagarLancamento, toggleInternalTransfer } from '../actions';
 
 export default async function CategorizarPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ voltar?: string; erro?: string }> }) {
   const { id } = await params;
@@ -34,9 +35,19 @@ export default async function CategorizarPage({ params, searchParams }: { params
       {acerto ? (
         <Acerto t={t} people={people} back={back} erro={erro} />
       ) : t.isInternalTransfer && !neutral ? (
-        <div className="flex items-center gap-2.5 rounded-[14px] bg-azul px-3 py-2.5">
-          <Mascote pose="investigando" size={40} alt="" />
-          <p className="text-sm leading-5">Isso aqui é dinheiro mudando de bolso entre as suas contas. Não conta como gasto nem como renda.</p>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2.5 rounded-[14px] bg-azul px-3 py-2.5">
+            <Mascote pose="investigando" size={40} alt="" />
+            <p className="text-sm leading-5">Isso aqui é dinheiro mudando de bolso entre as suas contas (ou pagamento de fatura). Não conta como gasto nem como renda.</p>
+          </div>
+          <form action={toggleInternalTransfer}>
+            <input type="hidden" name="id" value={t.id} />
+            <input type="hidden" name="isInternalTransfer" value="false" />
+            <input type="hidden" name="back" value={back} />
+            <button type="submit" className="flex h-11 w-full items-center justify-center rounded-full border border-linha bg-cartao text-sm font-semibold text-tinta">
+              Não é transferência: voltar a contar no mês
+            </button>
+          </form>
         </div>
       ) : (
         <>
@@ -45,8 +56,19 @@ export default async function CategorizarPage({ params, searchParams }: { params
             <p className="text-sm leading-5">{neutral ? <>Tá em <b>Não conta</b>: fica fora do gasto e da renda. Quer trocar?</> : t.categoryName ? <>Tá em <b>{t.categoryName}</b>. Quer trocar?</> : <>Não reconheci esse nome. Me ajuda a classificar?</>}</p>
           </div>
           <CategorizeForm id={t.id} back={back} options={options} current={t.categoryId} rulePattern={rulePattern} />
+          <form action={toggleInternalTransfer}>
+            <input type="hidden" name="id" value={t.id} />
+            <input type="hidden" name="isInternalTransfer" value="true" />
+            <input type="hidden" name="back" value={back} />
+            <button type="submit" className="flex h-11 w-full items-center justify-center rounded-full border border-linha bg-papel-2 px-4 text-sm font-semibold text-tinta">
+              É pagamento de fatura ou transferência minha
+            </button>
+          </form>
           <Acerto t={t} people={people} back={back} erro={erro} />
         </>
+      )}
+      {t.source === 'manual' && (
+        <EditManualForm id={t.id} back={back} description={t.description} amountInCents={t.amountInCents} occurredAt={t.occurredAt} />
       )}
       {t.source === 'manual' && (
         <form action={apagarLancamento} className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-linha pt-3">

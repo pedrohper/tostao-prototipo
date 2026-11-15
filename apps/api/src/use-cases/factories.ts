@@ -26,6 +26,8 @@ import { DeleteTransactionUseCase } from './delete-transaction.js';
 import { DeleteAccountUseCase } from './delete-account.js';
 import { CategorizeTransactionUseCase } from './categorize-transaction.js';
 import { CreateManualTransactionUseCase } from './create-manual-transaction.js';
+import { UpdateTransactionUseCase } from './update-transaction.js';
+import { CreateManualAccountUseCase } from './create-manual-account.js';
 import { ListTransactionsUseCase } from './list-transactions.js';
 import { GetMonthSummaryUseCase } from './get-month-summary.js';
 import { AccountDetailUseCase } from './account-detail.js';
@@ -59,6 +61,8 @@ export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), whatsapp =
     createConnectToken: { execute: async ({ userId }: { userId: string }) => ({ connectToken: await bank.createConnectToken(userId) }) },
     categorizeTransaction: new CategorizeTransactionUseCase(repos),
     createManualTransaction,
+    updateTransaction: new UpdateTransactionUseCase(repos),
+    createManualAccount: new CreateManualAccountUseCase(repos),
     listTransactions: new ListTransactionsUseCase(repos),
     listPeople: new ListPeopleUseCase(repos),
     ensurePerson: new EnsurePersonUseCase(repos),

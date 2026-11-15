@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { TAXAS_REFERENCIA } from '@tostao/contracts';
 import { money } from '@/lib/format';
 import { CompensaParcelar } from '@/components/juros';
+import { SIMULATORS_M2_M5 } from './simulators-m2-m5';
+import { SIMULATORS_M6_M9 } from './simulators-m6-m9';
 
 // Simuladores interativos.
 // Cada um novo entra aqui com o id da lição.
@@ -13,6 +15,8 @@ export const SIMULATORS: Record<string, () => React.ReactNode> = {
   'm1-l4': RemanejamentoEmergencia,
   'm1-l5': DetectorGatilhos,
   'm2-l3': () => <CompensaParcelar taxas={TAXAS_REFERENCIA} compacto />,
+  ...SIMULATORS_M2_M5,
+  ...SIMULATORS_M6_M9,
 };
 
 /** Lição 1: O ralo do cafezinho */

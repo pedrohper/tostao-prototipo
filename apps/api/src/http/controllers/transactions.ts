@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { type AutoCategorizeResponse, searchQuery, type SearchResponse, categorizeBody, manualTransactionBody, monthQuery, type CategoryDTO, type MonthSummaryResponse, type SubscriptionsResponse, ignoreSubscriptionBody, createCategoryBody } from '@tostao/contracts';
+import { type AutoCategorizeResponse, searchQuery, type SearchResponse, categorizeBody, manualTransactionBody, updateTransactionBody, monthQuery, type CategoryDTO, type MonthSummaryResponse, type SubscriptionsResponse, ignoreSubscriptionBody, createCategoryBody } from '@tostao/contracts';
 import type { UseCases } from '../../use-cases/factories.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
 import { presentTransaction } from '../presenters.js';
@@ -79,6 +79,13 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
     const { id } = z.object({ id: z.string() }).parse(request.params);
     const { serie } = z.object({ serie: z.enum(['0', '1']).optional() }).parse(request.query);
     return uc.deleteTransaction.execute({ userId: request.user.sub, transactionId: id, series: serie === '1' });
+  });
+
+  app.patch('/transactions/:id', { onRequest: verifyJwt }, async (request) => {
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const body = updateTransactionBody.parse(request.body);
+    const { transaction } = await uc.updateTransaction.execute({ ...body, userId: request.user.sub, transactionId: id });
+    return { id: transaction.id, isInternalTransfer: transaction.isInternalTransfer };
   });
 
   app.patch('/transactions/:id/category', { onRequest: verifyJwt }, async (request) => {

@@ -7,6 +7,7 @@ import { ButtonLink } from '@/components/ui';
 import { Mascote } from '@/components/mascote';
 import { Categorias } from '@/components/graficos';
 import { AutoCategorizeButton } from './auto-categorize-button';
+import { AddAccountBox } from './add-account';
 import { Simulacao } from './simulacao';
 import { Chevron, Row, SearchBar } from './transaction-row';
 
@@ -86,6 +87,7 @@ export default async function CarteiraPage({ searchParams }: { searchParams: Pro
           })}
         </div>
       )}
+      <AddAccountBox />
 
       {(summary.outcomeInCents > 0 || summary.incomeInCents > 0) && (
         <section className="flex flex-col gap-2.5 rounded-2xl border border-linha bg-cartao p-3.5">
