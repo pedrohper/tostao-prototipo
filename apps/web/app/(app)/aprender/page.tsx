@@ -44,11 +44,11 @@ export default async function AprenderPage() {
       </div>
 
       {missions && missions.missions.length > 0 && missions.missions.every((m) => m.done) ? (
-        <div className="flex items-center gap-2 rounded-[18px] border border-linha bg-cartao py-2 pr-3.5 pl-1.5">
-          <Mascote pose="comemorando" size={48} alt="" />
+        <div className="flex items-center gap-1.5 rounded-[18px] bg-menta-clara py-2 pr-3.5 pl-1.5">
+          <Mascote pose="comemorando" size={56} alt="Tostão comemorando" />
           <div className="flex min-w-0 grow flex-col">
             <span className="text-[15px] font-bold">Tudo certo por hoje</span>
-            <span className="text-xs text-tinta-suave">{missions.missions.length}/{missions.missions.length} missões feitas · ofensiva garantida</span>
+            <span className="text-[13px] text-tinta-suave">{missions.missions.length} missões feitas. Amanhã tem mais.</span>
           </div>
         </div>
       ) : (
