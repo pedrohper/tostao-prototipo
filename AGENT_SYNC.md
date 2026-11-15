@@ -24,7 +24,12 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
-### 2026-11-15 · Claude · PR (claude/project-thread-ci76u5)
+### 2026-11-15 · Claude · (claude/project-thread-ci76u5)
+- Tirei a coluna da direita do desktop (Pedro: "tira essa barra da direita com aprender"): `layout.tsx` não busca mais /missions e `lateral.tsx` ficou só com o rodapé do menu. Conteúdo central até 1040px em lg.
+- Início espremido no desktop (cards de Entrou/Saiu em colunas estreitas): vem do código do servidor (commit 37cd7d6, não está na main). Precisa de PR desse trabalho pra revisar a grade.
+- tsc web ok; não conferi no navegador.
+
+### 2026-11-15 · Claude · PR #28 (claude/project-thread-ci76u5)
 - Desktop igual ao artefato (telas 22, 32, 33, 34): menu lateral com item ativo escuro, ofensiva/XP e botão "Anotar gasto" no pé (`components/lateral.tsx`, `nav.tsx`); coluna da direita (xl) com "Aprender" e missões de hoje; `(app)/layout.tsx` busca /progress e /missions. Conteúdo central até 820px.
 - Sem migration nem env. tsc web ok. Não validei no navegador (sem API/banco local); falta conferir lado a lado com o artefato.
 - Fora: coluna da direita específica por tela (desafio da semana, batalha, contas na Carteira) e grid de 3 cards no topo do Início.
