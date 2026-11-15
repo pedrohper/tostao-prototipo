@@ -17,7 +17,7 @@ export default async function BatalhaPage() {
   const titulo = status === 'vencida' ? 'Tigrinho derrotado!' : status === 'perdida' ? 'O Tigrinho levou essa' : '30 dias sem dar um centavo pro Tigrinho';
 
   return (
-    <div className="-mx-5 -mt-6 -mb-28 flex min-h-dvh flex-col gap-3.5 bg-[#FFF1C7] px-5 pt-6 pb-32 text-[#1E1B18] md:-mx-8 md:px-8">
+    <div className="-mx-5 -mt-6 -mb-28 flex min-h-[calc(100dvh-5rem)] md:min-h-0 flex-col gap-2.5 sm:gap-3.5 bg-[#FFF1C7] px-5 pt-5 pb-20 md:pb-8 text-[#1E1B18] md:-mx-8 md:px-8">
       {status === 'vencida' && b.urubu.status !== 'vencida' && <Confete />}
       <div className="flex items-center justify-between">
         <BackLink href="/aprender" />
@@ -25,12 +25,23 @@ export default async function BatalhaPage() {
           {t && status === 'ativa' ? `Batalha · dia ${t.day} de ${t.totalDays}` : 'Batalha'}
         </span>
       </div>
-      <h1 className="font-display text-[28px] leading-8 font-extrabold">{titulo}</h1>
+      <h1 className="font-display text-[24px] sm:text-[28px] leading-7 sm:leading-8 font-extrabold">{titulo}</h1>
 
-      <div className="relative flex h-[210px] items-end justify-between">
-        <Mascote pose={status === 'perdida' ? 'caramelo-dormindo' : 'caramelo-bravo'} size={160} alt="Caramelo rosnando" />
-        <span className="absolute top-[70px] left-1/2 -translate-x-1/2 -rotate-6 font-display text-[34px] font-extrabold text-laranja [-webkit-text-stroke:1.5px_#1E1B18]">VS</span>
-        <img src="/elenco/tigrinho.webp" alt="Tigrinho de óculos escuros" width={190} height={190} className={`shrink-0 ${status === 'vencida' ? 'rotate-12 opacity-40 grayscale' : 'mascote'}`} />
+      <div className="relative flex h-[140px] sm:h-[180px] md:h-[210px] items-end justify-between">
+        <Mascote
+          pose={status === 'perdida' ? 'caramelo-dormindo' : 'caramelo-bravo'}
+          size={120}
+          alt="Caramelo rosnando"
+          className="h-[110px] w-[110px] sm:h-[140px] sm:w-[140px] md:h-[160px] md:w-[160px] object-contain"
+        />
+        <span className="absolute top-[40px] sm:top-[60px] md:top-[70px] left-1/2 -translate-x-1/2 -rotate-6 font-display text-[26px] sm:text-[30px] md:text-[34px] font-extrabold text-laranja [-webkit-text-stroke:1.5px_#1E1B18]">VS</span>
+        <img
+          src="/elenco/tigrinho.webp"
+          alt="Tigrinho de óculos escuros"
+          width={190}
+          height={190}
+          className={`shrink-0 h-[125px] w-[125px] sm:h-[160px] sm:w-[160px] md:h-[190px] md:w-[190px] object-contain ${status === 'vencida' ? 'rotate-12 opacity-40 grayscale' : 'mascote'}`}
+        />
       </div>
 
       {t && status !== 'nova' && (

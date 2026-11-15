@@ -267,6 +267,39 @@ export default async function InicioPage() {
     ),
   };
 
+  const LEFT_SECTIONS: SecaoId[] = ['sobra', 'pra-onde-foi', 'cartoes', 'limites'];
+  const RIGHT_SECTIONS: SecaoId[] = ['missoes', 'vence', 'avisos', 'semana', 'meta', 'acertos'];
+  const visiveis = ordemDe(prefs).filter(ver);
+
+  const saldoCard = (
+    <div className="relative flex flex-col gap-3.5 rounded-[22px] border border-linha bg-cartao p-[18px]">
+      <Link href="/carteira" aria-label="Abrir a Carteira" className="absolute inset-0 rounded-[22px]" />
+      {s.balanceInCents !== null ? (
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[13px] font-semibold text-tinta-suave">Saldo em {bancos.length} {bancos.length === 1 ? 'conta' : 'contas'} ›</span>
+          <span className="font-display text-[40px] leading-[44px] font-extrabold tracking-[-0.5px] tabular-nums">{money(s.balanceInCents)}</span>
+        </div>
+      ) : (
+        <span className="text-[13px] font-semibold text-tinta-suave">Sem banco conectado, contando só o que você anotou</span>
+      )}
+      <div className="relative z-[1] grid grid-cols-2 gap-2.5">
+        <Link href="/carteira?filtro=entradas#lista" className="flex flex-col gap-0.5 rounded-[14px] bg-papel-2 px-3 py-2.5 text-tinta no-underline"><span className="text-xs font-semibold text-tinta-suave">Entrou em {mes} ›</span><span className="text-[17px] font-bold text-verde-texto tabular-nums">+ {money(s.incomeInCents)}</span></Link>
+        <Link href="/carteira?filtro=saidas#lista" className="flex flex-col gap-0.5 rounded-[14px] bg-papel-2 px-3 py-2.5 text-tinta no-underline"><span className="text-xs font-semibold text-tinta-suave">Saiu em {mes} ›</span><span className="text-[17px] font-bold tabular-nums">{money(s.outcomeInCents)}</span></Link>
+      </div>
+    </div>
+  );
+
+  const desktopQuickActions = (
+    <div className="grid grid-cols-2 gap-2.5">
+      <Link href="/anotar" className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-laranja px-4 text-sm font-bold text-[#1E1B18] no-underline shadow-[0_2px_0_rgba(30,27,24,0.14)]">
+        <span className="text-lg leading-none">+</span> Anotar lançamento
+      </Link>
+      <Link href="/chat" className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-linha bg-cartao px-4 text-sm font-semibold text-tinta no-underline">
+        Perguntar ao Tostão
+      </Link>
+    </div>
+  );
+
   return (
     <div className="flex flex-col gap-4">
       {missions && <SomDasMissoes day={new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10)} done={missions.missions.filter((m) => m.done).length} streak={missions.streakDays} />}
@@ -287,7 +320,7 @@ export default async function InicioPage() {
           <Mascote pose="dormindo" size={180} alt="Tostão dormindo" />
           <h2 className="font-display text-2xl font-extrabold">Nada por aqui ainda</h2>
           <p className="max-w-[300px] text-[15px] text-tinta-suave">Conecta o banco ou importa o extrato do app dele, que eu acordo e organizo seus gastos. Ou anota um gasto na mão, também vale.</p>
-          <div className="mt-2 flex w-full flex-col gap-2.5">
+          <div className="mt-2 flex w-full max-w-sm flex-col gap-2.5">
             <ButtonLink href="/conectar" variant="laranja">Trazer meus gastos</ButtonLink>
             <ButtonLink href="/anotar" variant="outline">Anotar um gasto</ButtonLink>
           </div>
@@ -296,23 +329,23 @@ export default async function InicioPage() {
       {vazio && missions && <Missoes data={missions} compact />}
       {!vazio && (
         <>
-          <div className="relative flex flex-col gap-3.5 rounded-[22px] border border-linha bg-cartao p-[18px]">
-            <Link href="/carteira" aria-label="Abrir a Carteira" className="absolute inset-0 rounded-[22px]" />
-            {s.balanceInCents !== null ? (
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[13px] font-semibold text-tinta-suave">Saldo em {bancos.length} {bancos.length === 1 ? 'conta' : 'contas'} ›</span>
-                <span className="font-display text-[40px] leading-[44px] font-extrabold tracking-[-0.5px] tabular-nums">{money(s.balanceInCents)}</span>
-              </div>
-            ) : (
-              <span className="text-[13px] font-semibold text-tinta-suave">Sem banco conectado, contando só o que você anotou</span>
-            )}
-            <div className="relative z-[1] grid grid-cols-2 gap-2.5">
-              <Link href="/carteira?filtro=entradas#lista" className="flex flex-col gap-0.5 rounded-[14px] bg-papel-2 px-3 py-2.5 text-tinta no-underline"><span className="text-xs font-semibold text-tinta-suave">Entrou em {mes} ›</span><span className="text-[17px] font-bold text-verde-texto tabular-nums">+ {money(s.incomeInCents)}</span></Link>
-              <Link href="/carteira?filtro=saidas#lista" className="flex flex-col gap-0.5 rounded-[14px] bg-papel-2 px-3 py-2.5 text-tinta no-underline"><span className="text-xs font-semibold text-tinta-suave">Saiu em {mes} ›</span><span className="text-[17px] font-bold tabular-nums">{money(s.outcomeInCents)}</span></Link>
-            </div>
+          {/* Mobile: ordem exata personalizada pelo usuário */}
+          <div className="flex flex-col gap-4 lg:hidden">
+            {saldoCard}
+            {visiveis.map((id) => <Fragment key={id}>{blocos[id]}</Fragment>)}
           </div>
 
-          {ordemDe(prefs).filter(ver).map((id) => <Fragment key={id}>{blocos[id]}</Fragment>)}
+          {/* Desktop: Bento Dashboard em 2 colunas */}
+          <div className="hidden lg:grid lg:grid-cols-[1.15fr_0.85fr] lg:items-start lg:gap-6">
+            <div className="flex flex-col gap-4">
+              {saldoCard}
+              {visiveis.filter((id) => LEFT_SECTIONS.includes(id)).map((id) => <Fragment key={id}>{blocos[id]}</Fragment>)}
+            </div>
+            <div className="flex flex-col gap-4">
+              {desktopQuickActions}
+              {visiveis.filter((id) => RIGHT_SECTIONS.includes(id)).map((id) => <Fragment key={id}>{blocos[id]}</Fragment>)}
+            </div>
+          </div>
 
           {prefs.fechados.length > 0 && (
             <form action={mostrarFechados} className="self-center">

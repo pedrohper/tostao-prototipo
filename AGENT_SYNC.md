@@ -24,6 +24,53 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-14 · teamwork_worker · Frente 1-5 (UX, Mobile S24, Vetores SVG, Dilemas e Simuladores)
+- **Frente 1 (Anotar & Contas)**:
+  - `apps/web/app/(app)/anotar/anotar-form.tsx`: removido `max={today}` do input de data (permitindo agendamentos e lançamentos futuros); cabeçalho dinâmico adaptando título ("Anotar gasto" vs "Anotar entrada"), subtítulo ("O Caramelo fareja até o troco do pão." vs "Mais um trocado pingando na conta."), pose do Mascote (`caramelo-farejando` vs `caramelo-feliz`), legenda do seletor ("Pago com" vs "Recebido em") e nota de aviso de auto-sync baseados no estado `kind`.
+  - `apps/web/app/(app)/anotar/page.tsx`: preservados `type` ('BANK' | 'CREDIT') e `institution` nas contas repassadas ao formulário.
+  - No seletor de contas do `anotar-form.tsx`, adicionada diferenciação visual para contas e cartões da mesma instituição (ex.: Mercado Pago Conta vs Mercado Pago Cartão) com ícones (`BankIcon` / `CardIcon`) e badge pill ("Conta" / "Cartão").
+  - `apps/api/src/use-cases/create-manual-transaction.spec.ts`: nova suíte de testes unitários cobrindo datas futuras para despesas (valores negativos), receitas (valores positivos), preservação de `accountId` e parcelamentos futuros via `addMonths`.
+- **Frente 2 (Mobile Layout & Viewport S24)**:
+  - `apps/web/components/ui.tsx`: atualizado o componente `Field` com `min-w-0` no `<label>` e `w-full min-w-0` no `<input>`, impedindo estouro horizontal de largura em cards mobile (como no grid de `/categorias`).
+  - `apps/web/app/(app)/categorias/category-form.tsx`: adicionado `min-w-0` no grid de duas colunas (`grid-cols-[72px_1fr]`).
+  - `apps/web/app/(app)/batalha/page.tsx`: ajustada arena dos mascotes (`h-[140px] sm:h-[180px] md:h-[210px]`, mascotes responsivos com `object-contain`), reduzido padding inferior excessivo (`pb-20 md:pb-8`) e espaçamentos verticais para ajuste completo no viewport mobile (Samsung S24 360x780 / 390x844) sem sobreposição da barra de navegação.
+- **Frente 3 (Identidade Visual & Ícones Vetoriais)**:
+  - Criados 56 ícones vetoriais SVG limpos em `apps/web/public/icones/**/*.svg` seguindo o design system "papel e tinta" (viewBox 0 0 24 24, stroke currentColor 1.75, pontas arredondadas e acentos da paleta).
+  - `apps/web/components/icone.tsx`: implementado dicionário SVG inline `ICON_SVGS` cobrindo todas as categorias (`cat/*`), módulos da trilha (`modulo/*`), ações de UI (`ui/*`), conexões (`conectar/*`), metas (`meta/*`), jogos (`jogo/*`) e abas (`aba/*`), com renderização direta via `<svg>` e suporte automático ao dark mode via `currentColor`, mantendo fallback para busca estática e 100% de retrocompatibilidade com `<Icone />` e `<CatIcon />`.
+  - Removidos os 56 arquivos PNG rasterizados obsoletos (mantidos apenas os PNGs obrigatórios da PWA em `apps/web/public/icones/icon-*.png`).
+- **Frente 4 (Dilemas das Lições & Player)**:
+  - `content/curriculo.md`: todos os 45 dilemas reestruturados no formato explícito `Opção A: ... vs. Opção B: ... Lado A: ... Lado B: ...`.
+  - `scripts/build-lessons.mjs`: atualizado parser de dilemas para extrair `optionA` e `optionB` estruturados em `content/lessons/modules.json`.
+  - Compilado com `pnpm content:build` gerando 9 módulos e 45 lições com campos tipados.
+  - `apps/web/app/(app)/aprender/[licao]/player.tsx`: atualizado passo 3 do player com botões em cards empilhados de largura total destacando as descrições da Opção A e Opção B antes do voto.
+- **Frente 5 (Simuladores Interativos do Módulo 1)**:
+  - `apps/web/app/(app)/aprender/[licao]/simulators.tsx`: implementados e registrados os 4 simuladores interativos das lições do Módulo 1 (substituindo o fallback "em construção"):
+    - `m1-l2` ("Ajuste das fatias"): simulador da regra 50/30/20 com sliders de renda, necessidades e desejos, barra empilhada e alertas pedagógicos.
+    - `m1-l3` ("O bisturi no fixo"): lista interativa de assinaturas e custos fixos jovens com toggles de corte, cálculo em tempo real de alívio mensal e poupança anual.
+    - `m1-l4` ("Remanejamento de emergência"): imprevisto urgente de R$ 200 com sliders de cortes em categorias flexíveis e medidor de reequilíbrio em tempo real.
+    - `m1-l5` ("Detector de gatilhos"): chips de seleção de dias de cansaço/delivery com stepper de substituição por marmita caseira e projeção de economia anual.
+- Sem migrations no banco e sem variáveis de ambiente novas.
+- Como validei:
+  - `pnpm content:build`: 9 módulos, 45 lições compilados.
+  - `pnpm test`: 30 suítes de testes, 164 testes passando com sucesso no Vitest.
+  - `pnpm --filter @tostao/api typecheck`: `tsc --noEmit` concluído com 0 erros.
+  - `pnpm --filter @tostao/web typecheck`: `tsc --noEmit` concluído com 0 erros.
+  - `pnpm build`: 84 rotas compiladas estática e dinamicamente sem falhas.
+
+### 2026-11-14 · Antigravity · Unificação Tostão + Jarvis (Segundo Cérebro no WhatsApp/App)
+- `apps/api/src/use-cases/tostao-tools.ts`: adicionadas as ferramentas `JARVIS_TOOLS` (`salvar_nota_obsidian`, `buscar_notas_obsidian`, `criar_flashcards_anki`) integradas ao cofre `/home/optiplex/obsidian_vault` e ao OptiPlex Hub 2.0 (`127.0.0.1:8088`).
+- `apps/api/src/use-cases/ask-tostao.ts`: quando o usuário é o Pedro (`pereirahenrique0104@gmail.com` / `4ca4a890-737a-4ef2-aca0-945cae9d2feb`), ativa `[...TOSTAO_TOOLS, ...JARVIS_TOOLS]` e instruções de Segundo Cérebro no prompt de sistema, mantendo o histórico de 12 mensagens unificado.
+- Fluxo n8n `TostaoWhatsApp01` (`Tostão & Jarvis - WhatsApp Unificado`): removida a bifurcação `É nota Obsidian?` e desativado o fluxo órfão `JcMHoyO6nNv8Qnl6`; agora 100% das mensagens de texto e áudio passam pelo cérebro único do `Tostão API` (`http://172.18.0.1:3334/whatsapp/n8n`).
+- Sem migration. Validado com `pnpm --filter @tostao/api test` (161 testes passando) e `tsc --noEmit`.
+
+### 2026-11-14 · Antigravity · Passo 1 (Function Calling do Tostão)
+- `apps/api/src/gateways/ai-gateway.ts`: `ChatTurn`, `ToolDefinition`, `ToolCall`, `AiReply` e método `chat(messages, opts)` em `AiGateway`, `DeepSeekGateway` (suporte a `tools` e `tool_calls`) e `FakeAiGateway` (`queue` para testar loops).
+- `apps/api/src/use-cases/tostao-tools.ts`: schemas e executor de `consultar_gastos_categoria`, `verificar_limite_categoria` e `registrar_transacao` (escopados por `userId`, respeitando `isInternalTransfer` e contas ocultas).
+- `apps/api/src/use-cases/ask-tostao.ts`: loop agêntico com trava de `MAX_TOOL_ROUNDS = 5` (chamada final sem `tools` se atingir o limite) e lista de categorias disponíveis no contexto inicial.
+- `apps/api/src/use-cases/ask-tostao.spec.ts` e `auto-categorize.spec.ts`: testes para o loop de `tool_calls`, criação de transação e limite de rodadas.
+- Sem migration e sem env nova. Validado com `pnpm --filter @tostao/api test` (161 testes passando) e `tsc --noEmit`.
+- Fora: streaming de resposta no front e ferramentas adicionais (ex.: `consultar_previsao`).
+
 ### 2026-11-13 · Claude · PR #27 (claude/project-thread-3oru9b)
 - `use-cases/financial-plan.ts`: a previsão dizia "vai faltar R$ 528" em novembro por três motivos. (1) `spendingBase` usava agosto como base, mas o banco foi ligado em 14/08 (mês parcial); agora mês em que o primeiro dado cai depois do dia 5 fica de fora (`partial`). (2) O pote de dinheiro extra agora é da janela toda: acerto que entrou em outubro também cobre o excesso de setembro. (3) Resto do mês atual ia na base proporcional aos dias, repetindo contas grandes que já tinham caído (Pix de R$ 566 da casa); agora vai no ritmo do miúdo do mês (saídas abaixo de 15% da renda, mín. R$ 200, sem assinaturas) depois de 7 dias.
 - Contrato: `ThisMonthForecast.dailyPaceInCents?` (opcional). Web: /previsao mostra "Dia a dia (17 dias × R$ 43,52)".

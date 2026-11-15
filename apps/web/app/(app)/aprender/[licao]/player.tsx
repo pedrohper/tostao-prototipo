@@ -66,18 +66,38 @@ export function LessonPlayer({ lesson, moduleTitle, moduleNumber, nextId }: Prop
         {step === 3 && (
           <div className="flex flex-col gap-3">
             <p className="rounded-[20px] bg-cartao p-4 font-semibold">{lesson.dilemma.question}</p>
-            <div className="grid grid-cols-2 gap-2.5">
-              {(['A', 'B'] as const).map((side) => (
-                <button key={side} type="button" onClick={() => setVote(side)}
-                  className={`rounded-2xl border-2 p-3 text-left text-[15px] font-semibold ${vote === side ? 'border-tinta bg-cartao' : 'border-transparent bg-cartao/70'}`}>
-                  {side === 'A' ? 'Primeira opção' : 'Segunda opção'}
+            <div className="flex flex-col gap-2.5">
+              {(
+                [
+                  ['A', lesson.dilemma.optionA || 'Opção A'],
+                  ['B', lesson.dilemma.optionB || 'Opção B'],
+                ] as const
+              ).map(([side, text]) => (
+                <button
+                  key={side}
+                  type="button"
+                  onClick={() => setVote(side)}
+                  className={`flex flex-col gap-1.5 rounded-2xl border-2 p-3.5 text-left transition ${
+                    vote === side ? 'border-tinta bg-cartao shadow-sm' : 'border-transparent bg-cartao/70 hover:bg-cartao'
+                  }`}
+                >
+                  <span
+                    className={`self-start rounded-full px-2 py-0.5 text-[11px] font-bold tracking-wider uppercase ${
+                      vote === side ? 'bg-tinta text-papel' : 'bg-papel-2 text-tinta-suave'
+                    }`}
+                  >
+                    Opção {side}
+                  </span>
+                  <span className="text-[15px] font-semibold text-tinta leading-snug">
+                    {text}
+                  </span>
                 </button>
               ))}
             </div>
             {vote && (
               <div className="flex flex-col gap-2 rounded-[20px] bg-cartao p-4 text-[15px]">
-                <p><b>A favor da primeira:</b> {lesson.dilemma.sideA}</p>
-                <p><b>A favor da segunda:</b> {lesson.dilemma.sideB}</p>
+                <p><b>A favor da Opção A:</b> {lesson.dilemma.sideA}</p>
+                <p><b>A favor da Opção B:</b> {lesson.dilemma.sideB}</p>
                 <p className="text-tinta-suave">Não tem resposta única. Depende do seu momento, e tá tudo bem.</p>
               </div>
             )}

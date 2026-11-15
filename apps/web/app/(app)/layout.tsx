@@ -10,7 +10,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="md:flex md:min-h-dvh">
       <Nav />
       <SonsDoToque />
-      <main className="mx-auto w-full max-w-[640px] px-5 pt-6 pb-28 md:px-8 md:pb-12">{children}</main>
+      <main className="mx-auto w-full max-w-[640px] px-5 pt-6 pb-28 md:max-w-5xl md:px-8 md:pb-12">{children}</main>
     </div>
   );
 }

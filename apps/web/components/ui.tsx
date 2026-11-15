@@ -19,11 +19,11 @@ const variants = {
   dark: 'h-[54px] bg-tinta text-papel text-base',
 };
 
-export function Field({ label, error, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string }) {
+export function Field({ label, error, className = '', ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string }) {
   return (
-    <label className="flex flex-col gap-1.5">
+    <label className="flex min-w-0 flex-col gap-1.5">
       <span className="text-sm font-semibold">{label}</span>
-      <input {...props} className="h-[52px] rounded-2xl border-[1.5px] border-linha bg-cartao px-4 text-base outline-none focus:border-tinta" />
+      <input {...props} className={`h-[52px] w-full min-w-0 rounded-2xl border-[1.5px] border-linha bg-cartao px-4 text-base outline-none focus:border-tinta ${className}`} />
       {error && <span className="text-[13px] font-medium text-vermelho-texto">{error}</span>}
     </label>
   );

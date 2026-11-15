@@ -52,7 +52,7 @@ describe('Categoria automática com IA', () => {
     const b = await add('MP*MELIMAIS 10/10', -1990);
     ai.next = JSON.stringify({ t: { '0': 'assinaturas' } });
     expect(await uc.execute({ userId: 'u1' })).toEqual({ categorized: 2, asked: 2 });
-    expect(ai.calls[0]![1]!.content.match(/MELIMAIS/g)).toHaveLength(1);
+    expect(ai.calls[0]![1]!.content?.match(/MELIMAIS/g)).toHaveLength(1);
     expect((await repos.transactions.findById(a.id))!.categoryId).toBe('assinaturas');
     expect((await repos.transactions.findById(b.id))!.categoryId).toBe('assinaturas');
   });

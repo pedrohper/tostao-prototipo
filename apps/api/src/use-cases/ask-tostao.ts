@@ -6,9 +6,14 @@ import { GetMonthSummaryUseCase } from './get-month-summary.js';
 import { ListSubscriptionsUseCase } from './list-subscriptions.js';
 import { GetBudgetsUseCase } from './budgets.js';
 import { ForecastUseCase } from './financial-plan.js';
+import { TOSTAO_TOOLS, JARVIS_TOOLS, executeTostaoTool } from './tostao-tools.js';
+
+const PEDRO_USER_ID = '4ca4a890-737a-4ef2-aca0-945cae9d2feb';
+const PEDRO_EMAIL = 'pereirahenrique0104@gmail.com';
 
 const DAY = 24 * 60 * 60 * 1000;
 const HISTORY = 12; // mensagens anteriores que vão junto (memória curta da conversa)
+const MAX_TOOL_ROUNDS = 5; // trava contra loop infinito de chamadas de ferramenta
 
 const brl = (cents: number) => (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const prevMonth = (m: string) => {
@@ -20,11 +25,13 @@ const PERSONA = `Você é o Tostão, um porquinho de boné laranja que ajuda jov
 Voz: amigo sincero, sem julgamento, leve e direto. Português do Brasil, informal, sem gíria forçada.
 Regras:
 - Responda curto: 2 a 5 frases, ou uma lista curta. Nada de textão.
-- Use SÓ os números do bloco DADOS. Se a informação não estiver lá, diga que não sabe ainda. Nunca invente valor.
+- Use SÓ os números do bloco DADOS ou retornados pelas ferramentas. Se a informação não estiver lá, diga que não sabe ainda. Nunca invente valor.
+- Você tem ferramentas para consultar gastos por categoria, verificar limites e registrar novas transações quando a pessoa pedir. Use-as antes de responder quando precisar de detalhes ou for lançar um gasto/ganho.
 - Dinheiro sempre em R$ no formato brasileiro (R$ 1.234,56). Mostre a conta quando fizer cálculo.
 - Não recomende produto financeiro específico (ação, fundo, cripto, banco). Pode explicar conceitos (reserva de emergência, juros, CDI).
 - Bets e "tigrinho": seja honesto que a casa sempre ganha, sem sermão.
 - Se alguém pedir Pix urgente, código, senha ou "taxa pra liberar dinheiro": alerte que é golpe (o Urubu do Pix).
+- Se o usuário mandar provocação sexual, conteúdo impróprio ou zoeira fora de contexto, NÃO entre na brincadeira e nunca concorde com o absurdo: dê um corte leve e firme em 1 frase ("Aqui o papo é só grana, bora focar no seu bolso.") e puxe de volta para o assunto financeiro.
 - Termine, quando fizer sentido, com UM próximo passo prático.
 - Não use markdown pesado: no máximo **negrito** e listas com "-".`;
 
@@ -49,19 +56,41 @@ export class AskTostaoUseCase {
       this.snapshot(userId, now),
       this.repos.users.findById(userId),
     ]);
+    const isPedro = userId === PEDRO_USER_ID || user?.email === PEDRO_EMAIL;
+    const activeTools = isPedro ? [...TOSTAO_TOOLS, ...JARVIS_TOOLS] : TOSTAO_TOOLS;
+    const jarvisRules = isPedro
+      ? `\n- MODO JARVIS (SEGUNDO CÉREBRO DO PEDRO ATIVO): O Pedro é o seu criador e dono do servidor OptiPlex onde você roda (nunca mande ele "procurar o suporte do app" — você é o assistente pessoal e copilot dele!). Você TEM acesso direto e em tempo real ao cofre Obsidian do Pedro e ao Anki Studio pelas ferramentas salvar_nota_obsidian, buscar_notas_obsidian e criar_flashcards_anki. SEMPRE que o Pedro pedir para anotar, salvar, lembrar ou guardar qualquer coisa (no Obsidian, tarefas, backlog do Tostão, ideias, lembretes ou estudos), chame a ferramenta salvar_nota_obsidian IMEDIATAMENTE. NUNCA diga que "não tem acesso ao Obsidian" ou "não guarda lembretes". Se ele pedir para anotar algo que já foi listado nas mensagens anteriores da conversa, reúna todos os itens mencionados e salve na nota com salvar_nota_obsidian.\n- MODO RESENHA (EXCLUSIVO PEDRO): Com o Pedro, você pode soltar a língua na resenha — humor ácido/irônico, tiração de sarro leve de brother e respostas afiadas quando ele vier provocar ou testar seus limites (sem conteúdo explícito). Pode zoar de volta em 1 frase antes de puxar ele pro que interessa (grana, backlog ou estudos).`
+      : '';
+
     const messages: ChatTurn[] = [
-      { role: 'system', content: `${PERSONA}${channel === 'whatsapp' ? `\n- Você está no WhatsApp: mensagem curta, sem tabela. Não liste o saldo de cada conta nem transações uma por uma; dê o número resumido e, pra detalhe, mande abrir o app.` : ''}\n\nA pessoa se chama ${user?.name ?? 'você'}. Hoje é ${now.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.\n\nDADOS:\n${data}` },
+      { role: 'system', content: `${PERSONA}${jarvisRules}${channel === 'whatsapp' ? `\n- Você está no WhatsApp: mensagem curta, sem tabela. Não liste o saldo de cada conta nem transações uma por uma; dê o número resumido e, pra detalhe, mande abrir o app.` : ''}\n\nA pessoa se chama ${user?.name ?? 'você'}. Hoje é ${now.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.\n\nDADOS:\n${data}` },
       ...history.map((m) => ({ role: m.role, content: m.content }) as ChatTurn),
       { role: 'user', content: text },
     ];
 
-    let answer: string;
+    let answer: string | null = null;
     try {
-      answer = await this.ai.reply(messages);
+      for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+        const res = await this.ai.chat(messages, { tools: activeTools });
+        if (res.toolCalls.length === 0) {
+          answer = res.content;
+          break;
+        }
+        messages.push({ role: 'assistant', content: res.content, tool_calls: res.toolCalls });
+        for (const call of res.toolCalls) {
+          const result = await executeTostaoTool(this.repos, userId, call.function.name, call.function.arguments, now);
+          messages.push({ role: 'tool', tool_call_id: call.id, content: result });
+        }
+      }
+      if (!answer) {
+        const finalRes = await this.ai.chat(messages);
+        answer = finalRes.content;
+      }
     } catch (e) {
       if (e instanceof AiUnavailableError) throw new AppError('O Tostão travou pensando. Tenta de novo daqui a pouco.', 503);
       throw e;
     }
+    if (!answer) throw new AppError('O Tostão travou pensando. Tenta de novo daqui a pouco.', 503);
     const question = await this.repos.chat.create({ userId, role: 'user', content: text, channel });
     const reply = await this.repos.chat.create({ userId, role: 'assistant', content: answer, channel });
     return { question, reply, remainingToday: Math.max(0, this.dailyLimit - used - 1) };
@@ -107,6 +136,8 @@ export class AskTostaoUseCase {
     const active = subs.subscriptions.filter((s) => s.active);
     if (active.length) lines.push(`Assinaturas ativas (${brl(subs.monthlyInCents)}/mês, ${brl(subs.yearlyInCents)}/ano): ${active.map((s) => `${s.name} ${brl(s.amountInCents)}${s.installmentsLeft ? ` (faltam ${s.installmentsLeft} parcelas)` : ''}`).join('; ')}.`);
     if (budgets.budgets.length) lines.push(`Limites do mês: ${budgets.budgets.map((b) => `${b.name} ${brl(b.spentInCents)} de ${brl(b.limitInCents)}`).join('; ')}.`);
+    const catNames = categories.filter((c) => c.kind !== 'neutra').map((c) => c.name);
+    if (catNames.length) lines.push(`Categorias disponíveis: ${catNames.join(', ')}.`);
     const real = recent.filter((t) => !t.isInternalTransfer).sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime()).slice(0, 40);
     if (real.length) {
       lines.push('Últimas transações (data, valor, descrição, categoria):');

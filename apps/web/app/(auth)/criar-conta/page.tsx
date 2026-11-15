@@ -8,8 +8,8 @@ export default async function CriarContaPage({ searchParams }: { searchParams: P
     <>
       <div className="flex items-center gap-3">
         <BackLink href="/entrar" />
-        <div className="h-2 grow overflow-hidden rounded-full border border-linha bg-papel-2" role="img" aria-label="Passo 1 de 2">
-          <div className="h-full w-1/2 rounded-full bg-tinta" />
+        <div className="h-2 grow overflow-hidden rounded-full border border-linha bg-papel-2" role="img" aria-label="Passo 1 de 3">
+          <div className="h-full w-1/3 rounded-full bg-tinta" />
         </div>
       </div>
       <div className="flex items-center justify-between gap-2">

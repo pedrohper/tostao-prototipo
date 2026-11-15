@@ -29,8 +29,11 @@ export default async function ConectarPage({ searchParams }: { searchParams: Pro
   return (
     <div className="flex flex-col gap-5">
       {novo && (
-        <div className="h-2 overflow-hidden rounded-full border border-linha bg-papel-2" role="img" aria-label="Passo 2 de 2">
-          <div className="h-full w-3/4 rounded-full bg-tinta" />
+        <div className="flex flex-col gap-1">
+          <div className="h-2 overflow-hidden rounded-full border border-linha bg-papel-2" role="img" aria-label="Passo 2 de 3">
+            <div className="h-full w-2/3 rounded-full bg-tinta" />
+          </div>
+          <span className="text-xs font-semibold text-tinta-suave">Passo 2 de 3 · Opcional</span>
         </div>
       )}
       <div className="flex items-center gap-2">
@@ -123,9 +126,13 @@ export default async function ConectarPage({ searchParams }: { searchParams: Pro
       )}
 
       {novo && (
-        <div className="flex items-center justify-between gap-2">
-          <Link href="/renda" className="flex h-11 items-center text-sm font-semibold text-laranja-texto no-underline">Sem banco: só contar minha renda</Link>
-          <Link href="/inicio" className="flex h-11 items-center text-sm font-semibold text-tinta-suave no-underline">Agora não</Link>
+        <div className="flex flex-col gap-2 pt-2">
+          <Link href="/renda?novo=1" className="flex h-[54px] items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel no-underline">
+            Continuar: renda e meta →
+          </Link>
+          <Link href="/inicio" className="flex h-11 items-center justify-center text-sm font-semibold text-tinta-suave no-underline">
+            Pular tudo e ir pro Início
+          </Link>
         </div>
       )}
     </div>

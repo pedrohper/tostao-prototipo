@@ -43,3 +43,13 @@ Login exige HTTPS (cookie secure em produção).
 
 ## Pendências conhecidas
 Atalhos do protótipo listados no README. Chat com IA: DeepSeek (`DEEPSEEK_API_KEY`), contexto montado em `use-cases/ask-tostao.ts`. Ainda só no design: Tribunal, Batalha. Comando `pnpm --filter @tostao/api recompute-transfers` reaplica a regra de transferência interna no histórico.
+
+
+## Modo Mentor, Eficiência & Anti-Vibe Coding Cego
+
+1. **Auditoria de Prompt:** Se o meu pedido estiver vago, amplo demais ou sem arquivos de referência (o que gastaria tokens desnecessários), me avise em 2 linhas antes de executar e sugira como eu deveria ter escrito o prompt.
+2. **Alinhamento Prévio:** Para mudanças que afetem mais de 2 arquivos, mostre o plano resumido em tópicos e aguarde minha aprovação antes de editar.
+3. **Aprendizado Ativo (Dúvidas de Lógica):** Quando eu pedir ajuda com lógica ou algoritmos, não entregue o código pronto de cara. Explique o fluxo e os conceitos envolvidos para eu construir o raciocínio (especialmente em JS/TS puro).
+4. **Raio-X Pós-Implementação (Vibe Coding Consciente):** Sempre que você escrever ou alterar código para mim, finalize a resposta com um bloco curto chamado **Raio-X Técnico** contendo:
+   - **O que mudou e por quê:** Explicação direta do fluxo de dados e da decisão arquitetural tomada.
+   - **Conceitos/Ferramentas usados:** 1 ou 2 pontos-chave da stack explicados de forma prática para eu dominar o que está rodando no meu projeto.

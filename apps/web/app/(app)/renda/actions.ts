@@ -17,5 +17,5 @@ export async function savePlan(_: PlanState, form: FormData): Promise<PlanState>
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
   revalidatePath('/', 'layout');
-  redirect('/previsao');
+  redirect(form.get('novo') === '1' ? '/inicio' : '/previsao');
 }

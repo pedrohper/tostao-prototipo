@@ -22,7 +22,7 @@ export function CategoryForm() {
           </label>
         ))}
       </div>
-      <div className="grid grid-cols-[72px_1fr] gap-2">
+      <div className="grid min-w-0 grid-cols-[72px_1fr] gap-2">
         <Field label="Emoji" name="emoji" placeholder="🏷️" maxLength={16} />
         <Field label="Nome" name="name" placeholder={kind === 'saida' ? 'Faculdade' : 'Mesada'} required maxLength={30} />
       </div>

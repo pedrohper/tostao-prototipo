@@ -20,6 +20,29 @@ const modules = body.split(/\n## Módulo /).slice(1).map((chunk, i) => {
     const sim = /^\*(.+?)\*:\s*(.*)$/.exec(simulador);
     const dilema = field(l, 'Dilema');
     const dm = /^(.*?)\s*Lado A:\s*(.*?)\s*Lado B:\s*(.*)$/.exec(dilema);
+    let question = dilema;
+    let optionA = 'Opção A';
+    let optionB = 'Opção B';
+    let sideA = '';
+    let sideB = '';
+
+    if (dm) {
+      question = dm[1].trim();
+      sideA = dm[2].trim();
+      sideB = dm[3].trim();
+      const optMatch = /^Opção A:\s*(.*?)\s*vs\.\s*Opção B:\s*(.*?)\.?$/.exec(question);
+      if (optMatch) {
+        optionA = optMatch[1].trim();
+        optionB = optMatch[2].trim();
+      } else {
+        const vsMatch = /^(.*?)\s*vs\.\s*(.*?)\.?$/.exec(question);
+        if (vsMatch) {
+          optionA = vsMatch[1].replace(/^Opção A:\s*/i, '').trim();
+          optionB = vsMatch[2].replace(/^Opção B:\s*/i, '').trim();
+        }
+      }
+    }
+
     return {
       id: `m${i + 1}-l${j + 1}`,
       number: j + 1,
@@ -27,7 +50,7 @@ const modules = body.split(/\n## Módulo /).slice(1).map((chunk, i) => {
       hook: field(l, 'Gancho'),
       concept: field(l, 'Conceito'),
       simulator: sim ? { name: sim[1], description: sim[2] } : { name: 'Simulador', description: simulador },
-      dilemma: dm ? { question: dm[1], sideA: dm[2], sideB: dm[3] } : { question: dilema, sideA: '', sideB: '' },
+      dilemma: { question, optionA, optionB, sideA, sideB },
       commitment: field(l, 'Compromisso da semana'),
     };
   });

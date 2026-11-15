@@ -30,7 +30,7 @@ const Back = ({ onClick, href }: { onClick?: () => void; href?: string }) => {
   return href ? <Link href={href} aria-label="Voltar" className={cls}>{icon}</Link> : <button type="button" onClick={onClick} aria-label="Voltar" className={cls}>{icon}</button>;
 };
 
-export function RendaForm({ plan, suggestions, banks }: { plan: FinancialPlan | null; suggestions: IncomeSuggestion[]; banks: string[] }) {
+export function RendaForm({ plan, suggestions, banks, novo = false }: { plan: FinancialPlan | null; suggestions: IncomeSuggestion[]; banks: string[]; novo?: boolean }) {
   const [state, action, pending] = useActionState<PlanState, FormData>(savePlan, {});
   const [step, setStep] = useState(1);
   const firstSalary = plan?.salary?.pattern ?? suggestions.find((s) => /SAL|FOLHA|PROVENTO/.test(s.pattern))?.pattern ?? null;
@@ -84,7 +84,18 @@ export function RendaForm({ plan, suggestions, banks }: { plan: FinancialPlan | 
   if (step === 1) {
     return (
       <div className="flex flex-col gap-3.5">
-        <div className="flex items-center gap-2"><Back href="/perfil" /><Steps n={1} /></div>
+        {novo ? (
+          <div className="flex items-center gap-2">
+            <Back href="/conectar?novo=1" />
+            <div className="flex grow flex-col gap-1">
+              <div className="h-2 overflow-hidden rounded-full border border-linha bg-papel-2" role="img" aria-label="Passo 3 de 3">
+                <div className="h-full w-full rounded-full bg-tinta" />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2"><Back href="/perfil" /><Steps n={1} /></div>
+        )}
         <div className="flex items-center justify-between gap-2">
           <div className="flex flex-col gap-1">
             <h1 className="font-display text-[28px] leading-8 font-extrabold">Quanto entra por mês?</h1>
@@ -167,6 +178,11 @@ export function RendaForm({ plan, suggestions, banks }: { plan: FinancialPlan | 
           </div>
         )}
         <button type="button" onClick={() => setStep(2)} disabled={!salaryCents} className="flex h-[54px] shrink-0 items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel disabled:opacity-50">Continuar</button>
+        {novo && (
+          <Link href="/inicio" className="flex h-11 items-center justify-center text-sm font-semibold text-tinta-suave no-underline">
+            Pular por agora
+          </Link>
+        )}
       </div>
     );
   }
@@ -174,7 +190,17 @@ export function RendaForm({ plan, suggestions, banks }: { plan: FinancialPlan | 
   return (
     <form action={action} className="flex flex-col gap-3.5">
       <input type="hidden" name="plan" value={JSON.stringify(payload)} />
-      <div className="flex items-center gap-2"><Back onClick={() => setStep(1)} /><Steps n={2} /></div>
+      {novo && <input type="hidden" name="novo" value="1" />}
+      {novo ? (
+        <div className="flex items-center gap-2">
+          <Back onClick={() => setStep(1)} />
+          <div className="h-2 grow overflow-hidden rounded-full border border-linha bg-papel-2" role="img" aria-label="Passo 3 de 3">
+            <div className="h-full w-full rounded-full bg-tinta" />
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2"><Back onClick={() => setStep(1)} /><Steps n={2} /></div>
+      )}
       <div className="flex items-center justify-between gap-2">
         <div className="flex flex-col gap-1">
           <h1 className="font-display text-[28px] leading-8 font-extrabold">O resto que se repete</h1>
@@ -237,7 +263,7 @@ export function RendaForm({ plan, suggestions, banks }: { plan: FinancialPlan | 
 
       <ErrorNote message={state.error} />
       <button type="submit" disabled={pending} className="flex h-[54px] shrink-0 items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel disabled:opacity-50">
-        {pending ? 'Salvando…' : 'Ver minha previsão'}
+        {pending ? 'Salvando…' : novo ? 'Concluir e ir pro Início' : 'Ver minha previsão'}
       </button>
     </form>
   );
