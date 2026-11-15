@@ -8,9 +8,25 @@ const chevron = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stro
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const DIAS = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
 
+/** Card pequeno de quando todas as missões do dia estão feitas. */
+export function MissoesFeitas({ total, streak }: { total: number; streak: number }) {
+  return (
+    <Link href="/aprender" className="flex min-h-14 items-center gap-2.5 rounded-[18px] bg-menta-clara px-3.5 py-2.5 text-tinta no-underline">
+      <Icone src="jogo/dia-cumprido" size={28} alt="" />
+      <span className="flex min-w-0 grow flex-col">
+        <span className="text-[15px] font-bold">Tudo certo por hoje</span>
+        <span className="text-[13px] text-tinta-suave">{total} {total === 1 ? 'missão feita' : 'missões feitas'} · volta amanhã pra manter a ofensiva</span>
+      </span>
+      <span className="flex shrink-0 items-center gap-1 text-[13px] font-bold"><Icone src="ui/ofensiva" size={18} />{streak} {streak === 1 ? 'dia' : 'dias'}</span>
+    </Link>
+  );
+}
+
 /** Missões de hoje: fazer qualquer uma garante a ofensiva do dia. */
 export function Missoes({ data, compact = false }: { data: MissionsResponse; compact?: boolean }) {
   const feitas = data.missions.filter((m) => m.done).length;
+  // Fez todas: o card encolhe pra uma linha só, sem lista.
+  if (data.missions.length > 0 && feitas === data.missions.length) return <MissoesFeitas total={feitas} streak={data.streakDays} />;
   return (
     <section className="relative flex flex-col gap-2.5 rounded-[18px] border border-linha bg-cartao p-3.5">
       {/* O card inteiro leva pro Aprender; cada missão por cima leva pro lugar dela. */}
