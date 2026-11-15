@@ -24,6 +24,11 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-15 · Claude · PR (claude/project-thread-ci76u5)
+- Desktop igual ao artefato (telas 22, 32, 33, 34): menu lateral com item ativo escuro, ofensiva/XP e botão "Anotar gasto" no pé (`components/lateral.tsx`, `nav.tsx`); coluna da direita (xl) com "Aprender" e missões de hoje; `(app)/layout.tsx` busca /progress e /missions. Conteúdo central até 820px.
+- Sem migration nem env. tsc web ok. Não validei no navegador (sem API/banco local); falta conferir lado a lado com o artefato.
+- Fora: coluna da direita específica por tela (desafio da semana, batalha, contas na Carteira) e grid de 3 cards no topo do Início.
+
 ### 2026-11-13 · Claude · PR #27 (claude/project-thread-3oru9b)
 - `use-cases/financial-plan.ts`: a previsão dizia "vai faltar R$ 528" em novembro por três motivos. (1) `spendingBase` usava agosto como base, mas o banco foi ligado em 14/08 (mês parcial); agora mês em que o primeiro dado cai depois do dia 5 fica de fora (`partial`). (2) O pote de dinheiro extra agora é da janela toda: acerto que entrou em outubro também cobre o excesso de setembro. (3) Resto do mês atual ia na base proporcional aos dias, repetindo contas grandes que já tinham caído (Pix de R$ 566 da casa); agora vai no ritmo do miúdo do mês (saídas abaixo de 15% da renda, mín. R$ 200, sem assinaturas) depois de 7 dias.
 - Contrato: `ThisMonthForecast.dailyPaceInCents?` (opcional). Web: /previsao mostra "Dia a dia (17 dias × R$ 43,52)".
