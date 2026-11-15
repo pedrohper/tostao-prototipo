@@ -43,6 +43,15 @@ export default async function AprenderPage() {
         </div>
       </div>
 
+      {missions && missions.missions.length > 0 && missions.missions.every((m) => m.done) ? (
+        <div className="flex items-center gap-2 rounded-[18px] border border-linha bg-cartao py-2 pr-3.5 pl-1.5">
+          <Mascote pose="comemorando" size={48} alt="" />
+          <div className="flex min-w-0 grow flex-col">
+            <span className="text-[15px] font-bold">Tudo certo por hoje</span>
+            <span className="text-xs text-tinta-suave">{missions.missions.length}/{missions.missions.length} missões feitas · ofensiva garantida</span>
+          </div>
+        </div>
+      ) : (
       <div className="flex items-center gap-1.5 rounded-[18px] border border-linha bg-cartao py-3 pr-3.5 pl-1.5">
         <Mascote pose="professor" size={84} alt="Tostão professor" />
         <div className="flex min-w-0 grow flex-col gap-[9px]">
@@ -56,6 +65,7 @@ export default async function AprenderPage() {
           )}
         </div>
       </div>
+      )}
 
       {atual && proxima ? (
         <div className="flex flex-col gap-2.5 rounded-[18px] bg-amarelo-claro p-4">

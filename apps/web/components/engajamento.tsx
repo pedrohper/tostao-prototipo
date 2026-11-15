@@ -11,6 +11,14 @@ const DIAS = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
 /** Missões de hoje: fazer qualquer uma garante a ofensiva do dia. */
 export function Missoes({ data, compact = false }: { data: MissionsResponse; compact?: boolean }) {
   const feitas = data.missions.filter((m) => m.done).length;
+  if (data.missions.length > 0 && feitas === data.missions.length) {
+    return (
+      <Link href="/aprender" className="flex items-center justify-between gap-2 rounded-[18px] border border-linha bg-cartao px-3.5 py-3 text-tinta no-underline">
+        <span className="flex flex-col"><span className="text-[15px] font-bold">Tudo certo por hoje</span><span className="text-xs text-tinta-suave">{feitas}/{data.missions.length} missões feitas · ofensiva garantida</span></span>
+        <span className="flex items-center gap-1 text-[13px] font-bold"><Icone src="ui/ofensiva" size={18} />{data.streakDays} {data.streakDays === 1 ? 'dia' : 'dias'}</span>
+      </Link>
+    );
+  }
   return (
     <section className="relative flex flex-col gap-2.5 rounded-[18px] border border-linha bg-cartao p-3.5">
       {/* O card inteiro leva pro Aprender; cada missão por cima leva pro lugar dela. */}
