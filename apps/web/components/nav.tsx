@@ -10,11 +10,11 @@ const items = [
   { href: '/perfil', label: 'Perfil', icon: <><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0z" /></> },
 ];
 
-export function Nav() {
+export function Nav({ footer }: { footer?: React.ReactNode }) {
   const path = usePathname();
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-10 grid grid-cols-5 border-t border-linha bg-cartao px-2 pt-2 pb-[max(16px,env(safe-area-inset-bottom))] md:sticky md:top-0 md:inset-auto md:flex md:h-dvh md:w-56 md:shrink-0 md:flex-col md:gap-1 md:border-t-0 md:border-r md:bg-papel md:px-4 md:pt-8">
-      <Link href="/inicio" aria-label="Tostão — Início" className="mb-6 hidden self-start px-2 text-tinta md:block">
+    <nav className="fixed inset-x-0 bottom-0 z-10 grid grid-cols-5 border-t border-linha bg-cartao px-2 pt-2 pb-[max(16px,env(safe-area-inset-bottom))] md:sticky md:top-0 md:inset-auto md:flex md:h-dvh md:w-62 md:shrink-0 md:flex-col md:gap-1.5 md:border-t-0 md:border-r md:bg-cartao md:px-[18px] md:pt-7 md:pb-6">
+      <Link href="/inicio" aria-label="Tostão — Início" className="mb-6 ml-3.5 hidden self-start text-tinta md:block">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -200 626 210" className="h-8 w-auto" role="img" aria-label="Tostão">
           <path d="M53.60 2.60Q35 2.60 26.20-7.30Q17.40-17.20 17.40-39L17.40-80.40L2.40-80.40L3-105.40L13.80-105.40Q20.20-105.60 23.50-107.40Q26.80-109.20 27.60-114.20L30.20-129L48.40-129L48.40-105.60L73.80-105.60L73.80-79.40L48.40-79.40L48.40-40.40Q48.40-33.60 51.70-30.40Q55-27.20 61.80-27.20Q65.60-27.20 69-28Q72.40-28.80 74.60-30.20L74.60-0.40Q68.20 1.60 62.90 2.10Q57.60 2.60 53.60 2.60" fill="currentColor" />
           <path d="M136 2.80Q120 2.80 107.70-3.40Q95.40-9.60 88.40-22Q81.40-34.40 81.40-53Q81.40-71.60 88.40-83.90Q95.40-96.20 107.80-102.30Q120.20-108.40 136.20-108.40Q152.20-108.40 164.60-102.20Q177-96 184-83.70Q191-71.40 191-52.80Q191-33.80 183.80-21.40Q176.60-9 164.10-3.10Q151.60 2.80 136 2.80M137-20.60Q144.20-20.60 149-23.90Q153.80-27.20 156.20-34Q158.60-40.80 158.60-50.80Q158.60-61.40 156-68.70Q153.40-76 148.30-79.90Q143.20-83.80 135.20-83.80Q128.40-83.80 123.50-80.50Q118.60-77.20 116.20-70.40Q113.80-63.60 113.80-53.40Q113.80-37 119.90-28.80Q126-20.60 137-20.60" fill="currentColor" />
@@ -29,12 +29,13 @@ export function Nav() {
         const active = path.startsWith(it.href) || (it.href === '/aprender' && (path.startsWith('/tribunal') || path.startsWith('/batalha') || path.startsWith('/amigos')));
         return (
           <Link key={it.href} href={it.href} aria-current={active ? 'page' : undefined}
-            className={`flex flex-col items-center gap-1 py-1.5 text-xs md:flex-row md:gap-3 md:rounded-2xl md:px-3 md:py-2.5 md:text-[15px] ${active ? 'font-bold text-tinta md:bg-papel-2' : 'font-semibold text-tinta-suave'}`}>
+            className={`flex flex-col items-center gap-1 py-1.5 text-xs md:h-[46px] md:flex-row md:gap-3 md:rounded-xl md:px-3.5 md:py-0 md:text-[15px] md:hover:bg-papel-2 ${active ? 'font-bold text-tinta md:bg-tinta md:text-papel md:hover:bg-tinta' : 'font-semibold text-tinta-suave'}`}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill={active ? '#FFC233' : 'none'} stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{it.icon}</svg>
             {it.label}
           </Link>
         );
       })}
+      {footer}
     </nav>
   );
 }
