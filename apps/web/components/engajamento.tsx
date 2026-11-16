@@ -6,7 +6,18 @@ import { dismissAlert } from '@/lib/inicio-actions';
 import { getDictionary, type Locale } from '@/lib/i18n';
 
 const chevronIcon = (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-tinta-suave">
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    className="shrink-0 text-tinta-suave"
+  >
     <path d="M9 18l6-6-6-6" />
   </svg>
 );
@@ -17,7 +28,10 @@ const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1
 export function CompletedMissionsCard({ streak, locale = 'pt-BR' }: { streak: number; locale?: Locale }) {
   const t = getDictionary(locale);
   return (
-    <Link href="/aprender" className="flex min-h-14 items-center gap-2.5 rounded-[18px] bg-menta-clara px-3.5 py-2.5 text-tinta no-underline">
+    <Link
+      href="/aprender"
+      className="flex min-h-14 items-center gap-2.5 rounded-[18px] bg-menta-clara px-3.5 py-2.5 text-tinta no-underline"
+    >
       <Icon src="jogo/dia-cumprido" size={28} alt="" />
       <span className="flex min-w-0 grow flex-col">
         <span className="text-[15px] font-bold">{t.engagement.allDoneTitle}</span>
@@ -49,7 +63,11 @@ export function DailyMissions({
 
   return (
     <section className="relative flex flex-col gap-2.5 rounded-[18px] border border-linha bg-cartao p-3.5">
-      <Link href="/aprender" aria-label={t.engagement.todayMissionsLabel(completedCount, data.missions.length)} className="absolute inset-0 rounded-[18px]" />
+      <Link
+        href="/aprender"
+        aria-label={t.engagement.todayMissionsLabel(completedCount, data.missions.length)}
+        className="absolute inset-0 rounded-[18px]"
+      />
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">
           {t.engagement.todayMissionsLabel(completedCount, data.missions.length)}
@@ -66,7 +84,10 @@ export function DailyMissions({
               {mission.done ? (
                 <Icon src="jogo/dia-cumprido" size={24} alt="done" />
               ) : (
-                <span aria-label="todo" className="h-6 w-6 shrink-0 rounded-full border-2 border-dashed border-tinta-suave" />
+                <span
+                  aria-label="todo"
+                  className="h-6 w-6 shrink-0 rounded-full border-2 border-dashed border-tinta-suave"
+                />
               )}
               <span className={`grow text-[15px] ${mission.done ? 'text-tinta-suave line-through' : 'font-semibold'}`}>
                 {mission.title}
@@ -79,8 +100,13 @@ export function DailyMissions({
       {!compact && (
         <div className="flex items-center justify-between gap-1 border-t border-linha pt-2.5" role="img">
           {data.week.map((dayItem, idx) => (
-            <span key={dayItem.day} className="flex flex-col items-center gap-1 text-[11px] font-semibold text-tinta-suave">
-              <span className={`flex h-7 w-7 items-center justify-center rounded-full ${dayItem.done > 0 ? 'bg-laranja' : 'bg-papel-2'}`}>
+            <span
+              key={dayItem.day}
+              className="flex flex-col items-center gap-1 text-[11px] font-semibold text-tinta-suave"
+            >
+              <span
+                className={`flex h-7 w-7 items-center justify-center rounded-full ${dayItem.done > 0 ? 'bg-laranja' : 'bg-papel-2'}`}
+              >
                 {dayItem.done > 0 && <Icon src="ui/ofensiva" size={16} />}
               </span>
               {t.weekdaysShort[idx]}
@@ -126,12 +152,20 @@ export function UpcomingReminders({ reminders, locale = 'pt-BR' }: { reminders: 
       </div>
       <div className="flex flex-col rounded-2xl border border-linha bg-cartao px-3.5">
         {reminders.slice(0, 4).map((reminder) => (
-          <div key={reminder.key} className="flex min-h-[54px] items-center gap-1 border-b border-linha last:border-b-0">
-            <Link href={resolveReminderHref(reminder)} className="flex min-h-[54px] min-w-0 grow items-center gap-3 text-tinta no-underline">
+          <div
+            key={reminder.key}
+            className="flex min-h-[54px] items-center gap-1 border-b border-linha last:border-b-0"
+          >
+            <Link
+              href={resolveReminderHref(reminder)}
+              className="flex min-h-[54px] min-w-0 grow items-center gap-3 text-tinta no-underline"
+            >
               <Icon src={REMINDER_ICON[reminder.kind]} size={28} />
               <div className="flex min-w-0 grow flex-col">
                 <span className="truncate text-[15px] font-semibold">{reminder.title}</span>
-                <span className={`text-xs ${reminder.daysLeft <= 1 ? 'font-semibold text-laranja-texto' : 'text-tinta-suave'}`}>
+                <span
+                  className={`text-xs ${reminder.daysLeft <= 1 ? 'font-semibold text-laranja-texto' : 'text-tinta-suave'}`}
+                >
                   {t.engagement.duePrefix(formatRelativeDays(reminder.daysLeft))}
                 </span>
               </div>
@@ -146,7 +180,16 @@ export function UpcomingReminders({ reminders, locale = 'pt-BR' }: { reminders: 
                 title={t.engagement.alreadyPaidLabel(reminder.title)}
                 className="flex h-9 w-9 items-center justify-center rounded-full text-tinta-suave hover:bg-tinta/10"
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" aria-hidden="true">
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.25"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                >
                   <path d="M6 6l12 12M18 6L6 18" />
                 </svg>
               </button>
@@ -166,12 +209,20 @@ export function WeeklySummaryCard({ w, locale = 'pt-BR' }: { w: WeeklyResponse; 
   const isLowerOrEqual = diffInCents <= 0;
 
   return (
-    <Link href="/carteira?filtro=saidas#lista" id="semana" className="flex scroll-mt-4 flex-col gap-2 rounded-2xl bg-azul p-3.5 pr-10 text-tinta no-underline">
-      <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">{t.engagement.yourWeekLabel}</span>
+    <Link
+      href="/carteira?filtro=saidas#lista"
+      id="semana"
+      className="flex scroll-mt-4 flex-col gap-2 rounded-2xl bg-azul p-3.5 pr-10 text-tinta no-underline"
+    >
+      <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">
+        {t.engagement.yourWeekLabel}
+      </span>
       <div className="flex items-baseline justify-between gap-2">
         <span className="font-display text-[28px] leading-8 font-extrabold tabular-nums">{money(w.spentInCents)}</span>
         {w.prevSpentInCents > 0 && (
-          <span className={`rounded-full px-2.5 py-1 text-[13px] font-bold ${isLowerOrEqual ? 'bg-menta text-tinta-fixa' : 'bg-rosa'}`}>
+          <span
+            className={`rounded-full px-2.5 py-1 text-[13px] font-bold ${isLowerOrEqual ? 'bg-menta text-tinta-fixa' : 'bg-rosa'}`}
+          >
             {isLowerOrEqual ? '↓' : '↑'} {money(Math.abs(diffInCents))}
           </span>
         )}
@@ -199,7 +250,10 @@ export function MonthLeftoverCard({ forecast, locale = 'pt-BR' }: { forecast: Fo
   const upcomingBillsCents = current.fixedLeftInCents + current.subscriptionsLeftInCents;
 
   return (
-    <Link href="/previsao" className={`flex items-center gap-3 rounded-2xl p-3.5 text-tinta no-underline ${isPositive ? 'bg-menta-clara' : 'bg-rosa'}`}>
+    <Link
+      href="/previsao"
+      className={`flex items-center gap-3 rounded-2xl p-3.5 text-tinta no-underline ${isPositive ? 'bg-menta-clara' : 'bg-rosa'}`}
+    >
       <div className="flex grow flex-col gap-1">
         <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">
           {t.engagement.untilEndOfMonth(monthName(current.month, locale))}
@@ -237,4 +291,3 @@ export function MonthLeftoverCard({ forecast, locale = 'pt-BR' }: { forecast: Fo
     </Link>
   );
 }
-

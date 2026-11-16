@@ -22,12 +22,18 @@ export function tostaoAutoRoutes(app: FastifyInstance, uc: UseCases) {
 
   app.post('/tostao/insights/:id/apply', { onRequest: verifyJwt }, async (request) => {
     const { id } = z.object({ id: z.string().min(1) }).parse(request.params);
-    return (await uc.applyTostaoInsight.execute({ userId: request.user.sub, insightId: id })) satisfies ApplyTostaoInsightResponse;
+    return (await uc.applyTostaoInsight.execute({
+      userId: request.user.sub,
+      insightId: id,
+    })) satisfies ApplyTostaoInsightResponse;
   });
 
   app.post('/tostao/insights/:id/dismiss', { onRequest: verifyJwt }, async (request) => {
     const { id } = z.object({ id: z.string().min(1) }).parse(request.params);
-    return (await uc.dismissTostaoInsight.execute({ userId: request.user.sub, insightId: id })) satisfies TostaoInsightDTO;
+    return (await uc.dismissTostaoInsight.execute({
+      userId: request.user.sub,
+      insightId: id,
+    })) satisfies TostaoInsightDTO;
   });
 
   app.put('/tostao/auto/config', { onRequest: verifyJwt }, async (request) => {

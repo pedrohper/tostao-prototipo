@@ -6,7 +6,17 @@ import { useRouter } from 'next/navigation';
  * Folha que fecha arrastando pra baixo pela alça (no mobile) e vira dialog centralizado no desktop (md+).
  * Passou de 30% da altura, ou foi um puxão rápido: fecha. Senão volta pro lugar.
  */
-export function SwipeSheet({ back, top, closeLabel = 'Fechar', children }: { back: string; top: number; closeLabel?: string; children: React.ReactNode }) {
+export function SwipeSheet({
+  back,
+  top,
+  closeLabel = 'Fechar',
+  children,
+}: {
+  back: string;
+  top: number;
+  closeLabel?: string;
+  children: React.ReactNode;
+}) {
   const router = useRouter();
   const panel = useRef<HTMLDivElement>(null);
   const start = useRef<{ y: number; t: number } | null>(null);
@@ -56,7 +66,10 @@ export function SwipeSheet({ back, top, closeLabel = 'Fechar', children }: { bac
     const vel = dist / Math.max(1, performance.now() - start.current.t);
     start.current = null;
     if (dist > measureHeight() * 0.3 || (vel > 0.8 && dist > 30)) fechar();
-    else { setSolto(true); setDy(0); }
+    else {
+      setSolto(true);
+      setDy(0);
+    }
   };
 
   const anim = solto && !reduz ? 'transform 200ms cubic-bezier(.2,.8,.2,1), opacity 200ms' : 'none';
@@ -70,7 +83,13 @@ export function SwipeSheet({ back, top, closeLabel = 'Fechar', children }: { bac
         className="absolute inset-0 bg-tinta/45 md:bg-tinta/40 md:backdrop-blur-[2px] dark:bg-black/70"
         style={{ opacity: fade, transition: anim }}
       />
-      <button type="button" aria-label={closeLabel} onClick={fechar} className="relative block shrink-0 md:hidden" style={{ height: top }} />
+      <button
+        type="button"
+        aria-label={closeLabel}
+        onClick={fechar}
+        className="relative block shrink-0 md:hidden"
+        style={{ height: top }}
+      />
       <div
         ref={panel}
         role="dialog"
@@ -99,7 +118,16 @@ export function SwipeSheet({ back, top, closeLabel = 'Fechar', children }: { bac
             aria-label={closeLabel}
             className="flex h-9 w-9 items-center justify-center rounded-full text-tinta-suave transition-colors hover:bg-papel-2 hover:text-tinta"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
               <path d="M6 6l12 12M18 6L6 18" />
             </svg>
           </button>

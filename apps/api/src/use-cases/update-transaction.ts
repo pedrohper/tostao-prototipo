@@ -6,11 +6,16 @@ import { AppError, ResourceNotFoundError } from '../domain/errors.js';
 export class UpdateTransactionUseCase {
   constructor(private readonly repos: Pick<Repositories, 'transactions'>) {}
 
-  async execute({ userId, transactionId, ...patch }: UpdateTransactionBody & { userId: string; transactionId: string }) {
+  async execute({
+    userId,
+    transactionId,
+    ...patch
+  }: UpdateTransactionBody & { userId: string; transactionId: string }) {
     const t = await this.repos.transactions.findById(transactionId);
     if (!t || t.userId !== userId) throw new ResourceNotFoundError('Lançamento');
 
-    const editsManualField = patch.description !== undefined || patch.amountInCents !== undefined || patch.occurredAt !== undefined;
+    const editsManualField =
+      patch.description !== undefined || patch.amountInCents !== undefined || patch.occurredAt !== undefined;
     if (editsManualField && t.externalId) {
       throw new AppError('Só dá pra editar descrição, valor e data de lançamentos anotados à mão.', 400);
     }

@@ -14,7 +14,9 @@ describe('InstitutionLogosUseCase', () => {
   });
 
   it('se o provedor falhar, devolve vazio sem quebrar', async () => {
-    const uc = new InstitutionLogosUseCase({ listInstitutionLogos: vi.fn().mockRejectedValue(new Error('fora do ar')) });
+    const uc = new InstitutionLogosUseCase({
+      listInstitutionLogos: vi.fn().mockRejectedValue(new Error('fora do ar')),
+    });
     expect(await uc.execute()).toEqual({ logos: [] });
   });
 });

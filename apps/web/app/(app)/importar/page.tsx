@@ -6,14 +6,21 @@ import { Mascot } from '@/components/mascote';
 import { BackLink, PageFrame } from '@/components/ui';
 import { ImportForm } from './import-form';
 
-export default async function ImportarPage({ searchParams }: { searchParams: Promise<{ conta?: string; voltar?: string }> }) {
+export default async function ImportarPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ conta?: string; voltar?: string }>;
+}) {
   const [{ conta, voltar }, me, { locale, t }] = await Promise.all([
     searchParams,
     api<ProfileResponse>('/me').catch(() => null),
     getI18n(),
   ]);
   const p = t.pages.importar;
-  const contas = (me?.connections ?? []).filter((c) => c.itemId.startsWith('import:')).map((c) => c.institution ?? '').filter(Boolean);
+  const contas = (me?.connections ?? [])
+    .filter((c) => c.itemId.startsWith('import:'))
+    .map((c) => c.institution ?? '')
+    .filter(Boolean);
   const backHref = resolveBackHref(voltar, '/mais');
 
   return (
@@ -31,7 +38,12 @@ export default async function ImportarPage({ searchParams }: { searchParams: Pro
         <h2 className="text-[14px] font-bold">{p.whereToDownload}</h2>
         {p.banks.map((b) => (
           <details key={b.name} className="border-b border-linha last-of-type:border-0">
-            <summary className="flex min-h-10 cursor-pointer list-none items-center justify-between font-semibold">{b.name}<span aria-hidden className="text-tinta-suave">+</span></summary>
+            <summary className="flex min-h-10 cursor-pointer list-none items-center justify-between font-semibold">
+              {b.name}
+              <span aria-hidden className="text-tinta-suave">
+                +
+              </span>
+            </summary>
             <p className="pb-1 text-tinta-suave">{b.steps}</p>
           </details>
         ))}

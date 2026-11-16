@@ -6,10 +6,13 @@ import { GetBudgetsUseCase } from './budgets.js';
 import { CreateManualTransactionUseCase } from './create-manual-transaction.js';
 
 const normalize = (s: string) =>
-  s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
 
-const brl = (cents: number) =>
-  (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const brl = (cents: number) => (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 /** Definições das ferramentas financeiras expostas pra DeepSeek no formato OpenAI function calling. */
 export const TOSTAO_TOOLS: ToolDefinition[] = [
@@ -17,11 +20,15 @@ export const TOSTAO_TOOLS: ToolDefinition[] = [
     type: 'function',
     function: {
       name: 'consultar_gastos_categoria',
-      description: 'Consulta quanto a pessoa gastou em uma categoria específica em um mês (padrão: mês atual) e lista os principais lançamentos.',
+      description:
+        'Consulta quanto a pessoa gastou em uma categoria específica em um mês (padrão: mês atual) e lista os principais lançamentos.',
       parameters: {
         type: 'object',
         properties: {
-          categoria: { type: 'string', description: 'Nome da categoria (ex: Delivery, Alimentação, Transporte, Lazer).' },
+          categoria: {
+            type: 'string',
+            description: 'Nome da categoria (ex: Delivery, Alimentação, Transporte, Lazer).',
+          },
           mes: { type: 'string', description: 'Mês no formato YYYY-MM. Se omitido, usa o mês atual.' },
         },
         required: ['categoria'],
@@ -32,7 +39,8 @@ export const TOSTAO_TOOLS: ToolDefinition[] = [
     type: 'function',
     function: {
       name: 'verificar_limite_categoria',
-      description: 'Verifica o limite (teto) mensal definido para uma categoria, quanto já foi gasto e quanto ainda resta disponível.',
+      description:
+        'Verifica o limite (teto) mensal definido para uma categoria, quanto já foi gasto e quanto ainda resta disponível.',
       parameters: {
         type: 'object',
         properties: {
@@ -47,14 +55,25 @@ export const TOSTAO_TOOLS: ToolDefinition[] = [
     type: 'function',
     function: {
       name: 'registrar_transacao',
-      description: 'Registra um gasto (saída) ou ganho (entrada) manual no banco de dados quando a pessoa pedir para anotar ou lançar uma transação financeira.',
+      description:
+        'Registra um gasto (saída) ou ganho (entrada) manual no banco de dados quando a pessoa pedir para anotar ou lançar uma transação financeira.',
       parameters: {
         type: 'object',
         properties: {
-          descricao: { type: 'string', description: 'Descrição curta do gasto ou entrada (ex: Pizza, Uber, Freelance).' },
+          descricao: {
+            type: 'string',
+            description: 'Descrição curta do gasto ou entrada (ex: Pizza, Uber, Freelance).',
+          },
           valor_reais: { type: 'number', description: 'Valor positivo em reais (ex: 45.90).' },
-          tipo: { type: 'string', enum: ['saida', 'entrada'], description: 'Use "saida" para gasto ou "entrada" para dinheiro que entrou.' },
-          categoria: { type: 'string', description: 'Nome opcional da categoria. Se omitido, tenta categorizar pelas regras.' },
+          tipo: {
+            type: 'string',
+            enum: ['saida', 'entrada'],
+            description: 'Use "saida" para gasto ou "entrada" para dinheiro que entrou.',
+          },
+          categoria: {
+            type: 'string',
+            description: 'Nome opcional da categoria. Se omitido, tenta categorizar pelas regras.',
+          },
           data: { type: 'string', description: 'Data opcional no formato YYYY-MM-DD. Padrão: hoje.' },
         },
         required: ['descricao', 'valor_reais', 'tipo'],

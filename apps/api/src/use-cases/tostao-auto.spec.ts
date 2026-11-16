@@ -185,9 +185,22 @@ describe('funções automáticas do Tostão & Caramelo', () => {
   });
 
   it('rotas HTTP /tostao/auto respondem e protegem por usuário', async () => {
-    const app = await buildApp({ repos, bank: new FakeBankGateway(), jwtSecret: 'segredo-de-teste-123', webOrigin: '*' });
-    const r1 = await app.inject({ method: 'POST', url: '/users', payload: { name: 'Ana', email: 'a@x.com', password: '12345678' } });
-    const r2 = await app.inject({ method: 'POST', url: '/users', payload: { name: 'Bia', email: 'b@x.com', password: '12345678' } });
+    const app = await buildApp({
+      repos,
+      bank: new FakeBankGateway(),
+      jwtSecret: 'segredo-de-teste-123',
+      webOrigin: '*',
+    });
+    const r1 = await app.inject({
+      method: 'POST',
+      url: '/users',
+      payload: { name: 'Ana', email: 'a@x.com', password: '12345678' },
+    });
+    const r2 = await app.inject({
+      method: 'POST',
+      url: '/users',
+      payload: { name: 'Bia', email: 'b@x.com', password: '12345678' },
+    });
     const auth1 = { authorization: `Bearer ${r1.json().token}` };
     const auth2 = { authorization: `Bearer ${r2.json().token}` };
 
@@ -214,8 +227,12 @@ describe('funções automáticas do Tostão & Caramelo', () => {
 
     const targetId = insights[0]!.id;
     // Outro usuário não consegue dispensar ou aplicar
-    expect((await app.inject({ method: 'POST', url: `/tostao/insights/${targetId}/dismiss`, headers: auth2 })).statusCode).toBe(404);
-    expect((await app.inject({ method: 'POST', url: `/tostao/insights/${targetId}/dismiss`, headers: auth1 })).statusCode).toBe(200);
+    expect(
+      (await app.inject({ method: 'POST', url: `/tostao/insights/${targetId}/dismiss`, headers: auth2 })).statusCode,
+    ).toBe(404);
+    expect(
+      (await app.inject({ method: 'POST', url: `/tostao/insights/${targetId}/dismiss`, headers: auth1 })).statusCode,
+    ).toBe(200);
 
     const listAfter = await app.inject({ method: 'GET', url: '/tostao/auto', headers: auth1 });
     expect(listAfter.json().insights).toHaveLength(0);

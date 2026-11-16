@@ -1,115 +1,265 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* Tokens do design system do Tostão. Viram classes: bg-papel, text-tinta, bg-laranja... */
 @theme {
-  --color-papel: #FDFBF6;
-  --color-papel-2: #F6EFE4;
-  --color-cartao: #FFFDF9;
-  --color-tinta: #1E1B18;
-  --color-tinta-suave: #6B635A;
-  --color-linha: #E4DCCF;
-  --color-laranja: #FF5A36;
-  --color-laranja-texto: #C2410C;
-  --color-amarelo: #FFC233;
-  --color-menta: #3DD6A0;
-  --color-verde-texto: #0E7A55;
-  --color-vermelho-texto: #B42318;
-  --color-rosa: #FFE1E7;
-  --color-menta-clara: #DDF6E8;
-  --color-azul: #DCEBFF;
-  --color-amarelo-claro: #FFF1C7;
-  --color-tinta-fixa: #1E1B18;
-  --color-papel-fixo: #FDFBF6;
-  --color-rosa-forte: #FFB4C2;
-  --color-alerta: #E5484D;
-  --color-laranja-claro: #FFE7DC;
-  --color-roxo-suave: #E9DDFF;
-  --color-bronze: #F5CDB8;
-  --color-bronze-suave: #FFF4EE;
-  --color-bronze-borda: #F5CDB8;
+  --color-papel: #fdfbf6;
+  --color-papel-2: #f6efe4;
+  --color-cartao: #fffdf9;
+  --color-tinta: #1e1b18;
+  --color-tinta-suave: #6b635a;
+  --color-linha: #e4dccf;
+  --color-laranja: #ff5a36;
+  --color-laranja-texto: #c2410c;
+  --color-amarelo: #ffc233;
+  --color-menta: #3dd6a0;
+  --color-verde-texto: #0e7a55;
+  --color-vermelho-texto: #b42318;
+  --color-rosa: #ffe1e7;
+  --color-menta-clara: #ddf6e8;
+  --color-azul: #dcebff;
+  --color-amarelo-claro: #fff1c7;
+  --color-tinta-fixa: #1e1b18;
+  --color-papel-fixo: #fdfbf6;
+  --color-rosa-forte: #ffb4c2;
+  --color-alerta: #e5484d;
+  --color-laranja-claro: #ffe7dc;
+  --color-roxo-suave: #e9ddff;
+  --color-bronze: #f5cdb8;
+  --color-bronze-suave: #fff4ee;
+  --color-bronze-borda: #f5cdb8;
 
-  --font-display: "Bricolage Grotesque", Inter, system-ui, sans-serif;
+  --font-display: 'Bricolage Grotesque', Inter, system-ui, sans-serif;
   --font-sans: Inter, system-ui, sans-serif;
 }
 
 /* Modo escuro: mesmos nomes, outras cores. Os componentes não mudam. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-papel: #1A1714;
-    --color-papel-2: #24201C;
-    --color-cartao: #2B2622;
-    --color-tinta: #F6EFE4;
-    --color-tinta-suave: #B8AEA2;
-    --color-linha: #3A342E;
-    --color-laranja-texto: #FF8A6E;
-    --color-verde-texto: #5FE3B4;
-    --color-vermelho-texto: #FF8A80;
-    --color-rosa: #43272E;
-    --color-menta-clara: #1F3A30;
-    --color-azul: #1F2D40;
-    --color-amarelo-claro: #3D3320;
-    --color-laranja-claro: #33241D;
-    --color-roxo-suave: #2E2440;
-    --color-bronze-suave: #33241D;
-    --color-bronze-borda: #5A3526;
+    --color-papel: #1a1714;
+    --color-papel-2: #24201c;
+    --color-cartao: #2b2622;
+    --color-tinta: #f6efe4;
+    --color-tinta-suave: #b8aea2;
+    --color-linha: #3a342e;
+    --color-laranja-texto: #ff8a6e;
+    --color-verde-texto: #5fe3b4;
+    --color-vermelho-texto: #ff8a80;
+    --color-rosa: #43272e;
+    --color-menta-clara: #1f3a30;
+    --color-azul: #1f2d40;
+    --color-amarelo-claro: #3d3320;
+    --color-laranja-claro: #33241d;
+    --color-roxo-suave: #2e2440;
+    --color-bronze-suave: #33241d;
+    --color-bronze-borda: #5a3526;
   }
 }
 
 @layer base {
-body {
-  background: var(--color-papel);
-  color: var(--color-tinta);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-}
+  body {
+    background: var(--color-papel);
+    color: var(--color-tinta);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
 
-a { color: inherit; }
-:focus-visible { outline: 2px solid var(--color-laranja); outline-offset: 2px; }
+  a {
+    color: inherit;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-laranja);
+    outline-offset: 2px;
+  }
 }
 
 /* Rabo do Caramelo desenhando enquanto o Tostão pensa */
-.rabo-pensando path { stroke-dasharray: 260; stroke-dashoffset: 260; animation: rabo-desenha 1.6s cubic-bezier(.6, 0, .4, 1) infinite; }
-@keyframes rabo-desenha { 0% { stroke-dashoffset: 260; } 45%, 60% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -260; } }
-@media (prefers-reduced-motion: reduce) { .rabo-pensando path { animation: none; stroke-dashoffset: 0; } }
+.rabo-pensando path {
+  stroke-dasharray: 260;
+  stroke-dashoffset: 260;
+  animation: rabo-desenha 1.6s cubic-bezier(0.6, 0, 0.4, 1) infinite;
+}
+@keyframes rabo-desenha {
+  0% {
+    stroke-dashoffset: 260;
+  }
+  45%,
+  60% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -260;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rabo-pensando path {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
 
 /* ── Movimento ───────────────────────────────────────────────────────────
    Leve e rápido: a tela entra em cascata, barras enchem, botões afundam no toque,
    o Tostão respira. Tudo some com "reduzir movimento" do sistema. */
-@keyframes sobe { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-@keyframes enche-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-@keyframes enche-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
-@keyframes respira { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-3px) rotate(-1.5deg); } }
-@keyframes pula { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); } }
-@keyframes confete { 0% { transform: translate3d(0, -10px, 0) rotate(0); opacity: 1; } 100% { transform: translate3d(var(--dx), 420px, 0) rotate(var(--rot)); opacity: 0; } }
+@keyframes sobe {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes enche-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes enche-y {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes respira {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  50% {
+    transform: translateY(-3px) rotate(-1.5deg);
+  }
+}
+@keyframes pula {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes confete {
+  0% {
+    transform: translate3d(0, -10px, 0) rotate(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--dx), 420px, 0) rotate(var(--rot));
+    opacity: 0;
+  }
+}
 
 /* Cada tela entra em cascata: os blocos de cima primeiro (template.tsx remonta a cada navegação). */
-.tela > * > * { animation: sobe .38s cubic-bezier(.2, .8, .2, 1) both; }
-.tela > * > :nth-child(2) { animation-delay: .04s; }
-.tela > * > :nth-child(3) { animation-delay: .08s; }
-.tela > * > :nth-child(4) { animation-delay: .12s; }
-.tela > * > :nth-child(5) { animation-delay: .16s; }
-.tela > * > :nth-child(6) { animation-delay: .2s; }
-.tela > * > :nth-child(n+7) { animation-delay: .24s; }
+.tela > * > * {
+  animation: sobe 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.tela > * > :nth-child(2) {
+  animation-delay: 0.04s;
+}
+.tela > * > :nth-child(3) {
+  animation-delay: 0.08s;
+}
+.tela > * > :nth-child(4) {
+  animation-delay: 0.12s;
+}
+.tela > * > :nth-child(5) {
+  animation-delay: 0.16s;
+}
+.tela > * > :nth-child(6) {
+  animation-delay: 0.2s;
+}
+.tela > * > :nth-child(n + 7) {
+  animation-delay: 0.24s;
+}
 /* O botão flutuante "Anotar gasto" é sticky: transform nele quebraria o sticky no Safari antigo. */
-.tela > * > .sticky { animation-name: none; }
+.tela > * > .sticky {
+  animation-name: none;
+}
 
-.bar-fill { transform-origin: left; animation: enche-x .7s cubic-bezier(.2, .8, .2, 1) .15s both; }
-.bar-up { transform-origin: bottom; animation: enche-y .6s cubic-bezier(.2, .8, .2, 1) .2s both; }
-.bar-down { transform-origin: top; animation: enche-y .6s cubic-bezier(.2, .8, .2, 1) .2s both; }
+.bar-fill {
+  transform-origin: left;
+  animation: enche-x 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s both;
+}
+.bar-up {
+  transform-origin: bottom;
+  animation: enche-y 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s both;
+}
+.bar-down {
+  transform-origin: top;
+  animation: enche-y 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s both;
+}
 
 /* Toque: botão e card afundam um pouco */
-button:not(:disabled), a.rounded-full, a.rounded-2xl, a.rounded-xl, a.rounded-\[20px\] { transition: transform .12s ease, background-color .15s ease, opacity .15s ease; }
-button:not(:disabled):active, a.rounded-full:active, a.rounded-2xl:active, a.rounded-xl:active, a.rounded-\[20px\]:active { transform: scale(.97); }
+button:not(:disabled),
+a.rounded-full,
+a.rounded-2xl,
+a.rounded-xl,
+a.rounded-\[20px\] {
+  transition:
+    transform 0.12s ease,
+    background-color 0.15s ease,
+    opacity 0.15s ease;
+}
+button:not(:disabled):active,
+a.rounded-full:active,
+a.rounded-2xl:active,
+a.rounded-xl:active,
+a.rounded-\[20px\]:active {
+  transform: scale(0.97);
+}
 
 /* Tostão e Caramelo respiram devagar; o que comemora entra pulando */
-.mascote { animation: respira 3.6s ease-in-out infinite; transform-origin: 50% 90%; }
-.mascote-pula { animation: pula .5s cubic-bezier(.2, .8, .2, 1.2) both, respira 3.6s ease-in-out .5s infinite; }
+.mascote {
+  animation: respira 3.6s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+.mascote-pula {
+  animation:
+    pula 0.5s cubic-bezier(0.2, 0.8, 0.2, 1.2) both,
+    respira 3.6s ease-in-out 0.5s infinite;
+}
 
-.confete { pointer-events: none; position: fixed; inset: 0 0 auto 0; height: 0; z-index: 50; overflow: visible; }
-.confete i { position: absolute; top: 0; width: 8px; height: 12px; border-radius: 2px; animation: confete 1.6s cubic-bezier(.2, .6, .4, 1) both; }
+.confete {
+  pointer-events: none;
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 0;
+  z-index: 50;
+  overflow: visible;
+}
+.confete i {
+  position: absolute;
+  top: 0;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  animation: confete 1.6s cubic-bezier(0.2, 0.6, 0.4, 1) both;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .tela > * > *, .bar-fill, .bar-up, .bar-down, .mascote, .mascote-pula { animation: none !important; }
-  .confete { display: none; }
-  button:active, a:active { transform: none !important; }
+  .tela > * > *,
+  .bar-fill,
+  .bar-up,
+  .bar-down,
+  .mascote,
+  .mascote-pula {
+    animation: none !important;
+  }
+  .confete {
+    display: none;
+  }
+  button:active,
+  a:active {
+    transform: none !important;
+  }
 }

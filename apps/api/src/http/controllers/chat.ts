@@ -3,8 +3,12 @@ import { chatBody, type ChatHistoryResponse, type ChatMessageDTO, type ChatReply
 import type { UseCases } from '../../use-cases/factories.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
 
-const dto = (m: { id: string; role: 'user' | 'assistant'; content: string; createdAt: Date }): ChatMessageDTO =>
-  ({ id: m.id, role: m.role, content: m.content, createdAt: m.createdAt.toISOString() });
+const dto = (m: { id: string; role: 'user' | 'assistant'; content: string; createdAt: Date }): ChatMessageDTO => ({
+  id: m.id,
+  role: m.role,
+  content: m.content,
+  createdAt: m.createdAt.toISOString(),
+});
 
 // Conversa com o Tostão
 export function chatRoutes(app: FastifyInstance, uc: UseCases) {
@@ -16,6 +20,10 @@ export function chatRoutes(app: FastifyInstance, uc: UseCases) {
   app.post('/chat', { onRequest: verifyJwt }, async (request) => {
     const { message } = chatBody.parse(request.body);
     const r = await uc.askTostao.execute({ userId: request.user.sub, message });
-    return { question: dto(r.question), reply: dto(r.reply), remainingToday: r.remainingToday } satisfies ChatReplyResponse;
+    return {
+      question: dto(r.question),
+      reply: dto(r.reply),
+      remainingToday: r.remainingToday,
+    } satisfies ChatReplyResponse;
   });
 }

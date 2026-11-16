@@ -4,8 +4,16 @@ import type { Transaction } from '../domain/entities.js';
 
 let seq = 0;
 const tx = (accountId: string | null, amountInCents: number, day: number, description = 'PIX'): Transaction => ({
-  id: `t${++seq}`, userId: 'u1', accountId, externalId: null, description, amountInCents,
-  occurredAt: new Date(Date.UTC(2026, 10, day, 12)), categoryId: null, isInternalTransfer: false, createdAt: new Date(),
+  id: `t${++seq}`,
+  userId: 'u1',
+  accountId,
+  externalId: null,
+  description,
+  amountInCents,
+  occurredAt: new Date(Date.UTC(2026, 10, day, 12)),
+  categoryId: null,
+  isInternalTransfer: false,
+  createdAt: new Date(),
 });
 
 describe('detectInternalTransfers', () => {

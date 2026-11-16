@@ -43,9 +43,15 @@ describe('chat com o Tostão', () => {
     await ask.execute({ userId, message: 'oi' });
     await expect(ask.execute({ userId, message: 'oi de novo' })).rejects.toThrow('Por hoje deu');
 
-    const broken = Object.assign(new FakeAiGateway(), { reply: async () => { throw new AiUnavailableError('x'); } });
+    const broken = Object.assign(new FakeAiGateway(), {
+      reply: async () => {
+        throw new AiUnavailableError('x');
+      },
+    });
     const before = repos.chat.items.length;
-    await expect(new AskTostaoUseCase(repos, broken, 40, () => NOW).execute({ userId, message: 'oi' })).rejects.toThrow('travou');
+    await expect(new AskTostaoUseCase(repos, broken, 40, () => NOW).execute({ userId, message: 'oi' })).rejects.toThrow(
+      'travou',
+    );
     expect(repos.chat.items.length).toBe(before);
   });
 
@@ -69,14 +75,25 @@ describe('chat com o Tostão', () => {
       {
         content: null,
         toolCalls: [
-          { id: 'call_1', type: 'function', function: { name: 'consultar_gastos_categoria', arguments: '{"categoria":"Jogos"}' } },
-          { id: 'call_2', type: 'function', function: { name: 'verificar_limite_categoria', arguments: '{"categoria":"Jogos"}' } },
+          {
+            id: 'call_1',
+            type: 'function',
+            function: { name: 'consultar_gastos_categoria', arguments: '{"categoria":"Jogos"}' },
+          },
+          {
+            id: 'call_2',
+            type: 'function',
+            function: { name: 'verificar_limite_categoria', arguments: '{"categoria":"Jogos"}' },
+          },
         ],
       },
       { content: 'Você gastou R$ 85,00 em Jogos e ainda tem R$ 215,00 de limite.', toolCalls: [] },
     );
 
-    const r = await new AskTostaoUseCase(repos, ai, 40, () => NOW).execute({ userId, message: 'Posso comprar um jogo hoje?' });
+    const r = await new AskTostaoUseCase(repos, ai, 40, () => NOW).execute({
+      userId,
+      message: 'Posso comprar um jogo hoje?',
+    });
     expect(r.reply.content).toContain('R$ 85,00');
     expect(ai.calls).toHaveLength(2);
     const secondCallRoles = ai.calls[1]!.map((m) => m.role);
@@ -94,16 +111,29 @@ describe('chat com o Tostão', () => {
       {
         content: null,
         toolCalls: [
-          { id: 'call_reg', type: 'function', function: { name: 'registrar_transacao', arguments: '{"descricao":"Pizza","valor_reais":64.5,"tipo":"saida"}' } },
+          {
+            id: 'call_reg',
+            type: 'function',
+            function: {
+              name: 'registrar_transacao',
+              arguments: '{"descricao":"Pizza","valor_reais":64.5,"tipo":"saida"}',
+            },
+          },
         ],
       },
       { content: 'Anotado! Pizza de R$ 64,50 lançada.', toolCalls: [] },
     );
 
-    const beforeTxs = (await repos.transactions.findManyInRange(userId, new Date(0), new Date(NOW.getTime() + 86_400_000))).length;
+    const beforeTxs = (
+      await repos.transactions.findManyInRange(userId, new Date(0), new Date(NOW.getTime() + 86_400_000))
+    ).length;
     const r = await new AskTostaoUseCase(repos, ai, 40, () => NOW).execute({ userId, message: 'Anota 64,50 de pizza' });
     expect(r.reply.content).toContain('Anotado');
-    const afterTxs = await repos.transactions.findManyInRange(userId, new Date(0), new Date(NOW.getTime() + 86_400_000));
+    const afterTxs = await repos.transactions.findManyInRange(
+      userId,
+      new Date(0),
+      new Date(NOW.getTime() + 86_400_000),
+    );
     expect(afterTxs).toHaveLength(beforeTxs + 1);
     expect(afterTxs.find((t) => t.description === 'Pizza')?.amountInCents).toBe(-64_50);
 
@@ -112,7 +142,13 @@ describe('chat com o Tostão', () => {
     for (let i = 0; i < 5; i++) {
       loopy.queue.push({
         content: null,
-        toolCalls: [{ id: `c_${i}`, type: 'function', function: { name: 'consultar_gastos_categoria', arguments: '{"categoria":"Inexistente"}' } }],
+        toolCalls: [
+          {
+            id: `c_${i}`,
+            type: 'function',
+            function: { name: 'consultar_gastos_categoria', arguments: '{"categoria":"Inexistente"}' },
+          },
+        ],
       });
     }
     loopy.queue.push({ content: 'Não achei essa categoria, mas tô aqui.', toolCalls: [] });

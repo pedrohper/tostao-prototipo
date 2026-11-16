@@ -26,10 +26,22 @@ export function BudgetForm({
       <div className="flex items-center gap-2">
         <label className="flex h-11 flex-1 items-center gap-1 rounded-xl border-[1.5px] border-linha bg-papel px-3 focus-within:border-tinta">
           <span className="text-sm text-tinta-suave">R$</span>
-          <input name="limit" inputMode="decimal" defaultValue={current !== null ? (current / 100).toFixed(2).replace('.', ',') : ''}
-            placeholder={labels.placeholder} aria-label={labels.ariaPrefix(label)} className="w-full bg-transparent text-base outline-none" />
+          <input
+            name="limit"
+            inputMode="decimal"
+            defaultValue={current !== null ? (current / 100).toFixed(2).replace('.', ',') : ''}
+            placeholder={labels.placeholder}
+            aria-label={labels.ariaPrefix(label)}
+            className="w-full bg-transparent text-base outline-none"
+          />
         </label>
-        <button type="submit" disabled={pending} className="h-11 rounded-full bg-tinta px-4 text-sm font-semibold text-papel disabled:opacity-50">{pending ? '…' : saveTxt}</button>
+        <button
+          type="submit"
+          disabled={pending}
+          className="h-11 rounded-full bg-tinta px-4 text-sm font-semibold text-papel disabled:opacity-50"
+        >
+          {pending ? '…' : saveTxt}
+        </button>
       </div>
       {state.error && <span className="text-[13px] text-vermelho-texto">{state.error}</span>}
       {state.ok && <span className="text-[13px] text-verde-texto">{state.ok}</span>}

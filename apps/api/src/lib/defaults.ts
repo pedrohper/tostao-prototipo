@@ -23,19 +23,61 @@ export const DEFAULT_CATEGORIES: Category[] = [
 // Padrões em MAIÚSCULAS e sem acento (ver normalizeDescription)
 export const DEFAULT_RULES: { pattern: string; categoryId: string }[] = [
   ...['IFD*', 'IFOOD', 'RAPPI', 'ZE DELIVERY', 'AIQFOME'].map((p) => ({ pattern: p, categoryId: 'delivery' })),
-  ...['SPOTIFY', 'NETFLIX', 'DISNEY', 'PRIME VIDEO', 'AMAZONPRIME', 'HBO', 'MAX.COM', 'YOUTUBE', 'GLOBOPLAY', 'DEEZER', 'APPLE.COM/BILL']
-    .map((p) => ({ pattern: p, categoryId: 'assinaturas' })),
-  ...['UBER', '99APP', '99 TAXI', '99POP', 'BILHETE UNICO', 'METRO', 'POSTO ', 'SHELL', 'IPIRANGA']
-    .map((p) => ({ pattern: p, categoryId: 'transporte' })),
-  ...['ASSAI', 'ATACADAO', 'CARREFOUR', 'PAO DE ACUCAR', 'SUPERMERC', 'HORTIFRUTI', 'OXXO']
-    .map((p) => ({ pattern: p, categoryId: 'mercado' })),
+  ...[
+    'SPOTIFY',
+    'NETFLIX',
+    'DISNEY',
+    'PRIME VIDEO',
+    'AMAZONPRIME',
+    'HBO',
+    'MAX.COM',
+    'YOUTUBE',
+    'GLOBOPLAY',
+    'DEEZER',
+    'APPLE.COM/BILL',
+  ].map((p) => ({ pattern: p, categoryId: 'assinaturas' })),
+  ...['UBER', '99APP', '99 TAXI', '99POP', 'BILHETE UNICO', 'METRO', 'POSTO ', 'SHELL', 'IPIRANGA'].map((p) => ({
+    pattern: p,
+    categoryId: 'transporte',
+  })),
+  ...['ASSAI', 'ATACADAO', 'CARREFOUR', 'PAO DE ACUCAR', 'SUPERMERC', 'HORTIFRUTI', 'OXXO'].map((p) => ({
+    pattern: p,
+    categoryId: 'mercado',
+  })),
   // Sem palavras que aparecem em pedido de app (PIZZARIA, BURGER...): aí é Delivery.
-  ...['PADARIA', 'PANIFICADORA', 'LANCHONETE', 'PASTELARIA', 'CANTINA', 'CAFETERIA', 'STARBUCKS', 'SUBWAY'].map((p) => ({ pattern: p, categoryId: 'comer-fora' })),
-  ...['DROGASIL', 'DROGA RAIA', 'PAGUE MENOS', 'FARMACIA', 'DROGARIA'].map((p) => ({ pattern: p, categoryId: 'saude' })),
-  ...['STEAM', 'STEAMGAMES', 'PLAYSTATION', 'PSN', 'XBOX', 'NINTENDO', 'EPIC GAMES', 'RIOT GAMES', 'GARENA', 'BLIZZARD', 'ROBLOX', 'NUUVEM'].map((p) => ({ pattern: p, categoryId: 'jogos' })),
-  ...['BET365', 'BLAZE', 'PIXBET', 'ESTRELABET', 'SPORTINGBET', 'BETANO', 'TIGRINHO'].map((p) => ({ pattern: p, categoryId: 'apostas' })),
-  ...['SHOPEE', 'SHEIN', 'MERCADOLIVRE', 'MERCADO LIVRE', 'AMAZON', 'ALIEXPRESS', 'MAGALU'].map((p) => ({ pattern: p, categoryId: 'compras' })),
+  ...['PADARIA', 'PANIFICADORA', 'LANCHONETE', 'PASTELARIA', 'CANTINA', 'CAFETERIA', 'STARBUCKS', 'SUBWAY'].map(
+    (p) => ({ pattern: p, categoryId: 'comer-fora' }),
+  ),
+  ...['DROGASIL', 'DROGA RAIA', 'PAGUE MENOS', 'FARMACIA', 'DROGARIA'].map((p) => ({
+    pattern: p,
+    categoryId: 'saude',
+  })),
+  ...[
+    'STEAM',
+    'STEAMGAMES',
+    'PLAYSTATION',
+    'PSN',
+    'XBOX',
+    'NINTENDO',
+    'EPIC GAMES',
+    'RIOT GAMES',
+    'GARENA',
+    'BLIZZARD',
+    'ROBLOX',
+    'NUUVEM',
+  ].map((p) => ({ pattern: p, categoryId: 'jogos' })),
+  ...['BET365', 'BLAZE', 'PIXBET', 'ESTRELABET', 'SPORTINGBET', 'BETANO', 'TIGRINHO'].map((p) => ({
+    pattern: p,
+    categoryId: 'apostas',
+  })),
+  ...['SHOPEE', 'SHEIN', 'MERCADOLIVRE', 'MERCADO LIVRE', 'AMAZON', 'ALIEXPRESS', 'MAGALU'].map((p) => ({
+    pattern: p,
+    categoryId: 'compras',
+  })),
   ...['UDEMY', 'ALURA', 'ROCKETSEAT', 'COURSERA'].map((p) => ({ pattern: p, categoryId: 'estudo' })),
-  ...['ENEL', 'SABESP', 'CLARO', 'VIVO', 'TIM ', 'ALUGUEL', 'CONDOMINIO'].map((p) => ({ pattern: p, categoryId: 'casa' })),
+  ...['ENEL', 'SABESP', 'CLARO', 'VIVO', 'TIM ', 'ALUGUEL', 'CONDOMINIO'].map((p) => ({
+    pattern: p,
+    categoryId: 'casa',
+  })),
   ...['SALARIO', 'FOLHA PAG', 'PROVENTOS', 'TRANSF SALDO C/SAL'].map((p) => ({ pattern: p, categoryId: 'salario' })),
 ];

@@ -6,8 +6,21 @@ import { AutoCategorizeUseCase } from './auto-categorize.js';
 function setup() {
   const repos = makeInMemoryRepositories();
   const ai = new FakeAiGateway();
-  const add = (description: string, amountInCents: number, extra: { categoryId?: string; isInternalTransfer?: boolean } = {}) =>
-    repos.transactions.create({ userId: 'u1', accountId: 'a1', externalId: null, description, amountInCents, occurredAt: new Date('2026-11-10T12:00:00Z'), categoryId: extra.categoryId ?? null, isInternalTransfer: extra.isInternalTransfer ?? false });
+  const add = (
+    description: string,
+    amountInCents: number,
+    extra: { categoryId?: string; isInternalTransfer?: boolean } = {},
+  ) =>
+    repos.transactions.create({
+      userId: 'u1',
+      accountId: 'a1',
+      externalId: null,
+      description,
+      amountInCents,
+      occurredAt: new Date('2026-11-10T12:00:00Z'),
+      categoryId: extra.categoryId ?? null,
+      isInternalTransfer: extra.isInternalTransfer ?? false,
+    });
   return { repos, ai, add, uc: new AutoCategorizeUseCase(repos, ai) };
 }
 
@@ -18,7 +31,9 @@ describe('Categoria automática com IA', () => {
     const pix = await add('PIX ENVIADO JOAO DA SILVA', -2000);
     const uber = await add('UBER *TRIP', -1890);
     // ordem: mais recente primeiro; todas na mesma data, então a ordem segue a da lista
-    const order = (await repos.transactions.findUncategorized('u1')).sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime()).map((t) => t.id);
+    const order = (await repos.transactions.findUncategorized('u1'))
+      .sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime())
+      .map((t) => t.id);
     const map: Record<string, string | null> = {};
     map[String(order.indexOf(ifood.id))] = 'delivery';
     map[String(order.indexOf(pix.id))] = null;

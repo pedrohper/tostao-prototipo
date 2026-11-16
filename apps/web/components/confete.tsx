@@ -1,7 +1,13 @@
 // One-shot CSS confetti burst (goal reached, lesson completed). Disabled under prefers-reduced-motion.
 import { SoundOnMount } from './sons';
 
-const CONFETTI_COLORS = ['var(--color-laranja)', 'var(--color-amarelo)', 'var(--color-menta)', 'var(--color-azul)', 'var(--color-rosa)'];
+const CONFETTI_COLORS = [
+  'var(--color-laranja)',
+  'var(--color-amarelo)',
+  'var(--color-menta)',
+  'var(--color-azul)',
+  'var(--color-rosa)',
+];
 
 export function Confetti({ count = 28, n }: { count?: number; n?: number }) {
   const total = n ?? count;
@@ -29,4 +35,3 @@ export function Confetti({ count = 28, n }: { count?: number; n?: number }) {
     </div>
   );
 }
-

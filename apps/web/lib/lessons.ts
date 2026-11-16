@@ -16,4 +16,14 @@ export function findLesson(id: string) {
 }
 
 // Cor de cada módulo na trilha (igual ao protótipo do canvas)
-export const MODULE_COLORS = ['#FFC233', '#DCEBFF', '#FFE1E7', '#DDF6E8', '#FFF1C7', '#DCEBFF', '#DDF6E8', '#FFE1E7', '#F6EFE4'];
+export const MODULE_COLORS = [
+  '#FFC233',
+  '#DCEBFF',
+  '#FFE1E7',
+  '#DDF6E8',
+  '#FFF1C7',
+  '#DCEBFF',
+  '#DDF6E8',
+  '#FFE1E7',
+  '#F6EFE4',
+];

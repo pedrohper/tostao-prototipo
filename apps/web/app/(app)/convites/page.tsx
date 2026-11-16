@@ -26,12 +26,18 @@ export default async function ConvitesPage({ searchParams }: { searchParams: Pro
           <p className="text-[15px] text-tinta-suave">{tc.subtitle}</p>
         </div>
       </div>
-      <form action={createInvite}><Button type="submit">{tc.createCta}</Button></form>
+      <form action={createInvite}>
+        <Button type="submit">{tc.createCta}</Button>
+      </form>
       {invites.length > 0 && (
         <Card className="flex flex-col divide-y divide-linha p-0">
           {invites.map((i) => (
             <div key={i.code} className="flex items-center justify-between gap-3 p-4">
-              <span className={`font-mono text-[15px] font-semibold ${i.usedAt ? 'text-tinta-suave line-through' : ''}`}>{i.code}</span>
+              <span
+                className={`font-mono text-[15px] font-semibold ${i.usedAt ? 'text-tinta-suave line-through' : ''}`}
+              >
+                {i.code}
+              </span>
               {i.usedAt ? (
                 <span className="text-[13px] text-tinta-suave">{tc.usedBy(i.usedBy)}</span>
               ) : (

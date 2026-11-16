@@ -1,4 +1,12 @@
-import { AddPersonEntryUseCase, DeletePersonUseCase, EnsurePersonUseCase, GetPersonUseCase, LinkTransactionPersonUseCase, ListPeopleUseCase, RenamePersonUseCase } from './people.js';
+import {
+  AddPersonEntryUseCase,
+  DeletePersonUseCase,
+  EnsurePersonUseCase,
+  GetPersonUseCase,
+  LinkTransactionPersonUseCase,
+  ListPeopleUseCase,
+  RenamePersonUseCase,
+} from './people.js';
 import { ListLessonProgressUseCase } from './lesson-progress.js';
 import { GamesUseCase } from './games.js';
 import { EngagementUseCase } from './engagement.js';
@@ -36,7 +44,13 @@ import { ListSubscriptionsUseCase } from './list-subscriptions.js';
 import { GetBudgetsUseCase, SetBudgetUseCase } from './budgets.js';
 import { AutoCategorizeUseCase } from './auto-categorize.js';
 import { SearchTransactionsUseCase } from './search-transactions.js';
-import { ForecastUseCase, GoalDepositUseCase, SaveFinancialPlanUseCase, SetGoalUseCase, SuggestIncomeUseCase } from './financial-plan.js';
+import {
+  ForecastUseCase,
+  GoalDepositUseCase,
+  SaveFinancialPlanUseCase,
+  SetGoalUseCase,
+  SuggestIncomeUseCase,
+} from './financial-plan.js';
 import {
   ApplyTostaoInsightUseCase,
   DismissTostaoInsightUseCase,
@@ -45,9 +59,21 @@ import {
   UpdateTostaoAutoConfigUseCase,
 } from './tostao-auto.js';
 
-export type Deps = { repos: Repositories; bank: BankGateway; ai?: AiGateway; whatsapp?: WhatsAppGateway; chatDailyLimit?: number };
+export type Deps = {
+  repos: Repositories;
+  bank: BankGateway;
+  ai?: AiGateway;
+  whatsapp?: WhatsAppGateway;
+  chatDailyLimit?: number;
+};
 
-export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), whatsapp = new FakeWhatsAppGateway(), chatDailyLimit = 40 }: Deps) {
+export function makeUseCases({
+  repos,
+  bank,
+  ai = new FakeAiGateway(),
+  whatsapp = new FakeWhatsAppGateway(),
+  chatDailyLimit = 40,
+}: Deps) {
   const sync = new SyncBankConnectionUseCase({ ...repos, bank });
   const autoCategorize = new AutoCategorizeUseCase(repos, ai);
   const askTostao = new AskTostaoUseCase(repos, ai, chatDailyLimit);
@@ -66,7 +92,9 @@ export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), whatsapp =
     deleteTransaction: new DeleteTransactionUseCase(repos),
     disconnectBank: new DisconnectBankUseCase(repos.connections, bank),
     deleteAccount: new DeleteAccountUseCase(repos, bank),
-    createConnectToken: { execute: async ({ userId }: { userId: string }) => ({ connectToken: await bank.createConnectToken(userId) }) },
+    createConnectToken: {
+      execute: async ({ userId }: { userId: string }) => ({ connectToken: await bank.createConnectToken(userId) }),
+    },
     categorizeTransaction: new CategorizeTransactionUseCase(repos),
     createManualTransaction,
     updateTransaction: new UpdateTransactionUseCase(repos),
@@ -84,7 +112,10 @@ export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), whatsapp =
     accountDetail: new AccountDetailUseCase(repos),
     getTransaction: new GetTransactionUseCase(repos),
     listSubscriptions: new ListSubscriptionsUseCase(repos),
-    setSubscriptionIgnored: { execute: ({ userId, key, ignored }: { userId: string; key: string; ignored: boolean }) => repos.ignoredSubscriptions.set(userId, key, ignored) },
+    setSubscriptionIgnored: {
+      execute: ({ userId, key, ignored }: { userId: string; key: string; ignored: boolean }) =>
+        repos.ignoredSubscriptions.set(userId, key, ignored),
+    },
     getBudgets: new GetBudgetsUseCase(repos),
     setBudget: new SetBudgetUseCase(repos),
     getPlan: { execute: async ({ userId }: { userId: string }) => ({ plan: await repos.plans.get(userId) }) },
@@ -96,15 +127,25 @@ export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), whatsapp =
     listLessonProgress: new ListLessonProgressUseCase(repos),
     games: new GamesUseCase(repos),
     engagement: new EngagementUseCase(repos),
-    markLessonDone: { execute: ({ userId, lessonId }: { userId: string; lessonId: string }) => repos.lessons.markDone(userId, lessonId) },
-    listCategories: { execute: async ({ userId }: { userId?: string }) => ({ categories: await repos.categories.list(userId) }) },
+    markLessonDone: {
+      execute: ({ userId, lessonId }: { userId: string; lessonId: string }) => repos.lessons.markDone(userId, lessonId),
+    },
+    listCategories: {
+      execute: async ({ userId }: { userId?: string }) => ({ categories: await repos.categories.list(userId) }),
+    },
     createCategory: new CreateCategoryUseCase(repos),
     importStatement: new ImportStatementUseCase(repos),
     autoCategorize,
     askTostao,
     whatsappLink: new WhatsAppLinkUseCase(repos, whatsapp),
-    whatsappMessage: new HandleWhatsAppMessageUseCase(repos, whatsapp, askTostao, undefined, { create: createManualTransaction, categorize: autoCategorize, repos }),
-    chatHistory: { execute: async ({ userId }: { userId: string }) => ({ messages: await repos.chat.listRecent(userId, 60) }) },
+    whatsappMessage: new HandleWhatsAppMessageUseCase(repos, whatsapp, askTostao, undefined, {
+      create: createManualTransaction,
+      categorize: autoCategorize,
+      repos,
+    }),
+    chatHistory: {
+      execute: async ({ userId }: { userId: string }) => ({ messages: await repos.chat.listRecent(userId, 60) }),
+    },
     setAccountHidden: {
       execute: async ({ userId, accountId, hidden }: { userId: string; accountId: string; hidden: boolean }) => {
         const account = (await repos.accounts.listByUser(userId)).find((a) => a.id === accountId);

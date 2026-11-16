@@ -8,11 +8,7 @@ import { getI18n } from '@/lib/i18n-server';
 import { modules } from '@/lib/lessons';
 import { NO_PROGRESS, xpFrom } from '@/lib/xp';
 
-export default async function PerfilPage({
-  searchParams,
-}: {
-  searchParams?: Promise<{ voltar?: string }>;
-}) {
+export default async function PerfilPage({ searchParams }: { searchParams?: Promise<{ voltar?: string }> }) {
   const sp = (await searchParams) ?? {};
   const backHref = resolveBackHref(sp.voltar, '/mais');
 
@@ -92,15 +88,28 @@ export default async function PerfilPage({
 
       {/* Ações rápidas da conta */}
       <section className="flex flex-col divide-y divide-linha rounded-[22px] border border-linha bg-cartao px-[18px] py-1">
-        <Link href="/aprender?voltar=/perfil" className="flex min-h-12 items-center justify-between gap-3 text-[15px] font-semibold text-tinta no-underline hover:opacity-80">
+        <Link
+          href="/aprender?voltar=/perfil"
+          className="flex min-h-12 items-center justify-between gap-3 text-[15px] font-semibold text-tinta no-underline hover:opacity-80"
+        >
           <span>{t.profile.continueTrailLink}</span>
-          <span className="shrink-0 text-tinta-suave" aria-hidden="true">›</span>
+          <span className="shrink-0 text-tinta-suave" aria-hidden="true">
+            ›
+          </span>
         </Link>
-        <Link href="/perfil/apagar-conta?voltar=/perfil" className="flex min-h-12 items-center justify-between gap-3 text-[15px] font-semibold text-vermelho-texto no-underline hover:underline">
+        <Link
+          href="/perfil/apagar-conta?voltar=/perfil"
+          className="flex min-h-12 items-center justify-between gap-3 text-[15px] font-semibold text-vermelho-texto no-underline hover:underline"
+        >
           <span>{t.profile.deleteAccount}</span>
-          <span className="shrink-0" aria-hidden="true">›</span>
+          <span className="shrink-0" aria-hidden="true">
+            ›
+          </span>
         </Link>
-        <a href="/sair" className="flex min-h-12 items-center text-[15px] font-semibold text-tinta-suave no-underline hover:text-tinta">
+        <a
+          href="/sair"
+          className="flex min-h-12 items-center text-[15px] font-semibold text-tinta-suave no-underline hover:text-tinta"
+        >
           {t.profile.signOut}
         </a>
       </section>

@@ -28,12 +28,10 @@ export async function saveHomePrefs(order: string[], hidden: string[]) {
   redirect('/inicio');
 }
 
-
 /** Restores all dismissed alerts on the Home screen. */
 export async function restoreDismissedAlerts() {
   await updatePrefsCookie((prefs) => ({ ...prefs, fechados: [] }));
 }
-
 
 /** Dismisses a specific alert key on the Home screen. */
 export async function dismissAlert(key: string) {
@@ -43,4 +41,3 @@ export async function dismissAlert(key: string) {
     fechados: [...prefs.fechados.filter((existing) => existing !== key), key].slice(-80),
   }));
 }
-

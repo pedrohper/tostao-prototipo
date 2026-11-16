@@ -13,24 +13,35 @@ export function streakFrom(completedAt: Date[], now: Date) {
   const days = new Set(completedAt.map(brDay));
   let cursor = days.has(brDay(now)) ? now : new Date(now.getTime() - DAY);
   let streak = 0;
-  while (days.has(brDay(cursor))) { streak++; cursor = new Date(cursor.getTime() - DAY); }
+  while (days.has(brDay(cursor))) {
+    streak++;
+    cursor = new Date(cursor.getTime() - DAY);
+  }
   return streak;
 }
 
 export class ListLessonProgressUseCase {
-  constructor(private readonly repos: Pick<Repositories, 'lessons' | 'games' | 'engagement'>, private readonly now: () => Date = () => new Date()) {}
+  constructor(
+    private readonly repos: Pick<Repositories, 'lessons' | 'games' | 'engagement'>,
+    private readonly now: () => Date = () => new Date(),
+  ) {}
 
   async execute({ userId }: { userId: string }) {
     const now = this.now();
     const today = brDay(now);
     const [rows, votes, battles, activity] = await Promise.all([
-      this.repos.lessons.listByUser(userId), this.repos.games.countUserVotes(userId), this.repos.games.listBattles(userId),
+      this.repos.lessons.listByUser(userId),
+      this.repos.games.countUserVotes(userId),
+      this.repos.games.listBattles(userId),
       this.repos.engagement.listActivity(userId, brDay(new Date(now.getTime() - 400 * DAY))),
     ]);
     return {
       done: rows.map((l) => l.lessonId),
       // Ofensiva: dias com qualquer missão (lição, anotar, categorizar, jogo...)
-      streakDays: streakFromDays(new Set([...rows.map((l) => brDay(l.completedAt)), ...activity.map((a) => a.day)]), now),
+      streakDays: streakFromDays(
+        new Set([...rows.map((l) => brDay(l.completedAt)), ...activity.map((a) => a.day)]),
+        now,
+      ),
       doneToday: rows.filter((l) => brDay(l.completedAt) === today).length,
       // XP dos jogos: 20 por voto no Tribunal, 100 por batalha vencida
       bonusXp: votes * 20 + battles.filter((b) => b.status === 'vencida').length * 100 + missionXp(activity),

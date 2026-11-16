@@ -5,12 +5,15 @@ import { useState } from 'react';
 export function CopyLink({ code, copyLabel, copiedLabel }: { code: string; copyLabel: string; copiedLabel: string }) {
   const [done, setDone] = useState(false);
   return (
-    <button type="button" className="text-[13px] font-semibold text-laranja-texto underline"
+    <button
+      type="button"
+      className="text-[13px] font-semibold text-laranja-texto underline"
       onClick={async () => {
         await navigator.clipboard.writeText(`${location.origin}/criar-conta?convite=${code}`);
         setDone(true);
         setTimeout(() => setDone(false), 2000);
-      }}>
+      }}
+    >
       {done ? copiedLabel : copyLabel}
     </button>
   );

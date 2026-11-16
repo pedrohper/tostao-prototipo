@@ -110,7 +110,9 @@ function AjusteDasFatias() {
         <label className="flex flex-col gap-1">
           <span className="flex justify-between text-xs font-semibold">
             <span className="text-tinta">Necessidades (básico)</span>
-            <span className="font-bold text-laranja-texto">{nec}% ({money(necCents)})</span>
+            <span className="font-bold text-laranja-texto">
+              {nec}% ({money(necCents)})
+            </span>
           </span>
           <input
             type="range"
@@ -129,7 +131,9 @@ function AjusteDasFatias() {
         <label className="flex flex-col gap-1">
           <span className="flex justify-between text-xs font-semibold">
             <span className="text-tinta">Desejos (lazer, estilo)</span>
-            <span className="font-bold text-vermelho-texto">{des}% ({money(desCents)})</span>
+            <span className="font-bold text-vermelho-texto">
+              {des}% ({money(desCents)})
+            </span>
           </span>
           <input
             type="range"
@@ -150,14 +154,32 @@ function AjusteDasFatias() {
       <div className="flex flex-col gap-1.5">
         <span className="text-xs font-semibold text-tinta-suave">Distribuição da sua pizza:</span>
         <div className="flex h-5 w-full overflow-hidden rounded-full bg-papel-2 border border-linha">
-          <div style={{ width: `${nec}%` }} className="bg-amarelo transition-all duration-200" title={`Necessidades: ${nec}%`} />
-          <div style={{ width: `${des}%` }} className="bg-rosa transition-all duration-200" title={`Desejos: ${des}%`} />
-          <div style={{ width: `${fut}%` }} className="bg-menta transition-all duration-200" title={`Futuro: ${fut}%`} />
+          <div
+            style={{ width: `${nec}%` }}
+            className="bg-amarelo transition-all duration-200"
+            title={`Necessidades: ${nec}%`}
+          />
+          <div
+            style={{ width: `${des}%` }}
+            className="bg-rosa transition-all duration-200"
+            title={`Desejos: ${des}%`}
+          />
+          <div
+            style={{ width: `${fut}%` }}
+            className="bg-menta transition-all duration-200"
+            title={`Futuro: ${fut}%`}
+          />
         </div>
         <div className="flex justify-between text-[11px] font-semibold text-tinta-suave px-1">
-          <span className="flex items-center gap-1"><i className="inline-block h-2.5 w-2.5 rounded-full bg-amarelo" /> Básico {nec}%</span>
-          <span className="flex items-center gap-1"><i className="inline-block h-2.5 w-2.5 rounded-full bg-rosa" /> Lazer {des}%</span>
-          <span className="flex items-center gap-1"><i className="inline-block h-2.5 w-2.5 rounded-full bg-menta" /> Futuro {fut}%</span>
+          <span className="flex items-center gap-1">
+            <i className="inline-block h-2.5 w-2.5 rounded-full bg-amarelo" /> Básico {nec}%
+          </span>
+          <span className="flex items-center gap-1">
+            <i className="inline-block h-2.5 w-2.5 rounded-full bg-rosa" /> Lazer {des}%
+          </span>
+          <span className="flex items-center gap-1">
+            <i className="inline-block h-2.5 w-2.5 rounded-full bg-menta" /> Futuro {fut}%
+          </span>
         </div>
       </div>
 
@@ -178,17 +200,20 @@ function AjusteDasFatias() {
 
       {nec > 65 && (
         <p className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
-          ⚠️ <b>Aperto no essencial:</b> quando as necessidades passam de 65%, a margem de manobra diminui. Proteja o futuro com ao menos 5% e enxugue os desejos para não entrar no rotativo.
+          ⚠️ <b>Aperto no essencial:</b> quando as necessidades passam de 65%, a margem de manobra diminui. Proteja o
+          futuro com ao menos 5% e enxugue os desejos para não entrar no rotativo.
         </p>
       )}
       {fut === 0 && (
         <p className="rounded-xl bg-rosa p-3 text-xs leading-relaxed text-vermelho-texto">
-          🚨 <b>Futuro zerado:</b> o básico e o lazer engoliram 100% da renda. Qualquer imprevisto vai virar dívida no cartão. Puxe um pouco dos desejos para abrir espaço para o seu colchão.
+          🚨 <b>Futuro zerado:</b> o básico e o lazer engoliram 100% da renda. Qualquer imprevisto vai virar dívida no
+          cartão. Puxe um pouco dos desejos para abrir espaço para o seu colchão.
         </p>
       )}
       {nec <= 65 && fut >= 15 && (
         <p className="rounded-xl bg-menta-clara p-3 text-xs leading-relaxed text-verde-texto">
-          ✨ <b>Equilíbrio saudável:</b> você cobre o custo de vida, aproveita o momento com lazer e ainda guarda {money(futCents)} todo mês para seu futuro.
+          ✨ <b>Equilíbrio saudável:</b> você cobre o custo de vida, aproveita o momento com lazer e ainda guarda{' '}
+          {money(futCents)} todo mês para seu futuro.
         </p>
       )}
     </div>
@@ -250,9 +275,7 @@ function BisturiNoFixo() {
                   {it.label}
                 </span>
               </div>
-              <span className="shrink-0 font-display text-xs font-extrabold text-tinta">
-                {money(it.mensal)}/mês
-              </span>
+              <span className="shrink-0 font-display text-xs font-extrabold text-tinta">{money(it.mensal)}/mês</span>
             </button>
           );
         })}
@@ -272,7 +295,8 @@ function BisturiNoFixo() {
       <p className="text-xs leading-relaxed text-tinta-suave">
         {totalMensal > 0 ? (
           <>
-            💡 <b>Poder do fixo:</b> cancelar ou renegociar dá trabalho uma única vez, mas o alívio de <b>{money(totalMensal)}</b> cai na sua conta todo mês no piloto automático.
+            💡 <b>Poder do fixo:</b> cancelar ou renegociar dá trabalho uma única vez, mas o alívio de{' '}
+            <b>{money(totalMensal)}</b> cai na sua conta todo mês no piloto automático.
           </>
         ) : (
           'Toque nas opções acima para ver o impacto no ano.'
@@ -391,11 +415,13 @@ function RemanejamentoEmergencia() {
 
       {reequilibrado ? (
         <div className="rounded-xl bg-menta-clara p-3 text-xs leading-relaxed text-verde-texto">
-          🎉 <b>Mês reequilibrado!</b> Você cobriu os R$ 200 remanejando gastos flexíveis. O dinheiro saiu das suas escolhas conscientes, e você não pagou um real de juros pro rotativo.
+          🎉 <b>Mês reequilibrado!</b> Você cobriu os R$ 200 remanejando gastos flexíveis. O dinheiro saiu das suas
+          escolhas conscientes, e você não pagou um real de juros pro rotativo.
         </div>
       ) : (
         <div className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
-          ⏳ <b>Ainda faltam {money(ALVO - totalCortes)}:</b> se não compensar esse valor nas próximas semanas, ele vira fatura atrasada ou cheque especial. Aumente o corte em alguma categoria!
+          ⏳ <b>Ainda faltam {money(ALVO - totalCortes)}:</b> se não compensar esse valor nas próximas semanas, ele vira
+          fatura atrasada ou cheque especial. Aumente o corte em alguma categoria!
         </div>
       )}
     </div>
@@ -452,7 +478,9 @@ function DetectorGatilhos() {
       <label className="flex flex-col gap-1.5">
         <span className="flex justify-between text-xs font-semibold text-tinta">
           <span>Trocar por marmita / comida em casa:</span>
-          <span className="font-bold text-laranja">{diasTrocados} dia{diasTrocados > 1 ? 's' : ''}/semana</span>
+          <span className="font-bold text-laranja">
+            {diasTrocados} dia{diasTrocados > 1 ? 's' : ''}/semana
+          </span>
         </span>
         <input
           type="range"
@@ -480,8 +508,10 @@ function DetectorGatilhos() {
 
       <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
         🎯 <b>A regra não é sofrer:</b> você não precisa cozinhar os 7 dias da semana. Trocar apenas{' '}
-        <b>{diasTrocados} refeição{diasTrocados > 1 ? 'ões' : ''}</b> por comida congelada ou simples já injeta{' '}
-        <b>{money(porAno)}</b> na sua reserva anual.
+        <b>
+          {diasTrocados} refeição{diasTrocados > 1 ? 'ões' : ''}
+        </b>{' '}
+        por comida congelada ou simples já injeta <b>{money(porAno)}</b> na sua reserva anual.
       </p>
     </div>
   );

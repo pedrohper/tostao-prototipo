@@ -42,7 +42,9 @@ export class FakeAiGateway implements AiGateway {
   next: string | null = null;
   /** Fila de respostas estruturadas (pra testar loop de tool_calls). */
   queue: AiReply[] = [];
-  get enabled() { return this.next !== null || this.queue.length > 0; }
+  get enabled() {
+    return this.next !== null || this.queue.length > 0;
+  }
 
   async reply(messages: ChatTurn[], _opts?: AiOptions) {
     this.calls.push(messages);
@@ -62,7 +64,11 @@ export class FakeAiGateway implements AiGateway {
 
 export class DeepSeekGateway implements AiGateway {
   readonly enabled = true;
-  constructor(private readonly apiKey: string, private readonly model = 'deepseek-chat', private readonly baseUrl = 'https://api.deepseek.com') {}
+  constructor(
+    private readonly apiKey: string,
+    private readonly model = 'deepseek-chat',
+    private readonly baseUrl = 'https://api.deepseek.com',
+  ) {}
 
   async reply(messages: ChatTurn[], opts: AiOptions = {}) {
     const { content } = await this.chat(messages, opts);

@@ -41,7 +41,11 @@ export async function Resumo({ children }: { children: React.ReactNode }) {
 }
 
 export function Tabela({ children }: { children: React.ReactNode }) {
-  return <div className={s.tabela}><table>{children}</table></div>;
+  return (
+    <div className={s.tabela}>
+      <table>{children}</table>
+    </div>
+  );
 }
 
 export const disp = s.disp;

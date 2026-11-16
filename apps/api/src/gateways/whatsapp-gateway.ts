@@ -12,7 +12,9 @@ export interface AudioTranscriber {
 }
 
 export class DisabledAudioTranscriber implements AudioTranscriber {
-  async transcribe() { return null; }
+  async transcribe() {
+    return null;
+  }
 }
 
 export class FakeAudioTranscriber implements AudioTranscriber {
@@ -54,10 +56,19 @@ export interface WhatsAppGateway {
 export class FakeWhatsAppGateway implements WhatsAppGateway {
   sent: { to: string; text: string }[] = [];
   media = new Map<string, WhatsAppMedia>();
-  constructor(readonly enabled = false, readonly displayNumber: string | null = null) {}
-  async send(to: string, text: string) { this.sent.push({ to, text }); }
-  verifySignature() { return true; }
-  async downloadMedia(mediaId: string) { return this.media.get(mediaId) ?? null; }
+  constructor(
+    readonly enabled = false,
+    readonly displayNumber: string | null = null,
+  ) {}
+  async send(to: string, text: string) {
+    this.sent.push({ to, text });
+  }
+  verifySignature() {
+    return true;
+  }
+  async downloadMedia(mediaId: string) {
+    return this.media.get(mediaId) ?? null;
+  }
 }
 
 export class CloudApiWhatsAppGateway implements WhatsAppGateway {
@@ -74,7 +85,12 @@ export class CloudApiWhatsAppGateway implements WhatsAppGateway {
     const res = await fetch(`${this.graph}/${this.phoneNumberId}/messages`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${this.token}` },
-      body: JSON.stringify({ messaging_product: 'whatsapp', to, type: 'text', text: { body: text.slice(0, 4000), preview_url: false } }),
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to,
+        type: 'text',
+        text: { body: text.slice(0, 4000), preview_url: false },
+      }),
       signal: AbortSignal.timeout(20_000),
     });
     if (!res.ok) throw new Error(`WhatsApp respondeu ${res.status}`);
@@ -133,7 +149,9 @@ export class N8nWhatsAppGateway implements WhatsAppGateway {
   }
 
   /** O webhook da Meta não vale aqui. */
-  verifySignature() { return false; }
+  verifySignature() {
+    return false;
+  }
 }
 
 /** Compara o segredo sem vazar tempo. Segredo vazio nunca confere. */

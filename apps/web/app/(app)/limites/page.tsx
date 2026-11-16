@@ -39,14 +39,16 @@ export default async function LimitesPage({ searchParams }: { searchParams: Prom
 
           {budgets.length > 0 && (
             <Card className="flex flex-col gap-3">
-              <h2 className="font-display text-lg font-extrabold capitalize">{p.monthSoFar(monthName(month, locale))}</h2>
-              {budgets.map((b) => <BudgetBar key={b.categoryId} budget={b} t={p.bar} />)}
+              <h2 className="font-display text-lg font-extrabold capitalize">
+                {p.monthSoFar(monthName(month, locale))}
+              </h2>
+              {budgets.map((b) => (
+                <BudgetBar key={b.categoryId} budget={b} t={p.bar} />
+              ))}
             </Card>
           )}
 
-          <p className="rounded-2xl bg-papel-2 px-4 py-3 text-[13px] leading-[19px] text-tinta-suave">
-            {p.tip}
-          </p>
+          <p className="rounded-2xl bg-papel-2 px-4 py-3 text-[13px] leading-[19px] text-tinta-suave">{p.tip}</p>
         </div>
 
         <Card className="flex min-w-0 flex-col divide-y divide-linha p-0">
@@ -55,10 +57,18 @@ export default async function LimitesPage({ searchParams }: { searchParams: Prom
             return (
               <div key={c.id} className="flex flex-col gap-2 p-4">
                 <div className="flex justify-between gap-2 text-[15px]">
-                  <span className="flex items-center gap-1.5 font-semibold"><CatIcon id={c.id} emoji={c.emoji} size={20} /> {c.name}</span>
+                  <span className="flex items-center gap-1.5 font-semibold">
+                    <CatIcon id={c.id} emoji={c.emoji} size={20} /> {c.name}
+                  </span>
                   {b && <span className="text-tinta-suave tabular-nums">{p.alreadySpent(money(b.spentInCents))}</span>}
                 </div>
-                <BudgetForm categoryId={c.id} label={c.name} current={b?.limitInCents ?? null} t={p.form} saveLabel={t.common.save} />
+                <BudgetForm
+                  categoryId={c.id}
+                  label={c.name}
+                  current={b?.limitInCents ?? null}
+                  t={p.form}
+                  saveLabel={t.common.save}
+                />
               </div>
             );
           })}

@@ -23,7 +23,8 @@ const SEVERITY_RANK = { urgent: 0, warning: 1, info: 2 } as const;
 
 const INTERNAL_HINT = /pagamento (de |da )?fatura|pgto fatura|pagto fatura|mesma titularidade/i;
 const SPLIT_HINT = /\b(racha|rachamos|divid\w*|emprest\w*|acerto|reembolso|vaquinha)\b/i;
-const BET_HINT = /\b(bet365|betano|pixbet|sportingbet|blaze|tigrinho|fortune tiger|superbet|kto|estrelabet|novibet|esportes da sorte)\b/i;
+const BET_HINT =
+  /\b(bet365|betano|pixbet|sportingbet|blaze|tigrinho|fortune tiger|superbet|kto|estrelabet|novibet|esportes da sorte)\b/i;
 
 const money = (cents: number) => (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -34,9 +35,17 @@ function actionMeta(insight: TostaoInsight): { actionLabel: string; actionHref: 
     case 'uncategorized_batch':
       return { actionLabel: 'Categorizar agora', actionHref: '/carteira?filtro=pendentes', canApply: true };
     case 'duplicate_subscription':
-      return { actionLabel: 'Não é assinatura', actionHref: '/assinaturas?voltar=/tostao?aba=automatico', canApply: true };
+      return {
+        actionLabel: 'Não é assinatura',
+        actionHref: '/assinaturas?voltar=/tostao?aba=automatico',
+        canApply: true,
+      };
     case 'possible_internal_transfer':
-      return { actionLabel: 'Marcar como transferência', actionHref: txId ? `/carteira/${txId}` : '/carteira', canApply: true };
+      return {
+        actionLabel: 'Marcar como transferência',
+        actionHref: txId ? `/carteira/${txId}` : '/carteira',
+        canApply: true,
+      };
     case 'month_shortfall': {
       const amount = typeof p.shortfallInCents === 'number' ? money(p.shortfallInCents) : 'dinheiro';
       const q = encodeURIComponent(`Vai faltar ${amount} este mês. Onde consigo cortar sem apertar o essencial?`);
@@ -90,17 +99,23 @@ export function presentTostaoConfig(config: TostaoAutoConfig): TostaoAutoConfigD
 
 function routineEnabled(config: TostaoAutoConfig, routine: TostaoRoutineKey): boolean {
   switch (routine) {
-    case 'caramelo_extrato': return config.carameloExtrato;
-    case 'tostao_previsao': return config.tostaoPrevisao;
-    case 'guardiao_limites': return config.guardiaoLimites;
-    case 'olheiro_acertos': return config.olheiroAcertos;
+    case 'caramelo_extrato':
+      return config.carameloExtrato;
+    case 'tostao_previsao':
+      return config.tostaoPrevisao;
+    case 'guardiao_limites':
+      return config.guardiaoLimites;
+    case 'olheiro_acertos':
+      return config.olheiroAcertos;
   }
 }
 
 function buildStateResponse(allInsights: TostaoInsight[], config: TostaoAutoConfig): TostaoAutoResponse {
   const pending = allInsights
     .filter((i) => i.status === 'PENDING' && routineEnabled(config, i.routine))
-    .sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity] || b.createdAt.getTime() - a.createdAt.getTime());
+    .sort(
+      (a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity] || b.createdAt.getTime() - a.createdAt.getTime(),
+    );
   const history = allInsights
     .filter((i) => i.status !== 'PENDING')
     .sort((a, b) => (b.actedAt?.getTime() ?? b.createdAt.getTime()) - (a.actedAt?.getTime() ?? a.createdAt.getTime()))
@@ -127,7 +142,10 @@ export class GetTostaoAutoUseCase {
 
 /** Roda as 4 rotinas automáticas do Tostão e Caramelo de forma idempotente (centavos + regras determinísticas). */
 export class RunTostaoChecksUseCase {
-  constructor(private readonly repos: Repositories, private readonly now: () => Date = () => new Date()) {}
+  constructor(
+    private readonly repos: Repositories,
+    private readonly now: () => Date = () => new Date(),
+  ) {}
 
   async execute({ userId }: { userId: string }): Promise<RunTostaoCheckResponse> {
     const now = this.now();
@@ -153,9 +171,10 @@ export class RunTostaoChecksUseCase {
       candidates.push(...(await this.checkCaramelo(userId, month, visibleMonthTxs, visibleRecentTxs, now)));
     }
 
-    const forecast = (config.tostaoPrevisao || config.guardiaoLimites)
-      ? await new ForecastUseCase(this.repos, () => now).execute({ userId })
-      : null;
+    const forecast =
+      config.tostaoPrevisao || config.guardiaoLimites
+        ? await new ForecastUseCase(this.repos, () => now).execute({ userId })
+        : null;
 
     if (config.tostaoPrevisao && forecast) {
       candidates.push(...(await this.checkPrevisao(userId, forecast, now)));
@@ -186,7 +205,13 @@ export class RunTostaoChecksUseCase {
     return { ...buildStateResponse(allInsights, updatedConfig), generated };
   }
 
-  private async checkCaramelo(userId: string, month: string, monthTxs: Transaction[], recentTxs: Transaction[], now: Date) {
+  private async checkCaramelo(
+    userId: string,
+    month: string,
+    monthTxs: Transaction[],
+    recentTxs: Transaction[],
+    now: Date,
+  ) {
     const out: UpsertTostaoInsight[] = [];
     const uncat = monthTxs
       .filter((t) => !t.isInternalTransfer && t.categoryId === null)
@@ -215,7 +240,12 @@ export class RunTostaoChecksUseCase {
         severity: 'warning',
         title: `Assinatura repetida? ${s.name}`,
         body: `${s.name} (${money(s.amountInCents)}/mês) parece repetir ${s.duplicateOf}. Vale conferir se não são duas cobranças.`,
-        payload: { subscriptionKey: s.key, subscriptionName: s.name, duplicateOf: s.duplicateOf, amountInCents: s.amountInCents },
+        payload: {
+          subscriptionKey: s.key,
+          subscriptionName: s.name,
+          duplicateOf: s.duplicateOf,
+          amountInCents: s.amountInCents,
+        },
         dedupeKey: `caramelo:dup-sub:${s.key}`,
       });
     }
@@ -239,11 +269,7 @@ export class RunTostaoChecksUseCase {
     return out;
   }
 
-  private async checkPrevisao(
-    userId: string,
-    forecast: Awaited<ReturnType<ForecastUseCase['execute']>>,
-    now: Date,
-  ) {
+  private async checkPrevisao(userId: string, forecast: Awaited<ReturnType<ForecastUseCase['execute']>>, now: Date) {
     const out: UpsertTostaoInsight[] = [];
     if (forecast.hasPlan && forecast.thisMonth && forecast.thisMonth.leftInCents < 0) {
       const shortfallInCents = -forecast.thisMonth.leftInCents;
@@ -358,7 +384,10 @@ export class RunTostaoChecksUseCase {
     }
 
     const betCandidates = recentTxs
-      .filter((t) => !t.isInternalTransfer && t.amountInCents < 0 && (t.categoryId === 'apostas' || BET_HINT.test(t.description)))
+      .filter(
+        (t) =>
+          !t.isInternalTransfer && t.amountInCents < 0 && (t.categoryId === 'apostas' || BET_HINT.test(t.description)),
+      )
       .slice(0, 2);
     for (const tx of betCandidates) {
       out.push({
@@ -394,9 +423,10 @@ export class ApplyTostaoInsightUseCase {
 
     if (found.kind === 'uncategorized_batch') {
       const r = await this.autoCategorize.execute({ userId });
-      appliedSummary = r.categorized > 0
-        ? `Caramelo categorizou ${r.categorized} ${r.categorized === 1 ? 'gasto' : 'gastos'}.`
-        : 'Nenhuma pendente pôde ser categorizada automaticamente agora — revise na Carteira.';
+      appliedSummary =
+        r.categorized > 0
+          ? `Caramelo categorizou ${r.categorized} ${r.categorized === 1 ? 'gasto' : 'gastos'}.`
+          : 'Nenhuma pendente pôde ser categorizada automaticamente agora — revise na Carteira.';
       redirectTo = r.categorized > 0 ? '/carteira' : '/carteira?filtro=pendentes';
     } else if (found.kind === 'duplicate_subscription') {
       const key = typeof found.payload.subscriptionKey === 'string' ? found.payload.subscriptionKey : null;
@@ -420,7 +450,10 @@ export class ApplyTostaoInsightUseCase {
 
 /** Dispensa um achado para não voltar a incomodar com o mesmo item. */
 export class DismissTostaoInsightUseCase {
-  constructor(private readonly repos: Pick<Repositories, 'tostaoAuto'>, private readonly now: () => Date = () => new Date()) {}
+  constructor(
+    private readonly repos: Pick<Repositories, 'tostaoAuto'>,
+    private readonly now: () => Date = () => new Date(),
+  ) {}
 
   async execute({ userId, insightId }: { userId: string; insightId: string }): Promise<TostaoInsightDTO> {
     const found = await this.repos.tostaoAuto.findById(insightId);
@@ -434,7 +467,13 @@ export class DismissTostaoInsightUseCase {
 export class UpdateTostaoAutoConfigUseCase {
   constructor(private readonly repos: Pick<Repositories, 'tostaoAuto'>) {}
 
-  async execute({ userId, patch }: { userId: string; patch: UpdateTostaoAutoConfigBody }): Promise<TostaoAutoConfigDTO> {
+  async execute({
+    userId,
+    patch,
+  }: {
+    userId: string;
+    patch: UpdateTostaoAutoConfigBody;
+  }): Promise<TostaoAutoConfigDTO> {
     const updated = await this.repos.tostaoAuto.updateConfig(userId, patch);
     return presentTostaoConfig(updated);
   }

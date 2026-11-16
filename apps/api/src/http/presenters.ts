@@ -2,7 +2,14 @@
 import type { TransactionDTO } from '@tostao/contracts';
 import type { Transaction } from '../domain/entities.js';
 
-export function presentTransaction(t: Transaction & { categoryName: string | null; categoryEmoji?: string | null; categoryColor?: string | null; accountName: string | null }): TransactionDTO {
+export function presentTransaction(
+  t: Transaction & {
+    categoryName: string | null;
+    categoryEmoji?: string | null;
+    categoryColor?: string | null;
+    accountName: string | null;
+  },
+): TransactionDTO {
   return {
     id: t.id,
     description: t.description,

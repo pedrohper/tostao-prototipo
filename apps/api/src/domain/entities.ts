@@ -37,7 +37,14 @@ export type Account = {
 };
 
 /** kind "neutra" = não conta como gasto nem renda (ex.: repasse com a família). userId null = categoria do sistema. */
-export type Category = { id: string; name: string; emoji: string; color: string; kind: 'saida' | 'entrada' | 'neutra'; userId?: string | null };
+export type Category = {
+  id: string;
+  name: string;
+  emoji: string;
+  color: string;
+  kind: 'saida' | 'entrada' | 'neutra';
+  userId?: string | null;
+};
 
 /** Categoria do sistema pra "isso não conta": vira transferência interna. */
 export const NEUTRAL_CATEGORY_ID = 'nao-conta';
@@ -72,16 +79,36 @@ export type CategoryBudget = { id: string; userId: string; categoryId: string; l
 
 export type LessonProgress = { userId: string; lessonId: string; completedAt: Date };
 
-export type Invite = { code: string; createdById: string; usedById: string | null; createdAt: Date; usedAt: Date | null };
+export type Invite = {
+  code: string;
+  createdById: string;
+  usedById: string | null;
+  createdAt: Date;
+  usedAt: Date | null;
+};
 export type PasswordReset = { id: string; userId: string; tokenHash: string; expiresAt: Date; usedAt: Date | null };
 
-export type ChatMessage = { id: string; userId: string; role: 'user' | 'assistant'; content: string; channel: 'app' | 'whatsapp'; createdAt: Date };
+export type ChatMessage = {
+  id: string;
+  userId: string;
+  role: 'user' | 'assistant';
+  content: string;
+  channel: 'app' | 'whatsapp';
+  createdAt: Date;
+};
 
 // Jogos: Tribunal (enquete da semana) e Batalha (desafio conferido no extrato)
 export type TribunalVote = { userId: string; caseId: string; choice: number; votedAt: Date };
 export type BattleKind = 'tigrinho' | 'urubu';
 export type BattleStatus = 'ativa' | 'vencida' | 'perdida';
-export type Battle = { userId: string; kind: BattleKind; status: BattleStatus; startedAt: Date; endedAt: Date | null; steps: string[] };
+export type Battle = {
+  userId: string;
+  kind: BattleKind;
+  status: BattleStatus;
+  startedAt: Date;
+  endedAt: Date | null;
+  steps: string[];
+};
 
 export type TostaoRoutine = 'caramelo_extrato' | 'tostao_previsao' | 'guardiao_limites' | 'olheiro_acertos';
 export type TostaoInsightSeverity = 'info' | 'warning' | 'urgent';

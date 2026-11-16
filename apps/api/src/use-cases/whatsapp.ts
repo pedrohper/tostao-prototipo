@@ -10,7 +10,9 @@ import { parseExpense } from '../services/parse-expense.js';
 const brl = (cents: number) => (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 /** Data de hoje (ou de N dias atrás) em São Paulo, ao meio-dia, igual ao "Anotar" do app. */
 const spNoon = (now: Date, daysAgo: number) => {
-  const ymd = new Date(now.getTime() - daysAgo * 86_400_000).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+  const ymd = new Date(now.getTime() - daysAgo * 86_400_000).toLocaleDateString('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+  });
   return new Date(`${ymd}T12:00:00-03:00`);
 };
 
@@ -24,11 +26,19 @@ const toWhatsApp = (text: string) => text.replace(/\*\*(.+?)\*\*/g, '*$1*');
 
 /** Status e vínculo do número, pela tela do app. */
 export class WhatsAppLinkUseCase {
-  constructor(private readonly repos: Pick<Repositories, 'whatsapp'>, private readonly wa: WhatsAppGateway, private readonly now: () => Date = () => new Date()) {}
+  constructor(
+    private readonly repos: Pick<Repositories, 'whatsapp'>,
+    private readonly wa: WhatsAppGateway,
+    private readonly now: () => Date = () => new Date(),
+  ) {}
 
   async status({ userId }: { userId: string }) {
     const link = await this.repos.whatsapp.get(userId);
-    return { enabled: this.wa.enabled, number: this.wa.displayNumber, linkedPhone: link?.phone ? maskPhone(link.phone) : null };
+    return {
+      enabled: this.wa.enabled,
+      number: this.wa.displayNumber,
+      linkedPhone: link?.phone ? maskPhone(link.phone) : null,
+    };
   }
 
   /** Código de 6 dígitos que a pessoa manda pro número do Tostão. Vale 15 min. */
@@ -44,7 +54,9 @@ export class WhatsAppLinkUseCase {
     return { code, expiresAt: expiresAt.toISOString(), number: this.wa.displayNumber };
   }
 
-  async unlink({ userId }: { userId: string }) { await this.repos.whatsapp.unlink(userId); }
+  async unlink({ userId }: { userId: string }) {
+    await this.repos.whatsapp.unlink(userId);
+  }
 }
 
 /**
@@ -72,7 +84,10 @@ export class HandleWhatsAppMessageUseCase {
   /**
    * `reply` troca o jeito de responder: no n8n a resposta volta no retorno do POST, em vez de sair pelo gateway.
    */
-  async execute({ id, from, text }: { id: string; from: string; text: string }, reply: (text: string) => Promise<void> = (t) => this.wa.send(from, t)) {
+  async execute(
+    { id, from, text }: { id: string; from: string; text: string },
+    reply: (text: string) => Promise<void> = (t) => this.wa.send(from, t),
+  ) {
     // A Meta reenvia quando demora: não responder duas vezes a mesma mensagem.
     if (this.seen.has(id)) return 'duplicada';
     this.seen.add(id);
@@ -84,14 +99,18 @@ export class HandleWhatsAppMessageUseCase {
       if (link?.codeExpiresAt && link.codeExpiresAt > this.now()) {
         await this.repos.whatsapp.link(link.userId, from, this.now());
         const user = await this.repos.users.findById(link.userId);
-        await reply(`Fechou, ${user?.name?.split(' ')[0] ?? 'tamo junto'}! 🐷 Agora é só me perguntar por aqui: "quanto gastei com delivery?", "dá pra comprar um tênis de R$ 300?". Pra desligar, é no app em Perfil > WhatsApp.`);
+        await reply(
+          `Fechou, ${user?.name?.split(' ')[0] ?? 'tamo junto'}! 🐷 Agora é só me perguntar por aqui: "quanto gastei com delivery?", "dá pra comprar um tênis de R$ 300?". Pra desligar, é no app em Perfil > WhatsApp.`,
+        );
         return 'ligado';
       }
     }
 
     const link = await this.repos.whatsapp.findByPhone(from);
     if (!link) {
-      await reply('Oi! Eu sou o Tostão 🐷. Pra conversar comigo aqui, abre o app em Perfil > WhatsApp, gera um código e me manda. (Se mandou um código, ele pode ter vencido: gera outro.)');
+      await reply(
+        'Oi! Eu sou o Tostão 🐷. Pra conversar comigo aqui, abre o app em Perfil > WhatsApp, gera um código e me manda. (Se mandou um código, ele pode ter vencido: gera outro.)',
+      );
       return 'desconhecido';
     }
     const expense = this.record ? parseExpense(text) : null;
@@ -99,7 +118,11 @@ export class HandleWhatsAppMessageUseCase {
       try {
         await reply(await this.recordExpense(link.userId, expense));
       } catch (e) {
-        await reply(e instanceof AppError ? e.message : 'Não consegui anotar agora. Tenta de novo daqui a pouco, ou anota no app.');
+        await reply(
+          e instanceof AppError
+            ? e.message
+            : 'Não consegui anotar agora. Tenta de novo daqui a pouco, ou anota no app.',
+        );
       }
       return 'anotado';
     }
@@ -114,7 +137,13 @@ export class HandleWhatsAppMessageUseCase {
 
   private async recordExpense(userId: string, e: NonNullable<ReturnType<typeof parseExpense>>) {
     const { create, categorize, repos } = this.record!;
-    const { transaction } = await create.execute({ userId, description: e.description, amountInCents: e.amountInCents, kind: e.kind, occurredAt: spNoon(this.now(), e.daysAgo) });
+    const { transaction } = await create.execute({
+      userId,
+      description: e.description,
+      amountInCents: e.amountInCents,
+      kind: e.kind,
+      occurredAt: spNoon(this.now(), e.daysAgo),
+    });
     let categoryId = transaction.categoryId;
     if (!categoryId && categorize) {
       await categorize.execute({ userId }).catch(() => undefined);

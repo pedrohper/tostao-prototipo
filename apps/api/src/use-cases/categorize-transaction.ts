@@ -31,7 +31,11 @@ export class CategorizeTransactionUseCase {
         const rule = await rules.upsert({ userId, pattern, categoryId });
         for (const other of await transactions.findUncategorized(userId)) {
           if (other.id !== tx.id && categorizeByRules(other.description, [rule])) {
-            await transactions.save({ ...other, categoryId, isInternalTransfer: isNeutral(categoryId) || other.isInternalTransfer });
+            await transactions.save({
+              ...other,
+              categoryId,
+              isInternalTransfer: isNeutral(categoryId) || other.isInternalTransfer,
+            });
             alsoUpdated++;
           }
         }

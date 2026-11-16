@@ -122,7 +122,8 @@ function CalculadoraHoleriteReal() {
       </div>
 
       <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
-        💡 O INSS é cobrado por faixas (como uma escada), não sobre o total. E o IRRF usa o desconto simplificado automático quando ele é mais vantajoso que a dedução do INSS.
+        💡 O INSS é cobrado por faixas (como uma escada), não sobre o total. E o IRRF usa o desconto simplificado
+        automático quando ele é mais vantajoso que a dedução do INSS.
       </p>
     </div>
   );
@@ -159,7 +160,9 @@ function SaqueAniversarioVsRescisao() {
       </label>
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-xs font-semibold text-tinta">Tempo de empresa: {anos} ano{anos > 1 ? 's' : ''}</span>
+        <span className="text-xs font-semibold text-tinta">
+          Tempo de empresa: {anos} ano{anos > 1 ? 's' : ''}
+        </span>
         <div className="flex gap-1.5">
           {[1, 2, 3, 4, 5].map((a) => (
             <button
@@ -177,7 +180,8 @@ function SaqueAniversarioVsRescisao() {
       </div>
 
       <div className="rounded-xl bg-papel-2 p-3 text-xs text-tinta-suave">
-        Saldo acumulado de FGTS (8%/mês): <b className="text-tinta">{money(saldoFgtsCents)}</b> + Multa de 40%: <b className="text-tinta">{money(multa40Cents)}</b>.
+        Saldo acumulado de FGTS (8%/mês): <b className="text-tinta">{money(saldoFgtsCents)}</b> + Multa de 40%:{' '}
+        <b className="text-tinta">{money(multa40Cents)}</b>.
       </div>
 
       <div className="grid grid-cols-2 gap-2.5">
@@ -194,7 +198,8 @@ function SaqueAniversarioVsRescisao() {
       </div>
 
       <p className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
-        ⚠️ No Saque-Aniversário, <b>{money(travadoCents)}</b> do seu saldo ficam retidos se você for demitido sem justa causa — e voltar para o Saque-Rescisão leva 25 meses.
+        ⚠️ No Saque-Aniversário, <b>{money(travadoCents)}</b> do seu saldo ficam retidos se você for demitido sem justa
+        causa — e voltar para o Saque-Rescisão leva 25 meses.
       </p>
     </div>
   );
@@ -240,7 +245,9 @@ function FatiadorDecimoTerceiro() {
         <label className="flex flex-col gap-1">
           <span className="flex justify-between text-xs font-semibold">
             <span>Quitar dívidas / cartão</span>
-            <span className="font-bold text-verde-texto">{dividas}% ({money(divCents)})</span>
+            <span className="font-bold text-verde-texto">
+              {dividas}% ({money(divCents)})
+            </span>
           </span>
           <input
             type="range"
@@ -260,7 +267,9 @@ function FatiadorDecimoTerceiro() {
         <label className="flex flex-col gap-1">
           <span className="flex justify-between text-xs font-semibold">
             <span>Janeiro (IPVA, matrícula, material)</span>
-            <span className="font-bold text-laranja-texto">{janeiro}% ({money(janCents)})</span>
+            <span className="font-bold text-laranja-texto">
+              {janeiro}% ({money(janCents)})
+            </span>
           </span>
           <input
             type="range"
@@ -337,9 +346,7 @@ function ContaRetornoFerias() {
         </div>
         <div className={`rounded-2xl p-3 ${gastouTudo ? 'bg-rosa' : 'bg-menta-clara'}`}>
           <span className="text-xs font-semibold text-tinta-suave">Saldo no mês de volta</span>
-          <p className="font-display text-xl font-extrabold text-tinta">
-            {gastouTudo ? money(0) : money(salCents)}
-          </p>
+          <p className="font-display text-xl font-extrabold text-tinta">{gastouTudo ? money(0) : money(salCents)}</p>
           <span className="text-[11px] text-tinta-suave">
             {gastouTudo ? 'Buraco no orçamento!' : 'Contas do mês cobertas'}
           </span>
@@ -519,7 +526,9 @@ function CalculadoraCDI() {
       <label className="flex flex-col gap-1">
         <span className="flex justify-between text-sm font-semibold">
           <span>Prazo</span>
-          <span className="font-bold">{meses} meses (IR {(irAliquota * 100).toFixed(1).replace('.', ',')}%)</span>
+          <span className="font-bold">
+            {meses} meses (IR {(irAliquota * 100).toFixed(1).replace('.', ',')}%)
+          </span>
         </span>
         <input
           type="range"
@@ -546,7 +555,8 @@ function CalculadoraCDI() {
       </div>
 
       <p className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
-        🚀 Mesmo pagando Imposto de Renda, o CDB 100% CDI coloca <b>{money(diferencaCents)}</b> a mais no seu bolso nesse prazo.
+        🚀 Mesmo pagando Imposto de Renda, o CDB 100% CDI coloca <b>{money(diferencaCents)}</b> a mais no seu bolso
+        nesse prazo.
       </p>
     </div>
   );
@@ -710,8 +720,7 @@ function MapaDoTesouro() {
       anos: 10,
       retornoEstimado: 0.107,
       cor: 'bg-azul',
-      motivo:
-        'Garante que seu dinheiro sempre ganhe da inflação, protegendo seu poder de compra por décadas.',
+      motivo: 'Garante que seu dinheiro sempre ganhe da inflação, protegendo seu poder de compra por décadas.',
     },
   }[objetivo];
 
@@ -874,7 +883,9 @@ function SocioVsApostador() {
           type="button"
           onClick={() => setModo('anos')}
           className={`rounded-xl px-3 py-2 text-xs font-bold transition ${
-            modo === 'anos' ? 'bg-menta-clara text-verde-texto shadow-sm' : 'border border-linha bg-cartao text-tinta-suave'
+            modo === 'anos'
+              ? 'bg-menta-clara text-verde-texto shadow-sm'
+              : 'border border-linha bg-cartao text-tinta-suave'
           }`}
         >
           🧘 Olhar em 5 anos
@@ -1009,7 +1020,8 @@ function ApostaIndividualVsIndice() {
       </div>
 
       <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
-        🎯 Diferença de <b>{money(etfIndiceCents - acaoUnicaCents)}</b>: uma empresa isolada pode quebrar ou perder mercado; um índice amplo dilui o risco entre dezenas de companhias.
+        🎯 Diferença de <b>{money(etfIndiceCents - acaoUnicaCents)}</b>: uma empresa isolada pode quebrar ou perder
+        mercado; um índice amplo dilui o risco entre dezenas de companhias.
       </p>
     </div>
   );
@@ -1075,7 +1087,8 @@ function DetectorCharlatanismo() {
       </div>
 
       <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
-        🚨 O PIB inteiro do Brasil é ~R$ 11 trilhões. Se alguém promete {taxaMes.toFixed(1).replace('.', ',')}% fixos ao mês, em poucos anos superaria toda a economia do país — é matematicamente impossível.
+        🚨 O PIB inteiro do Brasil é ~R$ 11 trilhões. Se alguém promete {taxaMes.toFixed(1).replace('.', ',')}% fixos ao
+        mês, em poucos anos superaria toda a economia do país — é matematicamente impossível.
       </p>
     </div>
   );
@@ -1158,7 +1171,8 @@ function TesteFalsaCentral() {
         { label: 'Número 0800 enviado no SMS', correto: true },
         { label: 'O valor alto da compra', correto: false },
       ],
-      explicacao: 'Golpistas criam um 0800 falso para você ligar para a "falsa central". Sempre abra o app oficial do banco.',
+      explicacao:
+        'Golpistas criam um 0800 falso para você ligar para a "falsa central". Sempre abra o app oficial do banco.',
     },
     {
       titulo: '2. Ligação da "segurança"',
@@ -1382,15 +1396,11 @@ function QuebraGeometricaPiramide() {
       <div className="grid grid-cols-2 gap-2.5">
         <div className="rounded-2xl bg-amarelo-claro p-3">
           <span className="text-xs font-semibold text-laranja-texto">Só no nível {niveis}</span>
-          <p className="font-display text-lg font-extrabold text-tinta">
-            {noNivel.toLocaleString('pt-BR')}
-          </p>
+          <p className="font-display text-lg font-extrabold text-tinta">{noNivel.toLocaleString('pt-BR')}</p>
         </div>
         <div className={`rounded-2xl p-3 ${passouBrasil ? 'bg-rosa' : 'bg-papel-2'}`}>
           <span className="text-xs font-semibold text-tinta-suave">Total acumulado</span>
-          <p className="font-display text-lg font-extrabold text-tinta">
-            {totalAcumulado.toLocaleString('pt-BR')}
-          </p>
+          <p className="font-display text-lg font-extrabold text-tinta">{totalAcumulado.toLocaleString('pt-BR')}</p>
         </div>
       </div>
 
@@ -1493,7 +1503,9 @@ function ContaAbsurdoEconomico() {
       <label className="flex flex-col gap-1">
         <span className="flex justify-between text-xs font-semibold">
           <span>Minutos assistidos por dia</span>
-          <span className="font-bold">{minutosDia} min ({videosDia} vídeos)</span>
+          <span className="font-bold">
+            {minutosDia} min ({videosDia} vídeos)
+          </span>
         </span>
         <input
           type="range"
@@ -1519,7 +1531,9 @@ function ContaAbsurdoEconomico() {
               type="button"
               onClick={() => setUsuarios(u.val)}
               className={`rounded-xl py-2 text-xs font-bold transition ${
-                usuarios === u.val ? 'bg-laranja text-tinta shadow-sm' : 'border border-linha bg-cartao text-tinta-suave'
+                usuarios === u.val
+                  ? 'bg-laranja text-tinta shadow-sm'
+                  : 'border border-linha bg-cartao text-tinta-suave'
               }`}
             >
               {u.label}
@@ -1540,8 +1554,8 @@ function ContaAbsurdoEconomico() {
       </div>
 
       <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
-        💸 Um anunciante real paga ~R$ 0,03 por visualização. Pagar {money(porVideo * 100)} por vídeo exigiria que a empresa queimasse{' '}
-        <b>{formatCompactMoney(custoMesReais)}</b> todo mês — a conta não fecha!
+        💸 Um anunciante real paga ~R$ 0,03 por visualização. Pagar {money(porVideo * 100)} por vídeo exigiria que a
+        empresa queimasse <b>{formatCompactMoney(custoMesReais)}</b> todo mês — a conta não fecha!
       </p>
     </div>
   );

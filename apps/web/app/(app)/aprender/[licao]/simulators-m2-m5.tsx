@@ -87,23 +87,19 @@ function IlusaoDePoder() {
 
       <p
         className={`rounded-xl p-3 text-xs leading-relaxed ${
-          multiplo > 1
-            ? 'bg-rosa text-vermelho-texto'
-            : 'bg-menta-clara text-verde-texto'
+          multiplo > 1 ? 'bg-rosa text-vermelho-texto' : 'bg-menta-clara text-verde-texto'
         }`}
       >
         {multiplo > 1 ? (
           <>
-            ⚠️ <b>Armadilha do limite alto:</b> seu limite equivale a{' '}
-            <b>{multiplo.toFixed(1).replace('.', ',')}x</b> a sua renda mensal. Estourar o cartão
-            significa trabalhar <b>{diasTrabalho} dias úteis inteiros</b> (base 22 dias/mês) só
-            para empatar — sem contar os juros.
+            ⚠️ <b>Armadilha do limite alto:</b> seu limite equivale a <b>{multiplo.toFixed(1).replace('.', ',')}x</b> a
+            sua renda mensal. Estourar o cartão significa trabalhar <b>{diasTrabalho} dias úteis inteiros</b> (base 22
+            dias/mês) só para empatar — sem contar os juros.
           </>
         ) : (
           <>
-            ✅ <b>Limite sob controle:</b> seu limite representa{' '}
-            <b>{Math.round(multiplo * 100)}%</b> da sua renda mensal ({diasTrabalho} dias úteis).
-            Mesmo assim, limite não é extensão do salário.
+            ✅ <b>Limite sob controle:</b> seu limite representa <b>{Math.round(multiplo * 100)}%</b> da sua renda
+            mensal ({diasTrabalho} dias úteis). Mesmo assim, limite não é extensão do salário.
           </>
         )}
       </p>
@@ -207,20 +203,16 @@ function BolaDeNeveDoMinimo() {
                 </span>
               )}
             </div>
-            <p className="font-display text-lg font-extrabold text-tinta mt-0.5">
-              {money(item.saldo)}
-            </p>
-            <span className="text-[11px] text-tinta-suave block">
-              Já pago: {money(item.totalPago)}
-            </span>
+            <p className="font-display text-lg font-extrabold text-tinta mt-0.5">{money(item.saldo)}</p>
+            <span className="text-[11px] text-tinta-suave block">Já pago: {money(item.totalPago)}</span>
           </div>
         ))}
       </div>
 
       <p className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
-        ⚖️ <b>Lei 14.690/2023 (Teto de 100%):</b> os juros do rotativo não podem passar do dobro
-        da dívida original ({money(tetoLeiCents)}). Em 12 meses pagando só o mínimo, você já terá
-        desembolsado <b>{money(m12.totalPago)}</b> e ainda deverá <b>{money(m12.saldo)}</b>.
+        ⚖️ <b>Lei 14.690/2023 (Teto de 100%):</b> os juros do rotativo não podem passar do dobro da dívida original (
+        {money(tetoLeiCents)}). Em 12 meses pagando só o mínimo, você já terá desembolsado <b>{money(m12.totalPago)}</b>{' '}
+        e ainda deverá <b>{money(m12.saldo)}</b>.
       </p>
     </div>
   );
@@ -341,9 +333,7 @@ function RaioXDoCetNoPix() {
         </div>
         <div className="rounded-2xl bg-amarelo-claro p-3">
           <span className="text-xs font-semibold text-tinta-suave">CET anual equivalente</span>
-          <p className="font-display text-lg font-extrabold text-tinta">
-            {taxaAnualPct.toFixed(0)}% a.a.
-          </p>
+          <p className="font-display text-lg font-extrabold text-tinta">{taxaAnualPct.toFixed(0)}% a.a.</p>
         </div>
       </div>
 
@@ -351,13 +341,12 @@ function RaioXDoCetNoPix() {
         {taxaMensalPct >= 4 ? (
           <>
             🚨 <b>Pix parcelado caro:</b> o banco está cobrando{' '}
-            <b>{taxaMensalPct.toFixed(1).replace('.', ',')}% ao mês</b> escondido na parcela. Só
-            faça se for emergência real e sem alternativa à vista.
+            <b>{taxaMensalPct.toFixed(1).replace('.', ',')}% ao mês</b> escondido na parcela. Só faça se for emergência
+            real e sem alternativa à vista.
           </>
         ) : (
           <>
-            💡 <b>Compare sempre pelo CET:</b> mesmo parcelas pequenas somam juros altos no fim do
-            contrato.
+            💡 <b>Compare sempre pelo CET:</b> mesmo parcelas pequenas somam juros altos no fim do contrato.
           </>
         )}
       </p>
@@ -372,11 +361,8 @@ function ReguaDeDatas() {
   const [compra, setCompra] = useState(11);
 
   const caiNaProxima = compra >= fechamento;
-  const gapFechVenc =
-    vencimento >= fechamento ? vencimento - fechamento : 30 - fechamento + vencimento;
-  const diasFolego = caiNaProxima
-    ? 30 - compra + fechamento + gapFechVenc
-    : fechamento - compra + gapFechVenc;
+  const gapFechVenc = vencimento >= fechamento ? vencimento - fechamento : 30 - fechamento + vencimento;
+  const diasFolego = caiNaProxima ? 30 - compra + fechamento + gapFechVenc : fechamento - compra + gapFechVenc;
 
   return (
     <div className="flex flex-col gap-4">
@@ -447,15 +433,13 @@ function ReguaDeDatas() {
       >
         {caiNaProxima ? (
           <>
-            🎯 <b>Melhor janela de compra:</b> comprando a partir do dia {fechamento} (fechamento),
-            você ganha <b>{diasFolego} dias</b> de fôlego antes do vencimento no dia {vencimento} do
-            próximo ciclo.
+            🎯 <b>Melhor janela de compra:</b> comprando a partir do dia {fechamento} (fechamento), você ganha{' '}
+            <b>{diasFolego} dias</b> de fôlego antes do vencimento no dia {vencimento} do próximo ciclo.
           </>
         ) : (
           <>
-            ⏳ <b>Cai nesta fatura:</b> como você comprou antes do fechamento (dia {fechamento}),
-            a cobrança já vem no vencimento próximo (dia {vencimento}), em apenas{' '}
-            <b>{diasFolego} dias</b>.
+            ⏳ <b>Cai nesta fatura:</b> como você comprou antes do fechamento (dia {fechamento}), a cobrança já vem no
+            vencimento próximo (dia {vencimento}), em apenas <b>{diasFolego} dias</b>.
           </>
         )}
       </p>
@@ -479,14 +463,9 @@ function TermometroDeSangria() {
     setDividas((prev) => prev.map((d) => (d.id === id ? { ...d, ...patch } : d)));
   };
 
-  const ativasOrdenadas = [...dividas]
-    .filter((d) => d.ativa)
-    .sort((a, b) => b.taxa - a.taxa);
+  const ativasOrdenadas = [...dividas].filter((d) => d.ativa).sort((a, b) => b.taxa - a.taxa);
 
-  const jurosTotalMesCents = ativasOrdenadas.reduce(
-    (acc, d) => acc + Math.round(d.saldo * 100 * (d.taxa / 100)),
-    0,
-  );
+  const jurosTotalMesCents = ativasOrdenadas.reduce((acc, d) => acc + Math.round(d.saldo * 100 * (d.taxa / 100)), 0);
 
   return (
     <div className="flex flex-col gap-3.5">
@@ -544,9 +523,7 @@ function TermometroDeSangria() {
 
       <div className="rounded-2xl bg-rosa p-3 flex items-center justify-between">
         <span className="text-xs font-semibold text-vermelho-texto">Sangria mensal total em juros</span>
-        <span className="font-display text-xl font-extrabold text-vermelho-texto">
-          {money(jurosTotalMesCents)}/mês
-        </span>
+        <span className="font-display text-xl font-extrabold text-vermelho-texto">{money(jurosTotalMesCents)}/mês</span>
       </div>
 
       {ativasOrdenadas.length > 0 && (
@@ -603,9 +580,7 @@ function AvalancheVsBolaDeNeve() {
 
       // Direciona aporte extra pela estratégia
       const ativas = itens.filter((d) => d.saldo > 0);
-      ativas.sort((a, b) =>
-        estrategia === 'avalanche' ? b.taxa - a.taxa : a.saldo - b.saldo,
-      );
+      ativas.sort((a, b) => (estrategia === 'avalanche' ? b.taxa - a.taxa : a.saldo - b.saldo));
 
       for (const alvo of ativas) {
         if (sobra <= 0) break;
@@ -645,9 +620,7 @@ function AvalancheVsBolaDeNeve() {
           type="button"
           onClick={() => setMetodo('bola')}
           className={`rounded-xl border-[1.5px] p-2.5 text-xs font-bold transition ${
-            metodo === 'bola'
-              ? 'border-menta bg-menta-clara text-tinta'
-              : 'border-linha bg-cartao text-tinta-suave'
+            metodo === 'bola' ? 'border-menta bg-menta-clara text-tinta' : 'border-linha bg-cartao text-tinta-suave'
           }`}
         >
           ⛄ Bola de neve (menor saldo)
@@ -679,9 +652,7 @@ function AvalancheVsBolaDeNeve() {
         </div>
         <div className="rounded-2xl bg-rosa p-3">
           <span className="text-xs font-semibold text-tinta-suave">Total de juros pagos</span>
-          <p className="font-display text-xl font-extrabold text-tinta">
-            {money(atual.totalJuros)}
-          </p>
+          <p className="font-display text-xl font-extrabold text-tinta">{money(atual.totalJuros)}</p>
         </div>
       </div>
 
@@ -689,9 +660,8 @@ function AvalancheVsBolaDeNeve() {
         📊 <b>Comparativo ({atual.meses} meses p/ zerar tudo):</b>{' '}
         {economiaAvalanche > 0 ? (
           <>
-            a <b>Avalanche</b> economiza <b>{money(economiaAvalanche)}</b> em juros, enquanto a{' '}
-            <b>Bola de Neve</b> dá vitória rápida na 1ª dívida em{' '}
-            <b>{resBola.primeiraQuitadaMes} meses</b>.
+            a <b>Avalanche</b> economiza <b>{money(economiaAvalanche)}</b> em juros, enquanto a <b>Bola de Neve</b> dá
+            vitória rápida na 1ª dívida em <b>{resBola.primeiraQuitadaMes} meses</b>.
           </>
         ) : (
           'Os dois métodos empatam em juros com esse aporte. Escolha o que te der mais fôlego emocional!'
@@ -708,9 +678,7 @@ function CalculadoraValorOriginal() {
   const [taxaEstimada, setTaxaEstimada] = useState(8);
 
   const hojeCents = valorHoje * 100;
-  const principalCents = Math.round(
-    hojeCents / Math.pow(1 + taxaEstimada / 100, mesesAtraso),
-  );
+  const principalCents = Math.round(hojeCents / Math.pow(1 + taxaEstimada / 100, mesesAtraso));
   const jurosAcumuladosCents = Math.max(0, hojeCents - principalCents);
   const ofertaMinCents = Math.round(principalCents * 0.8);
   const ofertaMaxCents = Math.min(hojeCents, Math.round(principalCents * 1.2));
@@ -773,16 +741,14 @@ function CalculadoraValorOriginal() {
         </div>
         <div className="rounded-2xl bg-rosa p-3">
           <span className="text-xs font-semibold text-tinta-suave">Só juros na cobrança</span>
-          <p className="font-display text-xl font-extrabold text-vermelho-texto">
-            {money(jurosAcumuladosCents)}
-          </p>
+          <p className="font-display text-xl font-extrabold text-vermelho-texto">{money(jurosAcumuladosCents)}</p>
         </div>
       </div>
 
       <div className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
-        🤝 <b>Faixa de contraoferta realista à vista:</b> entre{' '}
-        <b>{money(ofertaMinCents)}</b> e <b>{money(ofertaMaxCents)}</b>. Nunca aceite a primeira
-        proposta parcelada sem saber quanto da dívida é só bola de neve.
+        🤝 <b>Faixa de contraoferta realista à vista:</b> entre <b>{money(ofertaMinCents)}</b> e{' '}
+        <b>{money(ofertaMaxCents)}</b>. Nunca aceite a primeira proposta parcelada sem saber quanto da dívida é só bola
+        de neve.
       </div>
     </div>
   );
@@ -852,14 +818,14 @@ function SimuladorDesenrolaSerasa() {
       >
         {risco ? (
           <>
-            🚨 <b>Zona de risco de re-inadimplência:</b> comprometer mais de 20% da renda com
-            acordo ({money(Math.round(renda * 20))}/mês no máximo) costuma quebrar o combinado no
-            primeiro imprevisto. Peça prazo maior ou desconto maior antes de assinar.
+            🚨 <b>Zona de risco de re-inadimplência:</b> comprometer mais de 20% da renda com acordo (
+            {money(Math.round(renda * 20))}/mês no máximo) costuma quebrar o combinado no primeiro imprevisto. Peça
+            prazo maior ou desconto maior antes de assinar.
           </>
         ) : (
           <>
-            ✅ <b>Parcela saudável:</b> cabe dentro dos 20% recomendados da sua renda. Você
-            consegue honrar o acordo sem atrasar aluguel, luz ou mercado.
+            ✅ <b>Parcela saudável:</b> cabe dentro dos 20% recomendados da sua renda. Você consegue honrar o acordo sem
+            atrasar aluguel, luz ou mercado.
           </>
         )}
       </p>
@@ -948,15 +914,9 @@ function CalculadoraMinimoExistencial() {
       <div className="grid grid-cols-2 gap-2.5">
         <div className="rounded-2xl bg-amarelo-claro p-3">
           <span className="text-xs font-semibold text-tinta-suave">Seu mínimo existencial</span>
-          <p className="font-display text-xl font-extrabold text-tinta">
-            {money(minimoRealCents)}
-          </p>
+          <p className="font-display text-xl font-extrabold text-tinta">{money(minimoRealCents)}</p>
         </div>
-        <div
-          className={`rounded-2xl p-3 ${
-            margemRealCents > 0 ? 'bg-menta-clara' : 'bg-rosa'
-          }`}
-        >
+        <div className={`rounded-2xl p-3 ${margemRealCents > 0 ? 'bg-menta-clara' : 'bg-rosa'}`}>
           <span className="text-xs font-semibold text-tinta-suave">Sobra p/ negociar</span>
           <p className="font-display text-xl font-extrabold text-tinta">
             {margemRealCents > 0 ? money(margemRealCents) : money(0)}
@@ -965,10 +925,9 @@ function CalculadoraMinimoExistencial() {
       </div>
 
       <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
-        ⚖️ <b>Piso legal vs. vida real:</b> o decreto federal protege pelo menos{' '}
-        <b>{money(PISO_LEGAL_CENTS)}</b> da renda na Lei do Superendividamento, mas o seu mínimo de
-        sobrevivência real é <b>{money(minimoRealCents)}</b>. Só negocie parcelas que caibam na
-        sobra real ({margemRealCents > 0 ? money(margemRealCents) : 'R$ 0,00'}).
+        ⚖️ <b>Piso legal vs. vida real:</b> o decreto federal protege pelo menos <b>{money(PISO_LEGAL_CENTS)}</b> da
+        renda na Lei do Superendividamento, mas o seu mínimo de sobrevivência real é <b>{money(minimoRealCents)}</b>. Só
+        negocie parcelas que caibam na sobra real ({margemRealCents > 0 ? money(margemRealCents) : 'R$ 0,00'}).
       </p>
     </div>
   );
@@ -1032,9 +991,7 @@ function CalculadoraCustoBasico() {
                   {it.label}
                 </span>
               </div>
-              <span className="font-display text-xs font-extrabold text-tinta">
-                {money(it.valor)}
-              </span>
+              <span className="font-display text-xs font-extrabold text-tinta">{money(it.valor)}</span>
             </button>
           );
         })}
@@ -1047,15 +1004,11 @@ function CalculadoraCustoBasico() {
         </div>
         <div className="rounded-xl bg-azul p-2.5 text-center">
           <span className="text-[11px] font-semibold text-tinta-suave block">3 meses</span>
-          <p className="font-display text-sm font-extrabold text-tinta">
-            {money(custoBasicoCents * 3)}
-          </p>
+          <p className="font-display text-sm font-extrabold text-tinta">{money(custoBasicoCents * 3)}</p>
         </div>
         <div className="rounded-xl bg-menta-clara p-2.5 text-center">
           <span className="text-[11px] font-semibold text-tinta-suave block">6 meses</span>
-          <p className="font-display text-sm font-extrabold text-tinta">
-            {money(custoBasicoCents * 6)}
-          </p>
+          <p className="font-display text-sm font-extrabold text-tinta">{money(custoBasicoCents * 6)}</p>
         </div>
       </div>
     </div>
@@ -1092,45 +1045,30 @@ function ComparadorLiquidezSeguranca() {
 
       <div className="grid grid-cols-2 gap-2.5">
         <div className="rounded-2xl bg-menta-clara p-3">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-verde-texto">
-            Reserva D+0
-          </span>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-verde-texto">Reserva D+0</span>
           <p className="text-xs font-semibold text-tinta mt-1">CDB 100% CDI / Selic</p>
           <p className="font-display text-xl font-extrabold text-verde-texto mt-1">R$ 0,00</p>
           <span className="text-[11px] text-verde-texto">de juros pagos</span>
         </div>
 
         <div className="rounded-2xl bg-rosa p-3">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-vermelho-texto">
-            Travado D+30
-          </span>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-vermelho-texto">Travado D+30</span>
           <p className="text-xs font-semibold text-tinta mt-1">Cai no rotativo 30d</p>
-          <p className="font-display text-xl font-extrabold text-vermelho-texto mt-1">
-            −{money(prejuizoTravadoCents)}
-          </p>
+          <p className="font-display text-xl font-extrabold text-vermelho-texto mt-1">−{money(prejuizoTravadoCents)}</p>
           <span className="text-[11px] text-vermelho-texto">prejuízo líquido</span>
         </div>
       </div>
 
       <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
-        💧 <b>Liquidez vale mais que 0,1% de rentabilidade:</b> mesmo que o investimento travado
-        renda {money(rendimentoTravadoCents)} no mês, o rotativo cobra{' '}
-        <b>{money(custoRotativoCents)}</b> até o dinheiro destravar. Reserva de emergência precisa
-        ser D+0.
+        💧 <b>Liquidez vale mais que 0,1% de rentabilidade:</b> mesmo que o investimento travado renda{' '}
+        {money(rendimentoTravadoCents)} no mês, o rotativo cobra <b>{money(custoRotativoCents)}</b> até o dinheiro
+        destravar. Reserva de emergência precisa ser D+0.
       </p>
     </div>
   );
 }
 
-function ToggleSimNao({
-  label,
-  valor,
-  onChange,
-}: {
-  label: string;
-  valor: boolean;
-  onChange: (v: boolean) => void;
-}) {
+function ToggleSimNao({ label, valor, onChange }: { label: string; valor: boolean; onChange: (v: boolean) => void }) {
   return (
     <div className="flex items-center justify-between gap-2 rounded-xl border border-linha bg-cartao p-2.5">
       <span className="text-xs font-semibold text-tinta">{label}</span>
@@ -1195,16 +1133,8 @@ function SemaforoDaEmergencia() {
   return (
     <div className="flex flex-col gap-3">
       <ToggleSimNao label="1. Foi algo inesperado?" valor={inesperado} onChange={setInesperado} />
-      <ToggleSimNao
-        label="2. É essencial / urgente hoje?"
-        valor={urgente}
-        onChange={setUrgente}
-      />
-      <ToggleSimNao
-        label="3. Tem alternativa mais barata?"
-        valor={alternativa}
-        onChange={setAlternativa}
-      />
+      <ToggleSimNao label="2. É essencial / urgente hoje?" valor={urgente} onChange={setUrgente} />
+      <ToggleSimNao label="3. Tem alternativa mais barata?" valor={alternativa} onChange={setAlternativa} />
 
       <div className={`rounded-2xl p-3.5 text-xs leading-relaxed ${res.cor}`}>
         <p className="font-display text-sm font-extrabold mb-1">{res.titulo}</p>
@@ -1269,10 +1199,7 @@ function ReconstrucaoDoMuro() {
           <span>{pctMes1}% do muro de pé</span>
         </div>
         <div className="h-3 w-full overflow-hidden rounded-full bg-papel-2 border border-linha">
-          <div
-            style={{ width: `${pctMes1}%` }}
-            className="h-full bg-menta transition-all duration-200"
-          />
+          <div style={{ width: `${pctMes1}%` }} className="h-full bg-menta transition-all duration-200" />
         </div>
       </div>
 
@@ -1344,10 +1271,7 @@ function TermometroPazDeEspirito() {
 
       <div className="flex flex-col gap-1.5">
         <div className="h-3.5 w-full overflow-hidden rounded-full bg-papel-2 border border-linha">
-          <div
-            style={{ width: `${pctBarra}%` }}
-            className="h-full bg-menta transition-all duration-200"
-          />
+          <div style={{ width: `${pctBarra}%` }} className="h-full bg-menta transition-all duration-200" />
         </div>
         <p className={`rounded-xl p-3 text-xs font-semibold ${nivel.cor}`}>{nivel.label}</p>
       </div>
@@ -1420,10 +1344,7 @@ function AportesVsAumentoDeRenda() {
             <span className="font-display font-extrabold">{money(cenarioACents)}</span>
           </div>
           <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-cartao">
-            <div
-              style={{ width: `${Math.round((cenarioACents / maxCents) * 100)}%` }}
-              className="h-full bg-amarelo"
-            />
+            <div style={{ width: `${Math.round((cenarioACents / maxCents) * 100)}%` }} className="h-full bg-amarelo" />
           </div>
         </div>
 
@@ -1433,17 +1354,13 @@ function AportesVsAumentoDeRenda() {
             <span className="font-display font-extrabold">{money(cenarioBCents)}</span>
           </div>
           <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-cartao">
-            <div
-              style={{ width: `${Math.round((cenarioBCents / maxCents) * 100)}%` }}
-              className="h-full bg-menta"
-            />
+            <div style={{ width: `${Math.round((cenarioBCents / maxCents) * 100)}%` }} className="h-full bg-menta" />
           </div>
         </div>
       </div>
 
       <p className="text-xs leading-relaxed text-tinta-suave">
-        🚀 <b>Renda é o motor do aporte (0,8%/mês em 10 anos):</b> aumentar sua capacidade de
-        ganhar gera{' '}
+        🚀 <b>Renda é o motor do aporte (0,8%/mês em 10 anos):</b> aumentar sua capacidade de ganhar gera{' '}
         <b>
           {cenarioBCents >= cenarioACents
             ? `${money(cenarioBCents - cenarioACents)} a mais`
@@ -1509,9 +1426,7 @@ function CalculadoraRoiEducacional() {
         </div>
         <div className={`rounded-2xl p-3 ${retorno2AnosCents >= 0 ? 'bg-menta-clara' : 'bg-rosa'}`}>
           <span className="text-xs font-semibold text-tinta-suave">Lucro líquido em 2 anos</span>
-          <p className="font-display text-xl font-extrabold text-tinta">
-            {money(retorno2AnosCents)}
-          </p>
+          <p className="font-display text-xl font-extrabold text-tinta">{money(retorno2AnosCents)}</p>
         </div>
       </div>
 
@@ -1601,27 +1516,21 @@ function BalancoDoEstagio() {
         />
       </label>
 
-      <div
-        className={`rounded-2xl p-3 flex items-center justify-between ${
-          positivo ? 'bg-menta-clara' : 'bg-rosa'
-        }`}
-      >
+      <div className={`rounded-2xl p-3 flex items-center justify-between ${positivo ? 'bg-menta-clara' : 'bg-rosa'}`}>
         <span className="text-xs font-semibold text-tinta">Saldo líquido real/mês</span>
-        <span className="font-display text-2xl font-extrabold text-tinta">
-          {money(liquidoCents)}
-        </span>
+        <span className="font-display text-2xl font-extrabold text-tinta">{money(liquidoCents)}</span>
       </div>
 
       <p className="text-xs leading-relaxed text-tinta-suave">
         {positivo ? (
           <>
-            ✅ <b>Saldo positivo:</b> além da experiência no currículo, sobram{' '}
-            <b>{money(liquidoCents)}</b> limpos por mês ({money(liquidoCents * 12)}/ano).
+            ✅ <b>Saldo positivo:</b> além da experiência no currículo, sobram <b>{money(liquidoCents)}</b> limpos por
+            mês ({money(liquidoCents * 12)}/ano).
           </>
         ) : (
           <>
-            ⚠️ <b>Você está pagando para estagiar:</b> faltam {money(Math.abs(liquidoCents))}/mês.
-            Só vale se houver chance real de efetivação rápida ou auxílio-transporte/refeição.
+            ⚠️ <b>Você está pagando para estagiar:</b> faltam {money(Math.abs(liquidoCents))}/mês. Só vale se houver
+            chance real de efetivação rápida ou auxílio-transporte/refeição.
           </>
         )}
       </p>
@@ -1713,14 +1622,12 @@ function CalculadoraHoraDeFreela() {
 
       <div className="rounded-2xl bg-menta-clara p-3 flex items-center justify-between">
         <span className="text-xs font-semibold text-verde-texto">Preço mínimo a cobrar</span>
-        <span className="font-display text-2xl font-extrabold text-verde-texto">
-          {money(precoMinimoCents)}
-        </span>
+        <span className="font-display text-2xl font-extrabold text-verde-texto">{money(precoMinimoCents)}</span>
       </div>
 
       <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
-        🧮 <b>Sem pagar para trabalhar:</b> {money(maoDeObraCents)} de horas +{' '}
-        {money(margemCents)} de margem de alteração + {money(custosCents)} de custos diretos.
+        🧮 <b>Sem pagar para trabalhar:</b> {money(maoDeObraCents)} de horas + {money(margemCents)} de margem de
+        alteração + {money(custosCents)} de custos diretos.
       </p>
     </div>
   );
@@ -1824,9 +1731,8 @@ function AlocacaoRendaExtra() {
       </div>
 
       <p className="text-xs leading-relaxed text-tinta-suave">
-        ✨ <b>Regra do esforço recompensado:</b> separe uma fatia planejada para o lazer (
-        {money(lazerCents)}) sem culpa — assim você mantém o gás para os próximos extras sem
-        torrar tudo.
+        ✨ <b>Regra do esforço recompensado:</b> separe uma fatia planejada para o lazer ({money(lazerCents)}) sem culpa
+        — assim você mantém o gás para os próximos extras sem torrar tudo.
       </p>
     </div>
   );

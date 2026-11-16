@@ -83,12 +83,7 @@ export function PlannerHub({
   const fixedExpenses = plan?.fixedExpenses ?? [];
   const fixedTotalCents = fixedExpenses.reduce((sum, f) => sum + f.amountInCents, 0);
 
-  const incomeHeadline =
-    salaryCents > 0
-      ? money(salaryCents)
-      : totalIncomeCents > 0
-        ? money(totalIncomeCents)
-        : null;
+  const incomeHeadline = salaryCents > 0 ? money(salaryCents) : totalIncomeCents > 0 ? money(totalIncomeCents) : null;
   const incomeSummary =
     salaryCents > 0
       ? fixedExpenses.length > 0
@@ -113,7 +108,9 @@ export function PlannerHub({
   const forecastSummary = thisMonth
     ? pc.forecastThisSummary(
         monthName(thisMonth.month, locale),
-        nextMonth ? ` · ${monthName(nextMonth.month, locale)}: ${nextMonth.leftInCents >= 0 ? '+' : '−'}${money(Math.abs(nextMonth.leftInCents))}` : '',
+        nextMonth
+          ? ` · ${monthName(nextMonth.month, locale)}: ${nextMonth.leftInCents >= 0 ? '+' : '−'}${money(Math.abs(nextMonth.leftInCents))}`
+          : '',
       )
     : nextMonth
       ? pc.forecastNextSummary(monthName(nextMonth.month, locale))
@@ -156,13 +153,9 @@ export function PlannerHub({
 
   // 4. Minhas assinaturas
   const activeSubs = (subscriptions?.subscriptions ?? []).filter((s) => s.active);
-  const subsMonthly =
-    subscriptions?.monthlyInCents ?? activeSubs.reduce((sum, s) => sum + s.amountInCents, 0);
+  const subsMonthly = subscriptions?.monthlyInCents ?? activeSubs.reduce((sum, s) => sum + s.amountInCents, 0);
   const duplicateSubs = activeSubs.filter((s) => s.duplicateOf).length;
-  const subsHeadline =
-    subscriptions && activeSubs.length > 0
-      ? pc.subsPerMonth(money(subsMonthly))
-      : null;
+  const subsHeadline = subscriptions && activeSubs.length > 0 ? pc.subsPerMonth(money(subsMonthly)) : null;
   const subsSummary =
     subscriptions && activeSubs.length > 0
       ? pc.subsSummary(activeSubs.length, duplicateSubs)
@@ -174,16 +167,10 @@ export function PlannerHub({
   const goalStatus = forecast?.goal ?? null;
   const rawGoal = plan?.goal ?? null;
   const hasGoal = Boolean(goalStatus || rawGoal);
-  const goalTitle =
-    goalStatus?.label ??
-    rawGoal?.label ??
-    (rawGoal ? goalKindFallback(rawGoal.kind, locale) : null);
+  const goalTitle = goalStatus?.label ?? rawGoal?.label ?? (rawGoal ? goalKindFallback(rawGoal.kind, locale) : null);
   const goalSaved = goalStatus?.savedInCents ?? rawGoal?.savedInCents ?? 0;
   const goalTarget = goalStatus?.amountInCents ?? rawGoal?.amountInCents ?? null;
-  const goalPct =
-    goalTarget && goalTarget > 0
-      ? Math.min(100, Math.round((goalSaved / goalTarget) * 100))
-      : null;
+  const goalPct = goalTarget && goalTarget > 0 ? Math.min(100, Math.round((goalSaved / goalTarget) * 100)) : null;
   const goalHeadline = hasGoal
     ? goalTarget
       ? `${money(goalSaved)} / ${money(goalTarget)}`
@@ -223,16 +210,17 @@ export function PlannerHub({
 
   // 7. Minhas categorias
   const pendingCount = summary.uncategorizedCount;
-  const categoriesSummary =
-    pendingCount > 0
-      ? pc.categoriesPendingSummary(pendingCount)
-      : pc.categoriesCleanSummary;
+  const categoriesSummary = pendingCount > 0 ? pc.categoriesPendingSummary(pendingCount) : pc.categoriesCleanSummary;
 
   // 8. Fechamento do mês
   const prevClosedMonth = shiftMonth(month, -1);
   const closingSummary =
     summary.incomeInCents > 0 || summary.outcomeInCents > 0
-      ? pc.closingActiveSummary(monthName(prevClosedMonth, locale), monthName(month, locale), money(summary.outcomeInCents))
+      ? pc.closingActiveSummary(
+          monthName(prevClosedMonth, locale),
+          monthName(month, locale),
+          money(summary.outcomeInCents),
+        )
       : pc.closingEmptySummary(monthName(prevClosedMonth, locale));
 
   const cards: PlannerCardItem[] = [
@@ -310,10 +298,7 @@ export function PlannerHub({
       title: pc.titles.categories,
       headline: null,
       summary: categoriesSummary,
-      badge:
-        pendingCount > 0
-          ? { text: pc.categoriesPendingBadge(pendingCount), tone: 'warning' }
-          : undefined,
+      badge: pendingCount > 0 ? { text: pc.categoriesPendingBadge(pendingCount), tone: 'warning' } : undefined,
     },
     {
       id: 'fechamento',
@@ -329,9 +314,7 @@ export function PlannerHub({
   return (
     <section className="flex flex-col gap-4 pb-6">
       <div className="flex flex-col gap-1">
-        <h2 className="font-display text-[22px] leading-7 font-extrabold text-tinta">
-          {t.planner.title}
-        </h2>
+        <h2 className="font-display text-[22px] leading-7 font-extrabold text-tinta">{t.planner.title}</h2>
         <p className="text-sm leading-5 text-tinta-suave">{t.planner.subtitle}</p>
       </div>
 
@@ -351,13 +334,9 @@ export function PlannerHub({
                   <Icon src={card.icon} size={22} />
                 </span>
                 <div className="flex min-w-0 flex-col">
-                  <span className="truncate text-[15px] font-bold group-hover:text-laranja-texto">
-                    {card.title}
-                  </span>
+                  <span className="truncate text-[15px] font-bold group-hover:text-laranja-texto">{card.title}</span>
                   {card.headline && (
-                    <span className="font-display text-lg leading-6 font-extrabold tabular-nums">
-                      {card.headline}
-                    </span>
+                    <span className="font-display text-lg leading-6 font-extrabold tabular-nums">{card.headline}</span>
                   )}
                 </div>
               </div>

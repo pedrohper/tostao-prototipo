@@ -23,7 +23,10 @@ export default async function AmigosPage({ searchParams }: { searchParams: Promi
       <div className="flex items-center justify-between gap-2">
         <div className="flex flex-col gap-1">
           <h1 className="font-display text-[30px] leading-[34px] font-extrabold">{am.title}</h1>
-          <p className="text-sm leading-5 text-tinta-suave">{f.challenge.title}. {dias === 0 ? am.endsToday : am.endsInDays(dias)}{am.endsSuffix}</p>
+          <p className="text-sm leading-5 text-tinta-suave">
+            {f.challenge.title}. {dias === 0 ? am.endsToday : am.endsInDays(dias)}
+            {am.endsSuffix}
+          </p>
         </div>
         <Mascot pose="dupla" size={92} alt="Tostão e Caramelo" />
       </div>
@@ -32,13 +35,25 @@ export default async function AmigosPage({ searchParams }: { searchParams: Promi
         <Eyebrow>{am.rankingTitle}</Eyebrow>
         <div className="flex flex-col rounded-2xl border border-linha bg-cartao px-3.5">
           {f.ranking.map((p, i) => (
-            <div key={p.id} className={`flex min-h-[58px] items-center gap-3 border-b border-linha last:border-b-0 ${p.me ? 'font-bold' : ''}`}>
-              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${MEDALHA[i] ?? 'bg-papel-2 text-tinta'}`}>{i + 1}</span>
+            <div
+              key={p.id}
+              className={`flex min-h-[58px] items-center gap-3 border-b border-linha last:border-b-0 ${p.me ? 'font-bold' : ''}`}
+            >
+              <span
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${MEDALHA[i] ?? 'bg-papel-2 text-tinta'}`}
+              >
+                {i + 1}
+              </span>
               <span className="flex min-w-0 grow flex-col">
                 <span className="truncate text-[15px]">{p.me ? am.youSuffix(p.name) : p.name}</span>
-                <span className="flex items-center gap-1 text-xs font-normal text-tinta-suave"><Icon src="ui/ofensiva" size={14} />{am.streakLabel(p.streakDays)}</span>
+                <span className="flex items-center gap-1 text-xs font-normal text-tinta-suave">
+                  <Icon src="ui/ofensiva" size={14} />
+                  {am.streakLabel(p.streakDays)}
+                </span>
               </span>
-              <span className="shrink-0 text-[15px] tabular-nums">{p.weekScore} <span className="text-xs font-normal text-tinta-suave">{am.missionsUnit}</span></span>
+              <span className="shrink-0 text-[15px] tabular-nums">
+                {p.weekScore} <span className="text-xs font-normal text-tinta-suave">{am.missionsUnit}</span>
+              </span>
               {!p.me && <Remover id={p.id} name={p.name} t={am.client} />}
             </div>
           ))}

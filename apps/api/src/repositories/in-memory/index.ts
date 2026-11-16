@@ -1,43 +1,107 @@
 // Repositórios em memória: arrays simples. Usados nos testes e pra rodar sem Postgres.
 import { randomUUID } from 'node:crypto';
-import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, LessonProgress, Transaction, User, Invite, PasswordReset, ChatMessage, TribunalVote, Battle, BattleKind, Person, TostaoInsight, TostaoAutoConfig, TostaoInsightStatus } from '../../domain/entities.js';
+import type {
+  Account,
+  BankConnection,
+  Category,
+  CategoryBudget,
+  CategoryRule,
+  LessonProgress,
+  Transaction,
+  User,
+  Invite,
+  PasswordReset,
+  ChatMessage,
+  TribunalVote,
+  Battle,
+  BattleKind,
+  Person,
+  TostaoInsight,
+  TostaoAutoConfig,
+  TostaoInsightStatus,
+} from '../../domain/entities.js';
 import type { FinancialPlan, UpdateTostaoAutoConfigBody } from '@tostao/contracts';
 import type {
-  AccountData, AccountsRepository, FinancialPlansRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, ChatMessagesRepository, IgnoredSubscriptionsRepository, InvitesRepository, GamesRepository, EngagementRepository, PushSub, LessonProgressRepository, PasswordResetsRepository,
-  PeopleRepository, Repositories, TransactionsRepository, UsersRepository, WhatsappLink, WhatsappLinksRepository, TostaoAutoRepository, UpsertTostaoInsight,
+  AccountData,
+  AccountsRepository,
+  FinancialPlansRepository,
+  BankConnectionsRepository,
+  BudgetsRepository,
+  CategoriesRepository,
+  CategoryRulesRepository,
+  ChatMessagesRepository,
+  IgnoredSubscriptionsRepository,
+  InvitesRepository,
+  GamesRepository,
+  EngagementRepository,
+  PushSub,
+  LessonProgressRepository,
+  PasswordResetsRepository,
+  PeopleRepository,
+  Repositories,
+  TransactionsRepository,
+  UsersRepository,
+  WhatsappLink,
+  WhatsappLinksRepository,
+  TostaoAutoRepository,
+  UpsertTostaoInsight,
 } from '../types.js';
 import { DEFAULT_CATEGORIES, DEFAULT_RULES } from '../../lib/defaults.js';
 
 export class InMemoryUsersRepository implements UsersRepository {
   items: User[] = [];
-  async findByEmail(email: string) { return this.items.find((u) => u.email === email) ?? null; }
-  async findById(id: string) { return this.items.find((u) => u.id === id) ?? null; }
-  async listAllIds() { return this.items.map((u) => u.id); }
+  async findByEmail(email: string) {
+    return this.items.find((u) => u.email === email) ?? null;
+  }
+  async findById(id: string) {
+    return this.items.find((u) => u.id === id) ?? null;
+  }
+  async listAllIds() {
+    return this.items.map((u) => u.id);
+  }
   async create(data: Pick<User, 'name' | 'email' | 'passwordHash'>) {
     const user: User = { id: randomUUID(), createdAt: new Date(), ...data };
     this.items.push(user);
     return user;
   }
-  async count() { return this.items.length; }
+  async count() {
+    return this.items.length;
+  }
   async updatePassword(id: string, passwordHash: string) {
     const u = this.items.find((x) => x.id === id);
     if (u) u.passwordHash = passwordHash;
   }
-  async delete(id: string) { this.items = this.items.filter((u) => u.id !== id); }
+  async delete(id: string) {
+    this.items = this.items.filter((u) => u.id !== id);
+  }
 }
 
 export class InMemoryBankConnectionsRepository implements BankConnectionsRepository {
   items: BankConnection[] = [];
   // Imita o onDelete: Cascade do Postgres
-  constructor(private readonly cascade?: { accounts: InMemoryAccountsRepository; transactions: InMemoryTransactionsRepository }) {}
-  async findById(id: string) { return this.items.find((c) => c.id === id) ?? null; }
+  constructor(
+    private readonly cascade?: { accounts: InMemoryAccountsRepository; transactions: InMemoryTransactionsRepository },
+  ) {}
+  async findById(id: string) {
+    return this.items.find((c) => c.id === id) ?? null;
+  }
   async findByUserAndItem(userId: string, itemId: string) {
     return this.items.find((c) => c.userId === userId && c.itemId === itemId) ?? null;
   }
-  async listByUser(userId: string) { return this.items.filter((c) => c.userId === userId); }
-  async listActive() { return this.items.filter((c) => c.status === 'ACTIVE'); }
+  async listByUser(userId: string) {
+    return this.items.filter((c) => c.userId === userId);
+  }
+  async listActive() {
+    return this.items.filter((c) => c.status === 'ACTIVE');
+  }
   async create(data: Pick<BankConnection, 'userId' | 'itemId' | 'institution'>) {
-    const c: BankConnection = { id: randomUUID(), status: 'ACTIVE', lastSyncedAt: null, createdAt: new Date(), ...data };
+    const c: BankConnection = {
+      id: randomUUID(),
+      status: 'ACTIVE',
+      lastSyncedAt: null,
+      createdAt: new Date(),
+      ...data,
+    };
     this.items.push(c);
     return c;
   }
@@ -50,7 +114,9 @@ export class InMemoryBankConnectionsRepository implements BankConnectionsReposit
     if (!this.cascade) return;
     const gone = new Set(this.cascade.accounts.items.filter((a) => a.connectionId === id).map((a) => a.id));
     this.cascade.accounts.items = this.cascade.accounts.items.filter((a) => !gone.has(a.id));
-    this.cascade.transactions.items = this.cascade.transactions.items.filter((t) => !t.accountId || !gone.has(t.accountId));
+    this.cascade.transactions.items = this.cascade.transactions.items.filter(
+      (t) => !t.accountId || !gone.has(t.accountId),
+    );
   }
 }
 
@@ -70,42 +136,62 @@ export class InMemoryAccountsRepository implements AccountsRepository {
   }
   async upsertByExternalId(data: AccountData) {
     const found = this.items.find((a) => a.userId === data.userId && a.externalId === data.externalId);
-    if (found) { Object.assign(found, data); return found; }
+    if (found) {
+      Object.assign(found, data);
+      return found;
+    }
     const a: Account = { id: randomUUID(), hidden: false, creditLimitInCents: null, dueDate: null, ...data };
     this.items.push(a);
     return a;
   }
-  async listByUser(userId: string) { return this.items.filter((a) => a.userId === userId); }
+  async listByUser(userId: string) {
+    return this.items.filter((a) => a.userId === userId);
+  }
 }
 
 export class InMemoryCategoriesRepository implements CategoriesRepository {
   items: Category[] = DEFAULT_CATEGORIES.map((c) => ({ ...c }));
-  async list(userId?: string) { return this.items.filter((c) => !c.userId || c.userId === userId); }
-  async findById(id: string) { return this.items.find((c) => c.id === id) ?? null; }
+  async list(userId?: string) {
+    return this.items.filter((c) => !c.userId || c.userId === userId);
+  }
+  async findById(id: string) {
+    return this.items.find((c) => c.id === id) ?? null;
+  }
   async create(data: Omit<Category, 'id'> & { userId: string }) {
     const c: Category = { id: `u-${randomUUID()}`, ...data };
     this.items.push(c);
     return c;
   }
-  async delete(id: string) { this.items = this.items.filter((c) => c.id !== id); }
+  async delete(id: string) {
+    this.items = this.items.filter((c) => c.id !== id);
+  }
 }
 
 export class InMemoryCategoryRulesRepository implements CategoryRulesRepository {
   items: CategoryRule[] = DEFAULT_RULES.map((r) => ({ id: randomUUID(), userId: null, ...r }));
-  async listForUser(userId: string) { return this.items.filter((r) => r.userId === null || r.userId === userId); }
+  async listForUser(userId: string) {
+    return this.items.filter((r) => r.userId === null || r.userId === userId);
+  }
   async upsert(data: Omit<CategoryRule, 'id'>) {
     const found = this.items.find((r) => r.userId === data.userId && r.pattern === data.pattern);
-    if (found) { found.categoryId = data.categoryId; return found; }
+    if (found) {
+      found.categoryId = data.categoryId;
+      return found;
+    }
     const r: CategoryRule = { id: randomUUID(), ...data };
     this.items.push(r);
     return r;
   }
-  async deleteByCategory(categoryId: string) { this.items = this.items.filter((r) => r.categoryId !== categoryId); }
+  async deleteByCategory(categoryId: string) {
+    this.items = this.items.filter((r) => r.categoryId !== categoryId);
+  }
 }
 
 export class InMemoryTransactionsRepository implements TransactionsRepository {
   items: Transaction[] = [];
-  async findById(id: string) { return this.items.find((t) => t.id === id) ?? null; }
+  async findById(id: string) {
+    return this.items.find((t) => t.id === id) ?? null;
+  }
   async findByExternalId(userId: string, externalId: string) {
     return this.items.find((t) => t.userId === userId && t.externalId === externalId) ?? null;
   }
@@ -126,10 +212,16 @@ export class InMemoryTransactionsRepository implements TransactionsRepository {
     const i = this.items.findIndex((t) => t.id === transaction.id);
     if (i >= 0) this.items[i] = transaction;
   }
-  async clearCategory(categoryId: string) { for (const t of this.items) if (t.categoryId === categoryId) t.categoryId = null; }
-  async delete(id: string) { this.items = this.items.filter((t) => t.id !== id); }
+  async clearCategory(categoryId: string) {
+    for (const t of this.items) if (t.categoryId === categoryId) t.categoryId = null;
+  }
+  async delete(id: string) {
+    this.items = this.items.filter((t) => t.id !== id);
+  }
   async findByPerson(userId: string, personId: string) {
-    return this.items.filter((t) => t.userId === userId && t.personId === personId).sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
+    return this.items
+      .filter((t) => t.userId === userId && t.personId === personId)
+      .sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
   }
   async deleteSeriesFrom(userId: string, seriesId: string, from: Date) {
     const before = this.items.length;
@@ -140,23 +232,35 @@ export class InMemoryTransactionsRepository implements TransactionsRepository {
 
 export class InMemoryBudgetsRepository implements BudgetsRepository {
   items: CategoryBudget[] = [];
-  async listByUser(userId: string) { return this.items.filter((b) => b.userId === userId); }
+  async listByUser(userId: string) {
+    return this.items.filter((b) => b.userId === userId);
+  }
   async upsert(data: Omit<CategoryBudget, 'id'>) {
     const found = this.items.find((b) => b.userId === data.userId && b.categoryId === data.categoryId);
-    if (found) { found.limitInCents = data.limitInCents; return found; }
+    if (found) {
+      found.limitInCents = data.limitInCents;
+      return found;
+    }
     const b: CategoryBudget = { id: randomUUID(), ...data };
     this.items.push(b);
     return b;
   }
-  async delete(userId: string, categoryId: string) { this.items = this.items.filter((b) => !(b.userId === userId && b.categoryId === categoryId)); }
-  async deleteByCategory(categoryId: string) { this.items = this.items.filter((b) => b.categoryId !== categoryId); }
+  async delete(userId: string, categoryId: string) {
+    this.items = this.items.filter((b) => !(b.userId === userId && b.categoryId === categoryId));
+  }
+  async deleteByCategory(categoryId: string) {
+    this.items = this.items.filter((b) => b.categoryId !== categoryId);
+  }
 }
 
 export class InMemoryLessonProgressRepository implements LessonProgressRepository {
   items: LessonProgress[] = [];
-  async listByUser(userId: string) { return this.items.filter((l) => l.userId === userId); }
+  async listByUser(userId: string) {
+    return this.items.filter((l) => l.userId === userId);
+  }
   async markDone(userId: string, lessonId: string) {
-    if (!this.items.some((l) => l.userId === userId && l.lessonId === lessonId)) this.items.push({ userId, lessonId, completedAt: new Date() });
+    if (!this.items.some((l) => l.userId === userId && l.lessonId === lessonId))
+      this.items.push({ userId, lessonId, completedAt: new Date() });
   }
 }
 
@@ -167,24 +271,34 @@ export class InMemoryGamesRepository implements GamesRepository {
     this.votes = this.votes.filter((v) => !(v.userId === userId && v.caseId === caseId));
     this.votes.push({ userId, caseId, choice, votedAt: new Date() });
   }
-  async findVote(userId: string, caseId: string) { return this.votes.find((v) => v.userId === userId && v.caseId === caseId) ?? null; }
+  async findVote(userId: string, caseId: string) {
+    return this.votes.find((v) => v.userId === userId && v.caseId === caseId) ?? null;
+  }
   async countVotes(caseId: string) {
     const counts: number[] = [];
     for (const v of this.votes.filter((x) => x.caseId === caseId)) counts[v.choice] = (counts[v.choice] ?? 0) + 1;
     return Array.from(counts, (c) => c ?? 0);
   }
-  async countUserVotes(userId: string) { return this.votes.filter((v) => v.userId === userId).length; }
-  async listBattles(userId: string) { return this.battles.filter((b) => b.userId === userId); }
+  async countUserVotes(userId: string) {
+    return this.votes.filter((v) => v.userId === userId).length;
+  }
+  async listBattles(userId: string) {
+    return this.battles.filter((b) => b.userId === userId);
+  }
   async saveBattle(battle: Battle) {
     this.battles = this.battles.filter((b) => !(b.userId === battle.userId && b.kind === battle.kind));
     this.battles.push({ ...battle });
   }
-  async findBattle(userId: string, kind: BattleKind) { return this.battles.find((b) => b.userId === userId && b.kind === kind) ?? null; }
+  async findBattle(userId: string, kind: BattleKind) {
+    return this.battles.find((b) => b.userId === userId && b.kind === kind) ?? null;
+  }
 }
 
 export class InMemoryIgnoredSubscriptionsRepository implements IgnoredSubscriptionsRepository {
   items: { userId: string; key: string }[] = [];
-  async listKeys(userId: string) { return this.items.filter((i) => i.userId === userId).map((i) => i.key); }
+  async listKeys(userId: string) {
+    return this.items.filter((i) => i.userId === userId).map((i) => i.key);
+  }
   async set(userId: string, key: string, ignored: boolean) {
     this.items = this.items.filter((i) => !(i.userId === userId && i.key === key));
     if (ignored) this.items.push({ userId, key });
@@ -198,12 +312,16 @@ export class InMemoryInvitesRepository implements InvitesRepository {
     this.items.push(i);
     return i;
   }
-  async findByCode(code: string) { return this.items.find((i) => i.code === code) ?? null; }
+  async findByCode(code: string) {
+    return this.items.find((i) => i.code === code) ?? null;
+  }
   async markUsed(code: string, userId: string) {
     const i = this.items.find((x) => x.code === code);
     if (i) Object.assign(i, { usedById: userId, usedAt: new Date() });
   }
-  async listByCreator(userId: string) { return this.items.filter((i) => i.createdById === userId).reverse(); }
+  async listByCreator(userId: string) {
+    return this.items.filter((i) => i.createdById === userId).reverse();
+  }
 }
 
 export class InMemoryPasswordResetsRepository implements PasswordResetsRepository {
@@ -213,7 +331,9 @@ export class InMemoryPasswordResetsRepository implements PasswordResetsRepositor
     this.items.push(r);
     return r;
   }
-  async findByTokenHash(tokenHash: string) { return this.items.find((r) => r.tokenHash === tokenHash) ?? null; }
+  async findByTokenHash(tokenHash: string) {
+    return this.items.find((r) => r.tokenHash === tokenHash) ?? null;
+  }
   async markUsed(id: string) {
     const r = this.items.find((x) => x.id === id);
     if (r) r.usedAt = new Date();
@@ -222,33 +342,54 @@ export class InMemoryPasswordResetsRepository implements PasswordResetsRepositor
 
 export class InMemoryChatMessagesRepository implements ChatMessagesRepository {
   items: ChatMessage[] = [];
-  async listRecent(userId: string, limit: number) { return this.items.filter((m) => m.userId === userId).slice(-limit); }
+  async listRecent(userId: string, limit: number) {
+    return this.items.filter((m) => m.userId === userId).slice(-limit);
+  }
   async create(data: Omit<ChatMessage, 'id' | 'createdAt'>) {
     const m: ChatMessage = { id: randomUUID(), createdAt: new Date(), ...data };
     this.items.push(m);
     return m;
   }
-  async countUserSince(userId: string, since: Date) { return this.items.filter((m) => m.userId === userId && m.role === 'user' && m.createdAt >= since).length; }
+  async countUserSince(userId: string, since: Date) {
+    return this.items.filter((m) => m.userId === userId && m.role === 'user' && m.createdAt >= since).length;
+  }
 }
 
 export class InMemoryFinancialPlansRepository implements FinancialPlansRepository {
   items = new Map<string, FinancialPlan>();
-  async get(userId: string) { return this.items.get(userId) ?? null; }
-  async save(userId: string, plan: FinancialPlan) { this.items.set(userId, plan); }
+  async get(userId: string) {
+    return this.items.get(userId) ?? null;
+  }
+  async save(userId: string, plan: FinancialPlan) {
+    this.items.set(userId, plan);
+  }
 }
 
 export class InMemoryWhatsappLinksRepository implements WhatsappLinksRepository {
   items = new Map<string, WhatsappLink>();
-  private row(userId: string) { return this.items.get(userId) ?? { userId, phone: null, code: null, codeExpiresAt: null, linkedAt: null }; }
-  async get(userId: string) { return this.items.get(userId) ?? null; }
-  async findByPhone(phone: string) { return [...this.items.values()].find((l) => l.phone === phone) ?? null; }
-  async findByCode(code: string) { return [...this.items.values()].find((l) => l.code === code) ?? null; }
-  async setCode(userId: string, code: string, expiresAt: Date) { this.items.set(userId, { ...this.row(userId), code, codeExpiresAt: expiresAt }); }
+  private row(userId: string) {
+    return this.items.get(userId) ?? { userId, phone: null, code: null, codeExpiresAt: null, linkedAt: null };
+  }
+  async get(userId: string) {
+    return this.items.get(userId) ?? null;
+  }
+  async findByPhone(phone: string) {
+    return [...this.items.values()].find((l) => l.phone === phone) ?? null;
+  }
+  async findByCode(code: string) {
+    return [...this.items.values()].find((l) => l.code === code) ?? null;
+  }
+  async setCode(userId: string, code: string, expiresAt: Date) {
+    this.items.set(userId, { ...this.row(userId), code, codeExpiresAt: expiresAt });
+  }
   async link(userId: string, phone: string, at: Date) {
-    for (const l of this.items.values()) if (l.phone === phone && l.userId !== userId) this.items.set(l.userId, { ...l, phone: null, linkedAt: null });
+    for (const l of this.items.values())
+      if (l.phone === phone && l.userId !== userId) this.items.set(l.userId, { ...l, phone: null, linkedAt: null });
     this.items.set(userId, { ...this.row(userId), phone, linkedAt: at, code: null, codeExpiresAt: null });
   }
-  async unlink(userId: string) { this.items.delete(userId); }
+  async unlink(userId: string) {
+    this.items.delete(userId);
+  }
 }
 
 export class InMemoryEngagementRepository implements EngagementRepository {
@@ -258,22 +399,53 @@ export class InMemoryEngagementRepository implements EngagementRepository {
   push: PushSub[] = [];
   sent = new Set<string>();
   async markActivity(userId: string, day: string, kind: string) {
-    if (!this.activity.some((a) => a.userId === userId && a.day === day && a.kind === kind)) this.activity.push({ userId, day, kind });
+    if (!this.activity.some((a) => a.userId === userId && a.day === day && a.kind === kind))
+      this.activity.push({ userId, day, kind });
   }
-  async listActivity(userId: string, sinceDay: string) { return this.activity.filter((a) => a.userId === userId && a.day >= sinceDay).map(({ day, kind }) => ({ day, kind })); }
-  async countActivity(userId: string) { return this.activity.filter((a) => a.userId === userId).length; }
-  async getFriendCode(userId: string) { return this.codes.get(userId) ?? null; }
-  async setFriendCode(userId: string, code: string) { this.codes.set(userId, code); }
-  async findUserByFriendCode(code: string) { return [...this.codes].find(([, c]) => c === code)?.[0] ?? null; }
+  async listActivity(userId: string, sinceDay: string) {
+    return this.activity
+      .filter((a) => a.userId === userId && a.day >= sinceDay)
+      .map(({ day, kind }) => ({ day, kind }));
+  }
+  async countActivity(userId: string) {
+    return this.activity.filter((a) => a.userId === userId).length;
+  }
+  async getFriendCode(userId: string) {
+    return this.codes.get(userId) ?? null;
+  }
+  async setFriendCode(userId: string, code: string) {
+    this.codes.set(userId, code);
+  }
+  async findUserByFriendCode(code: string) {
+    return [...this.codes].find(([, c]) => c === code)?.[0] ?? null;
+  }
   async addFriend(a: string, b: string) {
-    for (const [x, y] of [[a, b], [b, a]] as const) if (!this.friends.some((f) => f.userId === x && f.friendId === y)) this.friends.push({ userId: x, friendId: y });
+    for (const [x, y] of [
+      [a, b],
+      [b, a],
+    ] as const)
+      if (!this.friends.some((f) => f.userId === x && f.friendId === y)) this.friends.push({ userId: x, friendId: y });
   }
-  async removeFriend(a: string, b: string) { this.friends = this.friends.filter((f) => !((f.userId === a && f.friendId === b) || (f.userId === b && f.friendId === a))); }
-  async listFriendIds(userId: string) { return this.friends.filter((f) => f.userId === userId).map((f) => f.friendId); }
-  async savePush(sub: PushSub) { this.push = [...this.push.filter((p) => p.endpoint !== sub.endpoint), sub]; }
-  async deletePush(endpoint: string) { this.push = this.push.filter((p) => p.endpoint !== endpoint); }
-  async listPush(userId: string) { return this.push.filter((p) => p.userId === userId); }
-  async listPushUserIds() { return [...new Set(this.push.map((p) => p.userId))]; }
+  async removeFriend(a: string, b: string) {
+    this.friends = this.friends.filter(
+      (f) => !((f.userId === a && f.friendId === b) || (f.userId === b && f.friendId === a)),
+    );
+  }
+  async listFriendIds(userId: string) {
+    return this.friends.filter((f) => f.userId === userId).map((f) => f.friendId);
+  }
+  async savePush(sub: PushSub) {
+    this.push = [...this.push.filter((p) => p.endpoint !== sub.endpoint), sub];
+  }
+  async deletePush(endpoint: string) {
+    this.push = this.push.filter((p) => p.endpoint !== endpoint);
+  }
+  async listPush(userId: string) {
+    return this.push.filter((p) => p.userId === userId);
+  }
+  async listPushUserIds() {
+    return [...new Set(this.push.map((p) => p.userId))];
+  }
   async claimNotification(userId: string, key: string) {
     const k = `${userId}|${key}`;
     if (this.sent.has(k)) return false;
@@ -284,12 +456,29 @@ export class InMemoryEngagementRepository implements EngagementRepository {
 
 export class InMemoryPeopleRepository implements PeopleRepository {
   items: Person[] = [];
-  async listByUser(userId: string) { return this.items.filter((p) => p.userId === userId).sort((a, b) => a.name.localeCompare(b.name)); }
-  async findById(id: string) { return this.items.find((p) => p.id === id) ?? null; }
-  async findByName(userId: string, name: string) { return this.items.find((p) => p.userId === userId && p.name.toLowerCase() === name.toLowerCase()) ?? null; }
-  async create(data: { userId: string; name: string }) { const p = { id: randomUUID(), createdAt: new Date(), ...data }; this.items.push(p); return p; }
-  async rename(id: string, name: string) { const p = this.items.find((x) => x.id === id); if (!p) throw new Error('Pessoa não encontrada'); p.name = name; return p; }
-  async delete(id: string) { this.items = this.items.filter((p) => p.id !== id); }
+  async listByUser(userId: string) {
+    return this.items.filter((p) => p.userId === userId).sort((a, b) => a.name.localeCompare(b.name));
+  }
+  async findById(id: string) {
+    return this.items.find((p) => p.id === id) ?? null;
+  }
+  async findByName(userId: string, name: string) {
+    return this.items.find((p) => p.userId === userId && p.name.toLowerCase() === name.toLowerCase()) ?? null;
+  }
+  async create(data: { userId: string; name: string }) {
+    const p = { id: randomUUID(), createdAt: new Date(), ...data };
+    this.items.push(p);
+    return p;
+  }
+  async rename(id: string, name: string) {
+    const p = this.items.find((x) => x.id === id);
+    if (!p) throw new Error('Pessoa não encontrada');
+    p.name = name;
+    return p;
+  }
+  async delete(id: string) {
+    this.items = this.items.filter((p) => p.id !== id);
+  }
 }
 
 export class InMemoryTostaoAutoRepository implements TostaoAutoRepository {
@@ -370,7 +559,10 @@ export class InMemoryTostaoAutoRepository implements TostaoAutoRepository {
     );
   }
 
-  async updateConfig(userId: string, patch: UpdateTostaoAutoConfigBody & { lastCheckedAt?: Date }): Promise<TostaoAutoConfig> {
+  async updateConfig(
+    userId: string,
+    patch: UpdateTostaoAutoConfigBody & { lastCheckedAt?: Date },
+  ): Promise<TostaoAutoConfig> {
     const current = await this.getConfig(userId);
     const next: TostaoAutoConfig = { ...current, ...patch, updatedAt: new Date() };
     this.configs.set(userId, next);

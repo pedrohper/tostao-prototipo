@@ -2,7 +2,20 @@ import type { Dictionary } from './types';
 
 export const ptBR: Dictionary = {
   locale: 'pt-BR',
-  months: ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'],
+  months: [
+    'janeiro',
+    'fevereiro',
+    'março',
+    'abril',
+    'maio',
+    'junho',
+    'julho',
+    'agosto',
+    'setembro',
+    'outubro',
+    'novembro',
+    'dezembro',
+  ],
   weekdaysShort: ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'],
   time: {
     now: 'agora',
@@ -33,7 +46,8 @@ export const ptBR: Dictionary = {
     askTostao: 'Perguntar ao Tostão',
     connectionBroken: (names) => `${names} parou de atualizar. Os números podem estar atrasados. Toca pra resolver.`,
     emptyTitle: 'Nada por aqui ainda',
-    emptyDescription: 'Conecta o banco ou importa o extrato do app dele, que eu acordo e organizo seus gastos. Ou anota um gasto na mão, também vale.',
+    emptyDescription:
+      'Conecta o banco ou importa o extrato do app dele, que eu acordo e organizo seus gastos. Ou anota um gasto na mão, também vale.',
     connectExpensesCta: 'Trazer meus gastos',
     logManualExpenseCta: 'Anotar um gasto',
     balanceInAccounts: (count) => `Saldo em ${count} ${count === 1 ? 'conta' : 'contas'} ›`,
@@ -51,7 +65,8 @@ export const ptBR: Dictionary = {
     viewLessonCta: 'Bora ver',
     chatPromptBody: 'Ficou com dúvida sobre algum gasto ou quer saber se dá pra comprar algo?',
     chatPromptBold: 'Pergunta pra mim.',
-    overBudgetAlert: (category, spent, limit) => `${category} passou do limite: ${spent} de ${limit}. Sem drama, mas segura até o fim do mês?`,
+    overBudgetAlert: (category, spent, limit) =>
+      `${category} passou do limite: ${spent} de ${limit}. Sem drama, mas segura até o fim do mês?`,
     monthlyClosingReady: (month) => `O fechamento de ${month} tá pronto.`,
     monthlyClosingSub: 'Quanto sobrou, onde mais foi e o que mudou. Toca pra ver.',
     activeSubscriptionsAlert: (count, monthly, yearly) =>
@@ -88,7 +103,8 @@ export const ptBR: Dictionary = {
     askPlaceholder: 'Pergunte sobre o seu dinheiro',
     askSendLabel: 'Enviar pergunta',
     askChips: ['Quanto sobra se eu cortar delivery?', 'Quais assinaturas eu esqueci?'],
-    learnModuleProgress: (moduleNumber, doneCount, totalCount) => `Módulo ${moduleNumber} · ${doneCount} de ${totalCount}`,
+    learnModuleProgress: (moduleNumber, doneCount, totalCount) =>
+      `Módulo ${moduleNumber} · ${doneCount} de ${totalCount}`,
     allModulesCompleted: 'Trilha completa!',
   },
   wallet: {
@@ -115,7 +131,8 @@ export const ptBR: Dictionary = {
   learn: {
     title: 'Aprender',
     fullTrailCta: 'Ver trilha completa',
-    moduleCounter: (moduleNumber, doneCount, totalCount) => `Módulo ${moduleNumber} · ${doneCount} de ${totalCount} lições`,
+    moduleCounter: (moduleNumber, doneCount, totalCount) =>
+      `Módulo ${moduleNumber} · ${doneCount} de ${totalCount} lições`,
     lessonRowMeta: (lessonNumber) => `Lição ${lessonNumber} · 2 a 3 min`,
     doneBadge: 'Feita',
     startCta: 'Começar',
@@ -151,7 +168,8 @@ export const ptBR: Dictionary = {
   },
   profile: {
     title: 'Mais',
-    levelSummary: (level, xp, streakDays) => `Nível ${level} · ${xp} XP · ${streakDays} ${streakDays === 1 ? 'dia' : 'dias'} de ofensiva`,
+    levelSummary: (level, xp, streakDays) =>
+      `Nível ${level} · ${xp} XP · ${streakDays} ${streakDays === 1 ? 'dia' : 'dias'} de ofensiva`,
     connectedAccounts: 'Contas conectadas',
     hiddenAccountHint: 'Conta oculta sai do saldo e das telas, mas continua atualizando.',
     importedStatement: 'extrato importado',
@@ -194,10 +212,12 @@ export const ptBR: Dictionary = {
     disconnectBanks: 'Desconectar bancos',
     signOut: 'Sair da conta',
     deleteAccount: 'Apagar minha conta',
-    openFinanceActive: (count) => `${count} ${count === 1 ? 'conexão Open Finance ativa' : 'conexões Open Finance ativas'}`,
+    openFinanceActive: (count) =>
+      `${count} ${count === 1 ? 'conexão Open Finance ativa' : 'conexões Open Finance ativas'}`,
     openFinanceError: 'Algum banco parou de atualizar',
     openFinanceMissing: 'Nenhum banco conectado no Open Finance',
-    openFinanceNote: 'O Open Finance pede pra renovar uma vez por ano no app do banco. Só leitura, sem mexer no seu dinheiro.',
+    openFinanceNote:
+      'O Open Finance pede pra renovar uma vez por ano no app do banco. Só leitura, sem mexer no seu dinheiro.',
     toolsTitle: 'Ferramentas',
     achievementsLabel: 'Conquistas',
     achievementBlueMonthTitle: 'De tostão em tostão',
@@ -229,7 +249,8 @@ export const ptBR: Dictionary = {
     tabAuto: 'No automático',
     foundTitle: 'O que o Tostão achou',
     emptyFoundTitle: 'Tudo em ordem por aqui',
-    emptyFoundBody: 'O Tostão e o Caramelo não acharam nada urgente agora. Assim que chegar extrato novo, a gente confere de novo.',
+    emptyFoundBody:
+      'O Tostão e o Caramelo não acharam nada urgente agora. Assim que chegar extrato novo, a gente confere de novo.',
     checkNow: 'Dar uma olhada agora',
     checkingNow: 'Conferindo…',
     dismissLabel: 'Já sei',
@@ -262,8 +283,7 @@ export const ptBR: Dictionary = {
         badge: 'Acertos',
       },
     },
-    newFindingsBanner: (count) =>
-      `${count} ${count === 1 ? 'novo achado encontrado.' : 'novos achados encontrados.'}`,
+    newFindingsBanner: (count) => `${count} ${count === 1 ? 'novo achado encontrado.' : 'novos achados encontrados.'}`,
     allCheckedBanner: 'Tudo conferido.',
     checkErrorBanner: 'Não consegui conferir agora. Tenta de novo em instantes.',
     statusApplied: 'Feito',
@@ -370,7 +390,8 @@ export const ptBR: Dictionary = {
     badgeConfigIncome: 'Configurar renda',
     activeLimitsCount: (count) => `${count} ${count === 1 ? 'limite ativo' : 'limites ativos'}`,
     limitsEmptySummary: 'Defina um teto para as categorias que mais pesam no mês.',
-    limitsOverSummary: (count) => `${count} ${count === 1 ? 'categoria passou' : 'categorias passaram'} do teto neste mês.`,
+    limitsOverSummary: (count) =>
+      `${count} ${count === 1 ? 'categoria passou' : 'categorias passaram'} do teto neste mês.`,
     limitsNearSummary: (count) => `${count} ${count === 1 ? 'categoria perto' : 'categorias perto'} do teto combinado.`,
     limitsOkSummary: 'Todas as categorias monitoradas estão dentro do limite.',
     badgeSet: 'Definir',
@@ -392,7 +413,8 @@ export const ptBR: Dictionary = {
     splitsOweHeadline: (amount) => `Você deve ${amount}`,
     splitsBothSummary: (owed, owe) => `Te devem ${owed} e você deve ${owe} no total.`,
     splitsOpenSummary: (count) => `${count} ${count === 1 ? 'pessoa com saldo' : 'pessoas com saldo'} em aberto.`,
-    splitsSettledSummary: (count) => `${count} ${count === 1 ? 'pessoa cadastrada' : 'pessoas cadastradas'} · Tudo quitado.`,
+    splitsSettledSummary: (count) =>
+      `${count} ${count === 1 ? 'pessoa cadastrada' : 'pessoas cadastradas'} · Tudo quitado.`,
     splitsEmptySummary: 'Controle o que emprestou ou dividiu no cartão sem misturar com seus gastos.',
     splitsPayBadge: 'A pagar',
     splitsReceiveBadge: 'A receber',
@@ -457,14 +479,16 @@ export const ptBR: Dictionary = {
       usedLabel: (amount, pct) => `Usado ${amount} (${pct}%)`,
       freeLabel: (amount) => `Livre ${amount}`,
       limitUsedAria: 'Limite usado',
-      barsAriaItem: (month, outAmount, inAmount) => `${month}: saiu ${outAmount}${inAmount ? `, entrou ${inAmount}` : ''}`,
+      barsAriaItem: (month, outAmount, inAmount) =>
+        `${month}: saiu ${outAmount}${inAmount ? `, entrou ${inAmount}` : ''}`,
       barsInLegend: 'Entrou',
       barsOutLegend: 'Saiu',
       thousandUnit: 'mil',
     },
     txDetail: {
       manualEntry: 'Anotado na mão',
-      transferNotice: 'Isso aqui é dinheiro mudando de bolso entre as suas contas (ou pagamento de fatura). Não conta como gasto nem como renda.',
+      transferNotice:
+        'Isso aqui é dinheiro mudando de bolso entre as suas contas (ou pagamento de fatura). Não conta como gasto nem como renda.',
       undoTransfer: 'Não é transferência: voltar a contar no mês',
       neutralPromptBefore: 'Tá em ',
       neutralPromptBold: 'Não conta',
@@ -478,7 +502,8 @@ export const ptBR: Dictionary = {
       deleteThis: 'Apagar este',
       deleteSeries: 'Apagar este e os próximos',
       categorizeLabel: 'Categoria',
-      neutralHint: 'Não conta: some do gasto e da renda. Bom pra repasse com a família, dinheiro que é de outra pessoa ou acerto entre amigos.',
+      neutralHint:
+        'Não conta: some do gasto e da renda. Bom pra repasse com a família, dinheiro que é de outra pessoa ou acerto entre amigos.',
       alwaysRule: (pattern, catName) => `Sempre colocar “${pattern}” em ${catName}`,
       editToggle: 'Editar lançamento',
       editSub: 'Alterar texto, valor ou data',
@@ -568,9 +593,11 @@ export const ptBR: Dictionary = {
       manualAccount: 'Conta manual',
       creditCardsHeading: 'Cartões de crédito',
       viewBillAndInstallments: 'Ver fatura e parcelas ›',
-      noAccountsEmpty: 'Nenhuma conta ou cartão por aqui ainda. Conecte seu banco, importe um extrato ou crie uma conta manual.',
+      noAccountsEmpty:
+        'Nenhuma conta ou cartão por aqui ainda. Conecte seu banco, importe um extrato ou crie uma conta manual.',
       hiddenAccountsHeading: 'Contas ocultas',
-      hiddenAccountsHint: 'Contas ocultas saem do saldo e das listas, mas continuam atualizando. Toque no olho para mostrar novamente.',
+      hiddenAccountsHint:
+        'Contas ocultas saem do saldo e das listas, mas continuam atualizando. Toque no olho para mostrar novamente.',
       connectBankTitle: 'Conectar banco',
       connectBankSub: 'Open Finance automático',
       importStatementTitle: 'Importar extrato',
@@ -603,7 +630,8 @@ export const ptBR: Dictionary = {
       timesPlusAria: 'Mais uma vez',
       repeatNoHint: 'Só dessa vez.',
       repeatMonthlyHint: 'Já deixo lançado nos próximos 12 meses, e entra na previsão. Dá pra apagar a série depois.',
-      repeatInstallmentHint: (times) => `O valor é o total: divido em ${times}x, uma parcela por mês a partir dessa data.`,
+      repeatInstallmentHint: (times) =>
+        `O valor é o total: divido em ${times}x, uma parcela por mês a partir dessa data.`,
       categoryLegend: 'Categoria',
       categoryOptional: '(opcional, eu tento adivinhar)',
       moreCategories: 'Mais categorias',
@@ -612,8 +640,10 @@ export const ptBR: Dictionary = {
       cash: 'Dinheiro',
       cardTag: 'Cartão',
       accountTag: 'Conta',
-      autoAccountWarnOut: 'Essa conta já atualiza sozinha pelo banco. Se o gasto aparecer lá também, apaga um dos dois.',
-      autoAccountWarnIn: 'Essa conta já atualiza sozinha pelo banco. Se a entrada aparecer lá também, apaga um dos dois.',
+      autoAccountWarnOut:
+        'Essa conta já atualiza sozinha pelo banco. Se o gasto aparecer lá também, apaga um dos dois.',
+      autoAccountWarnIn:
+        'Essa conta já atualiza sozinha pelo banco. Se a entrada aparecer lá também, apaga um dos dois.',
       saving: 'Anotando…',
     },
     importar: {
@@ -621,17 +651,28 @@ export const ptBR: Dictionary = {
       subtitle: 'Sem Open Finance, sem senha. Só o arquivo.',
       mascotAlt: 'Tostão ligando dois cabos',
       whereToDownload: 'Onde baixar',
-      footerNote: 'Pode importar o mesmo período de novo sem medo: o que já estava aqui eu pulo. Os menus dos bancos mudam de vez em quando: se não achar, procura “Exportar” ou “Extrato” no app ou no site. Banco que não tá na lista? Manda o CSV mesmo, eu tento entender.',
+      footerNote:
+        'Pode importar o mesmo período de novo sem medo: o que já estava aqui eu pulo. Os menus dos bancos mudam de vez em quando: se não achar, procura “Exportar” ou “Extrato” no app ou no site. Banco que não tá na lista? Manda o CSV mesmo, eu tento entender.',
       banks: [
-        { name: 'Nubank', steps: 'Conta: no app, toca no saldo → ícone de compartilhar → “Exportar extrato” (vem um CSV por e-mail). Cartão: fatura → “Enviar fatura por e-mail” e usa o CSV.' },
+        {
+          name: 'Nubank',
+          steps:
+            'Conta: no app, toca no saldo → ícone de compartilhar → “Exportar extrato” (vem um CSV por e-mail). Cartão: fatura → “Enviar fatura por e-mail” e usa o CSV.',
+        },
         { name: 'Inter', steps: 'App → Extrato → ícone de download → escolhe o período → formato CSV ou OFX.' },
-        { name: 'Itaú', steps: 'Pelo site (no app não tem): Extrato → período → “Salvar em OFX” (às vezes aparece como Money).' },
+        {
+          name: 'Itaú',
+          steps: 'Pelo site (no app não tem): Extrato → período → “Salvar em OFX” (às vezes aparece como Money).',
+        },
         { name: 'Bradesco', steps: 'Pelo site: Saldos e extratos → Extrato → “Exportar” → OFX ou CSV.' },
         { name: 'Banco do Brasil', steps: 'Pelo site: Extrato → escolhe o mês → “Salvar” → OFX ou CSV.' },
         { name: 'Caixa', steps: 'Pelo site: Extrato → período → exportar em OFX.' },
         { name: 'Santander', steps: 'Pelo site: Conta corrente → Extrato → “Exportar” → OFX.' },
         { name: 'C6 Bank', steps: 'App → Extrato → ícone de compartilhar → “Exportar extrato” → CSV.' },
-        { name: 'Mercado Pago', steps: 'Pelo site: Seu dinheiro → Relatórios → “Extrato da conta” → gera e baixa o CSV.' },
+        {
+          name: 'Mercado Pago',
+          steps: 'Pelo site: Seu dinheiro → Relatórios → “Extrato da conta” → gera e baixa o CSV.',
+        },
         { name: 'PicPay', steps: 'App → Extrato → ícone de download → período → CSV (chega por e-mail).' },
       ],
       form: {
@@ -664,7 +705,11 @@ export const ptBR: Dictionary = {
       subtitle: 'Escolhe um jeito. Dá pra misturar depois.',
       paths: {
         bank: { title: 'Conectar o banco', tag: 'automático', desc: 'Pelo Open Finance. Atualiza sozinho todo dia.' },
-        import: { title: 'Importar extrato', tag: 'qualquer banco', desc: 'Baixa o arquivo (OFX ou CSV) no app do banco e manda aqui. Uns 3 minutos.' },
+        import: {
+          title: 'Importar extrato',
+          tag: 'qualquer banco',
+          desc: 'Baixa o arquivo (OFX ou CSV) no app do banco e manda aqui. Uns 3 minutos.',
+        },
         manual: { title: 'Anotar na mão', desc: 'Começa anotando o que gastou hoje. Sem banco nenhum.' },
       },
       points: [
@@ -695,7 +740,8 @@ export const ptBR: Dictionary = {
       lastFile: 'Último arquivo',
       lastSync: 'Última sincronização',
       never: 'nunca',
-      errorHelp: 'Não consegui atualizar esse banco. Tenta sincronizar de novo; se continuar, desconecta e conecta outra vez, ou importa o extrato.',
+      errorHelp:
+        'Não consegui atualizar esse banco. Tenta sincronizar de novo; se continuar, desconecta e conecta outra vez, ou importa o extrato.',
       importMore: 'Importar mais',
       continueOnboarding: 'Continuar: renda e meta →',
       skipOnboarding: 'Pular tudo e ir pro Início',
@@ -714,7 +760,8 @@ export const ptBR: Dictionary = {
         syncing: 'Sincronizando…',
         disconnect: 'Desconectar',
         disconnecting: 'Desconectando…',
-        disconnectConfirm: (name) => `Desconectar ${name}? Some com as contas e transações que vieram dele. Gastos anotados na mão ficam.`,
+        disconnectConfirm: (name) =>
+          `Desconectar ${name}? Some com as contas e transações que vieram dele. Gastos anotados na mão ficam.`,
       },
     },
     categorias: {
@@ -725,7 +772,8 @@ export const ptBR: Dictionary = {
       spendingTag: 'gasto',
       incomeTag: 'entrada',
       notCountedBold: 'Não conta',
-      notCountedBody: ' serve pra dinheiro que só passa por você: repasse com a família, acerto com amigo, grana que é de outra pessoa. Coloca a transação lá e marca "sempre": some do gasto e da renda.',
+      notCountedBody:
+        ' serve pra dinheiro que só passa por você: repasse com a família, acerto com amigo, grana que é de outra pessoa. Coloca a transação lá e marca "sempre": some do gasto e da renda.',
       builtInTitle: 'Já vêm no app',
       spendingRow: 'Gasto:',
       incomeRow: 'Entrada:',
@@ -779,7 +827,8 @@ export const ptBR: Dictionary = {
       currentStep3: '3. Renda e contas · etapa 1 de 2',
       netSalaryRow: (bank) => `Salário líquido${bank ? ` (${bank})` : ''}`,
       vrVaRow: 'VR e VA (fora da conta)',
-      summaryNote: 'Uso isso pra montar sua previsão dos próximos 3 meses e responder no chat se cabe uma compra ou meta.',
+      summaryNote:
+        'Uso isso pra montar sua previsão dos próximos 3 meses e responder no chat se cabe uma compra ou meta.',
       continueCta: 'Continuar',
       skipNow: 'Pular por agora',
       step2Title: 'O resto que se repete',
@@ -884,7 +933,12 @@ export const ptBR: Dictionary = {
       disclaimer: 'O Tostão não mexe no seu dinheiro: você guarda onde quiser e anota aqui.',
       form: {
         purposeLegend: 'Pra quê?',
-        kinds: { reserva: 'Montar reserva', viagem: 'Viajar', 'sair-do-vermelho': 'Sair do vermelho', outro: 'Outra coisa' },
+        kinds: {
+          reserva: 'Montar reserva',
+          viagem: 'Viajar',
+          'sair-do-vermelho': 'Sair do vermelho',
+          outro: 'Outra coisa',
+        },
         nameLabel: 'Nome da meta',
         namePlaceholder: 'Ex.: Praia em julho',
         amountLabel: 'Quanto',
@@ -901,12 +955,14 @@ export const ptBR: Dictionary = {
     assinaturas: {
       title: 'Minhas assinaturas',
       subtitle: 'O que sai todo mês sozinho, sem você abrir o app.',
-      methodologyNote: 'Eu acho as assinaturas pelo padrão: mesma loja, valor parecido, uma vez por mês. Pix e pagamento de fatura ficam de fora. Plano anual parcelado aparece com as parcelas que faltam.',
+      methodologyNote:
+        'Eu acho as assinaturas pelo padrão: mesma loja, valor parecido, uma vez por mês. Pix e pagamento de fatura ficam de fora. Plano anual parcelado aparece com as parcelas que faltam.',
       stoppedTitle: 'Pararam de cobrar',
       lastChargeOn: (day) => `última em ${day}`,
       ignoredTitle: 'Você disse que não é assinatura',
       emptyAllTitle: 'Não achei nada que cobra todo mês',
-      emptyAllBody: 'Ou você tá com tudo sob controle, ou ainda tem pouco extrato. Eu preciso ver pelo menos duas cobranças pra ter certeza.',
+      emptyAllBody:
+        'Ou você tá com tudo sob controle, ou ainda tem pouco extrato. Eu preciso ver pelo menos duas cobranças pra ter certeza.',
       emptyActiveTitle: 'Nenhuma assinatura ativa',
       emptyActiveBody: 'Eu preciso ver pelo menos duas cobranças seguidas pra marcar uma assinatura como ativa.',
       checkBanksCta: 'Ver bancos conectados',
@@ -958,7 +1014,8 @@ export const ptBR: Dictionary = {
       prevMonth: 'Mês anterior',
       nextMonth: 'Próximo mês',
       emptyMonthNote: (month) => `Não tenho nada de ${month}. Meu extrato começa depois disso.`,
-      shareText: (month, titleLower) => `Fechei ${month} no Tostão: ${titleLower}. Grana explicada, de tostão em tostão.`,
+      shareText: (month, titleLower) =>
+        `Fechei ${month} no Tostão: ${titleLower}. Grana explicada, de tostão em tostão.`,
       backToStart: 'Voltar pro início',
       nextCard: 'Próxima carta',
       cardAria: (current, total) => `Carta ${current} de ${total}`,
@@ -968,7 +1025,8 @@ export const ptBR: Dictionary = {
     },
     compensa: {
       title: 'Compensa parcelar?',
-      badgeDesc: (cdiPct) => `Coloca o preço à vista e o parcelado. Eu acho os juros escondidos e comparo com deixar o dinheiro rendendo (${cdiPct} ao ano no CDI).`,
+      badgeDesc: (cdiPct) =>
+        `Coloca o preço à vista e o parcelado. Eu acho os juros escondidos e comparo com deixar o dinheiro rendendo (${cdiPct} ao ano no CDI).`,
       ratesTitle: 'Taxas usadas na conta',
       cdiRef: 'CDI (referência)',
       selicRef: 'Selic',
@@ -977,7 +1035,8 @@ export const ptBR: Dictionary = {
     },
     investir: {
       title: 'Onde investir',
-      intro: 'Investir tem ordem: primeiro tirar o pé da dívida, depois o muro da reserva, aí sim pensar em render mais. Me diz quanto você tem que eu te mostro o caminho.',
+      intro:
+        'Investir tem ordem: primeiro tirar o pé da dívida, depois o muro da reserva, aí sim pensar em render mais. Me diz quanto você tem que eu te mostro o caminho.',
       refTitle: 'Sua referência atual',
       monthlySpendEst: 'Gasto mensal estimado',
       idealReserve: 'Reserva ideal (6 meses)',
@@ -999,7 +1058,8 @@ export const ptBR: Dictionary = {
       installmentWinsBody: (diff) =>
         ` o dinheiro do à vista fica guardado rendendo 100% do CDI e paga as parcelas. No fim sobram ${diff}. Se você não tem o valor guardado, a conta muda: aí é parcela que come o mês que vem.`,
       tieBefore: 'Dá praticamente na mesma.',
-      tieBody: (diff) => ` A diferença é de ${diff}. Escolhe pelo que te deixa mais tranquilo: à vista libera o limite e o mês que vem.`,
+      tieBody: (diff) =>
+        ` A diferença é de ${diff}. Escolhe pelo que te deixa mais tranquilo: à vista libera o limite e o mês que vem.`,
       saveInsteadNote: (pa, av, months, beforeLast) =>
         `Não tem o dinheiro agora? Guardando ${pa} por mês rendendo o CDI, você junta os ${av} em ${months} ${months === 1 ? 'mês' : 'meses'}${beforeLast ? ', antes da última parcela' : ''}.`,
       loanAmount: 'Valor que você pega',
@@ -1011,7 +1071,8 @@ export const ptBR: Dictionary = {
         { label: 'Financiamento de carro', taxa: 2 },
         { label: 'Consignado', taxa: 1.8 },
       ],
-      presetsNote: 'Os botões usam médias aproximadas. No contrato, olha o CET (custo efetivo total): ele soma juros, IOF e tarifas.',
+      presetsNote:
+        'Os botões usam médias aproximadas. No contrato, olha o CET (custo efetivo total): ele soma juros, IOF e tarifas.',
       eachPayment: 'Cada parcela',
       totalPaid: 'Total pago',
       interestOnly: 'Só de juros',
@@ -1021,20 +1082,23 @@ export const ptBR: Dictionary = {
       loanNormalBefore: 'Os juros somam ',
       loanSaveInstead: (p, vc, months) =>
         `Se em vez de pagar parcela você guardasse ${p} por mês, juntava ${vc} em ${months} ${months === 1 ? 'mês' : 'meses'}. `,
-      loanEmergency: 'Dívida nessa taxa é emergência: trocar por uma mais barata (consignado, portabilidade) ou negociar vem antes de investir.',
+      loanEmergency:
+        'Dívida nessa taxa é emergência: trocar por uma mais barata (consignado, portabilidade) ou negociar vem antes de investir.',
       investHowMuch: 'Quanto você tem pra investir?',
       investAlreadyReserved: 'Já tem guardado de reserva',
       hasExpensiveDebt: 'Tenho dívida no rotativo ou cheque especial',
       adviceDebt: (v, yield12m) =>
         `Primeiro a dívida. Os ${v} rendem uns ${yield12m} num ano. A mesma grana no rotativo custa mais que isso em 2 meses. Usa pra quitar ou negociar.`,
-      adviceNoIncomeBefore: (v) => `Os ${v} vão pra reserva. Ainda não sei quanto você gasta por mês, então não sei o tamanho dela. `,
+      adviceNoIncomeBefore: (v) =>
+        `Os ${v} vão pra reserva. Ainda não sei quanto você gasta por mês, então não sei o tamanho dela. `,
       adviceNoIncomeLink: 'Conta sua renda e contas',
       adviceNoIncomeAfter: ' que eu calculo.',
       adviceAllReserve: (alvo, gasto, v, missing) =>
         `Tudo pra reserva. A sua é de ${alvo} (6 meses de ${gasto}). Com esses ${v} ficam faltando ${missing}.`,
       adviceSplitReserve: (praReserva, sobra) =>
         `${praReserva} completam a reserva e os outros ${sobra} já podem ir pro passo 3, pensando no que você quer daqui a 1 a 5 anos.`,
-      adviceReserveReady: (v) => `Reserva pronta! Os ${v} podem ir pro passo 3 (objetivos com data) ou pro 4, se é pra daqui a muitos anos.`,
+      adviceReserveReady: (v) =>
+        `Reserva pronta! Os ${v} podem ir pro passo 3 (objetivos com data) ou pro 4, se é pra daqui a muitos anos.`,
       stepByStepAria: 'Passo a passo',
       noDebtSkip: 'Sem dívida cara. Pode pular o passo 1.',
       youAreHere: 'Você tá aqui',
@@ -1044,35 +1108,58 @@ export const ptBR: Dictionary = {
         {
           id: 'divida',
           title: 'Sair da dívida cara',
-          summary: 'Rotativo e cheque especial cobram de 8% a 15% ao mês. Nenhum investimento rende isso: quitar é o melhor “investimento” que existe.',
-          where: ['Pagar ou negociar a dívida mais cara primeiro', 'Trocar por uma mais barata (consignado, portabilidade)'],
+          summary:
+            'Rotativo e cheque especial cobram de 8% a 15% ao mês. Nenhum investimento rende isso: quitar é o melhor “investimento” que existe.',
+          where: [
+            'Pagar ou negociar a dívida mais cara primeiro',
+            'Trocar por uma mais barata (consignado, portabilidade)',
+          ],
           lessonLabel: 'Lição: qual dívida pagar antes',
         },
         {
           id: 'reserva',
           title: 'Reserva de emergência',
-          summary: 'De 3 a 6 meses do que você gasta, num lugar seguro e que você saca no mesmo dia. Aqui não é pra buscar rendimento alto.',
-          where: ['Tesouro Selic (governo, saca em D+0 em dia útil)', 'CDB de liquidez diária pagando 100% do CDI ou mais, de banco coberto pelo FGC', 'Caixinha/cofrinho do banco que renda 100% do CDI'],
+          summary:
+            'De 3 a 6 meses do que você gasta, num lugar seguro e que você saca no mesmo dia. Aqui não é pra buscar rendimento alto.',
+          where: [
+            'Tesouro Selic (governo, saca em D+0 em dia útil)',
+            'CDB de liquidez diária pagando 100% do CDI ou mais, de banco coberto pelo FGC',
+            'Caixinha/cofrinho do banco que renda 100% do CDI',
+          ],
           lessonLabel: 'Lição: onde guardar pra não congelar',
         },
         {
           id: 'objetivos',
           title: 'Objetivos com data (1 a 5 anos)',
-          summary: 'Viagem, curso, carro, entrada de apê. Você sabe quando vai usar, então dá pra travar o dinheiro até lá e ganhar um pouco mais.',
-          where: ['CDB, LCI ou LCA com vencimento perto da data (LCI e LCA não pagam IR)', 'Tesouro Prefixado ou IPCA+ com vencimento perto da data'],
+          summary:
+            'Viagem, curso, carro, entrada de apê. Você sabe quando vai usar, então dá pra travar o dinheiro até lá e ganhar um pouco mais.',
+          where: [
+            'CDB, LCI ou LCA com vencimento perto da data (LCI e LCA não pagam IR)',
+            'Tesouro Prefixado ou IPCA+ com vencimento perto da data',
+          ],
           lessonLabel: 'Lição: emprestar pro banco (CDB)',
         },
         {
           id: 'longo',
           title: 'Longo prazo (5 anos ou mais)',
-          summary: 'Aposentadoria e independência. Aqui o tempo trabalha a favor e dá pra aguentar sobe e desce, desde que você estude antes.',
-          where: ['Tesouro IPCA+ (protege da inflação)', 'Depois do módulo 8: ETF de índice amplo, aos poucos, todo mês', 'Bet, “robô”, pirâmide e dica de guru não entram em nenhum passo'],
+          summary:
+            'Aposentadoria e independência. Aqui o tempo trabalha a favor e dá pra aguentar sobe e desce, desde que você estude antes.',
+          where: [
+            'Tesouro IPCA+ (protege da inflação)',
+            'Depois do módulo 8: ETF de índice amplo, aos poucos, todo mês',
+            'Bet, “robô”, pirâmide e dica de guru não entram em nenhum passo',
+          ],
           lessonLabel: 'Lição: ETFs, o mercado inteiro',
         },
       ],
       howMuchBecomes: (amount) => `Quanto vira ${amount}?`,
       netAfterTaxNote: 'Líquido, já sem IR. A barra mostra quanto rendeu. Taxas de hoje, que mudam com o tempo.',
-      terms: [[6, '6 meses'], [12, '1 ano'], [24, '2 anos'], [60, '5 anos']],
+      terms: [
+        [6, '6 meses'],
+        [12, '1 ano'],
+        [24, '2 anos'],
+        [60, '5 anos'],
+      ],
       optionIdle: 'Parado na conta',
       optionIdleNote: 'não rende nada',
       optionPoupanca: 'Poupança',
@@ -1086,7 +1173,8 @@ export const ptBR: Dictionary = {
         `Pra não perder pra inflação (${ipca} nos últimos 12 meses), os ${v} precisam virar pelo menos ${minTotal}. Parado na conta, você perde uns ${lost} de poder de compra.`,
       bcbSource: (date) => `Taxas do Banco Central, atualizadas em ${date}.`,
       fallbackSource: (date) => `Não consegui falar com o Banco Central agora: usando taxas de referência de ${date}.`,
-      disclaimer: 'O Tostão não vende investimento nem ganha comissão. Isso é educação financeira, não recomendação: confere taxa, prazo e garantia antes de aplicar.',
+      disclaimer:
+        'O Tostão não vende investimento nem ganha comissão. Isso é educação financeira, não recomendação: confere taxa, prazo e garantia antes de aplicar.',
       dailyBase: {
         eyebrow: 'De onde vem o dia a dia',
         tightBefore: (overCount, totalCount) =>
@@ -1114,7 +1202,8 @@ export const ptBR: Dictionary = {
       statusSettled: 'tudo certo',
       entryCount: (count) => `${count} ${count === 1 ? 'lançamento' : 'lançamentos'}`,
       formTitle: 'Anotar acerto',
-      cashNote: 'Pix e compras no cartão você marca direto no lançamento, na Carteira. Aqui é pro que foi em dinheiro vivo ou de boca.',
+      cashNote:
+        'Pix e compras no cartão você marca direto no lançamento, na Carteira. Aqui é pro que foi em dinheiro vivo ou de boca.',
       person: {
         backLabel: 'Acertos',
         editName: 'Editar nome',
@@ -1124,7 +1213,8 @@ export const ptBR: Dictionary = {
         allSettled: 'Tudo acertado',
         waSendSummary: 'Mandar resumo no WhatsApp',
         waNotify: 'Avisar no WhatsApp',
-        waOwedText: (name, lines, total) => `Oi, ${name}! Fiz as contas do que tá no meu nome:\n${lines}\nTotal: ${total}. Me manda quando der? 🙏`,
+        waOwedText: (name, lines, total) =>
+          `Oi, ${name}! Fiz as contas do que tá no meu nome:\n${lines}\nTotal: ${total}. Me manda quando der? 🙏`,
         waOweText: (name, total) => `Oi, ${name}! Anotei aqui que te devo ${total}. Já já te acerto.`,
         historyTitle: 'Histórico',
         notedTag: 'Anotado',
@@ -1160,9 +1250,11 @@ export const ptBR: Dictionary = {
       missionsUnit: 'missões',
       aloneNote: 'Por enquanto é só você. Chama alguém pra ter com quem disputar.',
       yourCode: 'Seu código',
-      privacyNote: 'Amigo vê só seu primeiro nome, a ofensiva e quantas missões você fez. Saldo, gastos e banco ficam só com você.',
+      privacyNote:
+        'Amigo vê só seu primeiro nome, a ofensiva e quantas missões você fez. Saldo, gastos e banco ficam só com você.',
       client: {
-        shareText: (url) => `Bora disputar quem cuida melhor da grana essa semana? Entra no Tostão pelo meu link: ${url}`,
+        shareText: (url) =>
+          `Bora disputar quem cuida melhor da grana essa semana? Entra no Tostão pelo meu link: ${url}`,
         copied: 'Link copiado!',
         shareBtn: 'Chamar um amigo',
         addLabel: 'Seu amigo já tem conta? Cola o código dele',
@@ -1181,7 +1273,8 @@ export const ptBR: Dictionary = {
     },
     whatsapp: {
       title: 'Tostão no WhatsApp',
-      intro: 'Pergunta pelo WhatsApp do mesmo jeito que no app: “quanto gastei com delivery?”, “dá pra comprar um tênis?”.',
+      intro:
+        'Pergunta pelo WhatsApp do mesmo jeito que no app: “quanto gastei com delivery?”, “dá pra comprar um tênis?”.',
       notReady: 'Ainda tô ligando o número. Quando estiver pronto, aparece aqui o botão pra conectar.',
       linkedTo: (phone) => `Ligado ao número ${phone}.`,
       openChat: 'Abrir conversa',
@@ -1209,7 +1302,8 @@ export const ptBR: Dictionary = {
         'Contas, transações, categorias, limites, meta, renda, conversas e progresso nas lições.',
         'Os backups do servidor apagam tudo sozinhos em até 14 dias.',
       ],
-      disconnectHintBefore: 'Quer só parar de ler um banco? Dá pra desconectar ele no Perfil sem apagar a conta. Detalhes na ',
+      disconnectHintBefore:
+        'Quer só parar de ler um banco? Dá pra desconectar ele no Perfil sem apagar a conta. Detalhes na ',
       privacyLink: 'Política de privacidade',
       form: {
         passwordLabel: 'Sua senha',
@@ -1221,7 +1315,8 @@ export const ptBR: Dictionary = {
     personalizar: {
       subtitle: 'Escolha o que aparece e em que ordem. O saldo fica sempre no topo.',
       dismissedTitle: 'Avisos que você fechou no X',
-      dismissedBody: 'Somem até ter novidade. Se surgir gasto novo sem categoria, outra conta pra vencer ou um limite estourado, o aviso volta.',
+      dismissedBody:
+        'Somem até ter novidade. Se surgir gasto novo sem categoria, outra conta pra vencer ou um limite estourado, o aviso volta.',
       resetDefault: 'Voltar ao padrão',
       moveUpAria: (name) => `Subir ${name}`,
       moveDownAria: (name) => `Descer ${name}`,
@@ -1246,12 +1341,18 @@ export const ptBR: Dictionary = {
       whatsappLinkHint: 'Conectar número para falar e receber avisos',
       whatsappSoon: 'Em breve no seu celular',
       configTostaoTitle: 'Configurar o que o Tostão acompanha',
-      suggestions: ['Cadê meu dinheiro?', 'Posso pedir iFood hoje?', 'Quanto pago de assinatura?', 'Onde dá pra cortar?'],
+      suggestions: [
+        'Cadê meu dinheiro?',
+        'Posso pedir iFood hoje?',
+        'Quanto pago de assinatura?',
+        'Onde dá pra cortar?',
+      ],
       thinkingAria: 'Tostão está pensando',
       thinkingText: 'Farejando seus gastos…',
       askIncomeBanner: 'Me conta quanto você ganha e suas contas fixas: aí eu respondo "dá pra comprar?" de verdade.',
       askIncomeCta: 'Contar',
-      emptyGreeting: (firstName) => `Fala, ${firstName}! Eu olho seus gastos, assinaturas e limites antes de responder. Manda a dúvida.`,
+      emptyGreeting: (firstName) =>
+        `Fala, ${firstName}! Eu olho seus gastos, assinaturas e limites antes de responder. Manda a dúvida.`,
       inputPlaceholder: 'Pergunte ao Tostão',
       inputAria: 'Pergunte ao Tostão',
       sendAria: 'Enviar',
@@ -1260,7 +1361,8 @@ export const ptBR: Dictionary = {
       trailTitle: 'Sua trilha',
       trailHeroTitle: 'No fim da trilha, os vilões fogem',
       trailHeroBody: 'O módulo 9 te ensina a desmascarar o Urubu do Pix e o Tigrinho de vez.',
-      modulesSummary: (modulesCount, doneCount, totalCount) => `${modulesCount} módulos · ${doneCount} de ${totalCount} lições feitas`,
+      modulesSummary: (modulesCount, doneCount, totalCount) =>
+        `${modulesCount} módulos · ${doneCount} de ${totalCount} lições feitas`,
       legendInProgress: 'Em andamento',
       legendOptional: 'Só se fizer sentido pra você',
       inProgressCount: (done, total) => `Em andamento · ${done} de ${total}`,

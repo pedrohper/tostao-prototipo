@@ -5,7 +5,15 @@ import { setIgnored } from './actions';
 
 function Submit({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
-  return <button type="submit" disabled={pending} className="text-[13px] font-semibold text-tinta-suave underline disabled:opacity-50">{pending ? '…' : children}</button>;
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="text-[13px] font-semibold text-tinta-suave underline disabled:opacity-50"
+    >
+      {pending ? '…' : children}
+    </button>
+  );
 }
 
 /** "Não é assinatura" (ou desfazer). Guarda a escolha na conta: a cobrança sai da lista e do total. */

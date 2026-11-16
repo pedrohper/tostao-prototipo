@@ -8,6 +8,8 @@ export async function setIgnored(form: FormData) {
   if (!parsed.success) return;
   try {
     await api('/subscriptions/ignored', { method: 'PUT', body: parsed.data });
-  } catch { /* se falhar, a lista só não muda */ }
+  } catch {
+    /* se falhar, a lista só não muda */
+  }
   revalidatePath('/', 'layout');
 }

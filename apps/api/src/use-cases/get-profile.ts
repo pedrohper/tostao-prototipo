@@ -12,7 +12,10 @@ export class GetProfileUseCase {
   async execute({ userId }: { userId: string }) {
     const user = await this.users.findById(userId);
     if (!user) throw new ResourceNotFoundError('Usuário');
-    const [connections, accounts] = await Promise.all([this.connections.listByUser(userId), this.accounts.listByUser(userId)]);
+    const [connections, accounts] = await Promise.all([
+      this.connections.listByUser(userId),
+      this.accounts.listByUser(userId),
+    ]);
     return {
       user,
       connections: connections.map((c) => {

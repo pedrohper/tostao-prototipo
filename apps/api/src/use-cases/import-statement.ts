@@ -8,9 +8,17 @@ const DAY = 24 * 60 * 60 * 1000;
 export const IMPORT_PREFIX = 'import:';
 export const MANUAL_PREFIX = 'manual:';
 
-export const isImportConnection = (itemId: string) => itemId.startsWith(IMPORT_PREFIX) || itemId.startsWith(MANUAL_PREFIX);
+export const isImportConnection = (itemId: string) =>
+  itemId.startsWith(IMPORT_PREFIX) || itemId.startsWith(MANUAL_PREFIX);
 
-const slug = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+const slug = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 40);
 
 type Input = { userId: string; accountName: string; fileName: string; content: string; isCard?: boolean };
 
@@ -52,7 +60,10 @@ export class ImportStatementUseCase {
     let skipped = 0;
     for (const tx of parsed.transactions) {
       const externalId = `${connection.id}:${tx.externalId}`;
-      if (await transactions.findByExternalId(userId, externalId)) { skipped++; continue; }
+      if (await transactions.findByExternalId(userId, externalId)) {
+        skipped++;
+        continue;
+      }
       await transactions.create({
         userId,
         accountId: account.id,
@@ -68,11 +79,16 @@ export class ImportStatementUseCase {
 
     // Pagamento de fatura, Pix entre contas suas etc. também valem pro que veio de arquivo.
     const times = parsed.transactions.map((t) => t.occurredAt.getTime());
-    const window = await transactions.findManyInRange(userId, new Date(Math.min(...times) - 2 * DAY), new Date(Math.max(...times) + 2 * DAY));
+    const window = await transactions.findManyInRange(
+      userId,
+      new Date(Math.min(...times) - 2 * DAY),
+      new Date(Math.max(...times) + 2 * DAY),
+    );
     const internal = detectInternalTransfers(window);
     for (const t of window) {
       const shouldBe = internal.has(t.id);
-      if (t.accountId && t.isInternalTransfer !== shouldBe) await transactions.save({ ...t, isInternalTransfer: shouldBe });
+      if (t.accountId && t.isInternalTransfer !== shouldBe)
+        await transactions.save({ ...t, isInternalTransfer: shouldBe });
     }
     await connections.save({ ...connection, status: 'ACTIVE', lastSyncedAt: new Date() });
 

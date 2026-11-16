@@ -67,7 +67,10 @@ export function MissionCompletionToast({
 
   if (!message) return null;
   return (
-    <div role="status" className="fixed inset-x-0 top-4 z-30 mx-auto w-fit rounded-full bg-tinta px-4 py-2 text-sm font-semibold text-papel shadow-lg">
+    <div
+      role="status"
+      className="fixed inset-x-0 top-4 z-30 mx-auto w-fit rounded-full bg-tinta px-4 py-2 text-sm font-semibold text-papel shadow-lg"
+    >
       {message}
     </div>
   );
@@ -113,4 +116,3 @@ export function SoundToggleCard({ locale = 'pt-BR', embedded = false }: { locale
     </section>
   );
 }
-

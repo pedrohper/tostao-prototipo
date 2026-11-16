@@ -11,12 +11,28 @@ export function AutoCategorizeButton({ t }: { t?: Dictionary['walletExtra']['aut
   return (
     <form action={action} className="flex flex-col gap-1.5 rounded-2xl bg-amarelo-claro p-3.5">
       <p className="text-[14px] leading-snug text-tinta">
-        <strong>{labels.introBold}</strong>{labels.introBody}
+        <strong>{labels.introBold}</strong>
+        {labels.introBody}
       </p>
-      <button type="submit" disabled={pending} className="self-start rounded-full bg-tinta px-4 py-2 text-[13px] font-semibold text-papel disabled:opacity-60">
-        {pending ? labels.pending : <span className="flex items-center gap-1.5"><Icon src="ui/categorizar-ia" size={18} />{labels.cta}</span>}
+      <button
+        type="submit"
+        disabled={pending}
+        className="self-start rounded-full bg-tinta px-4 py-2 text-[13px] font-semibold text-papel disabled:opacity-60"
+      >
+        {pending ? (
+          labels.pending
+        ) : (
+          <span className="flex items-center gap-1.5">
+            <Icon src="ui/categorizar-ia" size={18} />
+            {labels.cta}
+          </span>
+        )}
       </button>
-      {state.message && <p role="status" className="text-[13px] text-tinta-suave">{state.message}</p>}
+      {state.message && (
+        <p role="status" className="text-[13px] text-tinta-suave">
+          {state.message}
+        </p>
+      )}
     </form>
   );
 }

@@ -43,11 +43,7 @@ const EMPTY_AUTO: TostaoAutoResponse = {
   },
 };
 
-export default async function TostaoPage({
-  searchParams,
-}: {
-  searchParams?: Promise<{ aba?: string; q?: string }>;
-}) {
+export default async function TostaoPage({ searchParams }: { searchParams?: Promise<{ aba?: string; q?: string }> }) {
   const [{ locale, t }, sp, me, { messages }, { plan }, progress, missions, auto, whatsapp] = await Promise.all([
     getI18n(),
     searchParams ?? Promise.resolve<{ aba?: string; q?: string }>({}),
@@ -107,7 +103,11 @@ export default async function TostaoPage({
           {atual?.title ?? t.home.allModulesCompleted}
         </span>
         {atual && (
-          <div className="flex gap-[5px]" role="img" aria-label={t.home.learnModuleProgress(atual.number, feitas, atual.lessons.length)}>
+          <div
+            className="flex gap-[5px]"
+            role="img"
+            aria-label={t.home.learnModuleProgress(atual.number, feitas, atual.lessons.length)}
+          >
             {atual.lessons.map((lesson) => (
               <i
                 key={lesson.id}
@@ -137,11 +137,7 @@ export default async function TostaoPage({
             {whatsapp.linkedPhone ? tc.whatsappConnected : t.profile.shortcuts.whatsapp}
           </span>
           <span className="truncate text-xs text-tinta-suave">
-            {whatsapp.linkedPhone
-              ? whatsapp.linkedPhone
-              : whatsapp.enabled
-                ? tc.whatsappLinkHint
-                : tc.whatsappSoon}
+            {whatsapp.linkedPhone ? whatsapp.linkedPhone : whatsapp.enabled ? tc.whatsappLinkHint : tc.whatsappSoon}
           </span>
         </div>
         <svg

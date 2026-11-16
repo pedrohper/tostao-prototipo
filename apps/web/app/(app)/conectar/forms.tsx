@@ -31,8 +31,18 @@ export function ConnectPanel({
     return (
       <div className="flex flex-col gap-3">
         <p className="rounded-2xl bg-menta-clara px-4 py-3 text-[15px] font-semibold">{ok}</p>
-        <Link href={novo ? '/renda?novo=1' : '/renda'} className="flex h-[54px] items-center justify-center rounded-full bg-tinta font-semibold text-papel no-underline">{labels.goIncome}</Link>
-        <Link href="/inicio" className="flex h-11 items-center justify-center text-[15px] font-semibold text-tinta no-underline">{labels.laterMonth}</Link>
+        <Link
+          href={novo ? '/renda?novo=1' : '/renda'}
+          className="flex h-[54px] items-center justify-center rounded-full bg-tinta font-semibold text-papel no-underline"
+        >
+          {labels.goIncome}
+        </Link>
+        <Link
+          href="/inicio"
+          className="flex h-11 items-center justify-center text-[15px] font-semibold text-tinta no-underline"
+        >
+          {labels.laterMonth}
+        </Link>
       </div>
     );
   }
@@ -73,7 +83,9 @@ export function ConnectPanel({
     <form action={manualAction} className="flex flex-col gap-3">
       <Field label={labels.itemIdLabel} name="itemId" placeholder="ex.: 3f1c2a9e-…" autoComplete="off" required />
       <ErrorNote message={manualState.error} />
-      <Button type="submit" variant={widget ? 'outline' : 'primary'} disabled={manualPending}>{manualPending ? labels.connecting : labels.connectItemId}</Button>
+      <Button type="submit" variant={widget ? 'outline' : 'primary'} disabled={manualPending}>
+        {manualPending ? labels.connecting : labels.connectItemId}
+      </Button>
     </form>
   );
 
@@ -81,7 +93,9 @@ export function ConnectPanel({
 
   return (
     <div className="flex flex-col gap-3">
-      <Button type="button" variant="laranja" onClick={openWidget} disabled={pending}>{pending ? labels.connecting : labels.connectBank}</Button>
+      <Button type="button" variant="laranja" onClick={openWidget} disabled={pending}>
+        {pending ? labels.connecting : labels.connectBank}
+      </Button>
       <ErrorNote message={state.error} />
       <details className="rounded-2xl bg-cartao p-3">
         <summary className="cursor-pointer text-[15px] font-semibold">{labels.haveItemId}</summary>
@@ -97,7 +111,11 @@ export function SyncButton({ id, t }: { id: string; t?: Dictionary['pages']['con
   return (
     <form action={action} className="flex items-center gap-3">
       <input type="hidden" name="id" value={id} />
-      <button type="submit" disabled={pending} className="rounded-full border-[1.5px] border-tinta px-3.5 py-1.5 text-sm font-semibold disabled:opacity-50">
+      <button
+        type="submit"
+        disabled={pending}
+        className="rounded-full border-[1.5px] border-tinta px-3.5 py-1.5 text-sm font-semibold disabled:opacity-50"
+      >
         {pending ? labels.syncing : labels.syncNow}
       </button>
       {state.ok && <span className="text-sm text-verde-texto">{state.ok}</span>}
@@ -106,7 +124,15 @@ export function SyncButton({ id, t }: { id: string; t?: Dictionary['pages']['con
   );
 }
 
-export function DisconnectButton({ id, name, t }: { id: string; name: string; t?: Dictionary['pages']['conectar']['panel'] }) {
+export function DisconnectButton({
+  id,
+  name,
+  t,
+}: {
+  id: string;
+  name: string;
+  t?: Dictionary['pages']['conectar']['panel'];
+}) {
   const labels = t ?? getDictionary('pt-BR').pages.conectar.panel;
   const [state, action, pending] = useActionState<ConnectState, FormData>(disconnectBank, {});
   return (
@@ -118,7 +144,11 @@ export function DisconnectButton({ id, name, t }: { id: string; name: string; t?
       className="flex items-center gap-3"
     >
       <input type="hidden" name="id" value={id} />
-      <button type="submit" disabled={pending} className="text-sm font-semibold text-vermelho-texto underline disabled:opacity-50">
+      <button
+        type="submit"
+        disabled={pending}
+        className="text-sm font-semibold text-vermelho-texto underline disabled:opacity-50"
+      >
         {pending ? labels.disconnecting : labels.disconnect}
       </button>
       {state.error && <span className="text-sm text-vermelho-texto">{state.error}</span>}

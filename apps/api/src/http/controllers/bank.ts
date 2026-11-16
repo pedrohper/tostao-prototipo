@@ -1,6 +1,17 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { connectBankBody, createManualAccountBody, importStatementBody, monthQuery, type AccountDetailResponse, type InstitutionLogosResponse, type ImportResponse, type ConnectTokenResponse, type DisconnectResponse, type SyncResponse } from '@tostao/contracts';
+import {
+  connectBankBody,
+  createManualAccountBody,
+  importStatementBody,
+  monthQuery,
+  type AccountDetailResponse,
+  type InstitutionLogosResponse,
+  type ImportResponse,
+  type ConnectTokenResponse,
+  type DisconnectResponse,
+  type SyncResponse,
+} from '@tostao/contracts';
 import type { UseCases } from '../../use-cases/factories.js';
 import type { Repositories } from '../../repositories/types.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
@@ -31,17 +42,28 @@ export function bankRoutes(app: FastifyInstance, uc: UseCases, repos: Repositori
 
   app.delete('/connections/:id', { onRequest: verifyJwt }, async (request) => {
     const { id } = z.object({ id: z.string() }).parse(request.params);
-    return (await uc.disconnectBank.execute({ userId: request.user.sub, connectionId: id })) satisfies DisconnectResponse;
+    return (await uc.disconnectBank.execute({
+      userId: request.user.sub,
+      connectionId: id,
+    })) satisfies DisconnectResponse;
   });
 
   // Logos oficiais dos bancos (o app casa pelo nome da conta)
-  app.get('/institutions/logos', { onRequest: verifyJwt }, async () => (await uc.institutionLogos.execute()) satisfies InstitutionLogosResponse);
+  app.get(
+    '/institutions/logos',
+    { onRequest: verifyJwt },
+    async () => (await uc.institutionLogos.execute()) satisfies InstitutionLogosResponse,
+  );
 
   // Detalhe de uma conta ou cartão no mês
   app.get('/accounts/:id', { onRequest: verifyJwt }, async (request) => {
     const { id } = z.object({ id: z.string() }).parse(request.params);
     const { month } = monthQuery.parse(request.query);
-    return (await uc.accountDetail.execute({ userId: request.user.sub, accountId: id, month })) satisfies AccountDetailResponse;
+    return (await uc.accountDetail.execute({
+      userId: request.user.sub,
+      accountId: id,
+      month,
+    })) satisfies AccountDetailResponse;
   });
 
   app.post('/accounts', { onRequest: verifyJwt }, async (request, reply) => {
@@ -63,7 +85,9 @@ export function bankRoutes(app: FastifyInstance, uc: UseCases, repos: Repositori
     const body = importStatementBody.parse(request.body);
     const r = await uc.importStatement.execute({ ...body, userId: request.user.sub });
     categorizeLater(request.user.sub);
-    return reply.status(201).send({ ...r, from: r.from.toISOString(), to: r.to.toISOString() } satisfies ImportResponse);
+    return reply
+      .status(201)
+      .send({ ...r, from: r.from.toISOString(), to: r.to.toISOString() } satisfies ImportResponse);
   });
 
   app.post('/connections/:id/sync', { onRequest: verifyJwt }, async (request) => {

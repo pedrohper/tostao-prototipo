@@ -40,10 +40,13 @@ export type ProfileResponse = {
   email: string;
   createdAt: string;
   connections: {
-    id: string; itemId: string; institution: string | null;
+    id: string;
+    itemId: string;
+    institution: string | null;
     /** Nome pra mostrar: o banco de verdade, mesmo quando a conexão vem pelo MeuPluggy. */
     displayName: string;
-    lastSyncedAt: string | null; status: string;
+    lastSyncedAt: string | null;
+    status: string;
     accounts: { id: string; name: string; type: 'BANK' | 'CREDIT'; balanceInCents: number; hidden: boolean }[];
   }[];
 };
@@ -83,18 +86,20 @@ export const searchQuery = z.object({
 });
 export type SearchQuery = z.infer<typeof searchQuery>;
 
-export const manualTransactionBody = z.object({
-  description: z.string().trim().min(1, 'Diz o que foi'),
-  amountInCents: z.number().int().positive('Valor precisa ser maior que zero'),
-  kind: z.enum(['saida', 'entrada']),
-  occurredAt: z.iso.date(),
-  categoryId: z.string().nullable().optional(),
-  /** "Pago com": null = dinheiro vivo. */
-  accountId: z.string().nullable().optional(),
-  /** nao = só esse; mensal = repete todo mês (12 meses lançados); parcelado = o valor é o total, dividido em `times` meses. */
-  repeat: z.enum(['nao', 'mensal', 'parcelado']).default('nao'),
-  times: z.number().int().min(2, 'Parcela em pelo menos 2x').max(48, 'No máximo 48x').optional(),
-}).refine((b) => b.repeat !== 'parcelado' || (b.times ?? 0) >= 2, { message: 'Diz em quantas vezes', path: ['times'] });
+export const manualTransactionBody = z
+  .object({
+    description: z.string().trim().min(1, 'Diz o que foi'),
+    amountInCents: z.number().int().positive('Valor precisa ser maior que zero'),
+    kind: z.enum(['saida', 'entrada']),
+    occurredAt: z.iso.date(),
+    categoryId: z.string().nullable().optional(),
+    /** "Pago com": null = dinheiro vivo. */
+    accountId: z.string().nullable().optional(),
+    /** nao = só esse; mensal = repete todo mês (12 meses lançados); parcelado = o valor é o total, dividido em `times` meses. */
+    repeat: z.enum(['nao', 'mensal', 'parcelado']).default('nao'),
+    times: z.number().int().min(2, 'Parcela em pelo menos 2x').max(48, 'No máximo 48x').optional(),
+  })
+  .refine((b) => b.repeat !== 'parcelado' || (b.times ?? 0) >= 2, { message: 'Diz em quantas vezes', path: ['times'] });
 export type ManualTransactionBody = z.infer<typeof manualTransactionBody>;
 
 export const categorizeBody = z.object({
@@ -107,7 +112,11 @@ export type CategorizeBody = z.infer<typeof categorizeBody>;
 export const updateTransactionBody = z.object({
   isInternalTransfer: z.boolean().optional(),
   description: z.string().trim().min(1, 'Diz o que foi').optional(),
-  amountInCents: z.number().int().refine((n) => n !== 0, 'Valor precisa ser diferente de zero').optional(),
+  amountInCents: z
+    .number()
+    .int()
+    .refine((n) => n !== 0, 'Valor precisa ser diferente de zero')
+    .optional(),
   occurredAt: z.iso.date().optional(),
 });
 export type UpdateTransactionBody = z.infer<typeof updateTransactionBody>;
@@ -143,8 +152,12 @@ export type PersonDTO = { id: string; name: string; balanceInCents: number; coun
 export type PeopleResponse = { people: PersonDTO[]; owedToYouInCents: number; youOweInCents: number };
 export type PersonDetailResponse = { person: PersonDTO; transactions: TransactionDTO[] };
 /** Liga o lançamento a uma pessoa pelo nome (cria se não existir). null desfaz. */
-export const createPersonBody = z.object({ name: z.string().trim().min(1, 'Diz o nome').max(40, 'Nome curto, até 40 letras') });
-export const linkPersonBody = z.object({ personName: z.string().trim().min(1, 'Diz o nome').max(40, 'Nome curto, até 40 letras').nullable() });
+export const createPersonBody = z.object({
+  name: z.string().trim().min(1, 'Diz o nome').max(40, 'Nome curto, até 40 letras'),
+});
+export const linkPersonBody = z.object({
+  personName: z.string().trim().min(1, 'Diz o nome').max(40, 'Nome curto, até 40 letras').nullable(),
+});
 /** Acerto anotado à mão (dinheiro vivo, combinado de boca). */
 export const personEntryBody = z.object({
   kind: z.enum(['emprestei', 'peguei', 'recebi', 'paguei']),
@@ -163,7 +176,14 @@ export type SearchResponse = {
 };
 
 /** kind "neutra" = "Não conta" (some do gasto e da renda). custom = criada pela pessoa. */
-export type CategoryDTO = { id: string; name: string; emoji: string; color: string; kind: 'saida' | 'entrada' | 'neutra'; custom: boolean };
+export type CategoryDTO = {
+  id: string;
+  name: string;
+  emoji: string;
+  color: string;
+  kind: 'saida' | 'entrada' | 'neutra';
+  custom: boolean;
+};
 
 export const createCategoryBody = z.object({
   name: z.string().trim().min(2, 'Nome curto demais').max(30, 'Nome longo demais'),
@@ -180,7 +200,16 @@ export type MonthSummaryResponse = {
   uncategorizedCount: number;
   byCategory: { categoryId: string | null; name: string; color: string; totalInCents: number }[];
   /** BANK = conta corrente (entra no saldo); CREDIT = cartão (balance = fatura em aberto). */
-  accounts: { id: string; name: string; type: 'BANK' | 'CREDIT'; balanceInCents: number; creditLimitInCents: number | null; dueDate: string | null; brand: string | null; last4: string | null }[];
+  accounts: {
+    id: string;
+    name: string;
+    type: 'BANK' | 'CREDIT';
+    balanceInCents: number;
+    creditLimitInCents: number | null;
+    dueDate: string | null;
+    brand: string | null;
+    last4: string | null;
+  }[];
   /** Contas que a pessoa ocultou: fora do saldo e da lista. */
   hiddenAccounts: { id: string; name: string; balanceInCents: number }[];
 };
@@ -193,12 +222,19 @@ export type InstitutionLogosResponse = { logos: { name: string; imageUrl: string
 /** Detalhe de uma conta ou cartão num mês (GET /accounts/:id?month=). */
 export type AccountDetailResponse = {
   account: {
-    id: string; name: string; type: 'BANK' | 'CREDIT'; institution: string | null;
+    id: string;
+    name: string;
+    type: 'BANK' | 'CREDIT';
+    institution: string | null;
     /** Cartão: negativo = fatura em aberto. */
-    balanceInCents: number; creditLimitInCents: number | null; dueDate: string | null;
-    lastSyncedAt: string | null; hidden: boolean;
+    balanceInCents: number;
+    creditLimitInCents: number | null;
+    dueDate: string | null;
+    lastSyncedAt: string | null;
+    hidden: boolean;
     /** Cartão: bandeira (VISA, MASTERCARD, ELO...) e final, quando o banco manda. */
-    brand: string | null; last4: string | null;
+    brand: string | null;
+    last4: string | null;
   };
   month: string;
   outInCents: number;
@@ -226,7 +262,12 @@ export type SubscriptionDTO = {
   /** Mesmo serviço cobrando mais de uma vez (ex.: dois Prime): nome da outra cobrança. */
   duplicateOf: string | null;
 };
-export type SubscriptionsResponse = { subscriptions: SubscriptionDTO[]; ignored: SubscriptionDTO[]; monthlyInCents: number; yearlyInCents: number };
+export type SubscriptionsResponse = {
+  subscriptions: SubscriptionDTO[];
+  ignored: SubscriptionDTO[];
+  monthlyInCents: number;
+  yearlyInCents: number;
+};
 export const ignoreSubscriptionBody = z.object({ key: z.string().min(1).max(200), ignored: z.boolean() });
 
 // ---------- Limites por categoria ----------
@@ -235,7 +276,14 @@ export const setBudgetBody = z.object({
   limitInCents: z.number().int().positive('O limite precisa ser maior que zero').max(100_000_000).nullable(),
 });
 export type SetBudgetBody = z.infer<typeof setBudgetBody>;
-export type BudgetDTO = { categoryId: string; name: string; emoji: string; color: string; limitInCents: number; spentInCents: number };
+export type BudgetDTO = {
+  categoryId: string;
+  name: string;
+  emoji: string;
+  color: string;
+  limitInCents: number;
+  spentInCents: number;
+};
 export type BudgetsResponse = { budgets: BudgetDTO[] };
 
 // ---------- Progresso das lições ----------
@@ -256,12 +304,20 @@ export type TribunalResponse = {
 export const urubuStepBody = z.object({ done: z.boolean() });
 export type BattlesResponse = {
   checksStatement: boolean;
-  tigrinho: { status: 'ativa' | 'vencida' | 'perdida'; startedAt: string; day: number; totalDays: number; lostAt: string | null } | null;
+  tigrinho: {
+    status: 'ativa' | 'vencida' | 'perdida';
+    startedAt: string;
+    day: number;
+    totalDays: number;
+    lostAt: string | null;
+  } | null;
   urubu: { status: 'bloqueada' | 'ativa' | 'vencida'; steps: { id: string; label: string; done: boolean }[] };
 };
 
 // Chat com o Tostão
-export const chatBody = z.object({ message: z.string().trim().min(1, 'Escreve alguma coisa').max(1000, 'Pergunta longa demais') });
+export const chatBody = z.object({
+  message: z.string().trim().min(1, 'Escreve alguma coisa').max(1000, 'Pergunta longa demais'),
+});
 export type ChatMessageDTO = { id: string; role: 'user' | 'assistant'; content: string; createdAt: string };
 export type ChatHistoryResponse = { messages: ChatMessageDTO[] };
 export type ChatReplyResponse = { question: ChatMessageDTO; reply: ChatMessageDTO; remainingToday: number };
@@ -273,7 +329,15 @@ export const importStatementBody = z.object({
   content: z.string().min(10, 'Arquivo vazio').max(4_000_000, 'Arquivo grande demais (máx. 4 MB)'),
   isCard: z.boolean().optional(),
 });
-export type ImportResponse = { importedCount: number; skipped: number; format: 'ofx' | 'csv'; kind: 'BANK' | 'CREDIT'; accountName: string; from: string; to: string };
+export type ImportResponse = {
+  importedCount: number;
+  skipped: number;
+  format: 'ofx' | 'csv';
+  kind: 'BANK' | 'CREDIT';
+  accountName: string;
+  from: string;
+  to: string;
+};
 
 // ---------- Renda, contas fixas e previsão ----------
 const cents = z.number().int().min(0).max(100_000_000);
@@ -283,34 +347,58 @@ export const goalBody = z.object({
   kind: z.enum(['reserva', 'viagem', 'sair-do-vermelho', 'outro']),
   label: z.string().trim().max(60).nullable().default(null),
   amountInCents: cents.nullable().default(null),
-  deadline: z.string().regex(/^\d{4}-\d{2}$/).nullable().default(null),
+  deadline: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/)
+    .nullable()
+    .default(null),
   savedInCents: cents.optional(),
 });
 export type Goal = z.infer<typeof goalBody>;
 /** "Guardei R$ 50" (positivo) ou "tirei R$ 20" (negativo). */
-export const goalDepositBody = z.object({ amountInCents: z.number().int().min(-100_000_000).max(100_000_000).refine((v) => v !== 0, 'Valor precisa ser diferente de zero') });
+export const goalDepositBody = z.object({
+  amountInCents: z
+    .number()
+    .int()
+    .min(-100_000_000)
+    .max(100_000_000)
+    .refine((v) => v !== 0, 'Valor precisa ser diferente de zero'),
+});
 
 export const financialPlanBody = z.object({
-  salary: z.object({
-    amountInCents: cents,
-    payday: day,
-    varies: z.boolean().default(false),
-    bank: z.string().trim().max(60).nullable().default(null),
-    /** Adiantamento: parte do salário que cai antes, ex.: metade no dia 15. amountInCents é o total do mês. */
-    advance: z.object({ day, amountInCents: cents }).nullable().default(null),
-    /** Padrão da descrição no extrato (ex.: "TRANSF SALDO C/SAL P/CC"). */
-    pattern: z.string().trim().max(120).nullable().default(null),
-  }).nullable(),
-  otherIncomes: z.array(z.object({
-    name: z.string().trim().min(1).max(60),
-    amountInCents: cents,
-    day: day.nullable().default(null),
-    countsAsIncome: z.boolean(),
-    pattern: z.string().trim().max(120).nullable().default(null),
-  })).max(10).default([]),
-  fixedExpenses: z.array(z.object({ name: z.string().trim().min(1).max(60), amountInCents: cents, day })).max(20).default([]),
+  salary: z
+    .object({
+      amountInCents: cents,
+      payday: day,
+      varies: z.boolean().default(false),
+      bank: z.string().trim().max(60).nullable().default(null),
+      /** Adiantamento: parte do salário que cai antes, ex.: metade no dia 15. amountInCents é o total do mês. */
+      advance: z.object({ day, amountInCents: cents }).nullable().default(null),
+      /** Padrão da descrição no extrato (ex.: "TRANSF SALDO C/SAL P/CC"). */
+      pattern: z.string().trim().max(120).nullable().default(null),
+    })
+    .nullable(),
+  otherIncomes: z
+    .array(
+      z.object({
+        name: z.string().trim().min(1).max(60),
+        amountInCents: cents,
+        day: day.nullable().default(null),
+        countsAsIncome: z.boolean(),
+        pattern: z.string().trim().max(120).nullable().default(null),
+      }),
+    )
+    .max(10)
+    .default([]),
+  fixedExpenses: z
+    .array(z.object({ name: z.string().trim().min(1).max(60), amountInCents: cents, day }))
+    .max(20)
+    .default([]),
   /** VR e VA: não passam pelo Open Finance, a pessoa informa. Só servem pra comida, não entram no caixa. */
-  benefits: z.array(z.object({ kind: z.enum(['VR', 'VA', 'outro']), amountInCents: cents, day })).max(4).default([]),
+  benefits: z
+    .array(z.object({ kind: z.enum(['VR', 'VA', 'outro']), amountInCents: cents, day }))
+    .max(4)
+    .default([]),
   goal: goalBody.nullable().default(null),
 });
 export type FinancialPlan = z.infer<typeof financialPlanBody>;
@@ -408,14 +496,33 @@ export type SpendingBase = {
   status: 'ok' | 'excecao' | 'aperto';
   months: SpendingBaseMonth[];
 };
-export type ForecastResponse = { hasPlan: boolean; months: ForecastMonth[]; goal: GoalStatus | null; thisMonth: ThisMonthForecast | null; base?: SpendingBase | null };
+export type ForecastResponse = {
+  hasPlan: boolean;
+  months: ForecastMonth[];
+  goal: GoalStatus | null;
+  thisMonth: ThisMonthForecast | null;
+  base?: SpendingBase | null;
+};
 /** Quantas pendentes a IA categorizou (das que ela olhou). */
 export type AutoCategorizeResponse = { categorized: number; asked: number };
 
 // ---------- Missões, ofensiva, amigos, avisos e resumo da semana ----------
 /** O que conta como missão feita. "visita:*" vem das telas que a missão do dia manda abrir. */
-export const ACTIVITY_KINDS = ['licao', 'categorizar', 'anotar', 'tribunal', 'batalha', 'meta', 'limites', 'assinaturas', 'chat',
-  'visita:previsao', 'visita:assinaturas', 'visita:limites', 'visita:fechamento'] as const;
+export const ACTIVITY_KINDS = [
+  'licao',
+  'categorizar',
+  'anotar',
+  'tribunal',
+  'batalha',
+  'meta',
+  'limites',
+  'assinaturas',
+  'chat',
+  'visita:previsao',
+  'visita:assinaturas',
+  'visita:limites',
+  'visita:fechamento',
+] as const;
 export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
 export const activityBody = z.object({ kind: z.enum(ACTIVITY_KINDS) });
 
@@ -433,7 +540,14 @@ export type FriendDTO = { id: string; name: string; streakDays: number; weekScor
 export type FriendsResponse = { code: string; challenge: { title: string; endsAt: string }; ranking: FriendDTO[] };
 export const addFriendBody = z.object({ code: z.string().trim().min(4).max(20) });
 
-export type ReminderDTO = { key: string; kind: 'fatura' | 'conta' | 'assinatura'; title: string; amountInCents: number | null; dueDate: string; daysLeft: number };
+export type ReminderDTO = {
+  key: string;
+  kind: 'fatura' | 'conta' | 'assinatura';
+  title: string;
+  amountInCents: number | null;
+  dueDate: string;
+  daysLeft: number;
+};
 export type RemindersResponse = { reminders: ReminderDTO[] };
 
 export type WeeklyResponse = {

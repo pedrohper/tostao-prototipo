@@ -8,7 +8,6 @@ export interface RatesGateway {
   taxas(): Promise<TaxasResponse>;
 }
 
-
 export class ReferenceRatesGateway implements RatesGateway {
   async taxas() {
     return TAXAS_REFERENCIA;
@@ -25,7 +24,10 @@ const isoDate = (br: string) => br.split('/').reverse().join('-');
 export class BcbRatesGateway implements RatesGateway {
   private cache: { at: number; value: TaxasResponse } | null = null;
 
-  constructor(private readonly fetchFn: Fetch = fetch as unknown as Fetch, private readonly now: () => number = Date.now) {}
+  constructor(
+    private readonly fetchFn: Fetch = fetch as unknown as Fetch,
+    private readonly now: () => number = Date.now,
+  ) {}
 
   private async serie(n: number): Promise<{ valor: number; data: string }> {
     const res = await this.fetchFn(SGS(n), { signal: AbortSignal.timeout(6000) });

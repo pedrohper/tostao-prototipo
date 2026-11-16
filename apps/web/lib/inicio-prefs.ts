@@ -35,11 +35,9 @@ export async function readHomePrefs(): Promise<HomePrefs> {
   return parsePrefs((await cookies()).get(PREFS_COOKIE)?.value);
 }
 
-
 /** Returns user's chosen section order with any newly added sections appended at the end. */
 export function resolveSectionOrder(prefs: HomePrefs): HomeSectionId[] {
   const allIds = HOME_SECTIONS.map((s) => s.id) as HomeSectionId[];
   const selected = prefs.ordem.filter((id): id is HomeSectionId => (allIds as string[]).includes(id));
   return [...selected, ...allIds.filter((id) => !selected.includes(id))];
 }
-

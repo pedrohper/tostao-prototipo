@@ -60,7 +60,8 @@ function playTone(
   const gain = ctx.createGain();
   osc.type = waveform;
   osc.frequency.setValueAtTime(freq, ctx.currentTime + startOffsetSec);
-  if (glideToFreq) osc.frequency.exponentialRampToValueAtTime(glideToFreq, ctx.currentTime + startOffsetSec + durationSec);
+  if (glideToFreq)
+    osc.frequency.exponentialRampToValueAtTime(glideToFreq, ctx.currentTime + startOffsetSec + durationSec);
   gain.gain.setValueAtTime(0.0001, ctx.currentTime + startOffsetSec);
   gain.gain.exponentialRampToValueAtTime(volume, ctx.currentTime + startOffsetSec + 0.01);
   gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + startOffsetSec + durationSec);
@@ -101,4 +102,3 @@ export function playSound(effect: SoundEffect): void {
     // Audio unavailable; fail silently
   }
 }
-

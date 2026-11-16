@@ -21,12 +21,37 @@ import { ReferenceRatesGateway, type RatesGateway } from './gateways/rates-gatew
 import { DisabledPushGateway, type PushGateway } from './gateways/push-gateway.js';
 
 declare module '@fastify/jwt' {
-  interface FastifyJWT { user: { sub: string } }
+  interface FastifyJWT {
+    user: { sub: string };
+  }
 }
 
-type Options = Deps & { jwtSecret: string; webOrigin: string; logger?: boolean; whatsappVerifyToken?: string; n8nWhatsAppSecret?: string; audioTranscriber?: AudioTranscriber; push?: PushGateway; rates?: RatesGateway };
+type Options = Deps & {
+  jwtSecret: string;
+  webOrigin: string;
+  logger?: boolean;
+  whatsappVerifyToken?: string;
+  n8nWhatsAppSecret?: string;
+  audioTranscriber?: AudioTranscriber;
+  push?: PushGateway;
+  rates?: RatesGateway;
+};
 
-export async function buildApp({ repos, bank, ai, whatsapp = new FakeWhatsAppGateway(), whatsappVerifyToken = '', n8nWhatsAppSecret = '', audioTranscriber = new DisabledAudioTranscriber(), chatDailyLimit, jwtSecret, webOrigin, logger = false, push = new DisabledPushGateway(), rates = new ReferenceRatesGateway() }: Options) {
+export async function buildApp({
+  repos,
+  bank,
+  ai,
+  whatsapp = new FakeWhatsAppGateway(),
+  whatsappVerifyToken = '',
+  n8nWhatsAppSecret = '',
+  audioTranscriber = new DisabledAudioTranscriber(),
+  chatDailyLimit,
+  jwtSecret,
+  webOrigin,
+  logger = false,
+  push = new DisabledPushGateway(),
+  rates = new ReferenceRatesGateway(),
+}: Options) {
   const app = Fastify({ logger });
   await app.register(cors, { origin: webOrigin });
   await app.register(jwt, { secret: jwtSecret, sign: { expiresIn: '7d' } });

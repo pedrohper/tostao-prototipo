@@ -31,8 +31,21 @@ export default async function WhatsAppPage({ searchParams }: { searchParams: Pro
       ) : s.linkedPhone ? (
         <div className="flex flex-col gap-3 rounded-[20px] border border-linha bg-cartao p-4">
           <span className="text-[15px]">{tw.linkedTo(s.linkedPhone)}</span>
-          {s.number && <a href={`https://wa.me/${s.number}`} target="_blank" rel="noreferrer" className="flex h-[50px] items-center justify-center rounded-full bg-menta text-[15px] font-semibold text-tinta-fixa no-underline">{tw.openChat}</a>}
-          <form action={unlink}><button type="submit" className="w-full py-1 text-sm font-semibold text-vermelho-texto underline">{tw.unlink}</button></form>
+          {s.number && (
+            <a
+              href={`https://wa.me/${s.number}`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex h-[50px] items-center justify-center rounded-full bg-menta text-[15px] font-semibold text-tinta-fixa no-underline"
+            >
+              {tw.openChat}
+            </a>
+          )}
+          <form action={unlink}>
+            <button type="submit" className="w-full py-1 text-sm font-semibold text-vermelho-texto underline">
+              {tw.unlink}
+            </button>
+          </form>
         </div>
       ) : (
         <CodeCard t={tw.codeCard} />

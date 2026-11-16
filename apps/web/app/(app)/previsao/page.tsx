@@ -15,7 +15,12 @@ const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 export default async function PrevisaoPage({ searchParams }: { searchParams: Promise<{ voltar?: string }> }) {
   const [{ voltar }, f, { plan }, { locale, t }] = await Promise.all([
     searchParams,
-    api<ForecastResponse>('/forecast').catch((): ForecastResponse => ({ hasPlan: false, months: [], goal: null, thisMonth: null })),
+    api<ForecastResponse>('/forecast').catch((): ForecastResponse => ({
+      hasPlan: false,
+      months: [],
+      goal: null,
+      thisMonth: null,
+    })),
     api<FinancialPlanResponse>('/plan').catch(() => ({ plan: null })),
     getI18n(),
   ]);
@@ -32,7 +37,10 @@ export default async function PrevisaoPage({ searchParams }: { searchParams: Pro
         <div className="flex flex-col items-center gap-3 rounded-[20px] border border-linha bg-cartao p-6 text-center">
           <Mascot pose="pensando" size={140} alt="Tostão" />
           <p className="text-[15px] leading-[22px]">{p.emptyBody}</p>
-          <Link href={`/renda?voltar=${encodeURIComponent(selfHref)}`} className="flex h-[50px] items-center rounded-full bg-tinta px-6 text-[15px] font-semibold text-papel no-underline">
+          <Link
+            href={`/renda?voltar=${encodeURIComponent(selfHref)}`}
+            className="flex h-[50px] items-center rounded-full bg-tinta px-6 text-[15px] font-semibold text-papel no-underline"
+          >
             {p.tellIncomeCta}
           </Link>
         </div>
@@ -45,11 +53,7 @@ export default async function PrevisaoPage({ searchParams }: { searchParams: Pro
   const max = Math.max(...f.months.map((m) => Math.abs(m.leftInCents)), 1);
   const aperta = worst.leftInCents < 0;
   const sal = plan?.salary;
-  const salaryNote = sal
-    ? sal.advance
-      ? p.advanceAndRest(sal.advance.day, sal.payday)
-      : p.salaryDay(sal.payday)
-    : '';
+  const salaryNote = sal ? (sal.advance ? p.advanceAndRest(sal.advance.day, sal.payday) : p.salaryDay(sal.payday)) : '';
   const firstMonthName = monthName(first.month, locale);
   const worstMonthName = monthName(worst.month, locale);
 
@@ -63,14 +67,21 @@ export default async function PrevisaoPage({ searchParams }: { searchParams: Pro
         <div className="flex min-w-0 flex-col gap-4">
           {f.thisMonth && <EsteMes t={f.thisMonth} labels={p} locale={locale} />}
 
-          <div className={`flex items-center gap-1.5 rounded-2xl py-3 pr-3.5 pl-1.5 text-tinta ${aperta ? 'bg-rosa' : 'bg-menta-clara'}`}>
+          <div
+            className={`flex items-center gap-1.5 rounded-2xl py-3 pr-3.5 pl-1.5 text-tinta ${aperta ? 'bg-rosa' : 'bg-menta-clara'}`}
+          >
             <Mascot pose={aperta ? 'preocupado' : 'comemorando'} size={76} alt="Tostão" />
             <p className="text-[15px] leading-[21px]">
               {!aperta
                 ? p.allGreen(firstMonthName, money(first.leftInCents))
                 : worst === first
                   ? p.worstIsFirst(cap(firstMonthName), money(-worst.leftInCents))
-                  : p.firstVsWorst(cap(firstMonthName), first.leftInCents >= 0, worstMonthName, money(-worst.leftInCents))}
+                  : p.firstVsWorst(
+                      cap(firstMonthName),
+                      first.leftInCents >= 0,
+                      worstMonthName,
+                      money(-worst.leftInCents),
+                    )}
             </p>
           </div>
 
@@ -86,15 +97,21 @@ export default async function PrevisaoPage({ searchParams }: { searchParams: Pro
               const h = Math.max(6, Math.round((Math.abs(m.leftInCents) / max) * 52));
               return (
                 <div key={m.month} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
-                  <span className={`text-[13px] font-bold tabular-nums ${neg ? 'text-vermelho-texto' : 'text-verde-texto'}`}>
+                  <span
+                    className={`text-[13px] font-bold tabular-nums ${neg ? 'text-vermelho-texto' : 'text-verde-texto'}`}
+                  >
                     {neg ? '− ' : '+ '}
                     {money(Math.abs(m.leftInCents))}
                   </span>
                   <div className="flex h-[110px] w-full flex-col">
-                    <div className="flex h-[55px] items-end">{!neg && <div className="bar-up w-full rounded-[10px] bg-menta" style={{ height: h }} />}</div>
+                    <div className="flex h-[55px] items-end">
+                      {!neg && <div className="bar-up w-full rounded-[10px] bg-menta" style={{ height: h }} />}
+                    </div>
                     <div className="h-px w-full bg-linha" />
                     <div className="flex h-[55px] items-start">
-                      {neg && <div className="bar-down w-full rounded-[10px] bg-vermelho-texto" style={{ height: h }} />}
+                      {neg && (
+                        <div className="bar-down w-full rounded-[10px] bg-vermelho-texto" style={{ height: h }} />
+                      )}
                     </div>
                   </div>
                   <span className="text-[13px] font-semibold capitalize">{short(m.month, locale)}</span>
@@ -115,14 +132,23 @@ export default async function PrevisaoPage({ searchParams }: { searchParams: Pro
               <Row label={p.dailyLabel} value={`− ${money(first.dailyInCents)}`} />
               <div className="flex min-h-12 items-center justify-between gap-3">
                 <span className="text-[15px] font-bold">{first.leftInCents >= 0 ? p.shouldLeft : p.shouldShort}</span>
-                <span className={`shrink-0 font-display text-[22px] font-extrabold tabular-nums ${first.leftInCents >= 0 ? 'text-verde-texto' : 'text-vermelho-texto'}`}>
+                <span
+                  className={`shrink-0 font-display text-[22px] font-extrabold tabular-nums ${first.leftInCents >= 0 ? 'text-verde-texto' : 'text-vermelho-texto'}`}
+                >
                   {money(Math.abs(first.leftInCents))}
                 </span>
               </div>
             </div>
           </section>
 
-          {f.base && <DailySpendingBase base={f.base} dailyInCents={first.dailyInCents} locale={locale} t={t.pages.calculators.dailyBase} />}
+          {f.base && (
+            <DailySpendingBase
+              base={f.base}
+              dailyInCents={first.dailyInCents}
+              locale={locale}
+              t={t.pages.calculators.dailyBase}
+            />
+          )}
 
           {first.benefitsInCents > 0 && (
             <div className="flex items-center justify-between gap-3 rounded-2xl bg-amarelo-claro px-3.5 py-3 text-sm text-tinta">
@@ -139,7 +165,9 @@ export default async function PrevisaoPage({ searchParams }: { searchParams: Pro
               className={`flex items-center justify-between gap-3 rounded-2xl px-3.5 py-3 text-sm text-tinta no-underline ${f.goal.fits === false ? 'bg-rosa' : 'bg-menta-clara'}`}
             >
               <span>{p.forGoal(f.goal.label ?? '')}</span>
-              <span className="shrink-0 font-semibold tabular-nums">{p.savePerMonth(money(f.goal.monthlyNeededInCents))}</span>
+              <span className="shrink-0 font-semibold tabular-nums">
+                {p.savePerMonth(money(f.goal.monthlyNeededInCents))}
+              </span>
             </Link>
           )}
 
@@ -173,7 +201,15 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 /** O mês que está rolando, linha por linha: de onde sai a sobra. */
-function EsteMes({ t, labels, locale }: { t: ThisMonthForecast; labels: Dictionary['pages']['previsao']; locale: Locale }) {
+function EsteMes({
+  t,
+  labels,
+  locale,
+}: {
+  t: ThisMonthForecast;
+  labels: Dictionary['pages']['previsao'];
+  locale: Locale;
+}) {
   const pace = t.dailyPaceInCents ? money(t.dailyPaceInCents) : null;
   const rows: [string, number][] = [
     [labels.thisMonthIncome, t.incomeInCents],

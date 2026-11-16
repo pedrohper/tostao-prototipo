@@ -19,13 +19,31 @@ const MAX_CUSTOM = 30;
 export class CreateCategoryUseCase {
   constructor(private readonly repos: Pick<Repositories, 'categories'>) {}
 
-  async execute({ userId, name, emoji, kind }: { userId: string; name: string; emoji: string; kind: 'saida' | 'entrada' }) {
+  async execute({
+    userId,
+    name,
+    emoji,
+    kind,
+  }: {
+    userId: string;
+    name: string;
+    emoji: string;
+    kind: 'saida' | 'entrada';
+  }) {
     const all = await this.repos.categories.list(userId);
     const clean = name.trim();
-    if (all.some((c) => c.name.toLowerCase() === clean.toLowerCase())) throw new AppError('Já tem uma categoria com esse nome.', 409);
-    if (all.filter((c) => c.userId === userId).length >= MAX_CUSTOM) throw new AppError(`Dá pra criar até ${MAX_CUSTOM} categorias.`, 400);
+    if (all.some((c) => c.name.toLowerCase() === clean.toLowerCase()))
+      throw new AppError('Já tem uma categoria com esse nome.', 409);
+    if (all.filter((c) => c.userId === userId).length >= MAX_CUSTOM)
+      throw new AppError(`Dá pra criar até ${MAX_CUSTOM} categorias.`, 400);
     const color = kind === 'entrada' ? '#D8F7EC' : '#FFE3D6';
-    const category = await this.repos.categories.create({ userId, name: clean, emoji: emoji.trim() || '🏷️', color, kind });
+    const category = await this.repos.categories.create({
+      userId,
+      name: clean,
+      emoji: emoji.trim() || '🏷️',
+      color,
+      kind,
+    });
     return { category };
   }
 }

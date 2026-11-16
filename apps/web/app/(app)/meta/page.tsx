@@ -13,10 +13,19 @@ import { DepositForm, GoalForm } from './forms';
 
 const prazo = (m: string, locale: Locale) => `${monthName(m, locale).slice(0, 3)}/${m.slice(2, 4)}`;
 
-export default async function MetaPage({ searchParams }: { searchParams: Promise<{ editar?: string; voltar?: string }> }) {
+export default async function MetaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ editar?: string; voltar?: string }>;
+}) {
   const [{ editar, voltar }, f, { plan }, { locale, t }] = await Promise.all([
     searchParams,
-    api<ForecastResponse>('/forecast').catch((): ForecastResponse => ({ hasPlan: false, months: [], goal: null, thisMonth: null })),
+    api<ForecastResponse>('/forecast').catch((): ForecastResponse => ({
+      hasPlan: false,
+      months: [],
+      goal: null,
+      thisMonth: null,
+    })),
     api<FinancialPlanResponse>('/plan').catch(() => ({ plan: null })),
     getI18n(),
   ]);
@@ -58,7 +67,10 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
       <BackLink href={backHref} label={t.common.back} />
       <div className="flex items-end justify-between gap-3">
         <h1 className="font-display text-[30px] leading-[34px] font-extrabold">{g.label}</h1>
-        <Link href={voltar ? `/meta?editar=1&voltar=${encodeURIComponent(backHref)}` : '/meta?editar=1'} className="pb-1 text-[13px] font-semibold text-laranja-texto">
+        <Link
+          href={voltar ? `/meta?editar=1&voltar=${encodeURIComponent(backHref)}` : '/meta?editar=1'}
+          className="pb-1 text-[13px] font-semibold text-laranja-texto"
+        >
           {t.common.edit}
         </Link>
       </div>
@@ -68,7 +80,9 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
           <div className="flex flex-col gap-3 rounded-[20px] border border-linha bg-cartao p-4">
             <div className="flex items-baseline justify-between gap-3">
               <span className="font-display text-[28px] font-extrabold tabular-nums">{money(g.savedInCents)}</span>
-              {g.amountInCents && <span className="text-sm text-tinta-suave tabular-nums">{p.ofTarget(money(g.amountInCents))}</span>}
+              {g.amountInCents && (
+                <span className="text-sm text-tinta-suave tabular-nums">{p.ofTarget(money(g.amountInCents))}</span>
+              )}
             </div>
             <div
               className="h-3 overflow-hidden rounded-full bg-papel-2"
@@ -95,7 +109,9 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
             </div>
           ) : (
             g.monthlyNeededInCents !== null && (
-              <div className={`flex items-center gap-1.5 rounded-2xl py-3 pr-3.5 pl-1.5 text-tinta ${g.fits === false ? 'bg-rosa' : 'bg-amarelo-claro'}`}>
+              <div
+                className={`flex items-center gap-1.5 rounded-2xl py-3 pr-3.5 pl-1.5 text-tinta ${g.fits === false ? 'bg-rosa' : 'bg-amarelo-claro'}`}
+              >
                 <Mascot pose={g.fits === false ? 'preocupado' : 'professor'} size={72} alt="" />
                 <p className="text-[15px] leading-[21px]">
                   {p.leftSummary(money(falta), money(g.monthlyNeededInCents), monthName(g.deadline!, locale))}
@@ -104,7 +120,10 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
                   {g.fits === null && (
                     <>
                       {' '}
-                      <Link href={`/renda?voltar=${encodeURIComponent(selfHref)}`} className="font-semibold text-laranja-texto">
+                      <Link
+                        href={`/renda?voltar=${encodeURIComponent(selfHref)}`}
+                        className="font-semibold text-laranja-texto"
+                      >
                         {p.fitsNullCta}
                       </Link>
                       {p.fitsNullAfter}

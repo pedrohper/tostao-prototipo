@@ -39,7 +39,11 @@ export async function deposit(_: GoalState, form: FormData): Promise<GoalState> 
 }
 
 export async function deleteGoal() {
-  try { await api('/goal', { method: 'PUT', body: null }); } catch { /* fica como estava */ }
+  try {
+    await api('/goal', { method: 'PUT', body: null });
+  } catch {
+    /* fica como estava */
+  }
   revalidatePath('/', 'layout');
   redirect('/meta');
 }

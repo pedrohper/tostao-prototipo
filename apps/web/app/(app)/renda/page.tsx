@@ -5,7 +5,11 @@ import { resolveBackHref } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
 import { RendaForm } from './renda-form';
 
-export default async function RendaPage({ searchParams }: { searchParams: Promise<{ novo?: string; voltar?: string }> }) {
+export default async function RendaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ novo?: string; voltar?: string }>;
+}) {
   const [{ novo, voltar }, { plan }, { suggestions }, me, { locale, t }] = await Promise.all([
     searchParams,
     api<FinancialPlanResponse>('/plan').catch(() => ({ plan: null })),

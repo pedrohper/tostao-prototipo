@@ -5,7 +5,8 @@ import { Landing } from './(site)/landing';
 
 export const metadata: Metadata = {
   title: 'Tostão: grana explicada, de tostão em tostão',
-  description: 'Conecte seu banco, veja pra onde o dinheiro foi e aprenda com os seus próprios gastos, em lições de 2 minutos. Sem sermão. Grátis pra começar.',
+  description:
+    'Conecte seu banco, veja pra onde o dinheiro foi e aprenda com os seus próprios gastos, em lições de 2 minutos. Sem sermão. Grátis pra começar.',
   openGraph: {
     title: 'Tostão: grana explicada, de tostão em tostão',
     description: 'Finanças pessoais e educação financeira pra quem tem de 18 a 25 anos. Sem sermão.',

@@ -1,5 +1,11 @@
 import { BankConnectionError } from '../domain/errors.js';
-import type { BankAccountData, BankGateway, BankItemData, BankTransactionData, InstitutionLogo } from './bank-gateway.js';
+import type {
+  BankAccountData,
+  BankGateway,
+  BankItemData,
+  BankTransactionData,
+  InstitutionLogo,
+} from './bank-gateway.js';
 import { bankNameFromTransferNumber, prettyName } from '../services/bank-names.js';
 
 const BASE_URL = 'https://api.pluggy.ai';
@@ -17,8 +23,13 @@ type PluggyAccount = {
   creditData?: { brand?: string | null; creditLimit?: number | null; balanceDueDate?: string | null } | null;
 };
 type PluggyTransaction = {
-  id: string; description: string; amount: number; date: string; type: 'DEBIT' | 'CREDIT';
-  currencyCode?: string | null; amountInAccountCurrency?: number | null;
+  id: string;
+  description: string;
+  amount: number;
+  date: string;
+  type: 'DEBIT' | 'CREDIT';
+  currencyCode?: string | null;
+  amountInAccountCurrency?: number | null;
   creditCardMetadata?: { billId?: string | null } | null;
 };
 type Page<T> = { total: number; totalPages: number; page: number; results: T[] };
@@ -54,7 +65,10 @@ export class PluggyBankGateway implements BankGateway {
   private apiKey: string | null = null;
   private apiKeyExpiresAt = 0;
 
-  constructor(private readonly clientId: string, private readonly clientSecret: string) {}
+  constructor(
+    private readonly clientId: string,
+    private readonly clientSecret: string,
+  ) {}
 
   // /auth tem limite de chamadas: guardamos a chave em memória e reaproveitamos.
   private async getApiKey(): Promise<string> {
@@ -64,7 +78,8 @@ export class PluggyBankGateway implements BankGateway {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ clientId: this.clientId, clientSecret: this.clientSecret }),
     });
-    if (!res.ok) throw new BankConnectionError(`Pluggy recusou as credenciais (${res.status}). Confere o client id e o secret.`);
+    if (!res.ok)
+      throw new BankConnectionError(`Pluggy recusou as credenciais (${res.status}). Confere o client id e o secret.`);
     const { apiKey } = (await res.json()) as { apiKey: string };
     this.apiKey = apiKey;
     this.apiKeyExpiresAt = Date.now() + API_KEY_TTL_MS;
@@ -80,10 +95,16 @@ export class PluggyBankGateway implements BankGateway {
 
   // Lista pública de conectores: cada banco tem o logo oficial (imageUrl) e a cor. Não depende do MeuPluggy.
   async listInstitutionLogos(): Promise<InstitutionLogo[]> {
-    const page = await this.get<{ results: { name: string; imageUrl?: string | null; primaryColor?: string | null; isSandbox?: boolean }[] }>('/connectors?countries=BR');
+    const page = await this.get<{
+      results: { name: string; imageUrl?: string | null; primaryColor?: string | null; isSandbox?: boolean }[];
+    }>('/connectors?countries=BR');
     return page.results
       .filter((c) => c.imageUrl && !c.isSandbox && !/pluggy/i.test(c.name))
-      .map((c) => ({ name: c.name, imageUrl: c.imageUrl!, color: c.primaryColor ? `#${c.primaryColor.replace(/^#/, '')}` : null }));
+      .map((c) => ({
+        name: c.name,
+        imageUrl: c.imageUrl!,
+        color: c.primaryColor ? `#${c.primaryColor.replace(/^#/, '')}` : null,
+      }));
   }
 
   // O connect token é o que o navegador recebe: ele só abre o widget, não dá acesso à API.
@@ -94,7 +115,10 @@ export class PluggyBankGateway implements BankGateway {
       headers: { 'content-type': 'application/json', 'X-API-KEY': await this.getApiKey() },
       body: JSON.stringify({ options: { clientUserId, avoidDuplicates: true } }),
     });
-    if (!res.ok) throw new BankConnectionError(`Pluggy não liberou o widget (${res.status}). O trial do dashboard ainda tá ativo?`);
+    if (!res.ok)
+      throw new BankConnectionError(
+        `Pluggy não liberou o widget (${res.status}). O trial do dashboard ainda tá ativo?`,
+      );
     const { accessToken } = (await res.json()) as { accessToken: string };
     return accessToken;
   }
@@ -117,7 +141,8 @@ export class PluggyBankGateway implements BankGateway {
   async fetchAccounts(itemId: string): Promise<BankAccountData[]> {
     const page = await this.get<Page<PluggyAccount>>(`/accounts?itemId=${encodeURIComponent(itemId)}`);
     // O código do banco (COMPE) só vem nas contas; o cartão herda o banco da conta do mesmo Item.
-    const itemBank = page.results.map((a) => bankNameFromTransferNumber(a.bankData?.transferNumber)).find(Boolean) ?? null;
+    const itemBank =
+      page.results.map((a) => bankNameFromTransferNumber(a.bankData?.transferNumber)).find(Boolean) ?? null;
     return page.results.map((a) => {
       const bank = bankNameFromTransferNumber(a.bankData?.transferNumber) ?? itemBank;
       return {
@@ -141,31 +166,40 @@ export class PluggyBankGateway implements BankGateway {
   // O /v2/transactions usa cursor: cada resposta traz "next" (query string pronta) ou null no fim.
   async fetchTransactions(accountExternalId: string, from: Date, to: Date): Promise<BankTransactionData[]> {
     const all: BankTransactionData[] = [];
-    let path: string | null = `/v2/transactions?${new URLSearchParams({ accountId: accountExternalId, dateFrom: ymd(from), dateTo: ymd(to) })}`;
+    let path: string | null =
+      `/v2/transactions?${new URLSearchParams({ accountId: accountExternalId, dateFrom: ymd(from), dateTo: ymd(to) })}`;
     while (path) {
       const res: CursorPage<PluggyTransaction> = await this.get(path);
       for (const t of res.results) {
         // DEBIT = dinheiro saindo, CREDIT = entrando. Usamos o "type" pro sinal e o valor absoluto pro tamanho.
         // Compra em dólar: "amount" vem em USD; o que conta é o valor em reais.
-        const value = t.currencyCode && t.currencyCode !== 'BRL' && t.amountInAccountCurrency != null ? t.amountInAccountCurrency : t.amount;
+        const value =
+          t.currencyCode && t.currencyCode !== 'BRL' && t.amountInAccountCurrency != null
+            ? t.amountInAccountCurrency
+            : t.amount;
         const cents = Math.abs(toCents(value));
         all.push({
-          externalId: t.id, description: t.description, amountInCents: t.type === 'DEBIT' ? -cents : cents,
-          occurredAt: pluggyDate(t.date), billId: t.creditCardMetadata?.billId ?? null,
+          externalId: t.id,
+          description: t.description,
+          amountInCents: t.type === 'DEBIT' ? -cents : cents,
+          occurredAt: pluggyDate(t.date),
+          billId: t.creditCardMetadata?.billId ?? null,
         });
       }
       path = res.next ? `/v2/transactions${res.next.startsWith('?') ? res.next : `?${res.next}`}` : null;
     }
     return all;
   }
-
 }
 
 /**
  * Nome bonito da conta. Pelo MeuPluggy vem "Nu Pagamentos S.A. - Instituição de Pagamento (Conta Pré-paga)",
  * então, quando dá pra saber o banco, usa ele: "Nubank", "Bradesco (Poupança)", "Nubank Gold".
  */
-export function accountName(a: Pick<PluggyAccount, 'type' | 'name' | 'marketingName' | 'subtype'>, bank: string | null) {
+export function accountName(
+  a: Pick<PluggyAccount, 'type' | 'name' | 'marketingName' | 'subtype'>,
+  bank: string | null,
+) {
   const savings = a.subtype === 'SAVINGS_ACCOUNT' ? ' (Poupança)' : '';
   if (a.type === 'CREDIT') {
     const raw = a.name || (a.marketingName && a.marketingName !== 'OUTROS' ? a.marketingName : '') || 'Cartão';

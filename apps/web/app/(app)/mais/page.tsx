@@ -52,15 +52,16 @@ function formatLastSync(iso: string | null, locale: Locale, t: Dictionary) {
 }
 
 export default async function MaisPage() {
-  const [profile, { done, streakDays, bonusXp = 0 }, wa, auto, pushKeyData, bankLogos, { locale, t }] = await Promise.all([
-    api<ProfileResponse>('/me'),
-    api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
-    api<WhatsAppStatus>('/whatsapp').catch(() => null),
-    api<TostaoAutoResponse>('/tostao/auto').catch(() => null),
-    api<PushKeyResponse>('/push/key').catch(() => null),
-    getBankLogos(),
-    getI18n(),
-  ]);
+  const [profile, { done, streakDays, bonusXp = 0 }, wa, auto, pushKeyData, bankLogos, { locale, t }] =
+    await Promise.all([
+      api<ProfileResponse>('/me'),
+      api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
+      api<WhatsAppStatus>('/whatsapp').catch(() => null),
+      api<TostaoAutoResponse>('/tostao/auto').catch(() => null),
+      api<PushKeyResponse>('/push/key').catch(() => null),
+      getBankLogos(),
+      getI18n(),
+    ]);
 
   const { xp, level } = xpFrom(done.length, bonusXp);
   const openFinanceConns = profile.connections.filter((c) => !c.itemId.startsWith('import:'));
@@ -76,12 +77,15 @@ export default async function MaisPage() {
       : locale === 'es'
         ? 'WhatsApp y lo que Tostão acompaña'
         : 'WhatsApp & O que o Tostão acompanha';
-  const preferencesEyebrow =
-    locale === 'en' ? 'Preferences' : locale === 'es' ? 'Preferencias' : 'Preferências';
+  const preferencesEyebrow = locale === 'en' ? 'Preferences' : locale === 'es' ? 'Preferencias' : 'Preferências';
   const accountLegalEyebrow =
     locale === 'en' ? 'Account & Legal' : locale === 'es' ? 'Cuenta y Legal' : 'Conta & Legal';
   const importLabel =
-    locale === 'en' ? 'Import OFX or CSV statement' : locale === 'es' ? 'Importar extracto OFX o CSV' : 'Importar extrato (OFX ou CSV)';
+    locale === 'en'
+      ? 'Import OFX or CSV statement'
+      : locale === 'es'
+        ? 'Importar extracto OFX o CSV'
+        : 'Importar extrato (OFX ou CSV)';
 
   const secondarySections = (
     <>
@@ -98,11 +102,11 @@ export default async function MaisPage() {
         >
           <div className="flex min-w-0 flex-col gap-0.5">
             <span className="text-[15px] font-semibold text-tinta">{t.home.customizeHome}</span>
-            <span className="text-[13px] leading-[19px] text-tinta-suave">
-              {t.pages.personalizar.subtitle}
-            </span>
+            <span className="text-[13px] leading-[19px] text-tinta-suave">{t.pages.personalizar.subtitle}</span>
           </div>
-          <span className="shrink-0 text-tinta-suave" aria-hidden="true">›</span>
+          <span className="shrink-0 text-tinta-suave" aria-hidden="true">
+            ›
+          </span>
         </Link>
       </section>
 
@@ -110,23 +114,46 @@ export default async function MaisPage() {
       <section className="flex flex-col gap-2.5">
         <Eyebrow>{accountLegalEyebrow}</Eyebrow>
         <div className="flex flex-col divide-y divide-linha rounded-[22px] border border-linha bg-cartao px-[18px] py-1">
-          <Link href="/termos" className="flex min-h-12 items-center justify-between gap-3 text-[15px] font-semibold text-tinta no-underline transition-opacity hover:opacity-80">
+          <Link
+            href="/termos"
+            className="flex min-h-12 items-center justify-between gap-3 text-[15px] font-semibold text-tinta no-underline transition-opacity hover:opacity-80"
+          >
             <span>{t.legal.termsLink}</span>
-            <span className="shrink-0 text-tinta-suave" aria-hidden="true">›</span>
+            <span className="shrink-0 text-tinta-suave" aria-hidden="true">
+              ›
+            </span>
           </Link>
-          <Link href="/privacidade" className="flex min-h-12 items-center justify-between gap-3 text-[15px] font-semibold text-tinta no-underline transition-opacity hover:opacity-80">
+          <Link
+            href="/privacidade"
+            className="flex min-h-12 items-center justify-between gap-3 text-[15px] font-semibold text-tinta no-underline transition-opacity hover:opacity-80"
+          >
             <span>{t.legal.privacyLink}</span>
-            <span className="shrink-0 text-tinta-suave" aria-hidden="true">›</span>
+            <span className="shrink-0 text-tinta-suave" aria-hidden="true">
+              ›
+            </span>
           </Link>
-          <Link href="/conectar?voltar=/mais" className="flex min-h-12 items-center justify-between gap-3 text-[15px] font-semibold text-vermelho-texto no-underline hover:underline">
+          <Link
+            href="/conectar?voltar=/mais"
+            className="flex min-h-12 items-center justify-between gap-3 text-[15px] font-semibold text-vermelho-texto no-underline hover:underline"
+          >
             <span>{t.profile.disconnectBanks}</span>
-            <span className="shrink-0" aria-hidden="true">›</span>
+            <span className="shrink-0" aria-hidden="true">
+              ›
+            </span>
           </Link>
-          <Link href="/perfil/apagar-conta?voltar=/mais" className="flex min-h-12 items-center justify-between gap-3 text-[15px] font-semibold text-vermelho-texto no-underline hover:underline">
+          <Link
+            href="/perfil/apagar-conta?voltar=/mais"
+            className="flex min-h-12 items-center justify-between gap-3 text-[15px] font-semibold text-vermelho-texto no-underline hover:underline"
+          >
             <span>{t.profile.deleteAccount}</span>
-            <span className="shrink-0" aria-hidden="true">›</span>
+            <span className="shrink-0" aria-hidden="true">
+              ›
+            </span>
           </Link>
-          <a href="/sair" className="flex min-h-12 items-center text-[15px] font-semibold text-tinta-suave no-underline hover:text-tinta">
+          <a
+            href="/sair"
+            className="flex min-h-12 items-center text-[15px] font-semibold text-tinta-suave no-underline hover:text-tinta"
+          >
             {t.profile.signOut}
           </a>
         </div>
@@ -164,14 +191,19 @@ export default async function MaisPage() {
               <span className="text-xs font-semibold text-laranja-texto">{viewProfileLabel}</span>
             </div>
           </div>
-          <span className="shrink-0 text-xl text-tinta-suave" aria-hidden="true">›</span>
+          <span className="shrink-0 text-xl text-tinta-suave" aria-hidden="true">
+            ›
+          </span>
         </Link>
 
         {hasOpenFinanceError && (
           <div className="flex flex-col justify-center gap-1 rounded-[22px] border border-vermelho-texto/25 bg-rosa px-5 py-4">
             <span className="text-[15px] font-bold text-vermelho-texto">{t.profile.openFinanceError}</span>
             <span className="text-[14px] leading-5 text-tinta-suave">{t.profile.openFinanceNote}</span>
-            <Link href="/conectar?voltar=/mais" className="mt-0.5 self-start text-sm font-semibold text-laranja-texto underline">
+            <Link
+              href="/conectar?voltar=/mais"
+              className="mt-0.5 self-start text-sm font-semibold text-laranja-texto underline"
+            >
               {fixConnectionLabel} ›
             </Link>
           </div>
@@ -186,7 +218,10 @@ export default async function MaisPage() {
             const isImported = conn.itemId.startsWith('import:');
             return (
               <div key={conn.id} className="flex flex-col border-b border-linha py-1.5">
-                <Link href="/conectar?voltar=/mais" className="flex min-h-11 items-center justify-between gap-3 text-tinta no-underline">
+                <Link
+                  href="/conectar?voltar=/mais"
+                  className="flex min-h-11 items-center justify-between gap-3 text-tinta no-underline"
+                >
                   <span className="min-w-0 truncate text-[15px] font-semibold">{conn.displayName}</span>
                   <span
                     className={`shrink-0 text-right text-xs ${
@@ -206,7 +241,9 @@ export default async function MaisPage() {
                     className={`flex min-h-9 items-center gap-2 pb-1 text-[13px] ${account.hidden ? 'text-tinta-suave' : 'text-tinta'}`}
                   >
                     <BankBadge nome={account.name} instituicao={conn.displayName} size={20} logos={bankLogos} />
-                    <span className={`min-w-0 grow truncate ${account.hidden ? 'line-through' : ''}`}>{account.name}</span>
+                    <span className={`min-w-0 grow truncate ${account.hidden ? 'line-through' : ''}`}>
+                      {account.name}
+                    </span>
                     <span className="shrink-0 tabular-nums">
                       {money(account.type === 'CREDIT' ? Math.max(0, -account.balanceInCents) : account.balanceInCents)}
                     </span>
@@ -216,18 +253,35 @@ export default async function MaisPage() {
               </div>
             );
           })}
-          <Link href="/conectar?voltar=/mais" className="flex min-h-[50px] items-center gap-2 border-b border-linha text-[15px] font-semibold text-laranja-texto no-underline">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+          <Link
+            href="/conectar?voltar=/mais"
+            className="flex min-h-[50px] items-center gap-2 border-b border-linha text-[15px] font-semibold text-laranja-texto no-underline"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
               <path d="M12 5v14M5 12h14" />
             </svg>
             {profile.connections.length ? t.profile.connectAnotherBank : t.profile.connectMyBank}
           </Link>
-          <Link href="/importar?voltar=/mais" className="flex min-h-[50px] items-center justify-between gap-2 text-[15px] font-semibold text-tinta no-underline transition-opacity hover:opacity-80">
+          <Link
+            href="/importar?voltar=/mais"
+            className="flex min-h-[50px] items-center justify-between gap-2 text-[15px] font-semibold text-tinta no-underline transition-opacity hover:opacity-80"
+          >
             <span className="flex items-center gap-2">
               <Icon src="conectar/extrato" size={20} />
               <span>{importLabel}</span>
             </span>
-            <span className="shrink-0 text-tinta-suave" aria-hidden="true">›</span>
+            <span className="shrink-0 text-tinta-suave" aria-hidden="true">
+              ›
+            </span>
           </Link>
         </div>
         <AddAccountBox t={t.walletExtra.addAccount} cancelLabel={t.common.cancel} />
@@ -262,7 +316,9 @@ export default async function MaisPage() {
             >
               {wa?.linkedPhone ? t.profile.whatsappConnectedBadge : t.profile.whatsappOffBadge}
             </span>
-            <span className="text-tinta-suave" aria-hidden="true">›</span>
+            <span className="text-tinta-suave" aria-hidden="true">
+              ›
+            </span>
           </div>
         </Link>
 

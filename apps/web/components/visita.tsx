@@ -9,4 +9,3 @@ export function PageVisitTracker({ kind }: { kind: Parameters<typeof trackVisit>
   }, [kind]);
   return null;
 }
-

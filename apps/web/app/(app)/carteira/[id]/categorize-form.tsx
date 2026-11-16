@@ -30,15 +30,28 @@ export function CategorizeForm({ id, back, options, current, rulePattern, labels
         <legend className="mb-2.5 text-[13px] font-semibold text-tinta-suave">{labels.categorizeLabel}</legend>
         <div className="flex flex-wrap gap-2">
           {options.map((c) => (
-            <label key={c.id} className={`${pill(picked === c.id)} h-11 shrink-0 cursor-pointer px-4 whitespace-nowrap`}>
-              <input type="radio" name="categoryId" value={c.id} checked={picked === c.id} onChange={() => setPicked(c.id)} className="sr-only" />
+            <label
+              key={c.id}
+              className={`${pill(picked === c.id)} h-11 shrink-0 cursor-pointer px-4 whitespace-nowrap`}
+            >
+              <input
+                type="radio"
+                name="categoryId"
+                value={c.id}
+                checked={picked === c.id}
+                onChange={() => setPicked(c.id)}
+                className="sr-only"
+              />
               <span>{c.name}</span>
             </label>
           ))}
         </div>
       </fieldset>
       {picked === 'nao-conta' && (
-        <p className="flex gap-2 text-sm text-tinta-suave"><Icon src="cat/nao-conta" size={20} /><span>{labels.neutralHint}</span></p>
+        <p className="flex gap-2 text-sm text-tinta-suave">
+          <Icon src="cat/nao-conta" size={20} />
+          <span>{labels.neutralHint}</span>
+        </p>
       )}
       {rulePattern.length >= 3 && (
         <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-[14px] bg-papel-2 px-3.5 py-2 text-sm leading-5">
@@ -48,7 +61,13 @@ export function CategorizeForm({ id, back, options, current, rulePattern, labels
       )}
       <ErrorNote message={state.error} />
       <div className="grow" />
-      <button type="submit" disabled={!picked || pending} className="flex h-[54px] shrink-0 items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel disabled:opacity-50">{pending ? savingLabel : saveLabel}</button>
+      <button
+        type="submit"
+        disabled={!picked || pending}
+        className="flex h-[54px] shrink-0 items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel disabled:opacity-50"
+      >
+        {pending ? savingLabel : saveLabel}
+      </button>
     </form>
   );
 }

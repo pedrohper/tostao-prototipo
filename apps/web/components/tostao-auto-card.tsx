@@ -166,7 +166,10 @@ export function TostaoFindingsBoard({
       </div>
 
       {banner && (
-        <p role="status" className="rounded-2xl border border-linha bg-menta-clara px-3.5 py-2.5 text-xs font-semibold text-tinta">
+        <p
+          role="status"
+          className="rounded-2xl border border-linha bg-menta-clara px-3.5 py-2.5 text-xs font-semibold text-tinta"
+        >
           {banner}
         </p>
       )}
@@ -274,7 +277,11 @@ export function TostaoAutoConfigPanel({
     });
   };
 
-  const routineRows: { key: 'carameloExtrato' | 'tostaoPrevisao' | 'guardiaoLimites' | 'olheiroAcertos'; id: TostaoRoutineKey; pose: MascotPose }[] = [
+  const routineRows: {
+    key: 'carameloExtrato' | 'tostaoPrevisao' | 'guardiaoLimites' | 'olheiroAcertos';
+    id: TostaoRoutineKey;
+    pose: MascotPose;
+  }[] = [
     { key: 'carameloExtrato', id: 'caramelo_extrato', pose: 'caramelo-farejando' },
     { key: 'tostaoPrevisao', id: 'tostao_previsao', pose: 'preocupado' },
     { key: 'guardiaoLimites', id: 'guardiao_limites', pose: 'investigando' },

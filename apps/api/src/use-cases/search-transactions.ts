@@ -12,7 +12,10 @@ const LIMIT = 200;
  * de "quanto já mandei pra fulano?". Transferência interna aparece na lista mas não entra na soma.
  */
 export class SearchTransactionsUseCase {
-  constructor(private readonly repos: Pick<Repositories, 'transactions' | 'categories' | 'accounts'>, private readonly now: () => Date = () => new Date()) {}
+  constructor(
+    private readonly repos: Pick<Repositories, 'transactions' | 'categories' | 'accounts'>,
+    private readonly now: () => Date = () => new Date(),
+  ) {}
 
   async execute({ userId, q, period, kind, categoryId }: SearchQuery & { userId: string }) {
     const now = this.now();
@@ -34,7 +37,9 @@ export class SearchTransactionsUseCase {
       .filter((t) => !categoryId || (categoryId === 'sem' ? !t.categoryId : t.categoryId === categoryId))
       .filter((t) => {
         if (!words.length) return true;
-        const hay = normalizeDescription(`${t.description} ${t.categoryId ? cat.get(t.categoryId)?.name ?? '' : ''} ${t.accountId ? accName.get(t.accountId) ?? '' : ''}`);
+        const hay = normalizeDescription(
+          `${t.description} ${t.categoryId ? (cat.get(t.categoryId)?.name ?? '') : ''} ${t.accountId ? (accName.get(t.accountId) ?? '') : ''}`,
+        );
         return words.every((w) => hay.includes(w));
       })
       .sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
@@ -46,10 +51,10 @@ export class SearchTransactionsUseCase {
       inInCents: counted.filter((t) => t.amountInCents > 0).reduce((s, t) => s + t.amountInCents, 0),
       transactions: found.slice(0, LIMIT).map((t) => ({
         ...t,
-        categoryName: t.categoryId ? cat.get(t.categoryId)?.name ?? null : null,
-        categoryEmoji: t.categoryId ? cat.get(t.categoryId)?.emoji ?? null : null,
-        categoryColor: t.categoryId ? cat.get(t.categoryId)?.color ?? null : null,
-        accountName: t.accountId ? accName.get(t.accountId) ?? null : null,
+        categoryName: t.categoryId ? (cat.get(t.categoryId)?.name ?? null) : null,
+        categoryEmoji: t.categoryId ? (cat.get(t.categoryId)?.emoji ?? null) : null,
+        categoryColor: t.categoryId ? (cat.get(t.categoryId)?.color ?? null) : null,
+        accountName: t.accountId ? (accName.get(t.accountId) ?? null) : null,
       })),
     };
   }

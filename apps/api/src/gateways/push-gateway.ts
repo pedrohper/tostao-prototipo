@@ -23,17 +23,27 @@ export class FakePushGateway implements PushGateway {
 export class DisabledPushGateway implements PushGateway {
   enabled = false;
   publicKey = null;
-  async send() { return 'error' as const; }
+  async send() {
+    return 'error' as const;
+  }
 }
 
 export class WebPushGateway implements PushGateway {
   enabled = true;
-  constructor(public readonly publicKey: string, privateKey: string, subject: string) {
+  constructor(
+    public readonly publicKey: string,
+    privateKey: string,
+    subject: string,
+  ) {
     webpush.setVapidDetails(subject, publicKey, privateKey);
   }
   async send(sub: PushSub, payload: PushPayload) {
     try {
-      await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify(payload), { TTL: 6 * 60 * 60 });
+      await webpush.sendNotification(
+        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+        JSON.stringify(payload),
+        { TTL: 6 * 60 * 60 },
+      );
       return 'ok' as const;
     } catch (err) {
       const status = (err as { statusCode?: number }).statusCode;

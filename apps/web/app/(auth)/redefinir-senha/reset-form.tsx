@@ -10,9 +10,18 @@ export function ResetForm({ token, t }: { token: string; t: Dictionary['authPage
     <form action={action} className="flex flex-col gap-4">
       <input type="hidden" name="token" value={token} />
       <Field label={t.newPassword} name="password" type="password" autoComplete="new-password" minLength={8} required />
-      <Field label={t.confirmPassword} name="confirm" type="password" autoComplete="new-password" minLength={8} required />
+      <Field
+        label={t.confirmPassword}
+        name="confirm"
+        type="password"
+        autoComplete="new-password"
+        minLength={8}
+        required
+      />
       <ErrorNote message={state.error} />
-      <Button type="submit" disabled={pending}>{pending ? t.submitPending : t.submitIdle}</Button>
+      <Button type="submit" disabled={pending}>
+        {pending ? t.submitPending : t.submitIdle}
+      </Button>
     </form>
   );
 }

@@ -10,7 +10,16 @@ export function DismissButton({ id, label = 'Já resolvi, fechar' }: { id: strin
         title={label}
         className="flex h-8 w-8 items-center justify-center rounded-full text-tinta-suave hover:bg-tinta/10"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" aria-hidden="true">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.25"
+          strokeLinecap="round"
+          aria-hidden="true"
+        >
           <path d="M6 6l12 12M18 6L6 18" />
         </svg>
       </button>
@@ -27,4 +36,3 @@ export function DismissibleCard({ id, label, children }: { id: string; label?: s
     </div>
   );
 }
-

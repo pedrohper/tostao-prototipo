@@ -1,6 +1,19 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { type AutoCategorizeResponse, searchQuery, type SearchResponse, categorizeBody, manualTransactionBody, updateTransactionBody, monthQuery, type CategoryDTO, type MonthSummaryResponse, type SubscriptionsResponse, ignoreSubscriptionBody, createCategoryBody } from '@tostao/contracts';
+import {
+  type AutoCategorizeResponse,
+  searchQuery,
+  type SearchResponse,
+  categorizeBody,
+  manualTransactionBody,
+  updateTransactionBody,
+  monthQuery,
+  type CategoryDTO,
+  type MonthSummaryResponse,
+  type SubscriptionsResponse,
+  ignoreSubscriptionBody,
+  createCategoryBody,
+} from '@tostao/contracts';
 import type { UseCases } from '../../use-cases/factories.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
 import { presentTransaction } from '../presenters.js';
@@ -10,8 +23,21 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
     void uc.runTostaoChecks.execute({ userId }).catch((err) => app.log.warn({ err }, 'rotina automática falhou'));
   };
 
-  const categoryDto = ({ id, name, emoji, color, kind, userId }: { id: string; name: string; emoji: string; color: string; kind: CategoryDTO['kind']; userId?: string | null }) =>
-    ({ id, name, emoji, color, kind, custom: !!userId }) satisfies CategoryDTO;
+  const categoryDto = ({
+    id,
+    name,
+    emoji,
+    color,
+    kind,
+    userId,
+  }: {
+    id: string;
+    name: string;
+    emoji: string;
+    color: string;
+    kind: CategoryDTO['kind'];
+    userId?: string | null;
+  }) => ({ id, name, emoji, color, kind, custom: !!userId }) satisfies CategoryDTO;
 
   // Do sistema + as que a pessoa criou
   app.get('/categories', { onRequest: verifyJwt }, async (request) => {
@@ -38,8 +64,16 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
 
   app.get('/subscriptions', { onRequest: verifyJwt }, async (request) => {
     const r = await uc.listSubscriptions.execute({ userId: request.user.sub });
-    const dto = (s: (typeof r.subscriptions)[number]) => ({ ...s, lastChargedAt: s.lastChargedAt.toISOString(), nextChargeAt: s.nextChargeAt.toISOString() });
-    return { ...r, subscriptions: r.subscriptions.map(dto), ignored: r.ignored.map(dto) } satisfies SubscriptionsResponse;
+    const dto = (s: (typeof r.subscriptions)[number]) => ({
+      ...s,
+      lastChargedAt: s.lastChargedAt.toISOString(),
+      nextChargeAt: s.nextChargeAt.toISOString(),
+    });
+    return {
+      ...r,
+      subscriptions: r.subscriptions.map(dto),
+      ignored: r.ignored.map(dto),
+    } satisfies SubscriptionsResponse;
   });
 
   // "Isso não é assinatura" (ou desfazer)
@@ -64,7 +98,10 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
 
   app.get('/transactions/:id', { onRequest: verifyJwt }, async (request) => {
     const { id } = z.object({ id: z.string() }).parse(request.params);
-    const { transaction, rulePattern } = await uc.getTransaction.execute({ userId: request.user.sub, transactionId: id });
+    const { transaction, rulePattern } = await uc.getTransaction.execute({
+      userId: request.user.sub,
+      transactionId: id,
+    });
     return { transaction: presentTransaction(transaction), rulePattern };
   });
 
@@ -89,7 +126,11 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
   app.patch('/transactions/:id', { onRequest: verifyJwt }, async (request) => {
     const { id } = z.object({ id: z.string() }).parse(request.params);
     const body = updateTransactionBody.parse(request.body);
-    const { transaction } = await uc.updateTransaction.execute({ ...body, userId: request.user.sub, transactionId: id });
+    const { transaction } = await uc.updateTransaction.execute({
+      ...body,
+      userId: request.user.sub,
+      transactionId: id,
+    });
     checkLater(request.user.sub);
     return { id: transaction.id, isInternalTransfer: transaction.isInternalTransfer };
   });

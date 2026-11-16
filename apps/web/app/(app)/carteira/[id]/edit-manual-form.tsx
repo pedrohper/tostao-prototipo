@@ -4,7 +4,8 @@ import { ErrorNote } from '@/components/ui';
 import type { Dictionary } from '@/lib/i18n';
 import { updateManualTransaction, type ActionState } from '../actions';
 
-const field = 'h-11 min-w-0 w-full rounded-xl border-[1.5px] border-linha bg-cartao px-3 text-base text-tinta outline-none focus:border-tinta';
+const field =
+  'h-11 min-w-0 w-full rounded-xl border-[1.5px] border-linha bg-cartao px-3 text-base text-tinta outline-none focus:border-tinta';
 
 export function EditManualForm({
   id,
@@ -25,7 +26,10 @@ export function EditManualForm({
 }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(updateManualTransaction, {});
   const [kind, setKind] = useState<'saida' | 'entrada'>(amountInCents > 0 ? 'entrada' : 'saida');
-  const initialAmount = (Math.abs(amountInCents) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const initialAmount = (Math.abs(amountInCents) / 100).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
   return (
     <details className="rounded-2xl border border-linha bg-papel-2 px-3.5 py-2.5">
@@ -38,8 +42,18 @@ export function EditManualForm({
         <input type="hidden" name="back" value={back} />
         <div className="grid grid-cols-2 gap-1 rounded-full bg-cartao p-1">
           {(['saida', 'entrada'] as const).map((k) => (
-            <label key={k} className={`flex h-9 cursor-pointer items-center justify-center rounded-full text-sm font-semibold ${kind === k ? 'bg-tinta text-papel' : 'text-tinta'}`}>
-              <input type="radio" name="kind" value={k} checked={kind === k} onChange={() => setKind(k)} className="sr-only" />
+            <label
+              key={k}
+              className={`flex h-9 cursor-pointer items-center justify-center rounded-full text-sm font-semibold ${kind === k ? 'bg-tinta text-papel' : 'text-tinta'}`}
+            >
+              <input
+                type="radio"
+                name="kind"
+                value={k}
+                checked={kind === k}
+                onChange={() => setKind(k)}
+                className="sr-only"
+              />
               {k === 'saida' ? labels.kindOut : labels.kindIn}
             </label>
           ))}
@@ -59,7 +73,11 @@ export function EditManualForm({
           </label>
         </div>
         <ErrorNote message={state.error} />
-        <button type="submit" disabled={pending} className="flex h-11 items-center justify-center rounded-full bg-tinta text-sm font-semibold text-papel disabled:opacity-50">
+        <button
+          type="submit"
+          disabled={pending}
+          className="flex h-11 items-center justify-center rounded-full bg-tinta text-sm font-semibold text-papel disabled:opacity-50"
+        >
           {pending ? savingLabel : labels.saveChanges}
         </button>
       </form>

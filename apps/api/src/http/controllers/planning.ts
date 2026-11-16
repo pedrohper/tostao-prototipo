@@ -1,6 +1,18 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { financialPlanBody, goalBody, goalDepositBody, lessonIdParam, monthQuery, setBudgetBody, type BudgetsResponse, type FinancialPlanResponse, type ForecastResponse, type IncomeSuggestionsResponse, type LessonProgressResponse } from '@tostao/contracts';
+import {
+  financialPlanBody,
+  goalBody,
+  goalDepositBody,
+  lessonIdParam,
+  monthQuery,
+  setBudgetBody,
+  type BudgetsResponse,
+  type FinancialPlanResponse,
+  type ForecastResponse,
+  type IncomeSuggestionsResponse,
+  type LessonProgressResponse,
+} from '@tostao/contracts';
 import type { UseCases } from '../../use-cases/factories.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
 

@@ -14,6 +14,10 @@ export async function createCode(_: CodeState): Promise<CodeState> {
 }
 
 export async function unlink() {
-  try { await api('/whatsapp', { method: 'DELETE' }); } catch { /* fica como estava */ }
+  try {
+    await api('/whatsapp', { method: 'DELETE' });
+  } catch {
+    /* fica como estava */
+  }
   revalidatePath('/whatsapp');
 }

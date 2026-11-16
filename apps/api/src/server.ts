@@ -1,7 +1,13 @@
 import { env } from './env.js';
 import { buildApp } from './app.js';
 import { DeepSeekGateway, FakeAiGateway } from './gateways/ai-gateway.js';
-import { CloudApiWhatsAppGateway, DisabledAudioTranscriber, FakeWhatsAppGateway, N8nWhatsAppGateway, WhisperAudioTranscriber } from './gateways/whatsapp-gateway.js';
+import {
+  CloudApiWhatsAppGateway,
+  DisabledAudioTranscriber,
+  FakeWhatsAppGateway,
+  N8nWhatsAppGateway,
+  WhisperAudioTranscriber,
+} from './gateways/whatsapp-gateway.js';
 import { prisma } from './lib/prisma.js';
 import { makePrismaRepositories } from './repositories/prisma/index.js';
 import { makeBankGateway } from './gateways/make-bank-gateway.js';
@@ -18,13 +24,37 @@ const repos = makePrismaRepositories(prisma);
 const bank = makeBankGateway(env);
 const ai = env.DEEPSEEK_API_KEY ? new DeepSeekGateway(env.DEEPSEEK_API_KEY, env.DEEPSEEK_MODEL) : new FakeAiGateway();
 const whatsapp = env.WHATSAPP_TOKEN
-  ? new CloudApiWhatsAppGateway(env.WHATSAPP_TOKEN, env.WHATSAPP_PHONE_NUMBER_ID, env.WHATSAPP_APP_SECRET, env.WHATSAPP_NUMBER || null)
+  ? new CloudApiWhatsAppGateway(
+      env.WHATSAPP_TOKEN,
+      env.WHATSAPP_PHONE_NUMBER_ID,
+      env.WHATSAPP_APP_SECRET,
+      env.WHATSAPP_NUMBER || null,
+    )
   : env.N8N_WHATSAPP_SECRET
     ? new N8nWhatsAppGateway(env.N8N_WHATSAPP_SECRET, env.N8N_WHATSAPP_SEND_URL || null, env.WHATSAPP_NUMBER || null)
     : new FakeWhatsAppGateway();
-const audioTranscriber = env.WHISPER_URL ? new WhisperAudioTranscriber(env.WHISPER_URL) : new DisabledAudioTranscriber();
-const push = env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY ? new WebPushGateway(env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY, env.VAPID_SUBJECT) : new DisabledPushGateway();
-const app = await buildApp({ repos, bank, ai, whatsapp, audioTranscriber, push, rates: new BcbRatesGateway(), whatsappVerifyToken: env.WHATSAPP_VERIFY_TOKEN, n8nWhatsAppSecret: env.N8N_WHATSAPP_SECRET, chatDailyLimit: env.CHAT_DAILY_LIMIT, jwtSecret: env.JWT_SECRET, webOrigin: env.WEB_ORIGIN, logger: true });
+const audioTranscriber = env.WHISPER_URL
+  ? new WhisperAudioTranscriber(env.WHISPER_URL)
+  : new DisabledAudioTranscriber();
+const push =
+  env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY
+    ? new WebPushGateway(env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY, env.VAPID_SUBJECT)
+    : new DisabledPushGateway();
+const app = await buildApp({
+  repos,
+  bank,
+  ai,
+  whatsapp,
+  audioTranscriber,
+  push,
+  rates: new BcbRatesGateway(),
+  whatsappVerifyToken: env.WHATSAPP_VERIFY_TOKEN,
+  n8nWhatsAppSecret: env.N8N_WHATSAPP_SECRET,
+  chatDailyLimit: env.CHAT_DAILY_LIMIT,
+  jwtSecret: env.JWT_SECRET,
+  webOrigin: env.WEB_ORIGIN,
+  logger: true,
+});
 
 const sync = new SyncBankConnectionUseCase({ ...repos, bank });
 const autoCategorize = new AutoCategorizeUseCase(repos, ai);
@@ -39,7 +69,9 @@ const syncEverything = async () => {
       console.error('[ia] categoria automática falhou:', (err as Error).message);
     }
   }
-  await runPeriodicTostaoChecks(repos, { push, whatsapp }).catch((err) => console.error('[tostao-auto] pós-sync falhou:', (err as Error).message));
+  await runPeriodicTostaoChecks(repos, { push, whatsapp }).catch((err) =>
+    console.error('[tostao-auto] pós-sync falhou:', (err as Error).message),
+  );
 };
 scheduleDailySync(env.SYNC_CRON, syncEverything);
 // Subiu depois de muito tempo parado? Sincroniza já, sem esperar o próximo horário.
@@ -56,4 +88,6 @@ await app.listen({ port: env.PORT, host: env.HOST });
 if (env.N8N_WHATSAPP_SECRET && env.N8N_LISTEN_HOST) {
   void listenN8nBridge(buildN8nBridge(app), env.N8N_LISTEN_HOST, env.N8N_LISTEN_PORT, (m) => console.info(m));
 }
-console.log(`🪙 Tostão API em http://localhost:${env.PORT} (banco: ${env.BANK_GATEWAY}, IA: ${ai.enabled ? 'DeepSeek' : 'desligada'}, WhatsApp: ${whatsapp.enabled ? (env.WHATSAPP_TOKEN ? 'Meta' : 'n8n') : 'desligado'}, avisos: ${push.enabled ? 'ligados' : 'desligados'})`);
+console.log(
+  `🪙 Tostão API em http://localhost:${env.PORT} (banco: ${env.BANK_GATEWAY}, IA: ${ai.enabled ? 'DeepSeek' : 'desligada'}, WhatsApp: ${whatsapp.enabled ? (env.WHATSAPP_TOKEN ? 'Meta' : 'n8n') : 'desligado'}, avisos: ${push.enabled ? 'ligados' : 'desligados'})`,
+);

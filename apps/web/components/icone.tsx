@@ -323,7 +323,11 @@ export const ICON_SVGS: Record<string, React.ReactNode> = {
       <path d="M8 6H4a2 2 0 0 0-2 2v1a3 3 0 0 0 3 3h3" />
       <path d="M16 6h4a2 2 0 0 1 2 2v1a3 3 0 0 1-3 3h-3" />
       <path d="M12 14v4M8 21h8" />
-      <polygon points="12 6.5 12.8 8.2 14.6 8.3 13.2 9.5 13.7 11.2 12 10.2 10.3 11.2 10.8 9.5 9.4 8.3 11.2 8.2" fill="currentColor" stroke="none" />
+      <polygon
+        points="12 6.5 12.8 8.2 14.6 8.3 13.2 9.5 13.7 11.2 12 10.2 10.3 11.2 10.8 9.5 9.4 8.3 11.2 8.2"
+        fill="currentColor"
+        stroke="none"
+      />
     </>
   ),
   'ui/minhas-categorias': (
@@ -366,7 +370,9 @@ export const ICON_SVGS: Record<string, React.ReactNode> = {
     </>
   ),
   'aba/tostao': <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />,
-  'aba/tostao-ativo': <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="var(--color-amarelo)" />,
+  'aba/tostao-ativo': (
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="var(--color-amarelo)" />
+  ),
   'aba/aprender': (
     <>
       <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5z" />
@@ -434,12 +440,39 @@ export function Icon({ src, size = 24, alt = '', className = '' }: IconProps) {
 }
 
 const CATEGORIAS_COM_ICONE = new Set([
-  'apostas', 'assinaturas', 'casa', 'comer-fora', 'compras', 'delivery', 'entrada-outros', 'estudo', 'jogos',
-  'mercado', 'nao-conta', 'outros', 'role', 'salario', 'saude', 'sem-categoria', 'transporte',
+  'apostas',
+  'assinaturas',
+  'casa',
+  'comer-fora',
+  'compras',
+  'delivery',
+  'entrada-outros',
+  'estudo',
+  'jogos',
+  'mercado',
+  'nao-conta',
+  'outros',
+  'role',
+  'salario',
+  'saude',
+  'sem-categoria',
+  'transporte',
 ]);
 
 /** Ícone da categoria: desenho próprio pras do sistema, emoji pras que a pessoa criou. */
-export function CatIcon({ id, emoji, size = 24 }: { id: string | null | undefined; emoji?: string | null; size?: number }) {
+export function CatIcon({
+  id,
+  emoji,
+  size = 24,
+}: {
+  id: string | null | undefined;
+  emoji?: string | null;
+  size?: number;
+}) {
   if (id && CATEGORIAS_COM_ICONE.has(id)) return <Icon src={`cat/${id}`} size={size} />;
-  return <span aria-hidden="true" style={{ fontSize: size * 0.75, lineHeight: 1 }}>{emoji ?? '🏷️'}</span>;
+  return (
+    <span aria-hidden="true" style={{ fontSize: size * 0.75, lineHeight: 1 }}>
+      {emoji ?? '🏷️'}
+    </span>
+  );
 }

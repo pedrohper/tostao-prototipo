@@ -56,7 +56,9 @@ export async function runPeriodicTostaoChecks(
         if (link?.phone && (await repos.engagement.claimNotification(userId, `wa:${claimKey}`))) {
           await opts.whatsapp
             .send(link.phone, `*Tostão avisa:* ${first.title}\n${first.body}`)
-            .then(() => { notified++; })
+            .then(() => {
+              notified++;
+            })
             .catch((err) => console.warn('[tostao-auto][wa]', (err as Error).message));
         }
       }

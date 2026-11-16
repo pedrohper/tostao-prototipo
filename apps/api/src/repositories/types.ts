@@ -1,6 +1,27 @@
 // Contratos dos repositórios. O use case pede "alguém que saiba salvar usuário",
 // sem saber se é Postgres ou um array na memória (nos testes).
-import type { Account, BankConnection, Category, CategoryRule, Transaction, User, CategoryBudget, LessonProgress, Invite, PasswordReset, ChatMessage, TribunalVote, Battle, BattleKind, Person, TostaoInsight, TostaoInsightSeverity, TostaoInsightStatus, TostaoRoutine, TostaoAutoConfig } from '../domain/entities.js';
+import type {
+  Account,
+  BankConnection,
+  Category,
+  CategoryRule,
+  Transaction,
+  User,
+  CategoryBudget,
+  LessonProgress,
+  Invite,
+  PasswordReset,
+  ChatMessage,
+  TribunalVote,
+  Battle,
+  BattleKind,
+  Person,
+  TostaoInsight,
+  TostaoInsightSeverity,
+  TostaoInsightStatus,
+  TostaoRoutine,
+  TostaoAutoConfig,
+} from '../domain/entities.js';
 import type { FinancialPlan, UpdateTostaoAutoConfigBody } from '@tostao/contracts';
 
 export type NewUser = Pick<User, 'name' | 'email' | 'passwordHash'>;
@@ -26,7 +47,10 @@ export interface BankConnectionsRepository {
   delete(id: string): Promise<void>;
 }
 
-export type AccountData = Pick<Account, 'userId' | 'connectionId' | 'externalId' | 'name' | 'type' | 'balanceInCents' | 'fingerprint'> &
+export type AccountData = Pick<
+  Account,
+  'userId' | 'connectionId' | 'externalId' | 'name' | 'type' | 'balanceInCents' | 'fingerprint'
+> &
   Partial<Pick<Account, 'creditLimitInCents' | 'dueDate'>>;
 export interface AccountsRepository {
   upsertByExternalId(data: AccountData): Promise<Account>;
@@ -132,7 +156,13 @@ export interface FinancialPlansRepository {
   save(userId: string, plan: FinancialPlan): Promise<void>;
 }
 
-export type WhatsappLink = { userId: string; phone: string | null; code: string | null; codeExpiresAt: Date | null; linkedAt: Date | null };
+export type WhatsappLink = {
+  userId: string;
+  phone: string | null;
+  code: string | null;
+  codeExpiresAt: Date | null;
+  linkedAt: Date | null;
+};
 export interface WhatsappLinksRepository {
   get(userId: string): Promise<WhatsappLink | null>;
   findByPhone(phone: string): Promise<WhatsappLink | null>;

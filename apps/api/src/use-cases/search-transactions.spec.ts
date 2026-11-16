@@ -6,8 +6,22 @@ const NOW = new Date('2026-11-12T12:00:00Z');
 
 async function setup() {
   const repos = makeInMemoryRepositories();
-  const add = (description: string, amountInCents: number, date: string, extra: { categoryId?: string; isInternalTransfer?: boolean } = {}) =>
-    repos.transactions.create({ userId: 'u1', accountId: null, externalId: null, description, amountInCents, occurredAt: new Date(`${date}T12:00:00Z`), categoryId: extra.categoryId ?? null, isInternalTransfer: extra.isInternalTransfer ?? false });
+  const add = (
+    description: string,
+    amountInCents: number,
+    date: string,
+    extra: { categoryId?: string; isInternalTransfer?: boolean } = {},
+  ) =>
+    repos.transactions.create({
+      userId: 'u1',
+      accountId: null,
+      externalId: null,
+      description,
+      amountInCents,
+      occurredAt: new Date(`${date}T12:00:00Z`),
+      categoryId: extra.categoryId ?? null,
+      isInternalTransfer: extra.isInternalTransfer ?? false,
+    });
   await add('PIX ENVIADO DANIELA SOUZA', -5000, '2026-11-01');
   await add('Pix enviado - Daniela Souza', -2500, '2026-08-01');
   await add('PIX RECEBIDO DANIELA SOUZA', 1000, '2026-10-01');

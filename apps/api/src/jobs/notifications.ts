@@ -43,7 +43,9 @@ export async function runNotifications(
     if (!(await repos.engagement.claimNotification(userId, `wa:${key}`))) return;
     await whatsapp
       .send(link.phone, text)
-      .then(() => { sent++; })
+      .then(() => {
+        sent++;
+      })
       .catch((err) => console.warn('[avisos][wa]', (err as Error).message));
   };
 
@@ -110,7 +112,10 @@ export async function runNotifications(
 
 export function scheduleNotifications(repos: Repositories, push: PushGateway, whatsapp?: WhatsAppGateway) {
   if (!push.enabled && !whatsapp?.enabled) return;
-  const tick = () => runNotifications(repos, push, new Date(), whatsapp).catch((err) => console.error('[avisos]', (err as Error).message));
+  const tick = () =>
+    runNotifications(repos, push, new Date(), whatsapp).catch((err) =>
+      console.error('[avisos]', (err as Error).message),
+    );
   setInterval(tick, 15 * 60 * 1000);
   setTimeout(tick, 30 * 1000);
 }

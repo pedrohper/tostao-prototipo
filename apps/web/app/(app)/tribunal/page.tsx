@@ -14,7 +14,9 @@ export default async function TribunalPage({ searchParams }: { searchParams: Pro
     getI18n(),
   ]);
   const tt = dict.pages.tribunal;
-  const fim = new Date(t.endsAt).toLocaleDateString(locale, { weekday: 'long', timeZone: 'America/Sao_Paulo' }).replace('-feira', '');
+  const fim = new Date(t.endsAt)
+    .toLocaleDateString(locale, { weekday: 'long', timeZone: 'America/Sao_Paulo' })
+    .replace('-feira', '');
   const backHref = resolveBackHref(voltar, '/aprender');
 
   return (
@@ -32,7 +34,9 @@ export default async function TribunalPage({ searchParams }: { searchParams: Pro
       </div>
       <div className="flex flex-col gap-2 rounded-[18px] border border-linha bg-cartao px-4 py-3.5">
         <span className="text-[13px] font-semibold text-tinta-suave">{tt.caseOfWeek}</span>
-        <p className="text-[15px] leading-[22px]"><Rich text={t.case.story} /></p>
+        <p className="text-[15px] leading-[22px]">
+          <Rich text={t.case.story} />
+        </p>
       </div>
       <Voto initial={t} t={tt} />
     </PageFrame>

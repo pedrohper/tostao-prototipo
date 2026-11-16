@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { categorizeByRules, patternFromDescription } from './categorize.js';
 import type { CategoryRule } from '../domain/entities.js';
 
-const rule = (pattern: string, categoryId: string, userId: string | null = null): CategoryRule => ({ id: pattern, userId, pattern, categoryId });
+const rule = (pattern: string, categoryId: string, userId: string | null = null): CategoryRule => ({
+  id: pattern,
+  userId,
+  pattern,
+  categoryId,
+});
 
 describe('categorizeByRules', () => {
   const rules = [rule('IFD*', 'delivery'), rule('UBER', 'transporte'), rule('UBER *EATS', 'delivery')];

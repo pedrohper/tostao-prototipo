@@ -9,6 +9,10 @@ if (/^VAPID_PRIVATE_KEY=.+/m.test(current)) {
   console.log('Já tem chave VAPID no .env. Nada mudou.');
 } else {
   const { publicKey, privateKey } = webpush.generateVAPIDKeys();
-  appendFileSync(file, `${current.endsWith('\n') || !current ? '' : '\n'}VAPID_PUBLIC_KEY=${publicKey}\nVAPID_PRIVATE_KEY=${privateKey}\n`, { mode: 0o600 });
+  appendFileSync(
+    file,
+    `${current.endsWith('\n') || !current ? '' : '\n'}VAPID_PUBLIC_KEY=${publicKey}\nVAPID_PRIVATE_KEY=${privateKey}\n`,
+    { mode: 0o600 },
+  );
   console.log('Chaves VAPID gravadas no .env. Reinicie a API (pm2 restart tostao-api --update-env).');
 }

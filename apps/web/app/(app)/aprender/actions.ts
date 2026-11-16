@@ -12,7 +12,9 @@ export async function markLessonDone(lessonId: string) {
     revalidatePath('/perfil');
     revalidatePath('/tostao');
     revalidatePath('/inicio');
-  } catch { /* segue sem salvar */ }
+  } catch {
+    /* segue sem salvar */
+  }
 }
 
 /** Uma vez só: sobe o que ficou salvo no navegador (versão antiga do protótipo) pro servidor. */

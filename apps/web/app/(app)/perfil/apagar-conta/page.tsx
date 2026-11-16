@@ -32,7 +32,10 @@ export default async function ApagarContaPage({ searchParams }: { searchParams: 
         </ul>
         <p className="text-tinta-suave">
           {td.disconnectHintBefore}
-          <Link href="/privacidade" className="font-semibold underline">{td.privacyLink}</Link>.
+          <Link href="/privacidade" className="font-semibold underline">
+            {td.privacyLink}
+          </Link>
+          .
         </p>
       </Card>
 

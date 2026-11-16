@@ -9,7 +9,10 @@ export function buildN8nBridge(app: FastifyInstance) {
     const r = await app.inject({
       method: 'POST',
       url: '/whatsapp/n8n',
-      headers: { 'content-type': 'application/json', ...(typeof secret === 'string' ? { 'x-tostao-secret': secret } : {}) },
+      headers: {
+        'content-type': 'application/json',
+        ...(typeof secret === 'string' ? { 'x-tostao-secret': secret } : {}),
+      },
       payload: JSON.stringify(request.body ?? {}),
     });
     return reply.status(r.statusCode).header('content-type', 'application/json').send(r.body);

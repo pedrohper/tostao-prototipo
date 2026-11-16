@@ -23,6 +23,10 @@ export class LoginLimiter {
     return Math.ceil((list[0]! + WINDOW_MS - this.now()) / 60_000);
   }
 
-  fail(key: string) { this.fails.set(key, [...this.recent(key), this.now()]); }
-  reset(key: string) { this.fails.delete(key); }
+  fail(key: string) {
+    this.fails.set(key, [...this.recent(key), this.now()]);
+  }
+  reset(key: string) {
+    this.fails.delete(key);
+  }
 }

@@ -1,6 +1,12 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { createPersonBody, linkPersonBody, personEntryBody, type PeopleResponse, type PersonDetailResponse } from '@tostao/contracts';
+import {
+  createPersonBody,
+  linkPersonBody,
+  personEntryBody,
+  type PeopleResponse,
+  type PersonDetailResponse,
+} from '@tostao/contracts';
 import type { UseCases } from '../../use-cases/factories.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
 import { presentTransaction } from '../presenters.js';
@@ -27,7 +33,12 @@ export function peopleRoutes(app: FastifyInstance, uc: UseCases) {
   app.post('/people/:id/entries', { onRequest: verifyJwt }, async (request, reply) => {
     const { id } = z.object({ id: z.string() }).parse(request.params);
     const body = personEntryBody.parse(request.body);
-    const { transaction } = await uc.addPersonEntry.execute({ ...body, userId: request.user.sub, personId: id, occurredAt: new Date(`${body.occurredAt}T12:00:00-03:00`) });
+    const { transaction } = await uc.addPersonEntry.execute({
+      ...body,
+      userId: request.user.sub,
+      personId: id,
+      occurredAt: new Date(`${body.occurredAt}T12:00:00-03:00`),
+    });
     return reply.status(201).send({ id: transaction.id });
   });
 
@@ -48,7 +59,11 @@ export function peopleRoutes(app: FastifyInstance, uc: UseCases) {
   app.put('/transactions/:id/person', { onRequest: verifyJwt }, async (request) => {
     const { id } = z.object({ id: z.string() }).parse(request.params);
     const { personName } = linkPersonBody.parse(request.body);
-    const { person } = await uc.linkTransactionPerson.execute({ userId: request.user.sub, transactionId: id, personName });
+    const { person } = await uc.linkTransactionPerson.execute({
+      userId: request.user.sub,
+      transactionId: id,
+      personName,
+    });
     return { personId: person?.id ?? null };
   });
 }

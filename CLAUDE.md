@@ -4,6 +4,7 @@ App de finanças pessoais + educação financeira para jovens brasileiros de 18 
 Slogan: "Grana explicada, de tostão em tostão". Voz: amigo sincero, sem julgamento.
 
 ## Como o trabalho está dividido
+
 - `pedrohper/tostao-prototipo` (este repo): protótipo feito pelo Claude pra validar a ideia rápido.
 - `pedrohper/tostao` (depois): a plataforma de verdade, codada pelo Pedro aos poucos (8 h/semana),
   com o Claude como mentor (método socrático, contratos com `throw new Error('Not implemented')`, checklist, code review).
@@ -11,11 +12,13 @@ Slogan: "Grana explicada, de tostão em tostão". Voz: amigo sincero, sem julgam
 - Commits sempre como Pedro Henrique (73310860+pedrohper@users.noreply.github.com), sem co-autoria do Claude.
 
 ## Stack
+
 Monorepo pnpm · TypeScript · Fastify (API) · Prisma 6 + Postgres 16 (Docker, localhost:5432 via DATABASE_URL) · Zod · Vitest ·
 Next.js 16 App Router + Tailwind v4 (web) · lições em JSON gerado de `content/curriculo.md`.
 Nest.js talvez depois. PWA primeiro. Modelo: uso próprio agora, freemium depois.
 
 ## Regras de domínio
+
 - Dinheiro sempre em centavos (Int). Negativo = saída.
 - `externalId` evita importar a mesma transação duas vezes (escopo por usuário).
 - Transferência entre contas próprias e pagamento de fatura não contam como gasto nem renda. Categoria `nao-conta` (kind neutra) também vira transferência interna.
@@ -25,6 +28,7 @@ Nest.js talvez depois. PWA primeiro. Modelo: uso próprio agora, freemium depois
   Trial do dashboard (15 dias) precisa estar ativo pra ligar banco. Plano B: "Copiar Item ID" no menu da Demo.
 
 ## Marca
+
 - Personagens: Tostão (porquinho, boné laranja #FF5A36 com aba amarela #FFC233 sempre pra trás,
   fresta da moeda só nas costas, feliz por padrão) e Caramelo (vira-lata caramelo, sem coleira).
   Vilões: Urubu do Pix (golpes) e Tigrinho (bets).
@@ -33,17 +37,19 @@ Nest.js talvez depois. PWA primeiro. Modelo: uso próprio agora, freemium depois
 - Currículo: 9 módulos × 5 lições, cada lição em gancho, conceito, simulador, dilema e compromisso.
 
 ## Deploy
+
 Homelab Ubuntu Server 24.04 headless, acessado via Tailscale (pasta `~/homelab/tostao-prototipo`). Postgres já existente em container na 5432. Setup: `bash scripts/homelab-setup.sh` (pm2 + `tailscale serve` com HTTPS).
 Login exige HTTPS (cookie secure em produção).
 
 ## Passagem entre agentes (AGENT_SYNC.md)
+
 - **Antes de codar:** leia `AGENT_SYNC.md` na raiz (Plano, Execução, Code Review). Veja se alguém já está mexendo no mesmo lugar e se há achado de review aberto pra você.
 - **Ao terminar:** registre em `AGENT_SYNC.md` > Execução o que mudou, migration/env nova, como validou e o que ficou de fora, no mesmo PR. Tire o item do Plano.
 - O Gemini revisa o `git diff` da entrega e escreve em Code Review. Achado bloqueante aberto se resolve antes da próxima feature.
 
 ## Pendências conhecidas
-Atalhos do protótipo listados no README. Chat com IA: DeepSeek (`DEEPSEEK_API_KEY`), contexto montado em `use-cases/ask-tostao.ts`. Ainda só no design: Tribunal, Batalha. Comando `pnpm --filter @tostao/api recompute-transfers` reaplica a regra de transferência interna no histórico.
 
+Atalhos do protótipo listados no README. Chat com IA: DeepSeek (`DEEPSEEK_API_KEY`), contexto montado em `use-cases/ask-tostao.ts`. Ainda só no design: Tribunal, Batalha. Comando `pnpm --filter @tostao/api recompute-transfers` reaplica a regra de transferência interna no histórico.
 
 ## Modo Mentor, Eficiência & Anti-Vibe Coding Cego
 

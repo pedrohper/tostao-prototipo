@@ -8,7 +8,8 @@ import { Mascot } from '@/components/mascote';
 import { BackLink, ButtonLink, Card, PageFrame } from '@/components/ui';
 import { IgnoreButton } from './ignore-button';
 
-const day = (iso: string, locale: Locale) => new Date(iso).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' });
+const day = (iso: string, locale: Locale) =>
+  new Date(iso).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' });
 
 export default async function AssinaturasPage({ searchParams }: { searchParams: Promise<{ voltar?: string }> }) {
   const [{ voltar }, { subscriptions, ignored, monthlyInCents, yearlyInCents }, { locale, t }] = await Promise.all([
@@ -24,9 +25,7 @@ export default async function AssinaturasPage({ searchParams }: { searchParams: 
   const selfHref = voltar ? `/assinaturas?voltar=${encodeURIComponent(backHref)}` : '/assinaturas';
 
   const note = (
-    <p className="text-center text-[13px] leading-[19px] text-tinta-suave lg:text-left">
-      {p.methodologyNote}
-    </p>
+    <p className="text-center text-[13px] leading-[19px] text-tinta-suave lg:text-left">{p.methodologyNote}</p>
   );
 
   const secondarySections = (
@@ -51,7 +50,9 @@ export default async function AssinaturasPage({ searchParams }: { searchParams: 
           <Card className="flex flex-col divide-y divide-linha p-0">
             {ignored.map((s) => (
               <div key={s.key} className="flex items-center justify-between gap-3 p-4 text-tinta-suave">
-                <span className="min-w-0 [overflow-wrap:anywhere]">{s.name} · {money(s.amountInCents)}</span>
+                <span className="min-w-0 [overflow-wrap:anywhere]">
+                  {s.name} · {money(s.amountInCents)}
+                </span>
                 <IgnoreButton subscriptionKey={s.key} ignored ignoreLabel={p.ignoreBtn} undoLabel={p.undoBtn} />
               </div>
             ))}
@@ -77,7 +78,9 @@ export default async function AssinaturasPage({ searchParams }: { searchParams: 
               <Mascot pose="investigando" size={150} alt="Tostão" />
               <h2 className="font-display text-xl font-extrabold">{p.emptyAllTitle}</h2>
               <p className="max-w-[360px] text-[15px] text-tinta-suave">{p.emptyAllBody}</p>
-              <ButtonLink href={`/conectar?voltar=${encodeURIComponent(selfHref)}`} variant="outline">{p.checkBanksCta}</ButtonLink>
+              <ButtonLink href={`/conectar?voltar=${encodeURIComponent(selfHref)}`} variant="outline">
+                {p.checkBanksCta}
+              </ButtonLink>
             </Card>
             {note}
           </div>
@@ -88,13 +91,13 @@ export default async function AssinaturasPage({ searchParams }: { searchParams: 
                 <Mascot pose="investigando" size={150} alt="Tostão" />
                 <h2 className="font-display text-xl font-extrabold">{p.emptyActiveTitle}</h2>
                 <p className="max-w-[320px] text-[15px] text-tinta-suave">{p.emptyActiveBody}</p>
-                <ButtonLink href={`/conectar?voltar=${encodeURIComponent(selfHref)}`} variant="outline">{p.checkBanksCta}</ButtonLink>
+                <ButtonLink href={`/conectar?voltar=${encodeURIComponent(selfHref)}`} variant="outline">
+                  {p.checkBanksCta}
+                </ButtonLink>
               </Card>
               {note}
             </div>
-            <div className="flex min-w-0 flex-col gap-5">
-              {secondarySections}
-            </div>
+            <div className="flex min-w-0 flex-col gap-5">{secondarySections}</div>
           </div>
         )
       ) : (
@@ -102,14 +105,27 @@ export default async function AssinaturasPage({ searchParams }: { searchParams: 
           <div className="flex min-w-0 flex-col gap-4">
             <div className="rounded-3xl bg-amarelo p-5 text-tinta-fixa">
               <span className="text-sm font-semibold">{p.activeCount(active.length)}</span>
-              <div className="font-display text-[40px] leading-tight font-extrabold tabular-nums">{money(monthlyInCents)}<span className="text-xl">{p.perMonth}</span></div>
-              <p className="mt-1 text-[15px] font-semibold">{p.perYearBefore}<b className="tabular-nums">{money(yearlyInCents)}</b>{p.perYearAfter}</p>
+              <div className="font-display text-[40px] leading-tight font-extrabold tabular-nums">
+                {money(monthlyInCents)}
+                <span className="text-xl">{p.perMonth}</span>
+              </div>
+              <p className="mt-1 text-[15px] font-semibold">
+                {p.perYearBefore}
+                <b className="tabular-nums">{money(yearlyInCents)}</b>
+                {p.perYearAfter}
+              </p>
             </div>
 
             {cheapest && (
               <div className="flex items-center gap-3 rounded-[20px] bg-azul p-3.5">
                 <Mascot pose="pensando" size={64} alt="Tostão" />
-                <p className="text-[15px] leading-snug">{p.cheapestQuestionBefore}<b>{cheapest.name}</b>{p.cheapestQuestionMid}<b>{money(cheapest.amountInCents * 12)}</b>{p.cheapestQuestionAfter}</p>
+                <p className="text-[15px] leading-snug">
+                  {p.cheapestQuestionBefore}
+                  <b>{cheapest.name}</b>
+                  {p.cheapestQuestionMid}
+                  <b>{money(cheapest.amountInCents * 12)}</b>
+                  {p.cheapestQuestionAfter}
+                </p>
               </div>
             )}
 
@@ -122,9 +138,20 @@ export default async function AssinaturasPage({ searchParams }: { searchParams: 
                 <div key={s.key} className="flex items-center justify-between gap-3 p-4">
                   <div className="flex min-w-0 flex-col items-start">
                     <span className="font-semibold [overflow-wrap:anywhere]">{s.name}</span>
-                    <span className="text-[13px] text-tinta-suave">{p.nextChargeMeta(day(s.nextChargeAt, locale), s.installmentsLeft, s.chargeCount)}</span>
-                    {s.duplicateOf && <span className="mt-1 rounded-full bg-rosa px-2 py-0.5 text-[12px] font-semibold text-tinta">{p.duplicateBadge(s.duplicateOf)}</span>}
-                    <IgnoreButton subscriptionKey={s.key} ignored={false} ignoreLabel={p.ignoreBtn} undoLabel={p.undoBtn} />
+                    <span className="text-[13px] text-tinta-suave">
+                      {p.nextChargeMeta(day(s.nextChargeAt, locale), s.installmentsLeft, s.chargeCount)}
+                    </span>
+                    {s.duplicateOf && (
+                      <span className="mt-1 rounded-full bg-rosa px-2 py-0.5 text-[12px] font-semibold text-tinta">
+                        {p.duplicateBadge(s.duplicateOf)}
+                      </span>
+                    )}
+                    <IgnoreButton
+                      subscriptionKey={s.key}
+                      ignored={false}
+                      ignoreLabel={p.ignoreBtn}
+                      undoLabel={p.undoBtn}
+                    />
                   </div>
                   <span className="shrink-0 font-bold tabular-nums">{money(s.amountInCents)}</span>
                 </div>

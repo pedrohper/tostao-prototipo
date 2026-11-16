@@ -21,7 +21,8 @@ export const MONTHLY_AHEAD = 12;
 
 /** Mesmo dia nos meses seguintes; dia 31 vira o último dia do mês quando ele não existe. */
 export function addMonths(d: Date, k: number): Date {
-  const y = d.getUTCFullYear(), m = d.getUTCMonth() + k;
+  const y = d.getUTCFullYear(),
+    m = d.getUTCMonth() + k;
   const last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
   return new Date(Date.UTC(y, m, Math.min(d.getUTCDate(), last), d.getUTCHours(), d.getUTCMinutes()));
 }
@@ -33,9 +34,11 @@ export class CreateManualTransactionUseCase {
   async execute(input: Input) {
     const { transactions, categories, rules } = this.repos;
     let categoryId = input.categoryId ?? null;
-    if (categoryId && !canUseCategory(await categories.findById(categoryId), input.userId)) throw new ResourceNotFoundError('Categoria');
+    if (categoryId && !canUseCategory(await categories.findById(categoryId), input.userId))
+      throw new ResourceNotFoundError('Categoria');
     const accountId = input.accountId ?? null;
-    if (accountId && !(await this.repos.accounts.listByUser(input.userId)).some((a) => a.id === accountId)) throw new ResourceNotFoundError('Conta');
+    if (accountId && !(await this.repos.accounts.listByUser(input.userId)).some((a) => a.id === accountId))
+      throw new ResourceNotFoundError('Conta');
     if (!categoryId) categoryId = categorizeByRules(input.description, await rules.listForUser(input.userId));
 
     const sign = input.kind === 'saida' ? -1 : 1;
@@ -49,17 +52,19 @@ export class CreateManualTransactionUseCase {
 
     const created = [];
     for (let i = 0; i < n; i++) {
-      created.push(await transactions.create({
-        userId: input.userId,
-        accountId,
-        externalId: null,
-        description: repeat === 'parcelado' ? `${input.description} (${i + 1}/${n})` : input.description,
-        amountInCents: sign * (i === 0 ? first : parcel),
-        occurredAt: addMonths(input.occurredAt, i),
-        categoryId,
-        isInternalTransfer: isNeutral(categoryId),
-        seriesId,
-      }));
+      created.push(
+        await transactions.create({
+          userId: input.userId,
+          accountId,
+          externalId: null,
+          description: repeat === 'parcelado' ? `${input.description} (${i + 1}/${n})` : input.description,
+          amountInCents: sign * (i === 0 ? first : parcel),
+          occurredAt: addMonths(input.occurredAt, i),
+          categoryId,
+          isInternalTransfer: isNeutral(categoryId),
+          seriesId,
+        }),
+      );
     }
     return { transaction: created[0]!, count: n };
   }

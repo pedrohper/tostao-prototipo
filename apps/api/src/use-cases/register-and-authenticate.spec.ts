@@ -9,7 +9,9 @@ import { LoginLimiter } from '../http/login-limiter.js';
 
 describe('cadastro e login', () => {
   let repos: ReturnType<typeof makeInMemoryRepositories>;
-  beforeEach(() => { repos = makeInMemoryRepositories(); });
+  beforeEach(() => {
+    repos = makeInMemoryRepositories();
+  });
   const dono = () => new RegisterUserUseCase(repos).execute({ name: 'Pedro', email: 'p@x.com', password: '12345678' });
 
   it('guarda hash, nunca a senha', async () => {
@@ -24,7 +26,12 @@ describe('cadastro e login', () => {
     await register.execute({ name: 'Caio', email: 'c@x.com', password: '12345678', inviteCode: 'TOST-NADA-NADA' });
 
     const { invite } = await new CreateInviteUseCase(repos).execute({ userId: user.id });
-    const { user: bia } = await register.execute({ name: 'Bia', email: 'b@x.com', password: '12345678', inviteCode: ` ${invite.code.toLowerCase()} ` });
+    const { user: bia } = await register.execute({
+      name: 'Bia',
+      email: 'b@x.com',
+      password: '12345678',
+      inviteCode: ` ${invite.code.toLowerCase()} `,
+    });
     expect(repos.invites.items[0]!.usedById).toBe(bia.id);
     await register.execute({ name: 'Duda', email: 'd@x.com', password: '12345678', inviteCode: invite.code });
     expect(repos.invites.items[0]!.usedById).toBe(bia.id);
@@ -33,15 +40,26 @@ describe('cadastro e login', () => {
   it('não deixa repetir e-mail', async () => {
     const { user } = await dono();
     const { invite } = await new CreateInviteUseCase(repos).execute({ userId: user.id });
-    await expect(new RegisterUserUseCase(repos).execute({ name: 'Outro', email: 'p@x.com', password: '12345678', inviteCode: invite.code })).rejects.toBeInstanceOf(EmailAlreadyInUseError);
+    await expect(
+      new RegisterUserUseCase(repos).execute({
+        name: 'Outro',
+        email: 'p@x.com',
+        password: '12345678',
+        inviteCode: invite.code,
+      }),
+    ).rejects.toBeInstanceOf(EmailAlreadyInUseError);
   });
 
   it('entra com a senha certa e recusa a errada', async () => {
     await dono();
     const auth = new AuthenticateUseCase(repos.users);
     await expect(auth.execute({ email: 'p@x.com', password: '12345678' })).resolves.toHaveProperty('user');
-    await expect(auth.execute({ email: 'p@x.com', password: 'errada00' })).rejects.toBeInstanceOf(InvalidCredentialsError);
-    await expect(auth.execute({ email: 'nao@existe.com', password: '12345678' })).rejects.toBeInstanceOf(InvalidCredentialsError);
+    await expect(auth.execute({ email: 'p@x.com', password: 'errada00' })).rejects.toBeInstanceOf(
+      InvalidCredentialsError,
+    );
+    await expect(auth.execute({ email: 'nao@existe.com', password: '12345678' })).rejects.toBeInstanceOf(
+      InvalidCredentialsError,
+    );
   });
 
   it('link de nova senha: funciona uma vez e expira em 1 h', async () => {
@@ -53,7 +71,9 @@ describe('cadastro e login', () => {
 
     const reset = new ResetPasswordUseCase(repos, clock);
     await reset.execute({ token, password: 'novasenha1' });
-    await expect(new AuthenticateUseCase(repos.users).execute({ email: 'p@x.com', password: 'novasenha1' })).resolves.toHaveProperty('user');
+    await expect(
+      new AuthenticateUseCase(repos.users).execute({ email: 'p@x.com', password: 'novasenha1' }),
+    ).resolves.toHaveProperty('user');
     await expect(reset.execute({ token, password: 'outra1234' })).rejects.toBeInstanceOf(InvalidResetTokenError);
 
     const { token: late } = await new CreatePasswordResetUseCase(repos, clock).execute({ email: 'p@x.com' });

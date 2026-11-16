@@ -2,7 +2,20 @@ import type { Dictionary } from './types';
 
 export const en: Dictionary = {
   locale: 'en',
-  months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+  months: [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ],
   weekdaysShort: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
   time: {
     now: 'just now',
@@ -33,7 +46,8 @@ export const en: Dictionary = {
     askTostao: 'Ask Tostão',
     connectionBroken: (names) => `${names} stopped syncing. Numbers may be outdated. Tap to fix.`,
     emptyTitle: 'Nothing here yet',
-    emptyDescription: 'Connect your bank or import a statement so I can organize your spending — or log an expense manually.',
+    emptyDescription:
+      'Connect your bank or import a statement so I can organize your spending — or log an expense manually.',
     connectExpensesCta: 'Connect my accounts',
     logManualExpenseCta: 'Log an expense',
     balanceInAccounts: (count) => `Balance across ${count} ${count === 1 ? 'account' : 'accounts'} ›`,
@@ -51,7 +65,8 @@ export const en: Dictionary = {
     viewLessonCta: 'Check it out',
     chatPromptBody: 'Have a question about an expense or wondering if you can afford something?',
     chatPromptBold: 'Just ask me.',
-    overBudgetAlert: (category, spent, limit) => `${category} went over budget: ${spent} of ${limit}. Can we hold back until month-end?`,
+    overBudgetAlert: (category, spent, limit) =>
+      `${category} went over budget: ${spent} of ${limit}. Can we hold back until month-end?`,
     monthlyClosingReady: (month) => `Your ${month} wrap-up is ready.`,
     monthlyClosingSub: 'What was left, where it went, and what changed. Tap to view.',
     activeSubscriptionsAlert: (count, monthly, yearly) =>
@@ -88,7 +103,8 @@ export const en: Dictionary = {
     askPlaceholder: 'Ask about your money',
     askSendLabel: 'Send question',
     askChips: ['How much do I save if I cut delivery?', 'Which subscriptions did I forget?'],
-    learnModuleProgress: (moduleNumber, doneCount, totalCount) => `Module ${moduleNumber} · ${doneCount} of ${totalCount}`,
+    learnModuleProgress: (moduleNumber, doneCount, totalCount) =>
+      `Module ${moduleNumber} · ${doneCount} of ${totalCount}`,
     allModulesCompleted: 'Trail complete!',
   },
   wallet: {
@@ -115,7 +131,8 @@ export const en: Dictionary = {
   learn: {
     title: 'Learn',
     fullTrailCta: 'See full trail',
-    moduleCounter: (moduleNumber, doneCount, totalCount) => `Module ${moduleNumber} · ${doneCount} of ${totalCount} lessons`,
+    moduleCounter: (moduleNumber, doneCount, totalCount) =>
+      `Module ${moduleNumber} · ${doneCount} of ${totalCount} lessons`,
     lessonRowMeta: (lessonNumber) => `Lesson ${lessonNumber} · 2 to 3 min`,
     doneBadge: 'Done',
     startCta: 'Start',
@@ -194,7 +211,8 @@ export const en: Dictionary = {
     disconnectBanks: 'Disconnect banks',
     signOut: 'Sign out',
     deleteAccount: 'Delete my account',
-    openFinanceActive: (count) => `${count} ${count === 1 ? 'active Open Finance connection' : 'active Open Finance connections'}`,
+    openFinanceActive: (count) =>
+      `${count} ${count === 1 ? 'active Open Finance connection' : 'active Open Finance connections'}`,
     openFinanceError: 'A bank needs attention',
     openFinanceMissing: 'No Open Finance bank connected yet',
     openFinanceNote: 'Open Finance requires annual renewal in your bank app. Read-only access, never moves your money.',
@@ -229,7 +247,8 @@ export const en: Dictionary = {
     tabAuto: 'On autopilot',
     foundTitle: 'What Tostão found',
     emptyFoundTitle: 'All clear right now',
-    emptyFoundBody: 'Tostão and Caramelo did not spot anything urgent. As soon as new bank data arrives, we check again.',
+    emptyFoundBody:
+      'Tostão and Caramelo did not spot anything urgent. As soon as new bank data arrives, we check again.',
     checkNow: 'Take a look now',
     checkingNow: 'Checking…',
     dismissLabel: 'Got it',
@@ -369,7 +388,8 @@ export const en: Dictionary = {
     badgeConfigIncome: 'Set income',
     activeLimitsCount: (count) => `${count} ${count === 1 ? 'active budget' : 'active budgets'}`,
     limitsEmptySummary: 'Set a monthly cap for the categories that weigh most on your wallet.',
-    limitsOverSummary: (count) => `${count} ${count === 1 ? 'category went' : 'categories went'} over budget this month.`,
+    limitsOverSummary: (count) =>
+      `${count} ${count === 1 ? 'category went' : 'categories went'} over budget this month.`,
     limitsNearSummary: (count) => `${count} ${count === 1 ? 'category is near' : 'categories are near'} its cap.`,
     limitsOkSummary: 'All tracked categories are within budget.',
     badgeSet: 'Set cap',
@@ -463,7 +483,8 @@ export const en: Dictionary = {
     },
     txDetail: {
       manualEntry: 'Manual entry',
-      transferNotice: 'This is money moving between your own accounts (or a card bill payment). It does not count as spending or income.',
+      transferNotice:
+        'This is money moving between your own accounts (or a card bill payment). It does not count as spending or income.',
       undoTransfer: 'Not a transfer: count it in this month',
       neutralPromptBefore: 'Marked as ',
       neutralPromptBold: 'Excluded',
@@ -477,7 +498,8 @@ export const en: Dictionary = {
       deleteThis: 'Delete this one',
       deleteSeries: 'Delete this and upcoming ones',
       categorizeLabel: 'Category',
-      neutralHint: 'Excluded: removed from spending and income. Great for family pass-throughs, money held for someone else, or splits.',
+      neutralHint:
+        'Excluded: removed from spending and income. Great for family pass-throughs, money held for someone else, or splits.',
       alwaysRule: (pattern, catName) => `Always put “${pattern}” in ${catName}`,
       editToggle: 'Edit transaction',
       editSub: 'Change description, amount, or date',
@@ -569,7 +591,8 @@ export const en: Dictionary = {
       viewBillAndInstallments: 'View bill & installments ›',
       noAccountsEmpty: 'No accounts or cards here yet. Connect your bank, import a statement, or add a manual account.',
       hiddenAccountsHeading: 'Hidden accounts',
-      hiddenAccountsHint: 'Hidden accounts stay out of balances and lists, but keep updating. Tap the eye icon to unhide.',
+      hiddenAccountsHint:
+        'Hidden accounts stay out of balances and lists, but keep updating. Tap the eye icon to unhide.',
       connectBankTitle: 'Connect bank',
       connectBankSub: 'Automatic Open Finance',
       importStatementTitle: 'Import statement',
@@ -601,8 +624,10 @@ export const en: Dictionary = {
       timesAria: 'Installments',
       timesPlusAria: 'Increase installments',
       repeatNoHint: 'Just this once.',
-      repeatMonthlyHint: 'I will add this for the next 12 months and include it in your forecast. You can delete the series later.',
-      repeatInstallmentHint: (times) => `Amount is the total: split into ${times}x monthly installments starting on this date.`,
+      repeatMonthlyHint:
+        'I will add this for the next 12 months and include it in your forecast. You can delete the series later.',
+      repeatInstallmentHint: (times) =>
+        `Amount is the total: split into ${times}x monthly installments starting on this date.`,
       categoryLegend: 'Category',
       categoryOptional: '(optional, I will try to guess)',
       moreCategories: 'More categories',
@@ -611,8 +636,10 @@ export const en: Dictionary = {
       cash: 'Cash',
       cardTag: 'Card',
       accountTag: 'Account',
-      autoAccountWarnOut: 'This account syncs automatically from your bank. If the expense shows up there too, delete one of them.',
-      autoAccountWarnIn: 'This account syncs automatically from your bank. If the income shows up there too, delete one of them.',
+      autoAccountWarnOut:
+        'This account syncs automatically from your bank. If the expense shows up there too, delete one of them.',
+      autoAccountWarnIn:
+        'This account syncs automatically from your bank. If the income shows up there too, delete one of them.',
       saving: 'Saving…',
     },
     importar: {
@@ -620,17 +647,28 @@ export const en: Dictionary = {
       subtitle: 'No Open Finance, no password. Just the file.',
       mascotAlt: 'Tostão plugging two cables',
       whereToDownload: 'Where to download',
-      footerNote: 'You can re-import overlapping periods safely: anything already here gets skipped. Bank menus change occasionally — look for “Export” or “Statement”. Bank not listed? Try uploading its CSV anyway.',
+      footerNote:
+        'You can re-import overlapping periods safely: anything already here gets skipped. Bank menus change occasionally — look for “Export” or “Statement”. Bank not listed? Try uploading its CSV anyway.',
       banks: [
-        { name: 'Nubank', steps: 'Account: tap balance → share icon → “Exportar extrato” (CSV arrives by email). Card: bill → “Enviar fatura por e-mail” and use the CSV.' },
+        {
+          name: 'Nubank',
+          steps:
+            'Account: tap balance → share icon → “Exportar extrato” (CSV arrives by email). Card: bill → “Enviar fatura por e-mail” and use the CSV.',
+        },
         { name: 'Inter', steps: 'App → Statement → download icon → choose period → CSV or OFX.' },
-        { name: 'Itaú', steps: 'On desktop web (not in app): Statement → period → “Salvar em OFX” (sometimes labeled Money).' },
+        {
+          name: 'Itaú',
+          steps: 'On desktop web (not in app): Statement → period → “Salvar em OFX” (sometimes labeled Money).',
+        },
         { name: 'Bradesco', steps: 'On desktop web: Balances & statements → Statement → “Exportar” → OFX or CSV.' },
         { name: 'Banco do Brasil', steps: 'On desktop web: Statement → pick month → “Salvar” → OFX or CSV.' },
         { name: 'Caixa', steps: 'On desktop web: Statement → period → export as OFX.' },
         { name: 'Santander', steps: 'On desktop web: Checking account → Statement → “Exportar” → OFX.' },
         { name: 'C6 Bank', steps: 'App → Statement → share icon → “Exportar extrato” → CSV.' },
-        { name: 'Mercado Pago', steps: 'On desktop web: Your money → Reports → “Extrato da conta” → generate and download CSV.' },
+        {
+          name: 'Mercado Pago',
+          steps: 'On desktop web: Your money → Reports → “Extrato da conta” → generate and download CSV.',
+        },
         { name: 'PicPay', steps: 'App → Statement → download icon → period → CSV (sent by email).' },
       ],
       form: {
@@ -662,8 +700,16 @@ export const en: Dictionary = {
       title: 'How do you want to bring your spending?',
       subtitle: 'Pick one method. You can mix them later.',
       paths: {
-        bank: { title: 'Connect your bank', tag: 'automatic', desc: 'Via Open Finance. Syncs automatically every day.' },
-        import: { title: 'Import statement', tag: 'any bank', desc: 'Download an OFX or CSV file from your bank and upload it here. ~3 min.' },
+        bank: {
+          title: 'Connect your bank',
+          tag: 'automatic',
+          desc: 'Via Open Finance. Syncs automatically every day.',
+        },
+        import: {
+          title: 'Import statement',
+          tag: 'any bank',
+          desc: 'Download an OFX or CSV file from your bank and upload it here. ~3 min.',
+        },
         manual: { title: 'Log manually', desc: 'Start by tracking what you spent today. No bank needed.' },
       },
       points: [
@@ -694,7 +740,8 @@ export const en: Dictionary = {
       lastFile: 'Last file',
       lastSync: 'Last sync',
       never: 'never',
-      errorHelp: 'Could not sync this bank. Try syncing again; if it keeps failing, disconnect and reconnect, or import a statement.',
+      errorHelp:
+        'Could not sync this bank. Try syncing again; if it keeps failing, disconnect and reconnect, or import a statement.',
       importMore: 'Import more',
       continueOnboarding: 'Continue: income & goal →',
       skipOnboarding: 'Skip for now and go Home',
@@ -713,7 +760,8 @@ export const en: Dictionary = {
         syncing: 'Syncing…',
         disconnect: 'Disconnect',
         disconnecting: 'Disconnecting…',
-        disconnectConfirm: (name) => `Disconnect ${name}? This deletes its synced accounts and transactions. Manual entries stay.`,
+        disconnectConfirm: (name) =>
+          `Disconnect ${name}? This deletes its synced accounts and transactions. Manual entries stay.`,
       },
     },
     categorias: {
@@ -724,7 +772,8 @@ export const en: Dictionary = {
       spendingTag: 'expense',
       incomeTag: 'income',
       notCountedBold: 'Excluded',
-      notCountedBody: ' is for money just passing through: family transfers, splits with friends, or someone else’s money. Assign it and check “always” to keep it out of totals.',
+      notCountedBody:
+        ' is for money just passing through: family transfers, splits with friends, or someone else’s money. Assign it and check “always” to keep it out of totals.',
       builtInTitle: 'Built-in categories',
       spendingRow: 'Expenses:',
       incomeRow: 'Income:',
@@ -818,7 +867,8 @@ export const en: Dictionary = {
       emptyBody: 'To forecast ahead, I need to know what comes in and goes out every month.',
       tellIncomeCta: 'Add my income',
       allGreen: (month, _amount) => `All three months finish in the green. In ${month} you should have about `,
-      worstIsFirst: (month, amount) => `${month} gets tight: about ${amount} short. Holding back on daily spending now fixes it.`,
+      worstIsFirst: (month, amount) =>
+        `${month} gets tight: about ${amount} short. Holding back on daily spending now fixes it.`,
       firstVsWorst: (firstMonth, firstGreen, worstMonth, worstAmount) =>
         `${firstMonth} ${firstGreen ? 'finishes in the green' : 'is tight'}, while ${worstMonth} gets${!firstGreen ? ' even' : ''} tighter: about ${worstAmount} short. Trimming daily spending now helps.`,
       barAriaItem: (month, positive, amount) => `${month}: ${positive ? 'leftover' : 'shortfall'} ${amount}`,
@@ -844,7 +894,8 @@ export const en: Dictionary = {
       thisMonthSpent: 'Spent so far',
       thisMonthFixedLeft: 'Remaining fixed bills',
       thisMonthSubsLeft: 'Remaining subscriptions',
-      thisMonthDaily: (days, pace) => `Daily spending (${days} ${days === 1 ? 'day' : 'days'}${pace ? ` × ${pace}` : ''})`,
+      thisMonthDaily: (days, pace) =>
+        `Daily spending (${days} ${days === 1 ? 'day' : 'days'}${pace ? ` × ${pace}` : ''})`,
     },
     limites: {
       title: 'Monthly budgets',
@@ -866,14 +917,16 @@ export const en: Dictionary = {
     meta: {
       editTitle: 'Edit goal',
       newTitle: 'My goal',
-      emptyTip: 'Just one goal, with an amount and target month. I will tell you how much to save monthly and whether it fits.',
+      emptyTip:
+        'Just one goal, with an amount and target month. I will tell you how much to save monthly and whether it fits.',
       deleteGoal: 'Delete goal',
       ofTarget: (amount) => `of ${amount}`,
       progressAria: (pct) => `${pct}% of goal`,
       deadlinePrefix: (text) => ` · target ${text}`,
       reachedBold: 'Goal reached!',
       reachedBody: (amount) => `You saved ${amount}. Ready to pick the next one?`,
-      leftSummary: (left, monthly, month) => `${left} left to go. Saving ${monthly} per month gets you there in ${month}.`,
+      leftSummary: (left, monthly, month) =>
+        `${left} left to go. Saving ${monthly} per month gets you there in ${month}.`,
       fitsTrue: ' Fits in what should be left over.',
       fitsFalse: ' Forecast says that is tight: push the date or cut an expense.',
       fitsNullCta: 'Add your income',
@@ -883,7 +936,12 @@ export const en: Dictionary = {
       disclaimer: 'Tostão never moves your money: save wherever you prefer and log deposits here.',
       form: {
         purposeLegend: 'What is it for?',
-        kinds: { reserva: 'Emergency fund', viagem: 'Travel', 'sair-do-vermelho': 'Get out of debt', outro: 'Something else' },
+        kinds: {
+          reserva: 'Emergency fund',
+          viagem: 'Travel',
+          'sair-do-vermelho': 'Get out of debt',
+          outro: 'Something else',
+        },
         nameLabel: 'Goal name',
         namePlaceholder: 'E.g.: July beach trip',
         amountLabel: 'Target',
@@ -900,12 +958,14 @@ export const en: Dictionary = {
     assinaturas: {
       title: 'My subscriptions',
       subtitle: 'What leaves every month automatically without opening the app.',
-      methodologyNote: 'I spot subscriptions by pattern: same merchant, similar amount, once a month. Pix and card bill payments are excluded. Annual installment plans show remaining payments.',
+      methodologyNote:
+        'I spot subscriptions by pattern: same merchant, similar amount, once a month. Pix and card bill payments are excluded. Annual installment plans show remaining payments.',
       stoppedTitle: 'Stopped charging',
       lastChargeOn: (day) => `last on ${day}`,
       ignoredTitle: 'Marked as not a subscription',
       emptyAllTitle: 'No monthly charges found yet',
-      emptyAllBody: 'Either everything is under control or there is not enough statement history yet. I need at least two charges to be sure.',
+      emptyAllBody:
+        'Either everything is under control or there is not enough statement history yet. I need at least two charges to be sure.',
       emptyActiveTitle: 'No active subscriptions',
       emptyActiveBody: 'I need at least two consecutive charges to mark a subscription as active.',
       checkBanksCta: 'Check connected banks',
@@ -957,7 +1017,8 @@ export const en: Dictionary = {
       prevMonth: 'Previous month',
       nextMonth: 'Next month',
       emptyMonthNote: (month) => `No data for ${month}. My statement history starts after that.`,
-      shareText: (month, titleLower) => `Wrapped up ${month} on Tostão: ${titleLower}. Money explained, penny by penny.`,
+      shareText: (month, titleLower) =>
+        `Wrapped up ${month} on Tostão: ${titleLower}. Money explained, penny by penny.`,
       backToStart: 'Back to Home',
       nextCard: 'Next card',
       cardAria: (current, total) => `Card ${current} of ${total}`,
@@ -967,7 +1028,8 @@ export const en: Dictionary = {
     },
     compensa: {
       title: 'Pay cash or in installments?',
-      badgeDesc: (cdiPct) => `Enter the cash price and the installment plan. I uncover the hidden interest and compare against earning ${cdiPct}/year at 100% CDI.`,
+      badgeDesc: (cdiPct) =>
+        `Enter the cash price and the installment plan. I uncover the hidden interest and compare against earning ${cdiPct}/year at 100% CDI.`,
       ratesTitle: 'Reference rates used',
       cdiRef: 'CDI (reference)',
       selicRef: 'Selic',
@@ -976,7 +1038,8 @@ export const en: Dictionary = {
     },
     investir: {
       title: 'Where to invest',
-      intro: 'Investing has an order: pay off expensive debt first, build your emergency fund second, then chase higher returns. Tell me how much you have and I will map the path.',
+      intro:
+        'Investing has an order: pay off expensive debt first, build your emergency fund second, then chase higher returns. Tell me how much you have and I will map the path.',
       refTitle: 'Your current reference',
       monthlySpendEst: 'Estimated monthly spend',
       idealReserve: 'Ideal emergency fund (6 mo)',
@@ -998,7 +1061,8 @@ export const en: Dictionary = {
       installmentWinsBody: (diff) =>
         ` you keep the cash invested at 100% CDI to pay each installment. You end up ${diff} ahead. If you do not have the cash saved, installments just eat next month's budget.`,
       tieBefore: 'Virtually a tie.',
-      tieBody: (diff) => ` The difference is ${diff}. Pick whatever brings more peace of mind: paying cash frees up your credit limit and next month.`,
+      tieBody: (diff) =>
+        ` The difference is ${diff}. Pick whatever brings more peace of mind: paying cash frees up your credit limit and next month.`,
       saveInsteadNote: (pa, av, months, beforeLast) =>
         `Don't have the cash today? Saving ${pa}/mo at CDI gets you ${av} in ${months} ${months === 1 ? 'month' : 'months'}${beforeLast ? ', before the last installment' : ''}.`,
       loanAmount: 'Amount borrowed',
@@ -1010,7 +1074,8 @@ export const en: Dictionary = {
         { label: 'Car financing', taxa: 2 },
         { label: 'Payroll loan', taxa: 1.8 },
       ],
-      presetsNote: 'Preset buttons use approximate averages. Always check the CET (total effective cost) in the contract — it includes fees and IOF.',
+      presetsNote:
+        'Preset buttons use approximate averages. Always check the CET (total effective cost) in the contract — it includes fees and IOF.',
       eachPayment: 'Monthly payment',
       totalPaid: 'Total paid',
       interestOnly: 'Interest alone',
@@ -1020,20 +1085,23 @@ export const en: Dictionary = {
       loanNormalBefore: 'Interest totals ',
       loanSaveInstead: (p, vc, months) =>
         `If instead of paying installments you saved ${p}/mo, you would reach ${vc} in ${months} ${months === 1 ? 'month' : 'months'}. `,
-      loanEmergency: 'Debt at this rate is an emergency: swapping it for cheaper debt or negotiating comes before investing.',
+      loanEmergency:
+        'Debt at this rate is an emergency: swapping it for cheaper debt or negotiating comes before investing.',
       investHowMuch: 'How much do you have to invest?',
       investAlreadyReserved: 'Already saved in emergency fund',
       hasExpensiveDebt: 'I have credit card revolving or overdraft debt',
       adviceDebt: (v, yield12m) =>
         `Pay the debt first. ${v} earns about ${yield12m} in a year, while revolving debt costs more than that in 2 months. Use it to pay off or settle.`,
-      adviceNoIncomeBefore: (v) => `${v} goes to your emergency fund. I don't know your monthly spending yet, so I can't size it. `,
+      adviceNoIncomeBefore: (v) =>
+        `${v} goes to your emergency fund. I don't know your monthly spending yet, so I can't size it. `,
       adviceNoIncomeLink: 'Share your income and bills',
       adviceNoIncomeAfter: ' and I will calculate it.',
       adviceAllReserve: (alvo, gasto, v, missing) =>
         `All to your emergency fund. Your target is ${alvo} (6 months of ${gasto}). With ${v}, you are still ${missing} short.`,
       adviceSplitReserve: (praReserva, sobra) =>
         `${praReserva} finishes your emergency fund and the remaining ${sobra} can go to Step 3 for 1–5 year goals.`,
-      adviceReserveReady: (v) => `Emergency fund complete! ${v} can go to Step 3 (dated goals) or Step 4 for the long run.`,
+      adviceReserveReady: (v) =>
+        `Emergency fund complete! ${v} can go to Step 3 (dated goals) or Step 4 for the long run.`,
       stepByStepAria: 'Step-by-step guide',
       noDebtSkip: 'No expensive debt. You can skip Step 1.',
       youAreHere: 'You are here',
@@ -1043,35 +1111,58 @@ export const en: Dictionary = {
         {
           id: 'divida',
           title: 'Clear expensive debt',
-          summary: 'Credit card revolving and overdraft charge 8% to 15% per month. No investment beats that — paying it off is your best return.',
-          where: ['Pay or negotiate the highest-rate debt first', 'Swap for cheaper debt (payroll loan, debt portability)'],
+          summary:
+            'Credit card revolving and overdraft charge 8% to 15% per month. No investment beats that — paying it off is your best return.',
+          where: [
+            'Pay or negotiate the highest-rate debt first',
+            'Swap for cheaper debt (payroll loan, debt portability)',
+          ],
           lessonLabel: 'Lesson: which debt to pay first',
         },
         {
           id: 'reserva',
           title: 'Emergency fund',
-          summary: '3 to 6 months of expenses in a safe place with same-day liquidity. Here safety matters more than chasing yield.',
-          where: ['Tesouro Selic (government bond, business-day D+0 liquidity)', 'Daily-liquidity CDB paying 100%+ CDI with FGC coverage', 'Bank savings pot earning 100% CDI'],
+          summary:
+            '3 to 6 months of expenses in a safe place with same-day liquidity. Here safety matters more than chasing yield.',
+          where: [
+            'Tesouro Selic (government bond, business-day D+0 liquidity)',
+            'Daily-liquidity CDB paying 100%+ CDI with FGC coverage',
+            'Bank savings pot earning 100% CDI',
+          ],
           lessonLabel: 'Lesson: where to park without locking up',
         },
         {
           id: 'objetivos',
           title: 'Dated goals (1 to 5 years)',
-          summary: 'Trip, tuition, car, home down payment. Since you know when you need it, you can lock the maturity date for better yield.',
-          where: ['CDB, LCI, or LCA maturing near your target date (LCI/LCA are tax-free)', 'Tesouro Prefixado or IPCA+ maturing near your date'],
+          summary:
+            'Trip, tuition, car, home down payment. Since you know when you need it, you can lock the maturity date for better yield.',
+          where: [
+            'CDB, LCI, or LCA maturing near your target date (LCI/LCA are tax-free)',
+            'Tesouro Prefixado or IPCA+ maturing near your date',
+          ],
           lessonLabel: 'Lesson: lending to the bank (CDB)',
         },
         {
           id: 'longo',
           title: 'Long term (5+ years)',
-          summary: 'Retirement and financial independence. Time smooths out ups and downs as long as you learn the basics first.',
-          where: ['Tesouro IPCA+ (protects against inflation)', 'After Module 8: broad-market ETFs, steadily every month', 'Betting, trading bots, pyramids, and guru tips never belong here'],
+          summary:
+            'Retirement and financial independence. Time smooths out ups and downs as long as you learn the basics first.',
+          where: [
+            'Tesouro IPCA+ (protects against inflation)',
+            'After Module 8: broad-market ETFs, steadily every month',
+            'Betting, trading bots, pyramids, and guru tips never belong here',
+          ],
           lessonLabel: 'Lesson: ETFs, owning the whole market',
         },
       ],
       howMuchBecomes: (amount) => `What does ${amount} become?`,
       netAfterTaxNote: 'Net after income tax. Bar shows profit earned. Based on today’s rates, which change over time.',
-      terms: [[6, '6 months'], [12, '1 year'], [24, '2 years'], [60, '5 years']],
+      terms: [
+        [6, '6 months'],
+        [12, '1 year'],
+        [24, '2 years'],
+        [60, '5 years'],
+      ],
       optionIdle: 'Sitting in checking',
       optionIdleNote: 'earns nothing',
       optionPoupanca: 'Poupança (savings)',
@@ -1085,7 +1176,8 @@ export const en: Dictionary = {
         `Just to keep up with inflation (${ipca} over the last 12 months), ${v} must grow to at least ${minTotal}. Sitting idle costs you about ${lost} in purchasing power.`,
       bcbSource: (date) => `Central Bank rates, updated ${date}.`,
       fallbackSource: (date) => `Could not reach the Central Bank right now: using reference rates from ${date}.`,
-      disclaimer: 'Tostão does not sell investments or earn commissions. This is financial education, not advice: double-check rates, terms, and coverage before investing.',
+      disclaimer:
+        'Tostão does not sell investments or earn commissions. This is financial education, not advice: double-check rates, terms, and coverage before investing.',
       dailyBase: {
         eyebrow: 'Where your daily average comes from',
         tightBefore: (overCount, totalCount) =>
@@ -1123,7 +1215,8 @@ export const en: Dictionary = {
         allSettled: 'All settled up',
         waSendSummary: 'Send summary on WhatsApp',
         waNotify: 'Send message on WhatsApp',
-        waOwedText: (name, lines, total) => `Hey ${name}! Here is the breakdown of what is on my tab:\n${lines}\nTotal: ${total}. Send it whenever you can! 🙏`,
+        waOwedText: (name, lines, total) =>
+          `Hey ${name}! Here is the breakdown of what is on my tab:\n${lines}\nTotal: ${total}. Send it whenever you can! 🙏`,
         waOweText: (name, total) => `Hey ${name}! Just noted here that I owe you ${total}. I will settle up soon.`,
         historyTitle: 'History',
         notedTag: 'Manual',
@@ -1159,7 +1252,8 @@ export const en: Dictionary = {
       missionsUnit: 'missions',
       aloneNote: 'Just you for now. Invite someone to start competing.',
       yourCode: 'Your code',
-      privacyNote: 'Friends only see your first name, streak, and completed missions. Balances, spending, and banks stay private.',
+      privacyNote:
+        'Friends only see your first name, streak, and completed missions. Balances, spending, and banks stay private.',
       client: {
         shareText: (url) => `Want to see who manages money better this week? Join Tostão with my link: ${url}`,
         copied: 'Link copied!',
@@ -1180,7 +1274,8 @@ export const en: Dictionary = {
     },
     whatsapp: {
       title: 'Tostão on WhatsApp',
-      intro: 'Ask via WhatsApp just like in the app: “how much did I spend on delivery?”, “can I afford new sneakers?”.',
+      intro:
+        'Ask via WhatsApp just like in the app: “how much did I spend on delivery?”, “can I afford new sneakers?”.',
       notReady: 'Still setting up the number. Once it is ready, the connect button will appear here.',
       linkedTo: (phone) => `Linked to ${phone}.`,
       openChat: 'Open chat',
@@ -1208,7 +1303,8 @@ export const en: Dictionary = {
         'Accounts, transactions, categories, budgets, goal, income, chats, and lesson progress.',
         'Server backups automatically purge everything within 14 days.',
       ],
-      disconnectHintBefore: 'Just want to stop syncing one bank? Disconnect it in More without deleting your account. Details in the ',
+      disconnectHintBefore:
+        'Just want to stop syncing one bank? Disconnect it in More without deleting your account. Details in the ',
       privacyLink: 'Privacy policy',
       form: {
         passwordLabel: 'Your password',
@@ -1220,7 +1316,8 @@ export const en: Dictionary = {
     personalizar: {
       subtitle: 'Choose what shows up and in what order. Your balance always stays on top.',
       dismissedTitle: 'Alerts you dismissed',
-      dismissedBody: 'They stay hidden until something new happens — a new uncategorized expense, upcoming bill, or exceeded budget.',
+      dismissedBody:
+        'They stay hidden until something new happens — a new uncategorized expense, upcoming bill, or exceeded budget.',
       resetDefault: 'Reset to default',
       moveUpAria: (name) => `Move ${name} up`,
       moveDownAria: (name) => `Move ${name} down`,
@@ -1238,19 +1335,26 @@ export const en: Dictionary = {
       },
     },
     chatExtra: {
-      statusWithPlan: (dayText, timeText) => `Knows your salary, fixed bills, and spending through ${dayText}, ${timeText}`,
+      statusWithPlan: (dayText, timeText) =>
+        `Knows your salary, fixed bills, and spending through ${dayText}, ${timeText}`,
       statusWithoutPlan: (dayText, timeText) => `Knows your spending through ${dayText}, ${timeText}`,
       statusEmpty: 'Ask anything about your money.',
       whatsappConnected: 'WhatsApp connected',
       whatsappLinkHint: 'Connect your number to chat & get alerts',
       whatsappSoon: 'Coming soon to your phone',
       configTostaoTitle: 'Configure what Tostão tracks',
-      suggestions: ['Where did my money go?', 'Can I order delivery today?', 'How much do I pay in subscriptions?', 'Where can I cut back?'],
+      suggestions: [
+        'Where did my money go?',
+        'Can I order delivery today?',
+        'How much do I pay in subscriptions?',
+        'Where can I cut back?',
+      ],
       thinkingAria: 'Tostão is thinking',
       thinkingText: 'Sniffing through your numbers…',
       askIncomeBanner: 'Tell me your income and fixed bills so I can give real answers to “can I afford it?”.',
       askIncomeCta: 'Set up',
-      emptyGreeting: (firstName) => `Hey, ${firstName}! I check your spending, subscriptions, and budgets before answering. What’s on your mind?`,
+      emptyGreeting: (firstName) =>
+        `Hey, ${firstName}! I check your spending, subscriptions, and budgets before answering. What’s on your mind?`,
       inputPlaceholder: 'Ask Tostão',
       inputAria: 'Ask Tostão',
       sendAria: 'Send',
@@ -1259,7 +1363,8 @@ export const en: Dictionary = {
       trailTitle: 'Your trail',
       trailHeroTitle: 'At the end of the trail, villains run away',
       trailHeroBody: 'Module 9 teaches you to unmask the Pix Vulture and Tigrinho for good.',
-      modulesSummary: (modulesCount, doneCount, totalCount) => `${modulesCount} modules · ${doneCount} of ${totalCount} lessons done`,
+      modulesSummary: (modulesCount, doneCount, totalCount) =>
+        `${modulesCount} modules · ${doneCount} of ${totalCount} lessons done`,
       legendInProgress: 'In progress',
       legendOptional: 'Optional (if relevant)',
       inProgressCount: (done, total) => `In progress · ${done} of ${total}`,

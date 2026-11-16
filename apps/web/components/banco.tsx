@@ -17,7 +17,14 @@ export async function getBankLogos(): Promise<BankLogo[]> {
   }
 }
 
-const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+const norm = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 const temPalavra = (texto: string, termo: string) => ` ${texto} `.includes(` ${termo} `);
 const GENERICAS = new Set(['banco', 'conta', 'cartao', 'credito', 'bank', 'pay', 'digital']);
 
@@ -29,12 +36,18 @@ export function findBankLogo(logos: BankLogo[], ...nomes: (string | null | undef
   let tam = 0;
   for (const l of logos) {
     const n = norm(l.name);
-    if (n.length > tam && temPalavra(texto, n)) { melhor = l; tam = n.length; }
+    if (n.length > tam && temPalavra(texto, n)) {
+      melhor = l;
+      tam = n.length;
+    }
   }
   if (melhor) return melhor;
   const porPalavra = logos
     .map((l) => ({ l, palavras: norm(l.name).split(' ') }))
-    .filter(({ palavras }) => palavras[0] && palavras[0].length >= 4 && !GENERICAS.has(palavras[0]) && temPalavra(texto, palavras[0]))
+    .filter(
+      ({ palavras }) =>
+        palavras[0] && palavras[0].length >= 4 && !GENERICAS.has(palavras[0]) && temPalavra(texto, palavras[0]),
+    )
     .sort((a, b) => a.palavras.length - b.palavras.length);
   return porPalavra[0]?.l ?? null;
 }
@@ -70,41 +83,91 @@ export function getBankVisual(...nomes: (string | null | undefined)[]): Visual &
   for (const [re, v] of BANCOS) if (re.test(texto)) return { ...v, conhecido: true };
   const base = (nomes.find(Boolean) ?? '?').trim();
   const cor = RESERVA[[...base].reduce((s, c) => s + c.charCodeAt(0), 0) % RESERVA.length];
-  return { sigla: base.charAt(0).toUpperCase() || '?', bg: cor, fg: cor === 'var(--color-amarelo)' || cor === 'var(--color-menta)' ? 'var(--color-tinta-fixa)' : '#FFFFFF', conhecido: false };
+  return {
+    sigla: base.charAt(0).toUpperCase() || '?',
+    bg: cor,
+    fg: cor === 'var(--color-amarelo)' || cor === 'var(--color-menta)' ? 'var(--color-tinta-fixa)' : '#FFFFFF',
+    conhecido: false,
+  };
 }
 
-export function BankBadge({ nome, instituicao, size = 20, quadrado = false, logos = [] }: { nome: string; instituicao?: string | null; size?: number; quadrado?: boolean; logos?: BankLogo[] }) {
+export function BankBadge({
+  nome,
+  instituicao,
+  size = 20,
+  quadrado = false,
+  logos = [],
+}: {
+  nome: string;
+  instituicao?: string | null;
+  size?: number;
+  quadrado?: boolean;
+  logos?: BankLogo[];
+}) {
   const logo = findBankLogo(logos, nome, instituicao);
   if (logo) {
     return (
-      <img src={logo.imageUrl} alt="" aria-hidden="true" width={size} height={size} loading="lazy"
+      <img
+        src={logo.imageUrl}
+        alt=""
+        aria-hidden="true"
+        width={size}
+        height={size}
+        loading="lazy"
         className={`shrink-0 bg-white object-cover ring-1 ring-black/5 dark:ring-white/10 ${quadrado ? 'rounded-[30%]' : 'rounded-full'}`}
-        style={{ width: size, height: size }} />
+        style={{ width: size, height: size }}
+      />
     );
   }
   const v = getBankVisual(instituicao, nome);
   const fonte = Math.round(size * (v.sigla.length >= 3 ? 0.34 : v.sigla.length === 2 ? 0.42 : 0.52));
   return (
-    <span aria-hidden="true" className={`inline-flex shrink-0 items-center justify-center font-display leading-none font-extrabold ring-1 ring-black/5 dark:ring-white/10 ${quadrado ? 'rounded-[30%]' : 'rounded-full'}`}
-      style={{ width: size, height: size, background: v.bg, color: v.fg, fontSize: fonte, letterSpacing: '-0.02em' }}>
+    <span
+      aria-hidden="true"
+      className={`inline-flex shrink-0 items-center justify-center font-display leading-none font-extrabold ring-1 ring-black/5 dark:ring-white/10 ${quadrado ? 'rounded-[30%]' : 'rounded-full'}`}
+      style={{ width: size, height: size, background: v.bg, color: v.fg, fontSize: fonte, letterSpacing: '-0.02em' }}
+    >
       {v.sigla}
     </span>
   );
 }
 
 const BANDEIRAS: Record<string, string> = {
-  VISA: 'Visa', MASTERCARD: 'Master', MASTER: 'Master', ELO: 'Elo', AMEX: 'Amex', 'AMERICAN EXPRESS': 'Amex', HIPERCARD: 'Hiper', HIPER: 'Hiper', DINERS: 'Diners',
+  VISA: 'Visa',
+  MASTERCARD: 'Master',
+  MASTER: 'Master',
+  ELO: 'Elo',
+  AMEX: 'Amex',
+  'AMERICAN EXPRESS': 'Amex',
+  HIPERCARD: 'Hiper',
+  HIPER: 'Hiper',
+  DINERS: 'Diners',
 };
 
-export const getCardNetworkName = (brand: string | null | undefined) => (brand ? BANDEIRAS[brand.toUpperCase()] ?? brand.charAt(0) + brand.slice(1).toLowerCase() : null);
+export const getCardNetworkName = (brand: string | null | undefined) =>
+  brand ? (BANDEIRAS[brand.toUpperCase()] ?? brand.charAt(0) + brand.slice(1).toLowerCase()) : null;
 
 /** "Visa •• 2784": bandeira em etiqueta + final do cartão. */
-export function CardNetworkBadge({ brand, last4, className = '' }: { brand?: string | null; last4?: string | null; className?: string }) {
+export function CardNetworkBadge({
+  brand,
+  last4,
+  className = '',
+}: {
+  brand?: string | null;
+  last4?: string | null;
+  className?: string;
+}) {
   const nome = getCardNetworkName(brand);
   if (!nome && !last4) return null;
   return (
-    <span className={`inline-flex items-center gap-1 whitespace-nowrap text-[11px] font-semibold text-tinta-suave ${className}`}>
-      {nome && <span className="rounded-[5px] border border-linha bg-cartao px-1.5 py-px text-[10px] font-extrabold tracking-[0.04em] text-tinta uppercase">{nome}</span>}
+    <span
+      className={`inline-flex items-center gap-1 whitespace-nowrap text-[11px] font-semibold text-tinta-suave ${className}`}
+    >
+      {nome && (
+        <span className="rounded-[5px] border border-linha bg-cartao px-1.5 py-px text-[10px] font-extrabold tracking-[0.04em] text-tinta uppercase">
+          {nome}
+        </span>
+      )}
       {last4 && <span className="tabular-nums">•• {last4}</span>}
     </span>
   );

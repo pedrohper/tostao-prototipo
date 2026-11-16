@@ -9,7 +9,10 @@ export function money(cents: number) {
 
 /** "R$ 1.234,56" | "1234,56" | "12" -> cents. Returns null if unparseable. */
 export function parseMoney(text: string): number | null {
-  const clean = text.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.');
+  const clean = text
+    .replace(/[^\d,.-]/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.');
   const n = Number(clean);
   return Number.isFinite(n) && clean !== '' ? Math.round(n * 100) : null;
 }

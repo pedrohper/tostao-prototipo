@@ -26,7 +26,10 @@ Regras:
  * Não cria regra: se a IA errar, a pessoa corrige e aí sim vira regra.
  */
 export class AutoCategorizeUseCase {
-  constructor(private readonly repos: Pick<Repositories, 'transactions' | 'categories'>, private readonly ai: AiGateway) {}
+  constructor(
+    private readonly repos: Pick<Repositories, 'transactions' | 'categories'>,
+    private readonly ai: AiGateway,
+  ) {}
 
   private readonly running = new Set<string>();
 
@@ -41,8 +44,13 @@ export class AutoCategorizeUseCase {
   }
 
   private async run(userId: string) {
-    const [pending, categories] = await Promise.all([this.repos.transactions.findUncategorized(userId), this.repos.categories.list(userId)]);
-    const usable = categories.filter((c) => canUseCategory(c, userId) && c.id !== NEUTRAL_CATEGORY_ID && c.kind !== 'neutra');
+    const [pending, categories] = await Promise.all([
+      this.repos.transactions.findUncategorized(userId),
+      this.repos.categories.list(userId),
+    ]);
+    const usable = categories.filter(
+      (c) => canUseCategory(c, userId) && c.id !== NEUTRAL_CATEGORY_ID && c.kind !== 'neutra',
+    );
     const byId = new Map(usable.map((c) => [c.id, c]));
     const todo = pending
       .filter((t) => !t.isInternalTransfer && t.amountInCents !== 0)
@@ -59,13 +67,24 @@ export class AutoCategorizeUseCase {
     let categorized = 0;
     for (let i = 0; i < items.length; i += BATCH) {
       const batch = items.slice(i, i + BATCH);
-      const list = batch.map((g, k) => `${k}|${g[0]!.description.replace(/\s+/g, ' ').slice(0, 90)}|${(g[0]!.amountInCents / 100).toFixed(2)}`).join('\n');
+      const list = batch
+        .map(
+          (g, k) =>
+            `${k}|${g[0]!.description.replace(/\s+/g, ' ').slice(0, 90)}|${(g[0]!.amountInCents / 100).toFixed(2)}`,
+        )
+        .join('\n');
       let answer: Record<string, unknown>;
       try {
-        const raw = await this.ai.reply([
-          { role: 'system', content: SYSTEM },
-          { role: 'user', content: `CATEGORIAS (id|nome|tipo):\n${cats}\n\nTRANSAÇÕES (id|descrição|valor):\n${list}` },
-        ], { temperature: 0, maxTokens: 1500, json: true });
+        const raw = await this.ai.reply(
+          [
+            { role: 'system', content: SYSTEM },
+            {
+              role: 'user',
+              content: `CATEGORIAS (id|nome|tipo):\n${cats}\n\nTRANSAÇÕES (id|descrição|valor):\n${list}`,
+            },
+          ],
+          { temperature: 0, maxTokens: 1500, json: true },
+        );
         const parsed = JSON.parse(raw.replace(/^```(?:json)?|```$/g, '').trim()) as { t?: Record<string, unknown> };
         answer = parsed.t ?? {};
       } catch {

@@ -6,7 +6,12 @@ import { getToken } from './session';
 const API_URL = process.env.API_URL ?? 'http://localhost:3333';
 
 export class ApiError extends Error {
-  constructor(message: string, public status: number) { super(message); }
+  constructor(
+    message: string,
+    public status: number,
+  ) {
+    super(message);
+  }
 }
 
 export async function api<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {

@@ -1129,7 +1129,19 @@ export interface Dictionary {
       resetDefault: string;
       moveUpAria: (name: string) => string;
       moveDownAria: (name: string) => string;
-      sections: Record<'sobra' | 'missoes' | 'vence' | 'avisos' | 'pra-onde-foi' | 'semana' | 'meta' | 'acertos' | 'cartoes' | 'limites', { name: string; hint: string }>;
+      sections: Record<
+        | 'sobra'
+        | 'missoes'
+        | 'vence'
+        | 'avisos'
+        | 'pra-onde-foi'
+        | 'semana'
+        | 'meta'
+        | 'acertos'
+        | 'cartoes'
+        | 'limites',
+        { name: string; hint: string }
+      >;
     };
     chatExtra: {
       statusWithPlan: (dayText: string, timeText: string) => string;

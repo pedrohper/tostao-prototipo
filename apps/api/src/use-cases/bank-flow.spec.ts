@@ -46,7 +46,12 @@ describe('fluxo do banco (conectar → sincronizar → resumo → categorizar)',
     await connect.execute({ userId: 'u1', itemId: 'item-123456' });
     const pending = await repos.transactions.findUncategorized('u1');
     const restaurante = pending.find((t) => t.description.includes('RESTAURANTESABOR'))!;
-    await new CategorizeTransactionUseCase(repos).execute({ userId: 'u1', transactionId: restaurante.id, categoryId: 'delivery', remember: true });
+    await new CategorizeTransactionUseCase(repos).execute({
+      userId: 'u1',
+      transactionId: restaurante.id,
+      categoryId: 'delivery',
+      remember: true,
+    });
 
     const summary = await new GetMonthSummaryUseCase(repos).execute({ userId: 'u1', month: MONTH });
     expect(summary.uncategorizedCount).toBe(0);
@@ -58,16 +63,32 @@ describe('fluxo do banco (conectar → sincronizar → resumo → categorizar)',
     await connect.execute({ userId: 'u1', itemId: 'item-123456' });
     const tx = repos.transactions.items[0]!;
     await expect(
-      new CategorizeTransactionUseCase(repos).execute({ userId: 'intruso', transactionId: tx.id, categoryId: 'delivery', remember: false }),
+      new CategorizeTransactionUseCase(repos).execute({
+        userId: 'intruso',
+        transactionId: tx.id,
+        categoryId: 'delivery',
+        remember: false,
+      }),
     ).rejects.toBeInstanceOf(ResourceNotFoundError);
   });
 
   it('desconectar apaga contas e transações do banco, mas mantém o que foi anotado na mão', async () => {
     const { connection } = await connect.execute({ userId: 'u1', itemId: 'item-123456' });
-    await repos.transactions.create({ userId: 'u1', accountId: null, externalId: null, description: 'PASTEL', amountInCents: -800, occurredAt: NOW, categoryId: null, isInternalTransfer: false });
+    await repos.transactions.create({
+      userId: 'u1',
+      accountId: null,
+      externalId: null,
+      description: 'PASTEL',
+      amountInCents: -800,
+      occurredAt: NOW,
+      categoryId: null,
+      isInternalTransfer: false,
+    });
     const disconnect = new DisconnectBankUseCase(repos.connections, new FakeBankGateway(() => NOW));
 
-    await expect(disconnect.execute({ userId: 'intruso', connectionId: connection.id })).rejects.toBeInstanceOf(ResourceNotFoundError);
+    await expect(disconnect.execute({ userId: 'intruso', connectionId: connection.id })).rejects.toBeInstanceOf(
+      ResourceNotFoundError,
+    );
 
     expect(await disconnect.execute({ userId: 'u1', connectionId: connection.id })).toEqual({ providerDeleted: true });
     expect(repos.connections.items).toHaveLength(0);
@@ -77,8 +98,14 @@ describe('fluxo do banco (conectar → sincronizar → resumo → categorizar)',
 
   it('desconectar apaga aqui mesmo se o provedor falhar', async () => {
     const { connection } = await connect.execute({ userId: 'u1', itemId: 'item-123456' });
-    const broken = Object.assign(new FakeBankGateway(() => NOW), { deleteItem: async () => { throw new Error('fora do ar'); } });
-    expect(await new DisconnectBankUseCase(repos.connections, broken).execute({ userId: 'u1', connectionId: connection.id })).toEqual({ providerDeleted: false });
+    const broken = Object.assign(new FakeBankGateway(() => NOW), {
+      deleteItem: async () => {
+        throw new Error('fora do ar');
+      },
+    });
+    expect(
+      await new DisconnectBankUseCase(repos.connections, broken).execute({ userId: 'u1', connectionId: connection.id }),
+    ).toEqual({ providerDeleted: false });
     expect(repos.connections.items).toHaveLength(0);
   });
 
@@ -87,7 +114,12 @@ describe('fluxo do banco (conectar → sincronizar → resumo → categorizar)',
     const before = await new GetMonthSummaryUseCase(repos).execute({ userId: 'u1', month: MONTH });
     const salario = repos.transactions.items.find((t) => t.amountInCents > 0 && !t.isInternalTransfer)!;
 
-    await new CategorizeTransactionUseCase(repos).execute({ userId: 'u1', transactionId: salario.id, categoryId: 'nao-conta', remember: true });
+    await new CategorizeTransactionUseCase(repos).execute({
+      userId: 'u1',
+      transactionId: salario.id,
+      categoryId: 'nao-conta',
+      remember: true,
+    });
     const after = await new GetMonthSummaryUseCase(repos).execute({ userId: 'u1', month: MONTH });
     expect(after.incomeInCents).toBe(before.incomeInCents - salario.amountInCents);
     expect(repos.transactions.items.find((t) => t.id === salario.id)!.isInternalTransfer).toBe(true);
@@ -97,24 +129,46 @@ describe('fluxo do banco (conectar → sincronizar → resumo → categorizar)',
     expect(repos.transactions.items.find((t) => t.id === salario.id)!.isInternalTransfer).toBe(true);
 
     // mudou de ideia: volta a contar
-    await new CategorizeTransactionUseCase(repos).execute({ userId: 'u1', transactionId: salario.id, categoryId: 'salario', remember: false });
+    await new CategorizeTransactionUseCase(repos).execute({
+      userId: 'u1',
+      transactionId: salario.id,
+      categoryId: 'salario',
+      remember: false,
+    });
     const back = await new GetMonthSummaryUseCase(repos).execute({ userId: 'u1', month: MONTH });
     expect(back.incomeInCents).toBe(before.incomeInCents);
   });
 
   it('categoria própria: só o dono vê, usa e apaga; apagar devolve as transações pra pendente', async () => {
     await connect.execute({ userId: 'u1', itemId: 'item-123456' });
-    const { category } = await new CreateCategoryUseCase(repos).execute({ userId: 'u1', name: 'Freela', emoji: '💻', kind: 'saida' });
-    await expect(new CreateCategoryUseCase(repos).execute({ userId: 'u1', name: 'freela', emoji: '', kind: 'saida' })).rejects.toThrow('Já tem');
+    const { category } = await new CreateCategoryUseCase(repos).execute({
+      userId: 'u1',
+      name: 'Freela',
+      emoji: '💻',
+      kind: 'saida',
+    });
+    await expect(
+      new CreateCategoryUseCase(repos).execute({ userId: 'u1', name: 'freela', emoji: '', kind: 'saida' }),
+    ).rejects.toThrow('Já tem');
 
     expect((await repos.categories.list('u1')).some((c) => c.id === category.id)).toBe(true);
     expect((await repos.categories.list('u2')).some((c) => c.id === category.id)).toBe(false);
 
     const gasto = repos.transactions.items.find((t) => t.amountInCents < 0 && !t.isInternalTransfer)!;
     await expect(
-      new CategorizeTransactionUseCase(repos).execute({ userId: 'u2', transactionId: gasto.id, categoryId: category.id, remember: false }),
+      new CategorizeTransactionUseCase(repos).execute({
+        userId: 'u2',
+        transactionId: gasto.id,
+        categoryId: category.id,
+        remember: false,
+      }),
     ).rejects.toBeInstanceOf(ResourceNotFoundError);
-    await new CategorizeTransactionUseCase(repos).execute({ userId: 'u1', transactionId: gasto.id, categoryId: category.id, remember: true });
+    await new CategorizeTransactionUseCase(repos).execute({
+      userId: 'u1',
+      transactionId: gasto.id,
+      categoryId: category.id,
+      remember: true,
+    });
 
     const del = new DeleteCategoryUseCase(repos);
     await expect(del.execute({ userId: 'u2', categoryId: category.id })).rejects.toBeInstanceOf(ResourceNotFoundError);
@@ -130,7 +184,9 @@ describe('fluxo do banco (conectar → sincronizar → resumo → categorizar)',
     const before = await new GetMonthSummaryUseCase(repos).execute({ userId: 'u1', month: MONTH });
     const conta = repos.accounts.items[0]!;
 
-    await expect(uc.setAccountHidden.execute({ userId: 'intruso', accountId: conta.id, hidden: true })).rejects.toBeInstanceOf(ResourceNotFoundError);
+    await expect(
+      uc.setAccountHidden.execute({ userId: 'intruso', accountId: conta.id, hidden: true }),
+    ).rejects.toBeInstanceOf(ResourceNotFoundError);
     await uc.setAccountHidden.execute({ userId: 'u1', accountId: conta.id, hidden: true });
     await sync.execute({ connectionId: connection.id });
 
@@ -143,9 +199,19 @@ describe('fluxo do banco (conectar → sincronizar → resumo → categorizar)',
   describe('mesmo cartão em duas conexões (Bradesco e Bradescard)', () => {
     // Cada conexão devolve o mesmo cartão Elo final 8335, com id diferente no provedor
     class CardGateway extends FakeBankGateway {
-      constructor(private readonly withFingerprint: boolean) { super(() => NOW); }
+      constructor(private readonly withFingerprint: boolean) {
+        super(() => NOW);
+      }
       override async fetchAccounts(itemId: string) {
-        return [{ externalId: `${itemId}:bradesco`, name: 'ELO MAIS', type: 'CREDIT' as const, balanceInCents: -17282, fingerprint: this.withFingerprint ? 'CREDIT:ELO:8335' : null }];
+        return [
+          {
+            externalId: `${itemId}:bradesco`,
+            name: 'ELO MAIS',
+            type: 'CREDIT' as const,
+            balanceInCents: -17282,
+            fingerprint: this.withFingerprint ? 'CREDIT:ELO:8335' : null,
+          },
+        ];
       }
     }
     const setup = (gateway: FakeBankGateway) => {

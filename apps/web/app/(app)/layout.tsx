@@ -20,9 +20,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="md:flex md:min-h-dvh">
-      <Nav locale={locale} pendingCount={pendingCount} footer={<SidebarFooter xp={xp} level={level} streakDays={progress.streakDays} locale={locale} />} />
+      <Nav
+        locale={locale}
+        pendingCount={pendingCount}
+        footer={<SidebarFooter xp={xp} level={level} streakDays={progress.streakDays} locale={locale} />}
+      />
       <TapSoundListener />
-      <main className="mx-auto w-full max-w-[640px] min-w-0 px-5 pt-6 pb-28 md:max-w-none md:flex-1 md:px-8 md:pt-8 md:pb-12">{children}</main>
+      <main className="mx-auto w-full max-w-[640px] min-w-0 px-5 pt-6 pb-28 md:max-w-none md:flex-1 md:px-8 md:pt-8 md:pb-12">
+        {children}
+      </main>
     </div>
   );
 }

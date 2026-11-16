@@ -25,7 +25,19 @@ import { MissionCompletionToast } from '@/components/sons';
 import { TostaoFindingsBoard } from '@/components/tostao-auto-card';
 import { ButtonLink, Card, StreakChip } from '@/components/ui';
 import { api } from '@/lib/api';
-import { ago, currentDayOfMonth, currentMonth, fullDateLabel, money, monthName, nowMs, shiftMonth, shortDate, todayIso, updatedTimeLabel } from '@/lib/format';
+import {
+  ago,
+  currentDayOfMonth,
+  currentMonth,
+  fullDateLabel,
+  money,
+  monthName,
+  nowMs,
+  shiftMonth,
+  shortDate,
+  todayIso,
+  updatedTimeLabel,
+} from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
 import { restoreDismissedAlerts } from '@/lib/inicio-actions';
 import { readHomePrefs, resolveSectionOrder, type HomeSectionId } from '@/lib/inicio-prefs';
@@ -45,22 +57,35 @@ export default async function HomePage() {
   const isSectionVisible = (id: HomeSectionId) => !prefs.ocultos.includes(id);
   const isAlertOpen = (key: string) => !prefs.fechados.includes(key);
 
-  const [profile, summary, subscriptions, budgetsData, progress, forecast, missions, remindersData, weekly, bankLogos, splits, auto, friends] =
-    await Promise.all([
-      api<ProfileResponse>('/me'),
-      api<MonthSummaryResponse>(`/summary?month=${month}`),
-      api<SubscriptionsResponse>('/subscriptions').catch(() => null),
-      api<BudgetsResponse>(`/budgets?month=${month}`).catch(() => ({ budgets: [] })),
-      api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
-      api<ForecastResponse>('/forecast').catch(() => null),
-      api<MissionsResponse>('/missions').catch(() => null),
-      api<RemindersResponse>('/reminders').catch(() => ({ reminders: [] })),
-      api<WeeklyResponse>('/weekly').catch(() => null),
-      getBankLogos(),
-      api<PeopleResponse>('/people').catch(() => null),
-      api<TostaoAutoResponse>('/tostao/auto').catch(() => null),
-      api<FriendsResponse>('/friends').catch(() => null),
-    ]);
+  const [
+    profile,
+    summary,
+    subscriptions,
+    budgetsData,
+    progress,
+    forecast,
+    missions,
+    remindersData,
+    weekly,
+    bankLogos,
+    splits,
+    auto,
+    friends,
+  ] = await Promise.all([
+    api<ProfileResponse>('/me'),
+    api<MonthSummaryResponse>(`/summary?month=${month}`),
+    api<SubscriptionsResponse>('/subscriptions').catch(() => null),
+    api<BudgetsResponse>(`/budgets?month=${month}`).catch(() => ({ budgets: [] })),
+    api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
+    api<ForecastResponse>('/forecast').catch(() => null),
+    api<MissionsResponse>('/missions').catch(() => null),
+    api<RemindersResponse>('/reminders').catch(() => ({ reminders: [] })),
+    api<WeeklyResponse>('/weekly').catch(() => null),
+    getBankLogos(),
+    api<PeopleResponse>('/people').catch(() => null),
+    api<TostaoAutoResponse>('/tostao/auto').catch(() => null),
+    api<FriendsResponse>('/friends').catch(() => null),
+  ]);
 
   const overBudgetCategory = budgetsData.budgets.find((b) => b.spentInCents > b.limitInCents);
   const activeSubscriptionCount = subscriptions?.subscriptions.filter((sub) => sub.active).length ?? 0;
@@ -82,7 +107,8 @@ export default async function HomePage() {
     .at(-1);
   const isEmptyState = summary.balanceInCents === null && summary.outcomeInCents === 0 && summary.incomeInCents === 0;
   const isMonthInGreen = summary.incomeInCents >= summary.outcomeInCents;
-  const outcomePct = summary.incomeInCents > 0 ? Math.round((summary.outcomeInCents / summary.incomeInCents) * 100) : null;
+  const outcomePct =
+    summary.incomeInCents > 0 ? Math.round((summary.outcomeInCents / summary.incomeInCents) * 100) : null;
 
   const atualIdx = modules.findIndex((m) => m.lessons.some((l) => !progress.done.includes(l.id)));
   const atual = atualIdx >= 0 ? modules[atualIdx] : null;
@@ -94,10 +120,14 @@ export default async function HomePage() {
   const uncategorizedAlertCard =
     summary.uncategorizedCount > 0 && isAlertOpen(`pendentes:${month}:${summary.uncategorizedCount}`) ? (
       <DismissibleCard id={`pendentes:${month}:${summary.uncategorizedCount}`} label={t.home.dismissAlertLabel}>
-        <Link href="/carteira?filtro=pendentes" className="flex items-center gap-2 rounded-2xl bg-azul py-3 pr-10 pl-2 text-tinta no-underline">
+        <Link
+          href="/carteira?filtro=pendentes"
+          className="flex items-center gap-2 rounded-2xl bg-azul py-3 pr-10 pl-2 text-tinta no-underline"
+        >
           <Mascot pose="caramelo-farejando" size={72} alt="Caramelo" />
           <p className="text-[15px] leading-[21px]">
-            {locale === 'pt-BR' ? 'O Caramelo:' : 'Caramelo:'} <b>{t.home.uncategorizedAlert(summary.uncategorizedCount)}</b>.
+            {locale === 'pt-BR' ? 'O Caramelo:' : 'Caramelo:'}{' '}
+            <b>{t.home.uncategorizedAlert(summary.uncategorizedCount)}</b>.
           </p>
         </Link>
       </DismissibleCard>
@@ -106,7 +136,10 @@ export default async function HomePage() {
   const monthlyClosingAlert =
     shouldShowMonthlyClosing && isAlertOpen(`fechamento:${previousMonth}`) ? (
       <DismissibleCard id={`fechamento:${previousMonth}`} label={t.home.dismissAlertLabel}>
-        <Link href="/fechamento?voltar=/inicio" className="flex items-center gap-2 rounded-2xl bg-menta-clara p-3 pr-10 text-tinta no-underline">
+        <Link
+          href="/fechamento?voltar=/inicio"
+          className="flex items-center gap-2 rounded-2xl bg-menta-clara p-3 pr-10 text-tinta no-underline"
+        >
           <Mascot pose="professor" size={64} alt="Tostão" />
           <p className="text-[15px] leading-[21px]">
             <b>{t.home.monthlyClosingReady(monthName(previousMonth, locale))}</b> {t.home.monthlyClosingSub}
@@ -116,9 +149,17 @@ export default async function HomePage() {
     ) : null;
 
   const subscriptionsAlert =
-    activeSubscriptionCount > 0 && subscriptions && isAlertOpen(`assinaturas:${activeSubscriptionCount}:${subscriptions.monthlyInCents}`) ? (
-      <DismissibleCard id={`assinaturas:${activeSubscriptionCount}:${subscriptions.monthlyInCents}`} label={t.home.dismissAlertLabel}>
-        <Link href="/assinaturas?voltar=/inicio" className="flex items-center gap-2 rounded-2xl bg-amarelo-claro p-3 pr-10 text-tinta no-underline">
+    activeSubscriptionCount > 0 &&
+    subscriptions &&
+    isAlertOpen(`assinaturas:${activeSubscriptionCount}:${subscriptions.monthlyInCents}`) ? (
+      <DismissibleCard
+        id={`assinaturas:${activeSubscriptionCount}:${subscriptions.monthlyInCents}`}
+        label={t.home.dismissAlertLabel}
+      >
+        <Link
+          href="/assinaturas?voltar=/inicio"
+          className="flex items-center gap-2 rounded-2xl bg-amarelo-claro p-3 pr-10 text-tinta no-underline"
+        >
           <Mascot pose="investigando" size={64} alt="Tostão" />
           <p className="text-[15px] leading-[21px]">
             {t.home.activeSubscriptionsAlert(
@@ -140,13 +181,27 @@ export default async function HomePage() {
           (() => {
             const [nextMonthForecast, monthAfterForecast] = forecast.months;
             const chevron = (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-tinta-suave">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="shrink-0 text-tinta-suave"
+              >
                 <path d="M9 18l6-6-6-6" />
               </svg>
             );
             if (!forecast.hasPlan || !nextMonthForecast) {
               return (
-                <Link href="/renda?voltar=/inicio" className="flex items-center gap-2 rounded-2xl bg-amarelo-claro py-3 pr-3.5 pl-1.5 text-tinta no-underline">
+                <Link
+                  href="/renda?voltar=/inicio"
+                  className="flex items-center gap-2 rounded-2xl bg-amarelo-claro py-3 pr-3.5 pl-1.5 text-tinta no-underline"
+                >
                   <Mascot pose="pensando" size={64} alt="Tostão" />
                   <p className="grow text-[15px] leading-[21px]">
                     <b>{t.home.tellIncomePromptTitle}</b> {t.home.tellIncomePromptBody}
@@ -157,9 +212,14 @@ export default async function HomePage() {
             }
             const formatMonth = (m: string) => capitalize(monthName(m, locale));
             return (
-              <Link href="/previsao?voltar=/inicio" className="flex items-center gap-3 rounded-2xl border border-linha bg-cartao p-3.5 text-tinta no-underline">
+              <Link
+                href="/previsao?voltar=/inicio"
+                className="flex items-center gap-3 rounded-2xl border border-linha bg-cartao p-3.5 text-tinta no-underline"
+              >
                 <div className="flex grow flex-col gap-0.5">
-                  <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">{t.home.upcomingMonthsLabel}</span>
+                  <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">
+                    {t.home.upcomingMonthsLabel}
+                  </span>
                   <span className="text-[15px] leading-[21px]">
                     {formatMonth(nextMonthForecast.month)}:{' '}
                     {nextMonthForecast.leftInCents >= 0 ? (
@@ -179,7 +239,9 @@ export default async function HomePage() {
       </>
     ),
     missoes: <>{missions && <DailyMissions data={missions} compact locale={locale} />}</>,
-    vence: <>{<UpcomingReminders reminders={remindersData.reminders.filter((r) => isAlertOpen(r.key))} locale={locale} />}</>,
+    vence: (
+      <>{<UpcomingReminders reminders={remindersData.reminders.filter((r) => isAlertOpen(r.key))} locale={locale} />}</>
+    ),
     avisos: (
       <>
         {uncategorizedAlertCard}
@@ -193,10 +255,16 @@ export default async function HomePage() {
                   <b>{t.home.deliveryAlert(money(deliveryCategory.totalInCents))}</b>.
                 </p>
                 <div className="relative z-[1] flex flex-wrap gap-2">
-                  <Link href="/aprender/m1-l2" className="flex h-9 items-center rounded-full bg-tinta px-4 text-sm font-semibold text-papel no-underline">
+                  <Link
+                    href="/aprender/m1-l2"
+                    className="flex h-9 items-center rounded-full bg-tinta px-4 text-sm font-semibold text-papel no-underline"
+                  >
                     {t.home.viewLessonCta}
                   </Link>
-                  <Link href="/tostao" className="flex h-9 items-center rounded-full border-[1.5px] border-tinta px-4 text-sm font-semibold text-tinta no-underline">
+                  <Link
+                    href="/tostao"
+                    className="flex h-9 items-center rounded-full border-[1.5px] border-tinta px-4 text-sm font-semibold text-tinta no-underline"
+                  >
                     {t.home.askTostao}
                   </Link>
                 </div>
@@ -205,7 +273,10 @@ export default async function HomePage() {
           </DismissibleCard>
         ) : (
           <DismissibleCard id={tipKey} label={t.home.dismissAlertLabel}>
-            <Link href="/tostao" className="flex items-center gap-2 rounded-2xl bg-amarelo-claro py-3.5 pr-10 pl-2 text-tinta no-underline">
+            <Link
+              href="/tostao"
+              className="flex items-center gap-2 rounded-2xl bg-amarelo-claro py-3.5 pr-10 pl-2 text-tinta no-underline"
+            >
               <Mascot pose="pensando" size={84} alt="Tostão" />
               <div className="flex min-w-0 flex-col gap-2.5">
                 <p className="text-[15px] leading-[21px]">
@@ -220,10 +291,19 @@ export default async function HomePage() {
         )}
         {overBudgetCategory && isAlertOpen(`estourou:${overBudgetCategory.categoryId}:${month}`) && (
           <DismissibleCard id={`estourou:${overBudgetCategory.categoryId}:${month}`} label={t.home.dismissAlertLabel}>
-            <Link href="/limites?voltar=/inicio" className="flex items-center gap-2 rounded-2xl bg-rosa p-3 pr-10 text-tinta no-underline">
+            <Link
+              href="/limites?voltar=/inicio"
+              className="flex items-center gap-2 rounded-2xl bg-rosa p-3 pr-10 text-tinta no-underline"
+            >
               <Mascot pose="chocado" size={64} alt="Tostão" />
               <p className="text-[15px] leading-[21px]">
-                <b>{t.home.overBudgetAlert(overBudgetCategory.name, money(overBudgetCategory.spentInCents), money(overBudgetCategory.limitInCents))}</b>
+                <b>
+                  {t.home.overBudgetAlert(
+                    overBudgetCategory.name,
+                    money(overBudgetCategory.spentInCents),
+                    money(overBudgetCategory.limitInCents),
+                  )}
+                </b>
               </p>
             </Link>
           </DismissibleCard>
@@ -241,7 +321,9 @@ export default async function HomePage() {
           </Link>
         </div>
         {lastSyncIso && (
-          <span className="-mt-2 text-xs font-medium text-tinta-suave">{t.home.updatedAgo(ago(lastSyncIso, nowMs(), locale))}</span>
+          <span className="-mt-2 text-xs font-medium text-tinta-suave">
+            {t.home.updatedAgo(ago(lastSyncIso, nowMs(), locale))}
+          </span>
         )}
         {topCategories.length === 0 && (
           <p className="text-sm text-tinta-suave">{t.home.noCategorizedExpenses(currentMonthLabel)}</p>
@@ -283,11 +365,18 @@ export default async function HomePage() {
           (forecast.goal ? (
             (() => {
               const goal = forecast.goal;
-              const pct = goal.amountInCents ? Math.min(100, Math.round((goal.savedInCents / goal.amountInCents) * 100)) : 0;
+              const pct = goal.amountInCents
+                ? Math.min(100, Math.round((goal.savedInCents / goal.amountInCents) * 100))
+                : 0;
               return (
-                <Link href="/meta?voltar=/inicio" className="flex flex-col gap-2 rounded-2xl border border-linha bg-cartao p-3.5 text-tinta no-underline">
+                <Link
+                  href="/meta?voltar=/inicio"
+                  className="flex flex-col gap-2 rounded-2xl border border-linha bg-cartao p-3.5 text-tinta no-underline"
+                >
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">{t.home.goalLabel(goal.label)}</span>
+                    <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">
+                      {t.home.goalLabel(goal.label)}
+                    </span>
                     <span className="text-[13px] font-semibold tabular-nums">{pct}%</span>
                   </div>
                   <div className="h-2.5 overflow-hidden rounded-full bg-papel-2">
@@ -311,8 +400,14 @@ export default async function HomePage() {
               );
             })()
           ) : (
-            <Link href="/meta?voltar=/inicio" className="flex items-center gap-3 rounded-2xl border border-dashed border-linha p-3.5 text-[15px] text-tinta no-underline">
-              <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-menta-clara text-tinta">
+            <Link
+              href="/meta?voltar=/inicio"
+              className="flex items-center gap-3 rounded-2xl border border-dashed border-linha p-3.5 text-[15px] text-tinta no-underline"
+            >
+              <span
+                aria-hidden="true"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-menta-clara text-tinta"
+              >
                 <Icon src="meta/outro" size={26} />
               </span>
               <span className="grow">
@@ -330,12 +425,18 @@ export default async function HomePage() {
             const owedToMe = splits.people.filter((p) => p.balanceInCents > 0);
             const iOwe = splits.people.filter((p) => p.balanceInCents < 0);
             return (
-              <Link href="/acertos?voltar=/inicio" className="flex flex-col gap-1.5 rounded-2xl border border-linha bg-cartao p-3.5 text-tinta no-underline">
-                <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">{t.home.splitsLabel}</span>
+              <Link
+                href="/acertos?voltar=/inicio"
+                className="flex flex-col gap-1.5 rounded-2xl border border-linha bg-cartao p-3.5 text-tinta no-underline"
+              >
+                <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">
+                  {t.home.splitsLabel}
+                </span>
                 <div className="flex items-baseline justify-between gap-3">
                   {splits.owedToYouInCents > 0 && (
                     <span className="text-[15px]">
-                      {t.home.owedToYou} <b className="text-verde-texto tabular-nums">{money(splits.owedToYouInCents)}</b>
+                      {t.home.owedToYou}{' '}
+                      <b className="text-verde-texto tabular-nums">{money(splits.owedToYouInCents)}</b>
                     </span>
                   )}
                   {splits.youOweInCents > 0 && (
@@ -368,7 +469,9 @@ export default async function HomePage() {
             <div className="grid grid-cols-2 gap-2.5">
               {creditCards.map((card, idx) => {
                 const currentBillCents = Math.max(0, -card.balanceInCents);
-                const usagePct = card.creditLimitInCents ? Math.min(100, (currentBillCents / card.creditLimitInCents) * 100) : null;
+                const usagePct = card.creditLimitInCents
+                  ? Math.min(100, (currentBillCents / card.creditLimitInCents) * 100)
+                  : null;
                 return (
                   <Link
                     key={card.id}
@@ -401,7 +504,10 @@ export default async function HomePage() {
       </>
     ),
     limites: (
-      <Link href="/limites?voltar=/inicio" className="flex flex-col gap-3 rounded-[20px] border border-linha bg-cartao p-4 text-tinta no-underline">
+      <Link
+        href="/limites?voltar=/inicio"
+        className="flex flex-col gap-3 rounded-[20px] border border-linha bg-cartao p-4 text-tinta no-underline"
+      >
         <div className="flex items-center justify-between">
           <h2 className="font-display text-xl font-extrabold">{t.home.limitsTitle}</h2>
           <span className="text-[13px] font-semibold text-laranja-texto">
@@ -411,7 +517,9 @@ export default async function HomePage() {
         {budgetsData.budgets.length === 0 ? (
           <p className="text-sm text-tinta-suave">{t.home.emptyLimitsHint}</p>
         ) : (
-          budgetsData.budgets.slice(0, 3).map((b) => <BudgetBar key={b.categoryId} budget={b} t={t.pages.limites.bar} />)
+          budgetsData.budgets
+            .slice(0, 3)
+            .map((b) => <BudgetBar key={b.categoryId} budget={b} t={t.pages.limites.bar} />)
         )}
       </Link>
     ),
@@ -424,7 +532,9 @@ export default async function HomePage() {
       <Link href="/carteira" aria-label={t.nav.wallet} className="absolute inset-0 rounded-[22px]" />
       {summary.balanceInCents !== null ? (
         <div className="flex flex-col gap-0.5">
-          <span className="text-[13px] font-semibold text-tinta-suave">{t.home.balanceInAccounts(bankAccounts.length)}</span>
+          <span className="text-[13px] font-semibold text-tinta-suave">
+            {t.home.balanceInAccounts(bankAccounts.length)}
+          </span>
           <span className="font-display text-[40px] leading-[44px] font-extrabold tracking-[-0.5px] tabular-nums">
             {money(summary.balanceInCents)}
           </span>
@@ -433,11 +543,17 @@ export default async function HomePage() {
         <span className="text-[13px] font-semibold text-tinta-suave">{t.home.noConnectedBankHint}</span>
       )}
       <div className="relative z-[1] grid grid-cols-2 gap-2.5">
-        <Link href="/carteira?filtro=entradas#lista" className="flex flex-col gap-0.5 rounded-[14px] bg-papel-2 px-3 py-2.5 text-tinta no-underline">
+        <Link
+          href="/carteira?filtro=entradas#lista"
+          className="flex flex-col gap-0.5 rounded-[14px] bg-papel-2 px-3 py-2.5 text-tinta no-underline"
+        >
           <span className="text-xs font-semibold text-tinta-suave">{t.home.incomeInMonth(currentMonthLabel)}</span>
           <span className="text-[17px] font-bold text-verde-texto tabular-nums">+ {money(summary.incomeInCents)}</span>
         </Link>
-        <Link href="/carteira?filtro=saidas#lista" className="flex flex-col gap-0.5 rounded-[14px] bg-papel-2 px-3 py-2.5 text-tinta no-underline">
+        <Link
+          href="/carteira?filtro=saidas#lista"
+          className="flex flex-col gap-0.5 rounded-[14px] bg-papel-2 px-3 py-2.5 text-tinta no-underline"
+        >
           <span className="text-xs font-semibold text-tinta-suave">{t.home.outcomeInMonth(currentMonthLabel)}</span>
           <span className="text-[17px] font-bold tabular-nums">{money(summary.outcomeInCents)}</span>
         </Link>
@@ -446,7 +562,11 @@ export default async function HomePage() {
   );
 
   const brokenConnectionsAlert = brokenConnections.length > 0 && (
-    <Link href="/conectar" role="alert" className="flex items-center gap-3 rounded-2xl bg-amarelo-claro p-3 text-tinta no-underline">
+    <Link
+      href="/conectar"
+      role="alert"
+      className="flex items-center gap-3 rounded-2xl bg-amarelo-claro p-3 text-tinta no-underline"
+    >
       <Mascot pose="preocupado" size={56} alt="" />
       <p className="text-[15px]">{t.home.connectionBroken(brokenConnections.map((c) => c.displayName).join(', '))}</p>
     </Link>
@@ -481,7 +601,16 @@ export default async function HomePage() {
       href="/inicio/personalizar"
       className="flex h-11 items-center justify-center gap-2 self-center rounded-full border border-linha px-4 text-[14px] font-semibold text-tinta no-underline"
     >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        aria-hidden="true"
+      >
         <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" />
         <circle cx="16" cy="6" r="2" />
         <circle cx="10" cy="12" r="2" />
@@ -492,8 +621,14 @@ export default async function HomePage() {
   );
 
   const desktopTopCategories = topCategories.slice(0, 5);
-  const desktopBarTotal = Math.max(1, desktopTopCategories.reduce((sum, c) => sum + c.totalInCents, 0));
-  const desktopSpendingTotal = Math.max(1, summary.outcomeInCents || topCategories.reduce((sum, c) => sum + c.totalInCents, 0));
+  const desktopBarTotal = Math.max(
+    1,
+    desktopTopCategories.reduce((sum, c) => sum + c.totalInCents, 0),
+  );
+  const desktopSpendingTotal = Math.max(
+    1,
+    summary.outcomeInCents || topCategories.reduce((sum, c) => sum + c.totalInCents, 0),
+  );
 
   const desktopWhereItWentCard = (
     <section className="flex flex-col gap-4 rounded-[22px] border border-linha bg-cartao p-[22px]">
@@ -510,7 +645,9 @@ export default async function HomePage() {
           <div
             className="flex h-[22px] gap-[3px] overflow-hidden rounded-full bg-papel-2"
             role="img"
-            aria-label={desktopTopCategories.map((c) => `${c.name} ${Math.round((c.totalInCents / desktopSpendingTotal) * 100)}%`).join(', ')}
+            aria-label={desktopTopCategories
+              .map((c) => `${c.name} ${Math.round((c.totalInCents / desktopSpendingTotal) * 100)}%`)
+              .join(', ')}
           >
             {desktopTopCategories.map((cat, idx) => (
               <div
@@ -582,7 +719,13 @@ export default async function HomePage() {
         <Mascot pose="chocado" size={110} alt="Tostão" />
         <div className="flex min-w-0 flex-col gap-3">
           <p className="m-0 text-base leading-[23px]">
-            <b>{t.home.overBudgetAlert(overBudgetCategory.name, money(overBudgetCategory.spentInCents), money(overBudgetCategory.limitInCents))}</b>
+            <b>
+              {t.home.overBudgetAlert(
+                overBudgetCategory.name,
+                money(overBudgetCategory.spentInCents),
+                money(overBudgetCategory.limitInCents),
+              )}
+            </b>
           </p>
           <Link
             href="/limites?voltar=/inicio"
@@ -612,8 +755,14 @@ export default async function HomePage() {
   const railGoalCard = forecast ? (
     sectionsById.meta
   ) : (
-    <Link href="/meta?voltar=/inicio" className="flex items-center gap-3 rounded-2xl border border-dashed border-linha bg-cartao p-3.5 text-[15px] text-tinta no-underline">
-      <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-menta-clara text-tinta">
+    <Link
+      href="/meta?voltar=/inicio"
+      className="flex items-center gap-3 rounded-2xl border border-dashed border-linha bg-cartao p-3.5 text-[15px] text-tinta no-underline"
+    >
+      <span
+        aria-hidden="true"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-menta-clara text-tinta"
+      >
         <Icon src="meta/outro" size={26} />
       </span>
       <span className="grow">
@@ -629,7 +778,9 @@ export default async function HomePage() {
       className="flex flex-col gap-2.5 rounded-2xl border border-linha bg-cartao p-3.5 text-tinta no-underline transition hover:bg-papel-2/50"
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">{t.weeklyChallenge.eyebrow}</span>
+        <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">
+          {t.weeklyChallenge.eyebrow}
+        </span>
         <span className="text-xs font-semibold text-laranja-texto">{t.weeklyChallenge.openRanking}</span>
       </div>
       {friends?.challenge.title && (
@@ -678,7 +829,11 @@ export default async function HomePage() {
           {atual?.title ?? t.home.allModulesCompleted}
         </span>
         {atual && (
-          <div className="flex gap-[5px]" role="img" aria-label={t.home.learnModuleProgress(atual.number, feitas, atual.lessons.length)}>
+          <div
+            className="flex gap-[5px]"
+            role="img"
+            aria-label={t.home.learnModuleProgress(atual.number, feitas, atual.lessons.length)}
+          >
             {atual.lessons.map((lesson) => (
               <i
                 key={lesson.id}
@@ -716,7 +871,10 @@ export default async function HomePage() {
         <header className="flex items-end justify-between">
           <h1 className="font-display text-[34px] leading-[38px] font-extrabold">{t.home.greeting(firstName)}</h1>
           <Link href="/aprender" className="pb-1 text-tinta no-underline">
-            <StreakChip days={missions?.streakDays ?? progress.streakDays} label={t.nav.streakDays(missions?.streakDays ?? progress.streakDays)} />
+            <StreakChip
+              days={missions?.streakDays ?? progress.streakDays}
+              label={t.nav.streakDays(missions?.streakDays ?? progress.streakDays)}
+            />
           </Link>
         </header>
 
@@ -776,7 +934,9 @@ export default async function HomePage() {
                 href="/carteira"
                 className="col-span-2 flex min-w-0 flex-col gap-1 rounded-[22px] border border-linha bg-cartao p-[22px] text-tinta no-underline xl:col-span-1"
               >
-                <span className="text-sm font-semibold text-tinta-suave">{stripChevron(t.home.balanceInAccounts(bankAccounts.length))}</span>
+                <span className="text-sm font-semibold text-tinta-suave">
+                  {stripChevron(t.home.balanceInAccounts(bankAccounts.length))}
+                </span>
                 <span className="font-display text-[32px] leading-[36px] font-extrabold tracking-[-0.5px] tabular-nums xl:text-[36px] xl:leading-[40px] min-[1400px]:text-[46px] min-[1400px]:leading-[50px]">
                   {summary.balanceInCents !== null ? money(summary.balanceInCents) : '—'}
                 </span>
@@ -796,7 +956,9 @@ export default async function HomePage() {
                 href="/carteira?filtro=entradas#lista"
                 className="flex min-w-0 flex-col gap-1 rounded-[22px] border border-linha bg-cartao p-[22px] text-tinta no-underline"
               >
-                <span className="text-sm font-semibold text-tinta-suave">{stripChevron(t.home.incomeInMonth(currentMonthLabel))}</span>
+                <span className="text-sm font-semibold text-tinta-suave">
+                  {stripChevron(t.home.incomeInMonth(currentMonthLabel))}
+                </span>
                 <span className="font-display text-[22px] leading-[28px] font-extrabold whitespace-nowrap text-verde-texto tabular-nums xl:text-[24px] xl:leading-[32px] min-[1400px]:text-[30px] min-[1400px]:leading-[38px]">
                   + {money(summary.incomeInCents)}
                 </span>
@@ -806,11 +968,15 @@ export default async function HomePage() {
                 href="/carteira?filtro=saidas#lista"
                 className="flex min-w-0 flex-col gap-1 rounded-[22px] border border-linha bg-cartao p-[22px] text-tinta no-underline"
               >
-                <span className="text-sm font-semibold text-tinta-suave">{stripChevron(t.home.outcomeInMonth(currentMonthLabel))}</span>
+                <span className="text-sm font-semibold text-tinta-suave">
+                  {stripChevron(t.home.outcomeInMonth(currentMonthLabel))}
+                </span>
                 <span className="font-display text-[22px] leading-[28px] font-extrabold whitespace-nowrap tabular-nums xl:text-[24px] xl:leading-[32px] min-[1400px]:text-[30px] min-[1400px]:leading-[38px]">
                   {money(summary.outcomeInCents)}
                 </span>
-                {outcomePct !== null && <span className="text-[13px] text-tinta-suave">{t.home.percentOfIncome(outcomePct)}</span>}
+                {outcomePct !== null && (
+                  <span className="text-[13px] text-tinta-suave">{t.home.percentOfIncome(outcomePct)}</span>
+                )}
               </Link>
             </div>
 

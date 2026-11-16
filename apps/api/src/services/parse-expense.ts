@@ -34,7 +34,10 @@ export function parseExpense(message: string): ParsedExpense | null {
 
   let rest = (m[3] ?? '').replace(/[.!?]+$/, '').trim();
   const daysAgo = /\bontem\b/i.test(text) ? 1 : 0;
-  rest = rest.replace(/\b(?:ontem|hoje)\b/gi, ' ').replace(/\s+/g, ' ').trim();
+  rest = rest
+    .replace(/\b(?:ontem|hoje)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   rest = rest.replace(LEAD, '').trim();
   if (rest.length > 80) rest = rest.slice(0, 80).trim();
   const description = rest ? rest[0]!.toUpperCase() + rest.slice(1) : 'Anotado pelo WhatsApp';

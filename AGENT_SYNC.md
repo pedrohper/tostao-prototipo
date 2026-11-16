@@ -24,6 +24,7 @@ Relatório do que foi feito. Modelo:
 ```
 
 ### 2026-11-16 · Antigravity · servidor (Separação Jarvis/Tostão + Lint/CI + Tokens + Padronização EN + i18n completo + Áudio Cloud API)
+
 - **Separação Jarvis × Tostão (`apps/api/src/use-cases/ask-tostao.ts`, `tostao-tools.ts`, `ask-tostao.spec.ts`)**: removidas de vez `JARVIS_TOOLS` (`salvar_nota_obsidian`, `buscar_notas_obsidian`, `criar_flashcards_anki`), `PEDRO_USER_ID`/`PEDRO_EMAIL` e instruções de Segundo Cérebro do Tostão; `executeTostaoTool` reforça `allowedTools` e teste em `ask-tostao.spec.ts` garante que apenas `TOSTAO_TOOLS` são expostas. Número atual (`bot-pessoal`) fica dedicado ao Tostão.
 - **Áudio na WhatsApp Cloud API (`apps/api/src/gateways/whatsapp-gateway.ts`, `http/controllers/whatsapp.ts`, `app.ts`, `env.ts`, `server.ts`, `use-cases/whatsapp.spec.ts`, `.env.example`)**: adicionados `AudioTranscriber`, `WhisperAudioTranscriber` (integrado ao Whisper local via `WHISPER_URL`) e `CloudApiWhatsAppGateway.downloadMedia` (Graph API `v21.0`). O webhook `POST /whatsapp/webhook` agora baixa mensagens `type: 'audio'` em segundo plano, transcreve e executa via `HandleWhatsAppMessageUseCase` (coberto por novo teste em `whatsapp.spec.ts`).
 - **ESLint, Prettier e CI (`package.json`, `eslint.config.mjs`, `.prettierrc`, `.prettierignore`, `.github/workflows/ci.yml`)**: configurados ESLint flat config (`@eslint/js`, `typescript-eslint`, `@next/eslint-plugin-next`, `eslint-plugin-react-hooks`, `eslint-config-prettier` com `@typescript-eslint/no-explicit-any: error` e `no-unused-vars`), Prettier e workflow de CI (`typecheck`, `lint`, `test`, `build`).
@@ -35,6 +36,7 @@ Relatório do que foi feito. Modelo:
 - **O que ficou de fora / riscos**: para ativar os números oficiais na Meta Cloud API, basta preencher as credenciais Meta do Tostão no `apps/api/.env` e as do Atllas no workflow `atllas-whatsapp-meta.json` do n8n; `bot-pessoal` segue intacto para os workflows atuais do homelab.
 
 ### 2026-11-16 · Claude · servidor (segurança do chat e deploy, sem PR)
+
 - `use-cases/tostao-tools.ts`: `executeTostaoTool` exige `allowedTools` e recusa ferramenta fora da lista (antes, se o modelo pedisse `buscar_notas_obsidian`/`salvar_nota_obsidian` pra qualquer usuário, executava). `criar_flashcards_anki` não engole mais erro: `ok`, `salvo_no_anki_studio` e `nota_obsidian` refletem o que de fato salvou.
 - `use-cases/ask-tostao.ts`, `factories.ts`, `app.ts`, `server.ts`, `env.ts`: dono do modo Jarvis vem de `OWNER_USER_ID` (saiu o ID e o e-mail fixos do código, repo é público). `VAPID_SUBJECT` sem e-mail padrão; obrigatório se houver `VAPID_PUBLIC_KEY`.
 - `~/homelab/scripts/deploy-tostao.sh`: tirado o `|| true` do `prisma migrate deploy` (migration falhando agora aborta o deploy antes do build/reload).
@@ -43,6 +45,7 @@ Relatório do que foi feito. Modelo:
 - Fica de fora: separar o Jarvis do Tostão de vez (número de WhatsApp próprio e tirar as ferramentas do Jarvis da API do Tostão); ESLint/Prettier/CI; nomes PT/EN, i18n e cores fixas.
 
 ### 2026-11-16 · Antigravity · servidor (Novo Sitemap 5 Abas, Funções Automáticas do Tostão & Correções Desktop)
+
 - **Onda 1 (Base API + Funções Automáticas sem jargão "Agentes")**:
   - `packages/contracts/src/index.ts`, `apps/api/prisma/schema.prisma`, `migration 20261116003000_add_tostao_auto`: adicionadas tabelas `tostao_insights` (`TostaoInsight`) e `tostao_auto_configs` (`TostaoAutoConfig`), contratos Zod/TS (`TostaoInsightDTO`, `TostaoAutoConfigDTO`, `TostaoAutoResponse`, `RunTostaoCheckResponse`, `ApplyTostaoInsightResponse`).
   - `apps/api/src/domain/entities.ts`, `repositories/types.ts`, `repositories/prisma/index.ts`, `repositories/in-memory/index.ts`: repositório `tostaoAuto` (Postgres + InMemory) e `users.listAllIds()`.
@@ -61,6 +64,7 @@ Relatório do que foi feito. Modelo:
 - **O que ficou de fora / riscos**: conferência visual interativa no navegador em desktop (1440px/1024px) e celular (390px) fica para o Pedro validar via Tailscale (servidor Linux headless sem Chrome GUI/DevTools); envio proativo pelo WhatsApp só dispara quando `N8N_WHATSAPP_SEND_URL` estiver configurada no `.env` e o usuário habilitar o toggle em `/mais`.
 
 ### 2026-11-16 · Antigravity · servidor (Redesign Desktop & Web — artefato-tostao-claude.html + sub-rotas)
+
 - **Wave 0 (Fundação & Shell)**:
   - `apps/web/app/(app)/layout.tsx`, `components/nav.tsx`, `components/lateral.tsx`: expandido `<main>` para layout fluido mantendo `md:px-8`, barra lateral em `248px` com 5 links (mantendo `/chat` no menu) e novo componente `DesktopSplitShell` (3 colunas em `xl:` com coluna direita de `320px` no Início e `340px` em Carteira/Aprender/Perfil).
   - `apps/web/lib/format.ts`, `apps/web/lib/i18n.ts`: adicionados `fullDateLabel`, `updatedTimeLabel` e chaves `pt-BR`/`en`/`es` para as novas telas desktop.
@@ -75,11 +79,13 @@ Relatório do que foi feito. Modelo:
 - **O que ficou de fora / riscos**: conferência visual em navegador headless/GUI não executada aqui (servidor Ubuntu headless sem Chrome DevTools ativo; e rotas autenticadas exigem sessão real sem criar usuários de teste no banco). Falta o Pedro conferir visualmente via Tailscale em desktop (1440px), celular (390px) e modo escuro, além de decidir commit + push (e limpeza ou movimentação de `artefato-tostao-claude.html` da raiz).
 
 ### 2026-11-15 · Claude · deploy PR #29 (servidor, conferência)
+
 - Pedido: deploy do #29 (só web, sem migration). Não rodei nada: o `main` local já contém `origin/main` (#29 `9611ade` e #28 `0ebb364`), `git fetch` sem novidade, `.next/BUILD_ID` de 15/11 11:54 (depois do merge, 00:18), PM2 com `tostao-api`/`tostao-web` online e `GET :3333/health` → `{"ok":true}`.
 - Sem backup, build, restart nem commit.
 - Riscos: `main` local está 3 commits à frente do GitHub (`37cd7d6`, `eb38ae6`, `bc0cc7e`, não enviados) e há ~20 arquivos modificados + i18n novo (`lib/i18n*.ts`, `components/language-switcher.tsx`) sem commit. O build no ar inclui esse código. Falta commit + push (Pedro decide).
 
 ### 2026-11-15 · Claude · servidor (sem PR, código ainda fora do GitHub)
+
 - Simuladores M1–M9 (`aprender/[licao]/simulators*.tsx`): textos `#065F46/#9F1239/#92400E/#D97706/#E11D48` viraram `text-verde-texto/vermelho-texto/laranja-texto` (têm variante dark). "Mês reequilibrado" e afins ficavam verde escuro sobre `menta-clara` escuro.
 - Acertos: renomear pessoa/grupo. `PeopleRepository.rename`, `RenamePersonUseCase` (trim + espaços colapsados, 409 "Já tem ..." se outro tiver o nome), `PATCH /people/:id`, action `renomearPessoa` e `<details>` "Editar nome" em `acertos/[id]`; erro agora aparece logo abaixo do BackLink.
 - Carteira: `AddAccountBox` só quando não há conta/cartão; no Perfil fica sempre, abaixo de "Contas conectadas".
@@ -90,6 +96,7 @@ Relatório do que foi feito. Modelo:
 - Validei: vitest api 165/165 (novo teste de renomear em `people.spec.ts`), tsc api e web limpos, `pnpm --filter @tostao/web build` ok, `pm2 restart tostao-api tostao-web`, web 200 em `/` e 307 em `/inicio`, `PATCH /people/:id` responde 401 sem sessão; workflow de teste rodado até o Code (sem WhatsApp).
 
 ### 2026-11-15 · Antigravity · Base i18n (pt-BR, en, es) + Padronização do Código em Inglês
+
 - `apps/web/lib/i18n.ts`, `i18n-server.ts`, `i18n-actions.ts` e `components/language-switcher.tsx`: sistema de internacionalização tipado (`pt-BR`, `en`, `es`) persistido no cookie `tostao-locale`, mantendo moeda em `R$` (`BRL`) e traduzindo interface, meses, datas relativas e atalhos; seletor de idioma em 1 clique adicionado em `/perfil`.
 - Padronização de identificadores do código para inglês (mantendo exports legados como aliases para retrocompatibilidade):
   - `lib/inicio-prefs.ts` e `lib/inicio-actions.ts`: `readHomePrefs`, `resolveSectionOrder`, `HOME_SECTIONS`, `saveHomePrefs`, `restoreDismissedAlerts`, `dismissAlert`.
@@ -99,6 +106,7 @@ Relatório do que foi feito. Modelo:
 - Sem migration. Validado com `tsc --noEmit` (`web` e `api`) e `vitest run` (30 suítes / 164 testes passando).
 
 ### 2026-11-14 · teamwork_worker · Frente 1-5 (UX, Mobile S24, Vetores SVG, Dilemas e Simuladores)
+
 - **Frente 1 (Anotar & Contas)**:
   - `apps/web/app/(app)/anotar/anotar-form.tsx`: removido `max={today}` do input de data (permitindo agendamentos e lançamentos futuros); cabeçalho dinâmico adaptando título ("Anotar gasto" vs "Anotar entrada"), subtítulo ("O Caramelo fareja até o troco do pão." vs "Mais um trocado pingando na conta."), pose do Mascote (`caramelo-farejando` vs `caramelo-feliz`), legenda do seletor ("Pago com" vs "Recebido em") e nota de aviso de auto-sync baseados no estado `kind`.
   - `apps/web/app/(app)/anotar/page.tsx`: preservados `type` ('BANK' | 'CREDIT') e `institution` nas contas repassadas ao formulário.
@@ -132,33 +140,41 @@ Relatório do que foi feito. Modelo:
   - `pnpm build`: 84 rotas compiladas estática e dinamicamente sem falhas.
 
 ### 2026-11-14 · Antigravity · Unificação Tostão + Jarvis (Segundo Cérebro no WhatsApp/App)
+
 - `apps/api/src/use-cases/tostao-tools.ts`: adicionadas as ferramentas `JARVIS_TOOLS` (`salvar_nota_obsidian`, `buscar_notas_obsidian`, `criar_flashcards_anki`) integradas ao cofre `/home/optiplex/obsidian_vault` e ao OptiPlex Hub 2.0 (`127.0.0.1:8088`).
 - `apps/api/src/use-cases/ask-tostao.ts`: quando o usuário é o Pedro (`pereirahenrique0104@gmail.com` / `4ca4a890-737a-4ef2-aca0-945cae9d2feb`), ativa `[...TOSTAO_TOOLS, ...JARVIS_TOOLS]` e instruções de Segundo Cérebro no prompt de sistema, mantendo o histórico de 12 mensagens unificado.
 - Fluxo n8n `TostaoWhatsApp01` (`Tostão & Jarvis - WhatsApp Unificado`): removida a bifurcação `É nota Obsidian?` e desativado o fluxo órfão `JcMHoyO6nNv8Qnl6`; agora 100% das mensagens de texto e áudio passam pelo cérebro único do `Tostão API` (`http://172.18.0.1:3334/whatsapp/n8n`).
 - Sem migration. Validado com `pnpm --filter @tostao/api test` (161 testes passando) e `tsc --noEmit`.
 
 ### 2026-11-14 · Antigravity · Passo 1 (Function Calling do Tostão)
+
 - `apps/api/src/gateways/ai-gateway.ts`: `ChatTurn`, `ToolDefinition`, `ToolCall`, `AiReply` e método `chat(messages, opts)` em `AiGateway`, `DeepSeekGateway` (suporte a `tools` e `tool_calls`) e `FakeAiGateway` (`queue` para testar loops).
 - `apps/api/src/use-cases/tostao-tools.ts`: schemas e executor de `consultar_gastos_categoria`, `verificar_limite_categoria` e `registrar_transacao` (escopados por `userId`, respeitando `isInternalTransfer` e contas ocultas).
 - `apps/api/src/use-cases/ask-tostao.ts`: loop agêntico com trava de `MAX_TOOL_ROUNDS = 5` (chamada final sem `tools` se atingir o limite) e lista de categorias disponíveis no contexto inicial.
 - `apps/api/src/use-cases/ask-tostao.spec.ts` e `auto-categorize.spec.ts`: testes para o loop de `tool_calls`, criação de transação e limite de rodadas.
 - Sem migration e sem env nova. Validado com `pnpm --filter @tostao/api test` (161 testes passando) e `tsc --noEmit`.
 - Fora: streaming de resposta no front e ferramentas adicionais (ex.: `consultar_previsao`).
+
 ### 2026-11-15 · Claude · PR (claude/project-thread-ci76u5)
+
 - Desktop igual ao artefato (telas 22, 32, 33, 34): menu lateral com item ativo escuro, ofensiva/XP e botão "Anotar gasto" no pé (`components/lateral.tsx`, `nav.tsx`); coluna da direita (xl) com "Aprender" e missões de hoje; `(app)/layout.tsx` busca /progress e /missions. Conteúdo central até 820px.
 - Sem migration nem env. tsc web ok. Não validei no navegador (sem API/banco local); falta conferir lado a lado com o artefato.
 - Fora: coluna da direita específica por tela (desafio da semana, batalha, contas na Carteira) e grid de 3 cards no topo do Início.
+
 ### 2026-11-15 · Claude · PR #29 (claude/project-thread-3oru9b)
+
 - Missões: quando todas do dia estão feitas, o card encolhe pra "Tudo certo por hoje" (menta, uma linha). `components/engajamento.tsx` (`MissoesFeitas`, usado pelo `Missoes` no Início) e `app/(app)/aprender/page.tsx` (Tostão comemorando no lugar do professor).
 - Sem migration nem env. `tsc` da web ok. Artefato: tela 12 (Aprender) espelha.
 
 ### 2026-11-13 · Claude · PR #27 (claude/project-thread-3oru9b)
+
 - `use-cases/financial-plan.ts`: a previsão dizia "vai faltar R$ 528" em novembro por três motivos. (1) `spendingBase` usava agosto como base, mas o banco foi ligado em 14/08 (mês parcial); agora mês em que o primeiro dado cai depois do dia 5 fica de fora (`partial`). (2) O pote de dinheiro extra agora é da janela toda: acerto que entrou em outubro também cobre o excesso de setembro. (3) Resto do mês atual ia na base proporcional aos dias, repetindo contas grandes que já tinham caído (Pix de R$ 566 da casa); agora vai no ritmo do miúdo do mês (saídas abaixo de 15% da renda, mín. R$ 200, sem assinaturas) depois de 7 dias.
 - Contrato: `ThisMonthForecast.dailyPaceInCents?` (opcional). Web: /previsao mostra "Dia a dia (17 dias × R$ 43,52)".
 - Sem migration nem env. 159 testes (novo: ritmo do mês; base sem mês parcial). tsc api/web ok.
 - Fora: Centauro (R$ 99,99) ainda é detectado como assinatura e Pix de empréstimo sem pessoa contam como gasto/renda: o Pedro marca "não é assinatura" e liga em Acertos.
 
 ### 2026-11-13 · Claude · PR #22 (claude/project-thread-lss5y7)
+
 - WhatsApp via n8n + Evolution API. Rota `POST /whatsapp/n8n` (header `X-Tostao-Secret`, comparação em tempo constante) aceita `{ id, from, text, fromMe }` ou o webhook cru da Evolution (`messages.upsert`, `@lid` usa `remoteJidAlt`/`senderPn`) e devolve `{ replies: string[] }`. Grupo, `fromMe` e texto vazio são ignorados; id repetido não responde de novo.
 - Anotar por texto: `services/parse-expense.ts` (sem IA) entende "gastei 25 no ifood", "paguei R$ 32,50 de uber ontem", "recebi 100 do pai" e cria via `CreateManualTransactionUseCase` (categoria por regra, senão `AutoCategorize`). Não conta no limite do chat. Resto vai pro `AskTostao`.
 - `http/n8n-bridge.ts`: porta extra (`N8N_LISTEN_HOST`, `N8N_LISTEN_PORT`=3334) só com essa rota, repassando via `app.inject`; API segue no 127.0.0.1. Retenta a cada 30 s se o IP ainda não existir no boot.
@@ -168,16 +184,19 @@ Relatório do que foi feito. Modelo:
 - Riscos: parser é por regex (frase fora do padrão cai no chat); API não oficial pode ter o número banido (número dedicado).
 
 ### 2026-11-13 · Claude · PR #24 e #25 (claude/project-thread-3oru9b)
+
 - `apps/api/src/jobs/daily-sync.ts`, `server.ts`, `env.ts`: o cron do sync não disparava (job sem referência). Agora guarda o job, loga início/fim/próximo, roda `0 6-23/3 * * *` e sincroniza no boot se a última tiver mais de 6 h. No servidor, a linha `SYNC_CRON` do `.env` foi comentada.
 - `use-cases/financial-plan.ts` (`SuggestIncomeUseCase`, `recurringMonthly`): separa adiantamento, salário e acerto por faixa de valor (12%); faixa repete = 2+ entradas com 20+ dias entre a primeira e a última; sem repetição usa a mediana de uma entrada. Descrição de salário do banco (`SALARIO`, `C/SAL`, folha, proventos) aparece mesmo com 1 ocorrência.
 - Sem migration. 134 testes passando. Deploy feito com backup.
 
 ### 2026-11-13 · Claude · PR #21 (claude/project-thread-3oru9b)
+
 - Acertos: tabela `people` + `transactions.person_id` (migration `20261113230000_people`). Rotas `GET/POST /people`, `GET/DELETE /people/:id`, `POST /people/:id/entries`, `PUT /transactions/:id/person`. Telas `/acertos`, `/acertos/[id]`, bloco no detalhe do lançamento, card no Início, atalho no Perfil.
 - Lançamento ligado a pessoa vira `isInternalTransfer` (sai de gasto e renda); `detectInternalTransfers` respeita `personId`, então o sync não desfaz.
 - Validado com Vitest (`people.spec.ts`) e Playwright (marcar, anotar, saldo). Artefato v69, tela 55.
 
 ### 2026-11-13 · Claude · PR #20
+
 - Previsão: dia a dia = mediana de 3 meses, sem o gasto pago com dinheiro extra (entrada > 1,3x a renda); `base` no `/forecast` com status ok/excecao/aperto. Plano anual parcelado não conta 2x. `duplicateOf` marca assinatura em dobro.
 
 ## Code Review

@@ -1,4 +1,9 @@
-import { TAXAS_REFERENCIA, type FinancialPlanResponse, type ForecastResponse, type TaxasResponse } from '@tostao/contracts';
+import {
+  TAXAS_REFERENCIA,
+  type FinancialPlanResponse,
+  type ForecastResponse,
+  type TaxasResponse,
+} from '@tostao/contracts';
 import { api } from '@/lib/api';
 import { money, resolveBackHref } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
@@ -6,7 +11,11 @@ import { Mascot } from '@/components/mascote';
 import { BackLink, Eyebrow, PageFrame } from '@/components/ui';
 import { InvestmentComparison } from '@/components/juros';
 
-export default async function InvestirPage({ searchParams }: { searchParams: Promise<{ centavos?: string; de?: string; voltar?: string }> }) {
+export default async function InvestirPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ centavos?: string; de?: string; voltar?: string }>;
+}) {
   const { centavos, de, voltar } = await searchParams;
   const [taxas, forecast, { plan }, { locale, t }] = await Promise.all([
     api<TaxasResponse>('/rates').catch(() => TAXAS_REFERENCIA),
@@ -18,7 +27,7 @@ export default async function InvestirPage({ searchParams }: { searchParams: Pro
   // Quanto sai num mês normal: contas fixas + assinaturas + parcelas + dia a dia da previsão
   const m = forecast?.months[0];
   const gasto = m ? m.fixedInCents + m.subscriptionsInCents + m.installmentsInCents + m.dailyInCents : 0;
-  const reserva = plan?.goal?.kind === 'reserva' ? forecast?.goal?.savedInCents ?? 0 : null;
+  const reserva = plan?.goal?.kind === 'reserva' ? (forecast?.goal?.savedInCents ?? 0) : null;
   const inicial = Number(centavos) || null;
   const backHref = resolveBackHref(voltar, de === 'meta' ? '/meta' : '/aprender');
 

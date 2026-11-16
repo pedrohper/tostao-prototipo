@@ -21,7 +21,10 @@ export async function proxy(request: NextRequest) {
   if (!token || iat === null || Date.now() / 1000 - iat < ONE_DAY) return NextResponse.next();
 
   try {
-    const res = await fetch(`${API_URL}/sessions/refresh`, { method: 'POST', headers: { authorization: `Bearer ${token}` } });
+    const res = await fetch(`${API_URL}/sessions/refresh`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${token}` },
+    });
     if (!res.ok) return NextResponse.next(); // expirado: a página manda pro login como sempre
     const { token: fresh } = (await res.json()) as { token: string };
     request.cookies.set(TOKEN_COOKIE, fresh); // a página desta requisição já usa o novo

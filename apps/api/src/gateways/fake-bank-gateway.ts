@@ -28,8 +28,12 @@ export class FakeBankGateway implements BankGateway {
       { externalId: `${itemId}:mp`, name: 'Mercado Pago', type: 'BANK', balanceInCents: 20470 },
       { externalId: `${itemId}:bradesco`, name: 'Bradesco', type: 'BANK', balanceInCents: 32550 },
       {
-        externalId: `${itemId}:cartao`, name: 'Nubank Mastercard', type: 'CREDIT', balanceInCents: -28790,
-        creditLimitInCents: 120000, dueDate: nextDay10(this.now()),
+        externalId: `${itemId}:cartao`,
+        name: 'Nubank Mastercard',
+        type: 'CREDIT',
+        balanceInCents: -28790,
+        creditLimitInCents: 120000,
+        dueDate: nextDay10(this.now()),
       },
     ];
   }

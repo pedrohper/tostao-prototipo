@@ -18,8 +18,12 @@ export async function SiteHeader({ home = false }: { home?: boolean }) {
         <a href={anchor('seguranca')}>{l.navSafety}</a>
       </nav>
       <div className={s['nav-cta']}>
-        <Link href="/entrar" className={`${s.btn} ${s['btn-ghost']} ${s['btn-sm']}`}>{l.signIn}</Link>
-        <Link href="/criar-conta" className={`${s.btn} ${s['btn-dark']} ${s['btn-sm']}`}>{l.startFree}</Link>
+        <Link href="/entrar" className={`${s.btn} ${s['btn-ghost']} ${s['btn-sm']}`}>
+          {l.signIn}
+        </Link>
+        <Link href="/criar-conta" className={`${s.btn} ${s['btn-dark']} ${s['btn-sm']}`}>
+          {l.startFree}
+        </Link>
       </div>
     </header>
   );

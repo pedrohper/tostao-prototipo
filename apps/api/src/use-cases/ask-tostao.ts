@@ -41,12 +41,21 @@ export class AskTostaoUseCase {
     private readonly now: () => Date = () => new Date(),
   ) {}
 
-  async execute({ userId, message, channel = 'app' }: { userId: string; message: string; channel?: 'app' | 'whatsapp' }) {
+  async execute({
+    userId,
+    message,
+    channel = 'app',
+  }: {
+    userId: string;
+    message: string;
+    channel?: 'app' | 'whatsapp';
+  }) {
     const text = message.trim();
     if (!text) throw new AppError('Escreve alguma coisa pro Tostão.', 400);
     const now = this.now();
     const used = await this.repos.chat.countUserSince(userId, new Date(now.getTime() - DAY));
-    if (used >= this.dailyLimit) throw new AppError(`Por hoje deu: são ${this.dailyLimit} perguntas a cada 24 h. Amanhã a gente continua!`, 429);
+    if (used >= this.dailyLimit)
+      throw new AppError(`Por hoje deu: são ${this.dailyLimit} perguntas a cada 24 h. Amanhã a gente continua!`, 429);
 
     const [history, data, user] = await Promise.all([
       this.repos.chat.listRecent(userId, HISTORY),
@@ -56,7 +65,10 @@ export class AskTostaoUseCase {
     const allowedTools = new Set(TOSTAO_TOOLS.map((t) => t.function.name));
 
     const messages: ChatTurn[] = [
-      { role: 'system', content: `${PERSONA}${channel === 'whatsapp' ? `\n- Você está no WhatsApp: mensagem curta, sem tabela. Não liste o saldo de cada conta nem transações uma por uma; dê o número resumido e, pra detalhe, mande abrir o app.` : ''}\n\nA pessoa se chama ${user?.name ?? 'você'}. Hoje é ${now.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.\n\nDADOS:\n${data}` },
+      {
+        role: 'system',
+        content: `${PERSONA}${channel === 'whatsapp' ? `\n- Você está no WhatsApp: mensagem curta, sem tabela. Não liste o saldo de cada conta nem transações uma por uma; dê o número resumido e, pra detalhe, mande abrir o app.` : ''}\n\nA pessoa se chama ${user?.name ?? 'você'}. Hoje é ${now.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.\n\nDADOS:\n${data}`,
+      },
       ...history.map((m) => ({ role: m.role, content: m.content }) as ChatTurn),
       { role: 'user', content: text },
     ];
@@ -71,7 +83,14 @@ export class AskTostaoUseCase {
         }
         messages.push({ role: 'assistant', content: res.content, tool_calls: res.toolCalls });
         for (const call of res.toolCalls) {
-          const result = await executeTostaoTool(this.repos, userId, call.function.name, call.function.arguments, now, allowedTools);
+          const result = await executeTostaoTool(
+            this.repos,
+            userId,
+            call.function.name,
+            call.function.arguments,
+            now,
+            allowedTools,
+          );
           messages.push({ role: 'tool', tool_call_id: call.id, content: result });
         }
       }
@@ -80,7 +99,8 @@ export class AskTostaoUseCase {
         answer = finalRes.content;
       }
     } catch (e) {
-      if (e instanceof AiUnavailableError) throw new AppError('O Tostão travou pensando. Tenta de novo daqui a pouco.', 503);
+      if (e instanceof AiUnavailableError)
+        throw new AppError('O Tostão travou pensando. Tenta de novo daqui a pouco.', 503);
       throw e;
     }
     if (!answer) throw new AppError('O Tostão travou pensando. Tenta de novo daqui a pouco.', 503);
@@ -99,44 +119,94 @@ export class AskTostaoUseCase {
       new ListSubscriptionsUseCase(this.repos, () => now).execute({ userId }),
       new GetBudgetsUseCase(this.repos).execute({ userId, month }),
       this.repos.categories.list(userId),
-      this.repos.transactions.findManyInRange(userId, new Date(now.getTime() - 45 * DAY), new Date(now.getTime() + DAY)),
+      this.repos.transactions.findManyInRange(
+        userId,
+        new Date(now.getTime() - 45 * DAY),
+        new Date(now.getTime() + DAY),
+      ),
       this.repos.plans.get(userId),
       new ForecastUseCase(this.repos, () => now).execute({ userId }),
     ]);
     const catName = new Map(categories.map((c) => [c.id, c.name]));
     const lines: string[] = [];
     const month_ = (label: string, s: typeof cur) => {
-      lines.push(`${label} (${s.month}): entrou ${brl(s.incomeInCents)}, saiu ${brl(s.outcomeInCents)}, sobrou ${brl(s.incomeInCents - s.outcomeInCents)}.`);
-      if (s.byCategory.length) lines.push(`  Gastos por categoria: ${s.byCategory.slice(0, 10).map((c) => `${c.name} ${brl(c.totalInCents)}`).join('; ')}.`);
+      lines.push(
+        `${label} (${s.month}): entrou ${brl(s.incomeInCents)}, saiu ${brl(s.outcomeInCents)}, sobrou ${brl(s.incomeInCents - s.outcomeInCents)}.`,
+      );
+      if (s.byCategory.length)
+        lines.push(
+          `  Gastos por categoria: ${s.byCategory
+            .slice(0, 10)
+            .map((c) => `${c.name} ${brl(c.totalInCents)}`)
+            .join('; ')}.`,
+        );
     };
-    if (cur.balanceInCents !== null) lines.push(`Saldo nas contas agora: ${brl(cur.balanceInCents)} (${cur.accounts.map((a) => `${a.name} ${brl(a.balanceInCents)}`).join('; ')}).`);
+    if (cur.balanceInCents !== null)
+      lines.push(
+        `Saldo nas contas agora: ${brl(cur.balanceInCents)} (${cur.accounts.map((a) => `${a.name} ${brl(a.balanceInCents)}`).join('; ')}).`,
+      );
     if (plan) {
       const p: string[] = [];
-      if (plan.salary) p.push(`salário líquido ${brl(plan.salary.amountInCents)} por mês${plan.salary.advance ? `: adiantamento de ${brl(plan.salary.advance.amountInCents)} por volta do dia ${plan.salary.advance.day} e o resto (${brl(plan.salary.amountInCents - plan.salary.advance.amountInCents)})` : ','} cai por volta do dia ${plan.salary.payday}${plan.salary.bank ? ` no ${plan.salary.bank}` : ''}${plan.salary.varies ? ' (o valor varia e às vezes vem em partes)' : ''}`);
-      for (const i of plan.otherIncomes) p.push(`${i.name}: ${brl(i.amountInCents)}${i.day ? ` por volta do dia ${i.day}` : ''} (${i.countsAsIncome ? 'conta como renda' : 'só repassa, não é renda dela'})`);
+      if (plan.salary)
+        p.push(
+          `salário líquido ${brl(plan.salary.amountInCents)} por mês${plan.salary.advance ? `: adiantamento de ${brl(plan.salary.advance.amountInCents)} por volta do dia ${plan.salary.advance.day} e o resto (${brl(plan.salary.amountInCents - plan.salary.advance.amountInCents)})` : ','} cai por volta do dia ${plan.salary.payday}${plan.salary.bank ? ` no ${plan.salary.bank}` : ''}${plan.salary.varies ? ' (o valor varia e às vezes vem em partes)' : ''}`,
+        );
+      for (const i of plan.otherIncomes)
+        p.push(
+          `${i.name}: ${brl(i.amountInCents)}${i.day ? ` por volta do dia ${i.day}` : ''} (${i.countsAsIncome ? 'conta como renda' : 'só repassa, não é renda dela'})`,
+        );
       lines.push(`O que a pessoa contou: ${p.join('; ') || 'nada sobre renda ainda'}.`);
-      if (plan.benefits?.length) lines.push(`Benefícios (só pra comida, não entram na conta do banco): ${plan.benefits.map((b) => `${b.kind} ${brl(b.amountInCents)} todo dia ${b.day}`).join('; ')}. Gasto de mercado/almoço pode sair daí em vez do salário.`);
-      if (plan.fixedExpenses.length) lines.push(`Contas fixas fora do cartão: ${plan.fixedExpenses.map((f) => `${f.name} ${brl(f.amountInCents)} dia ${f.day}`).join('; ')}.`);
+      if (plan.benefits?.length)
+        lines.push(
+          `Benefícios (só pra comida, não entram na conta do banco): ${plan.benefits.map((b) => `${b.kind} ${brl(b.amountInCents)} todo dia ${b.day}`).join('; ')}. Gasto de mercado/almoço pode sair daí em vez do salário.`,
+        );
+      if (plan.fixedExpenses.length)
+        lines.push(
+          `Contas fixas fora do cartão: ${plan.fixedExpenses.map((f) => `${f.name} ${brl(f.amountInCents)} dia ${f.day}`).join('; ')}.`,
+        );
       const g = forecast.goal;
-      if (g) lines.push(`Meta: ${g.label}${g.amountInCents ? ` de ${brl(g.amountInCents)}` : ''}${g.deadline ? ` até ${g.deadline}` : ''}; já guardou ${brl(g.savedInCents)}${g.monthlyNeededInCents !== null ? `; precisa guardar ${brl(g.monthlyNeededInCents)}/mês` : ''}${g.fits === false ? ' (não cabe no que sobra pela previsão)' : ''}${g.reached ? ' (META ATINGIDA)' : ''}. Pra registrar o que guardou, a pessoa toca em "Guardei" na tela da meta.`);
-      if (forecast.months.length) lines.push(`Previsão (estimativa: renda − contas fixas − assinaturas − parcelas − média do dia a dia): ${forecast.months.map((m) => `${m.month} sobra ${brl(m.leftInCents)} (parcelas ${brl(m.installmentsInCents)}, dia a dia ${brl(m.dailyInCents)})`).join('; ')}.`);
+      if (g)
+        lines.push(
+          `Meta: ${g.label}${g.amountInCents ? ` de ${brl(g.amountInCents)}` : ''}${g.deadline ? ` até ${g.deadline}` : ''}; já guardou ${brl(g.savedInCents)}${g.monthlyNeededInCents !== null ? `; precisa guardar ${brl(g.monthlyNeededInCents)}/mês` : ''}${g.fits === false ? ' (não cabe no que sobra pela previsão)' : ''}${g.reached ? ' (META ATINGIDA)' : ''}. Pra registrar o que guardou, a pessoa toca em "Guardei" na tela da meta.`,
+        );
+      if (forecast.months.length)
+        lines.push(
+          `Previsão (estimativa: renda − contas fixas − assinaturas − parcelas − média do dia a dia): ${forecast.months.map((m) => `${m.month} sobra ${brl(m.leftInCents)} (parcelas ${brl(m.installmentsInCents)}, dia a dia ${brl(m.dailyInCents)})`).join('; ')}.`,
+        );
     } else {
-      lines.push('A pessoa ainda não contou quanto ganha nem as contas fixas. Se perguntarem de previsão ou "dá pra comprar", peça pra preencher "Renda e contas fixas" no Perfil.');
+      lines.push(
+        'A pessoa ainda não contou quanto ganha nem as contas fixas. Se perguntarem de previsão ou "dá pra comprar", peça pra preencher "Renda e contas fixas" no Perfil.',
+      );
     }
     month_('Mês atual até hoje', cur);
     month_('Mês passado', prev);
     if (cur.uncategorizedCount) lines.push(`${cur.uncategorizedCount} transações deste mês estão sem categoria.`);
     const active = subs.subscriptions.filter((s) => s.active);
-    if (active.length) lines.push(`Assinaturas ativas (${brl(subs.monthlyInCents)}/mês, ${brl(subs.yearlyInCents)}/ano): ${active.map((s) => `${s.name} ${brl(s.amountInCents)}${s.installmentsLeft ? ` (faltam ${s.installmentsLeft} parcelas)` : ''}`).join('; ')}.`);
-    if (budgets.budgets.length) lines.push(`Limites do mês: ${budgets.budgets.map((b) => `${b.name} ${brl(b.spentInCents)} de ${brl(b.limitInCents)}`).join('; ')}.`);
+    if (active.length)
+      lines.push(
+        `Assinaturas ativas (${brl(subs.monthlyInCents)}/mês, ${brl(subs.yearlyInCents)}/ano): ${active.map((s) => `${s.name} ${brl(s.amountInCents)}${s.installmentsLeft ? ` (faltam ${s.installmentsLeft} parcelas)` : ''}`).join('; ')}.`,
+      );
+    if (budgets.budgets.length)
+      lines.push(
+        `Limites do mês: ${budgets.budgets.map((b) => `${b.name} ${brl(b.spentInCents)} de ${brl(b.limitInCents)}`).join('; ')}.`,
+      );
     const catNames = categories.filter((c) => c.kind !== 'neutra').map((c) => c.name);
     if (catNames.length) lines.push(`Categorias disponíveis: ${catNames.join(', ')}.`);
-    const real = recent.filter((t) => !t.isInternalTransfer).sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime()).slice(0, 40);
+    const real = recent
+      .filter((t) => !t.isInternalTransfer)
+      .sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime())
+      .slice(0, 40);
     if (real.length) {
       lines.push('Últimas transações (data, valor, descrição, categoria):');
       for (const t of real) {
-        const d = t.occurredAt.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' });
-        lines.push(`  ${d} ${t.amountInCents < 0 ? '-' : '+'}${brl(Math.abs(t.amountInCents))} ${t.description} [${t.categoryId ? catName.get(t.categoryId) ?? '?' : 'sem categoria'}]`);
+        const d = t.occurredAt.toLocaleDateString('pt-BR', {
+          timeZone: 'America/Sao_Paulo',
+          day: '2-digit',
+          month: '2-digit',
+        });
+        lines.push(
+          `  ${d} ${t.amountInCents < 0 ? '-' : '+'}${brl(Math.abs(t.amountInCents))} ${t.description} [${t.categoryId ? (catName.get(t.categoryId) ?? '?') : 'sem categoria'}]`,
+        );
       }
     }
     if (lines.length <= 2 && !real.length) lines.push('Ainda não tem banco conectado nem gasto anotado.');

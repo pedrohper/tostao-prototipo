@@ -10,7 +10,11 @@ export default async function CriarContaPage({ searchParams }: { searchParams: P
     <>
       <div className="flex items-center gap-3">
         <BackLink href="/entrar" label={t.common.back} />
-        <div className="h-2 grow overflow-hidden rounded-full border border-linha bg-papel-2" role="img" aria-label={p.signupStepAria}>
+        <div
+          className="h-2 grow overflow-hidden rounded-full border border-linha bg-papel-2"
+          role="img"
+          aria-label={p.signupStepAria}
+        >
           <div className="h-full w-1/3 rounded-full bg-tinta" />
         </div>
       </div>

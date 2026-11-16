@@ -8,7 +8,16 @@ let repos: ReturnType<typeof makeInMemoryRepositories>;
 let now: Date;
 let games: GamesUseCase;
 const bet = (date: string, cents = -5000) =>
-  repos.transactions.create({ userId: 'u1', accountId: null, externalId: null, description: 'BLAZE', amountInCents: cents, occurredAt: new Date(`${date}T15:00:00Z`), categoryId: 'apostas', isInternalTransfer: false });
+  repos.transactions.create({
+    userId: 'u1',
+    accountId: null,
+    externalId: null,
+    description: 'BLAZE',
+    amountInCents: cents,
+    occurredAt: new Date(`${date}T15:00:00Z`),
+    categoryId: 'apostas',
+    isInternalTransfer: false,
+  });
 
 beforeEach(() => {
   repos = makeInMemoryRepositories();

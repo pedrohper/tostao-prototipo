@@ -1,5 +1,12 @@
 import type { FastifyInstance } from 'fastify';
-import { loginBody, registerBody, resetPasswordBody, type AuthResponse, type InvitesResponse, type ProfileResponse } from '@tostao/contracts';
+import {
+  loginBody,
+  registerBody,
+  resetPasswordBody,
+  type AuthResponse,
+  type InvitesResponse,
+  type ProfileResponse,
+} from '@tostao/contracts';
 import { AppError, InvalidCredentialsError } from '../../domain/errors.js';
 import { LoginLimiter } from '../login-limiter.js';
 import type { UseCases } from '../../use-cases/factories.js';
@@ -46,7 +53,12 @@ export function authRoutes(app: FastifyInstance, uc: UseCases, limiter = new Log
   app.get('/invites', { onRequest: verifyJwt }, async (request) => {
     const { invites } = await uc.listInvites.execute({ userId: request.user.sub });
     return {
-      invites: invites.map((i) => ({ code: i.code, createdAt: i.createdAt.toISOString(), usedAt: i.usedAt?.toISOString() ?? null, usedBy: i.usedBy })),
+      invites: invites.map((i) => ({
+        code: i.code,
+        createdAt: i.createdAt.toISOString(),
+        usedAt: i.usedAt?.toISOString() ?? null,
+        usedBy: i.usedBy,
+      })),
     } satisfies InvitesResponse;
   });
 
@@ -63,9 +75,19 @@ export function authRoutes(app: FastifyInstance, uc: UseCases, limiter = new Log
       email: user.email,
       createdAt: user.createdAt.toISOString(),
       connections: connections.map((c) => ({
-        id: c.id, itemId: c.itemId, institution: c.institution, displayName: c.displayName, status: c.status,
+        id: c.id,
+        itemId: c.itemId,
+        institution: c.institution,
+        displayName: c.displayName,
+        status: c.status,
         lastSyncedAt: c.lastSyncedAt?.toISOString() ?? null,
-        accounts: c.accounts.map((a) => ({ id: a.id, name: a.name, type: a.type, balanceInCents: a.balanceInCents, hidden: a.hidden })),
+        accounts: c.accounts.map((a) => ({
+          id: a.id,
+          name: a.name,
+          type: a.type,
+          balanceInCents: a.balanceInCents,
+          hidden: a.hidden,
+        })),
       })),
     } satisfies ProfileResponse;
   });

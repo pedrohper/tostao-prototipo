@@ -31,8 +31,8 @@ export class GetMonthSummaryUseCase {
     const byCategory = [...totals.entries()]
       .map(([categoryId, totalInCents]) => ({
         categoryId,
-        name: categoryId ? byId.get(categoryId)?.name ?? categoryId : 'Sem categoria',
-        color: categoryId ? byId.get(categoryId)?.color ?? '#F6EFE4' : '#F6EFE4',
+        name: categoryId ? (byId.get(categoryId)?.name ?? categoryId) : 'Sem categoria',
+        color: categoryId ? (byId.get(categoryId)?.color ?? '#F6EFE4') : '#F6EFE4',
         totalInCents,
       }))
       .sort((a, b) => b.totalInCents - a.totalInCents);
@@ -46,9 +46,18 @@ export class GetMonthSummaryUseCase {
       outcomeInCents,
       uncategorizedCount: real.filter((t) => t.categoryId === null).length,
       byCategory,
-      accounts: visible.map((a) => ({ id: a.id, name: a.name, type: a.type === 'CREDIT' ? 'CREDIT' as const : 'BANK' as const, balanceInCents: a.balanceInCents,
-        creditLimitInCents: a.creditLimitInCents ?? null, dueDate: a.dueDate ? nextDueDate(a.dueDate, new Date()).toISOString() : null, ...cardIdentity(a.fingerprint) })),
-      hiddenAccounts: accounts.filter((a) => a.hidden).map((a) => ({ id: a.id, name: a.name, balanceInCents: a.balanceInCents })),
+      accounts: visible.map((a) => ({
+        id: a.id,
+        name: a.name,
+        type: a.type === 'CREDIT' ? ('CREDIT' as const) : ('BANK' as const),
+        balanceInCents: a.balanceInCents,
+        creditLimitInCents: a.creditLimitInCents ?? null,
+        dueDate: a.dueDate ? nextDueDate(a.dueDate, new Date()).toISOString() : null,
+        ...cardIdentity(a.fingerprint),
+      })),
+      hiddenAccounts: accounts
+        .filter((a) => a.hidden)
+        .map((a) => ({ id: a.id, name: a.name, balanceInCents: a.balanceInCents })),
     };
   }
 }

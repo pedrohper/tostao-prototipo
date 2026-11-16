@@ -12,23 +12,35 @@ const hash = (token: string) => createHash('sha256').update(token).digest('hex')
  * Guardamos só o hash: quem ler o banco não consegue usar o link.
  */
 export class CreatePasswordResetUseCase {
-  constructor(private readonly repos: Pick<Repositories, 'users' | 'passwordResets'>, private readonly now = () => new Date()) {}
+  constructor(
+    private readonly repos: Pick<Repositories, 'users' | 'passwordResets'>,
+    private readonly now = () => new Date(),
+  ) {}
 
   async execute({ email }: { email: string }) {
     const user = await this.repos.users.findByEmail(email.trim().toLowerCase());
     if (!user) throw new ResourceNotFoundError('Usuário');
     const token = randomBytes(32).toString('base64url');
-    await this.repos.passwordResets.create({ userId: user.id, tokenHash: hash(token), expiresAt: new Date(this.now().getTime() + ONE_HOUR) });
+    await this.repos.passwordResets.create({
+      userId: user.id,
+      tokenHash: hash(token),
+      expiresAt: new Date(this.now().getTime() + ONE_HOUR),
+    });
     return { token, user };
   }
 }
 
 export class InvalidResetTokenError extends AppError {
-  constructor() { super('Esse link expirou ou já foi usado. Pede um novo.', 400); }
+  constructor() {
+    super('Esse link expirou ou já foi usado. Pede um novo.', 400);
+  }
 }
 
 export class ResetPasswordUseCase {
-  constructor(private readonly repos: Pick<Repositories, 'users' | 'passwordResets'>, private readonly now = () => new Date()) {}
+  constructor(
+    private readonly repos: Pick<Repositories, 'users' | 'passwordResets'>,
+    private readonly now = () => new Date(),
+  ) {}
 
   async execute({ token, password }: { token: string; password: string }) {
     const reset = await this.repos.passwordResets.findByTokenHash(hash(token));

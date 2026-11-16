@@ -17,7 +17,9 @@ export default async function TrilhaPage() {
     <div className="mx-auto flex w-full max-w-[760px] flex-col gap-2.5">
       <BackLink href="/aprender" label={t.common.back} />
       <div className="flex items-center justify-between gap-2">
-        <h1 className="font-display text-[34px] leading-[38px] font-extrabold md:text-[40px] md:leading-[44px]">{tl.trailTitle}</h1>
+        <h1 className="font-display text-[34px] leading-[38px] font-extrabold md:text-[40px] md:leading-[44px]">
+          {tl.trailTitle}
+        </h1>
         <Mascot pose="professor" size={92} alt="Tostão" />
       </div>
       <Trilha modules={modules} colors={MODULE_COLORS} done={done} t={tl} />

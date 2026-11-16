@@ -1,6 +1,11 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { connectBankBody, type ConnectTokenResponse, type DisconnectResponse, type SyncResponse } from '@tostao/contracts';
+import {
+  connectBankBody,
+  type ConnectTokenResponse,
+  type DisconnectResponse,
+  type SyncResponse,
+} from '@tostao/contracts';
 import { api, ApiError } from '@/lib/api';
 
 export type ConnectState = { error?: string; ok?: string };
@@ -16,7 +21,9 @@ export async function connectItem(itemId: string): Promise<ConnectState> {
   try {
     const r = await api<SyncResponse>('/connections', { method: 'POST', body: parsed.data });
     revalidatePath('/', 'layout');
-    return { ok: `Conectado! ${r.accounts} ${r.accounts === 1 ? 'conta' : 'contas'} e ${r.importedCount} transações novas.` };
+    return {
+      ok: `Conectado! ${r.accounts} ${r.accounts === 1 ? 'conta' : 'contas'} e ${r.importedCount} transações novas.`,
+    };
   } catch (e) {
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
@@ -45,7 +52,11 @@ export async function disconnectBank(_: ConnectState, form: FormData): Promise<C
   try {
     const r = await api<DisconnectResponse>(`/connections/${form.get('id')}`, { method: 'DELETE' });
     revalidatePath('/', 'layout');
-    return { ok: r.providerDeleted ? 'Banco removido.' : 'Removido do Tostão. O Pluggy não respondeu: se quiser, revoga em meu.pluggy.ai.' };
+    return {
+      ok: r.providerDeleted
+        ? 'Banco removido.'
+        : 'Removido do Tostão. O Pluggy não respondeu: se quiser, revoga em meu.pluggy.ai.',
+    };
   } catch (e) {
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
