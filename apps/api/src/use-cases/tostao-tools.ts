@@ -1,5 +1,3 @@
-import { mkdir, writeFile } from 'node:fs/promises';
-import path from 'node:path';
 import type { ToolDefinition } from '../gateways/ai-gateway.js';
 import type { Repositories } from '../repositories/types.js';
 import type { Category } from '../domain/entities.js';
@@ -12,9 +10,6 @@ const normalize = (s: string) =>
 
 const brl = (cents: number) =>
   (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-const VAULT_ROOT = process.env.OBSIDIAN_VAULT_PATH || '/home/optiplex/obsidian_vault';
-const HUB_URL = process.env.HOMELAB_HUB_URL || 'http://127.0.0.1:8088';
 
 /** Definições das ferramentas financeiras expostas pra DeepSeek no formato OpenAI function calling. */
 export const TOSTAO_TOOLS: ToolDefinition[] = [
@@ -68,76 +63,6 @@ export const TOSTAO_TOOLS: ToolDefinition[] = [
   },
 ];
 
-/** Ferramentas Jarvis exclusivas da conta do Pedro (Segundo Cérebro Obsidian + Anki Studio). */
-export const JARVIS_TOOLS: ToolDefinition[] = [
-  {
-    type: 'function',
-    function: {
-      name: 'salvar_nota_obsidian',
-      description: 'Salva uma nota, lembrete, tarefa, backlog de desenvolvimento, ideia de startup ou resumo de estudo diretamente no cofre Obsidian do Pedro. Use sempre que ele pedir para anotar, lembrar ou guardar qualquer informação que não seja um lançamento financeiro.',
-      parameters: {
-        type: 'object',
-        properties: {
-          titulo: { type: 'string', description: 'Título claro e curto da nota ou tarefa.' },
-          conteudo: { type: 'string', description: 'Conteúdo completo em Markdown (pode conter listas com -, checkboxes - [ ], tópicos, etc.). Se ele pedir para complementar algo dito antes na conversa, inclua todos os itens acumulados.' },
-          categoria: {
-            type: 'string',
-            enum: ['tarefa', 'projeto_tostao', 'ideia_startup', 'estudo_esamc', 'geral'],
-            description: 'Destino no Obsidian: "tarefa" (Rotina), "projeto_tostao" (Projetos/Tostao), "ideia_startup" (Ideias), "estudo_esamc" (Estudos-ESAMC) ou "geral" (Inbox).',
-          },
-          tags: {
-            type: 'array',
-            items: { type: 'string' },
-            description: 'Lista de tags curtas sem # (ex: ["tostao", "backlog", "meta"]).',
-          },
-        },
-        required: ['titulo', 'conteudo', 'categoria'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'buscar_notas_obsidian',
-      description: 'Pesquisa nas notas, projetos, estudos e tarefas pendentes do cofre Obsidian (Segundo Cérebro) do Pedro.',
-      parameters: {
-        type: 'object',
-        properties: {
-          termo_busca: { type: 'string', description: 'Palavras-chave para buscar no cofre Obsidian (ex: "cargill", "backlog tostao", "rotina", "esamc").' },
-        },
-        required: ['termo_busca'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'criar_flashcards_anki',
-      description: 'Gera e salva flashcards de estudo no Anki Studio do Pedro e cria uma nota correspondente na pasta Estudos-ESAMC do Obsidian.',
-      parameters: {
-        type: 'object',
-        properties: {
-          titulo: { type: 'string', description: 'Assunto ou matéria dos flashcards.' },
-          resumo: { type: 'string', description: 'Resumo curto do conteúdo estudado.' },
-          cards: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                front: { type: 'string', description: 'Frente do card (pergunta).' },
-                back: { type: 'string', description: 'Verso do card (resposta).' },
-              },
-              required: ['front', 'back'],
-            },
-            description: 'Lista de flashcards (frente e verso).',
-          },
-        },
-        required: ['titulo', 'cards'],
-      },
-    },
-  },
-];
-
 function findCategory(categories: Category[], name: string): Category | undefined {
   const target = normalize(name);
   return (
@@ -152,14 +77,20 @@ function resolveMonth(raw: unknown, now: Date): string | null {
   return raw;
 }
 
-/** Executa uma chamada de ferramenta solicitada pelo modelo, sempre escopada no userId. */
+/**
+ * Executa uma chamada de ferramenta solicitada pelo modelo, sempre escopada no userId.
+ * `allowedTools` é obrigatório: o modelo pode pedir uma ferramenta que não recebeu
+ * (alucinação ou prompt injection), então quem chama diz o que essa pessoa pode usar.
+ */
 export async function executeTostaoTool(
   repos: Repositories,
   userId: string,
   name: string,
   rawArgs: string,
   now: Date,
+  allowedTools: ReadonlySet<string>,
 ): Promise<string> {
+  if (!allowedTools.has(name)) return JSON.stringify({ erro: `Ferramenta não disponível: ${name}` });
   let args: Record<string, unknown>;
   try {
     args = rawArgs ? (JSON.parse(rawArgs) as Record<string, unknown>) : {};
@@ -302,135 +233,6 @@ export async function executeTostaoTool(
       tipo: kind,
       categoria: matchedCategoryName ?? 'sem categoria',
       data: transaction.occurredAt.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
-    });
-  }
-
-  if (name === 'salvar_nota_obsidian') {
-    const titulo = typeof args.titulo === 'string' ? args.titulo.trim() : 'Nota rápida';
-    const conteudo = typeof args.conteudo === 'string' ? args.conteudo.trim() : '';
-    const cat = typeof args.categoria === 'string' ? args.categoria : 'geral';
-    const rawTags = Array.isArray(args.tags) ? args.tags.map(String) : [];
-    if (!conteudo) return JSON.stringify({ erro: 'Informe o conteúdo da nota.' });
-
-    const spNow = new Date(now.getTime() - 3 * 3600 * 1000);
-    const isoDate = spNow.toISOString().slice(0, 10);
-    const timeStr = spNow.toISOString().slice(11, 16).replace(':', '-');
-    const slug =
-      normalize(titulo)
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '')
-        .slice(0, 45) || 'nota';
-
-    const cleanTag = (t: string) => normalize(t).replace(/[^a-z0-9_-]/g, '');
-    let relDir = 'Inbox';
-    let baseTags = ['inbox'];
-
-    if (cat === 'tarefa') {
-      relDir = 'Pessoal-Notion/Rotina';
-      baseTags = ['tarefa'];
-    } else if (cat === 'projeto_tostao') {
-      relDir = 'Projetos/Tostao';
-      baseTags = ['tostao', 'backlog'];
-    } else if (cat === 'ideia_startup') {
-      relDir = 'Pessoal-Notion/Ideias';
-      baseTags = ['ideia', 'startup'];
-    } else if (cat === 'estudo_esamc') {
-      relDir = 'Pessoal-Notion/Estudos-ESAMC';
-      baseTags = ['esamc', 'estudo'];
-    }
-
-    const allTags = [...new Set([...baseTags, ...rawTags.map(cleanTag).filter(Boolean)])];
-    const yamlTags = allTags.map((t) => `  - ${t}`).join('\n');
-    const fileName = cat === 'tarefa' ? `Tarefa_${isoDate}_${timeStr}_${slug}.md` : `${isoDate}_${timeStr}_${slug}.md`;
-    const relPath = path.join(relDir, fileName);
-    const fullPath = path.join(VAULT_ROOT, relPath);
-
-    let md = '';
-    if (cat === 'tarefa') {
-      const tagLine = allTags.map((t) => `#${t}`).join(' ');
-      md = `---\ntitle: "${titulo.replace(/"/g, "'")}"\ndate: ${isoDate}\ncategoria: tarefa\ntags:\n${yamlTags}\n---\n\n- [ ] **${titulo}** — ${conteudo} (${isoDate}) ${tagLine}\n`;
-    } else {
-      md = `---\ntitle: "${titulo.replace(/"/g, "'")}"\ndate: ${isoDate}\ncategoria: ${cat}\ntags:\n${yamlTags}\n---\n\n# ${titulo}\n\n${conteudo}\n`;
-    }
-
-    try {
-      await mkdir(path.dirname(fullPath), { recursive: true });
-      await writeFile(fullPath, md, 'utf8');
-      return JSON.stringify({
-        ok: true,
-        arquivo: relPath,
-        titulo,
-        categoria: cat,
-        tags: allTags,
-      });
-    } catch (e) {
-      return JSON.stringify({ erro: `Falha ao gravar no Obsidian: ${(e as Error).message}` });
-    }
-  }
-
-  if (name === 'buscar_notas_obsidian') {
-    const query = typeof args.termo_busca === 'string' ? args.termo_busca.trim() : '';
-    try {
-      const res = await fetch(`${HUB_URL}/api/obsidian/search`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, limit: 6 }),
-      });
-      if (!res.ok) return JSON.stringify({ erro: 'Serviço de busca do Obsidian indisponível no momento.' });
-      const data = await res.json();
-      return JSON.stringify(data);
-    } catch (e) {
-      return JSON.stringify({ erro: `Erro ao consultar Obsidian: ${(e as Error).message}` });
-    }
-  }
-
-  if (name === 'criar_flashcards_anki') {
-    const titulo = typeof args.titulo === 'string' ? args.titulo.trim() : 'Estudo';
-    const resumo = typeof args.resumo === 'string' ? args.resumo.trim() : titulo;
-    const rawCards = Array.isArray(args.cards) ? args.cards : [];
-    const cards = rawCards
-      .map((c) => {
-        const rec = (c ?? {}) as Record<string, unknown>;
-        return {
-          front: String(rec.front ?? rec.frente ?? '').trim(),
-          back: String(rec.back ?? rec.verso ?? '').trim(),
-        };
-      })
-      .filter((c) => c.front && c.back);
-
-    if (cards.length === 0) return JSON.stringify({ erro: 'Forneça ao menos 1 flashcard com front e back.' });
-
-    try {
-      await fetch(`${HUB_URL}/api/anki/cards`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: titulo, content: resumo, cards }),
-      });
-    } catch {}
-
-    const spNow = new Date(now.getTime() - 3 * 3600 * 1000);
-    const isoDate = spNow.toISOString().slice(0, 10);
-    const timeStr = spNow.toISOString().slice(11, 16).replace(':', '-');
-    const slug =
-      normalize(titulo)
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '')
-        .slice(0, 40) || 'anki';
-    const relPath = `Pessoal-Notion/Estudos-ESAMC/Anki_${isoDate}_${timeStr}_${slug}.md`;
-    const fullPath = path.join(VAULT_ROOT, relPath);
-    const cardsMd = cards.map((c, i) => `### Card ${i + 1}\n- **Frente:** ${c.front}\n- **Verso:** ${c.back}`).join('\n\n');
-    const md = `---\ntitle: "${titulo.replace(/"/g, "'")}"\ndate: ${isoDate}\ncategoria: anki\ntags:\n  - anki\n  - flashcards\n  - estudo\n---\n\n# 🃏 ${titulo}\n\n${resumo}\n\n## Flashcards (${cards.length})\n\n${cardsMd}\n`;
-
-    try {
-      await mkdir(path.dirname(fullPath), { recursive: true });
-      await writeFile(fullPath, md, 'utf8');
-    } catch {}
-
-    return JSON.stringify({
-      ok: true,
-      quantidade_cards: cards.length,
-      salvo_no_anki_studio: true,
-      nota_obsidian: relPath,
     });
   }
 

@@ -2,7 +2,7 @@ import type { PersonDTO, PersonEntryBody } from '@tostao/contracts';
 import type { Repositories } from '../repositories/types.js';
 import type { Person, Transaction } from '../domain/entities.js';
 import { NEUTRAL_CATEGORY_ID } from '../domain/entities.js';
-import { ResourceNotFoundError } from '../domain/errors.js';
+import { AppError, ResourceNotFoundError } from '../domain/errors.js';
 
 /**
  * Caderninho de acertos. Cada lançamento ligado a uma pessoa sai do gasto e da renda
@@ -56,6 +56,19 @@ export class EnsurePersonUseCase {
   async execute({ userId, name }: { userId: string; name: string }) {
     const n = cleanName(name);
     return { person: (await this.repos.people.findByName(userId, n)) ?? (await this.repos.people.create({ userId, name: n })) };
+  }
+}
+
+/** Renomeia a pessoa/grupo dos acertos ("Divido com minha família" → "Casa"). */
+export class RenamePersonUseCase {
+  constructor(private readonly repos: Pick<Repositories, 'people'>) {}
+  async execute({ userId, personId, name }: { userId: string; personId: string; name: string }) {
+    const p = await this.repos.people.findById(personId);
+    if (!p || p.userId !== userId) throw new ResourceNotFoundError('Pessoa');
+    const n = cleanName(name);
+    const other = await this.repos.people.findByName(userId, n);
+    if (other && other.id !== p.id) throw new AppError(`Já tem "${other.name}" nos acertos.`, 409);
+    return { person: await this.repos.people.rename(p.id, n) };
   }
 }
 

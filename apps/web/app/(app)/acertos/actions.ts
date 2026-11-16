@@ -62,3 +62,18 @@ export async function apagarPessoa(form: FormData) {
   revalidatePath('/', 'layout');
   redirect('/acertos');
 }
+
+/** Renomeia a pessoa/grupo ("Divido com minha família" → "Casa"). */
+export async function renomearPessoa(form: FormData) {
+  const id = String(form.get('personId') ?? '');
+  const volta = `/acertos/${encodeURIComponent(id)}`;
+  const parsed = createPersonBody.safeParse({ name: form.get('name') });
+  if (!parsed.success) redirect(comErro(volta, parsed.error.issues[0]?.message ?? 'Diz o nome'));
+  try {
+    await api(`/people/${encodeURIComponent(id)}`, { method: 'PATCH', body: parsed.data });
+  } catch (e) {
+    redirect(comErro(volta, e instanceof ApiError ? e.message : 'Algo deu errado.'));
+  }
+  revalidatePath('/', 'layout');
+  redirect(volta);
+}

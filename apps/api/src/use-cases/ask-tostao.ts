@@ -6,10 +6,7 @@ import { GetMonthSummaryUseCase } from './get-month-summary.js';
 import { ListSubscriptionsUseCase } from './list-subscriptions.js';
 import { GetBudgetsUseCase } from './budgets.js';
 import { ForecastUseCase } from './financial-plan.js';
-import { TOSTAO_TOOLS, JARVIS_TOOLS, executeTostaoTool } from './tostao-tools.js';
-
-const PEDRO_USER_ID = '4ca4a890-737a-4ef2-aca0-945cae9d2feb';
-const PEDRO_EMAIL = 'pereirahenrique0104@gmail.com';
+import { TOSTAO_TOOLS, executeTostaoTool } from './tostao-tools.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const HISTORY = 12; // mensagens anteriores que vão junto (memória curta da conversa)
@@ -22,7 +19,7 @@ const prevMonth = (m: string) => {
 };
 
 const PERSONA = `Você é o Tostão, um porquinho de boné laranja que ajuda jovens brasileiros (18 a 25 anos) com dinheiro.
-Voz: amigo sincero, sem julgamento, leve e direto. Português do Brasil, informal, sem gíria forçada.
+Voz: amigo sincero, sem julgamento, leve e direto. Responda no mesmo idioma em que a pessoa falar com você (Português do Brasil por padrão, ou Inglês/Espanhol se ela conversar nesses idiomas), sem gíria forçada.
 Regras:
 - Responda curto: 2 a 5 frases, ou uma lista curta. Nada de textão.
 - Use SÓ os números do bloco DADOS ou retornados pelas ferramentas. Se a informação não estiver lá, diga que não sabe ainda. Nunca invente valor.
@@ -56,14 +53,10 @@ export class AskTostaoUseCase {
       this.snapshot(userId, now),
       this.repos.users.findById(userId),
     ]);
-    const isPedro = userId === PEDRO_USER_ID || user?.email === PEDRO_EMAIL;
-    const activeTools = isPedro ? [...TOSTAO_TOOLS, ...JARVIS_TOOLS] : TOSTAO_TOOLS;
-    const jarvisRules = isPedro
-      ? `\n- MODO JARVIS (SEGUNDO CÉREBRO DO PEDRO ATIVO): O Pedro é o seu criador e dono do servidor OptiPlex onde você roda (nunca mande ele "procurar o suporte do app" — você é o assistente pessoal e copilot dele!). Você TEM acesso direto e em tempo real ao cofre Obsidian do Pedro e ao Anki Studio pelas ferramentas salvar_nota_obsidian, buscar_notas_obsidian e criar_flashcards_anki. SEMPRE que o Pedro pedir para anotar, salvar, lembrar ou guardar qualquer coisa (no Obsidian, tarefas, backlog do Tostão, ideias, lembretes ou estudos), chame a ferramenta salvar_nota_obsidian IMEDIATAMENTE. NUNCA diga que "não tem acesso ao Obsidian" ou "não guarda lembretes". Se ele pedir para anotar algo que já foi listado nas mensagens anteriores da conversa, reúna todos os itens mencionados e salve na nota com salvar_nota_obsidian.\n- MODO RESENHA (EXCLUSIVO PEDRO): Com o Pedro, você pode soltar a língua na resenha — humor ácido/irônico, tiração de sarro leve de brother e respostas afiadas quando ele vier provocar ou testar seus limites (sem conteúdo explícito). Pode zoar de volta em 1 frase antes de puxar ele pro que interessa (grana, backlog ou estudos).`
-      : '';
+    const allowedTools = new Set(TOSTAO_TOOLS.map((t) => t.function.name));
 
     const messages: ChatTurn[] = [
-      { role: 'system', content: `${PERSONA}${jarvisRules}${channel === 'whatsapp' ? `\n- Você está no WhatsApp: mensagem curta, sem tabela. Não liste o saldo de cada conta nem transações uma por uma; dê o número resumido e, pra detalhe, mande abrir o app.` : ''}\n\nA pessoa se chama ${user?.name ?? 'você'}. Hoje é ${now.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.\n\nDADOS:\n${data}` },
+      { role: 'system', content: `${PERSONA}${channel === 'whatsapp' ? `\n- Você está no WhatsApp: mensagem curta, sem tabela. Não liste o saldo de cada conta nem transações uma por uma; dê o número resumido e, pra detalhe, mande abrir o app.` : ''}\n\nA pessoa se chama ${user?.name ?? 'você'}. Hoje é ${now.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.\n\nDADOS:\n${data}` },
       ...history.map((m) => ({ role: m.role, content: m.content }) as ChatTurn),
       { role: 'user', content: text },
     ];
@@ -71,14 +64,14 @@ export class AskTostaoUseCase {
     let answer: string | null = null;
     try {
       for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-        const res = await this.ai.chat(messages, { tools: activeTools });
+        const res = await this.ai.chat(messages, { tools: TOSTAO_TOOLS });
         if (res.toolCalls.length === 0) {
           answer = res.content;
           break;
         }
         messages.push({ role: 'assistant', content: res.content, tool_calls: res.toolCalls });
         for (const call of res.toolCalls) {
-          const result = await executeTostaoTool(this.repos, userId, call.function.name, call.function.arguments, now);
+          const result = await executeTostaoTool(this.repos, userId, call.function.name, call.function.arguments, now, allowedTools);
           messages.push({ role: 'tool', tool_call_id: call.id, content: result });
         }
       }

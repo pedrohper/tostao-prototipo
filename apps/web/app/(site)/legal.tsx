@@ -1,4 +1,5 @@
 // Peças comuns de Termos e Privacidade.
+import { getI18n } from '@/lib/i18n-server';
 import { SiteFooter, SiteHeader } from './chrome';
 import s from './site.module.css';
 
@@ -11,14 +12,16 @@ export function Contato() {
   return <a href={`mailto:${EMAIL}`}>{EMAIL}</a>;
 }
 
-export function LegalPage({ title, children }: { title: string; children: React.ReactNode }) {
+export async function LegalPage({ title, children }: { title: string; children: React.ReactNode }) {
+  const { t } = await getI18n();
+  const l = t.legal;
   return (
     <div className={s.lp}>
       <div className={s.wrap}>
         <SiteHeader />
         <main className={s.doc}>
           <h1 className={s.disp}>{title}</h1>
-          <p className={s.atualizado}>Atualizado em {ATUALIZADO_EM}</p>
+          <p className={s.atualizado}>{l.updatedOn(l.updatedDate)}</p>
           {children}
         </main>
         <SiteFooter />
@@ -27,10 +30,11 @@ export function LegalPage({ title, children }: { title: string; children: React.
   );
 }
 
-export function Resumo({ children }: { children: React.ReactNode }) {
+export async function Resumo({ children }: { children: React.ReactNode }) {
+  const { t } = await getI18n();
   return (
     <section className={`${s.card} ${s.resumo}`}>
-      <h2 className={s.disp}>Resumo sem juridiquês</h2>
+      <h2 className={s.disp}>{t.legal.summaryHeading}</h2>
       {children}
     </section>
   );

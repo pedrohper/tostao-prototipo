@@ -6,6 +6,10 @@ import { verifyJwt } from '../middlewares/verify-jwt.js';
 import { presentTransaction } from '../presenters.js';
 
 export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
+  const checkLater = (userId: string) => {
+    void uc.runTostaoChecks.execute({ userId }).catch((err) => app.log.warn({ err }, 'rotina automática falhou'));
+  };
+
   const categoryDto = ({ id, name, emoji, color, kind, userId }: { id: string; name: string; emoji: string; color: string; kind: CategoryDTO['kind']; userId?: string | null }) =>
     ({ id, name, emoji, color, kind, custom: !!userId }) satisfies CategoryDTO;
 
@@ -71,6 +75,7 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
       userId: request.user.sub,
       occurredAt: new Date(`${body.occurredAt}T12:00:00-03:00`),
     });
+    checkLater(request.user.sub);
     return reply.status(201).send({ id: transaction.id });
   });
 
@@ -85,17 +90,22 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
     const { id } = z.object({ id: z.string() }).parse(request.params);
     const body = updateTransactionBody.parse(request.body);
     const { transaction } = await uc.updateTransaction.execute({ ...body, userId: request.user.sub, transactionId: id });
+    checkLater(request.user.sub);
     return { id: transaction.id, isInternalTransfer: transaction.isInternalTransfer };
   });
 
   app.patch('/transactions/:id/category', { onRequest: verifyJwt }, async (request) => {
     const { id } = z.object({ id: z.string() }).parse(request.params);
     const body = categorizeBody.parse(request.body);
-    return uc.categorizeTransaction.execute({ ...body, userId: request.user.sub, transactionId: id });
+    const r = await uc.categorizeTransaction.execute({ ...body, userId: request.user.sub, transactionId: id });
+    checkLater(request.user.sub);
+    return r;
   });
 
   // "Deixa o Tostão categorizar": a IA tenta as pendentes agora (as que ela não souber continuam pendentes)
   app.post('/transactions/auto-categorize', { onRequest: verifyJwt }, async (request) => {
-    return (await uc.autoCategorize.execute({ userId: request.user.sub })) satisfies AutoCategorizeResponse;
+    const r = (await uc.autoCategorize.execute({ userId: request.user.sub })) satisfies AutoCategorizeResponse;
+    checkLater(request.user.sub);
+    return r;
   });
 }

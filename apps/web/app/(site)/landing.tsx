@@ -1,6 +1,5 @@
 // Landing pública. Igual às telas 20 (desktop) e 21 (celular) do artefato "Telas do Tostão":
 // é uma página só, responsiva. Quem já está logado nem vê: a raiz manda pro /inicio.
-/* eslint-disable @next/next/no-img-element */
 import Link from 'next/link';
 import { SiteFooter, SiteHeader } from './chrome';
 import s from './site.module.css';
@@ -9,7 +8,7 @@ const MODULOS = ['Saindo da neblina', 'Cartão sem armadilha', 'Construindo o mu
 
 function Check() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0E7A55" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-verde-texto)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
   );
 }
 
@@ -39,9 +38,9 @@ export function Landing({ contaApagada = false }: { contaApagada?: boolean }) {
           <div className={s['hero-art']} aria-hidden="true">
             <img className={s.pig} src="/elenco/acenando.webp" alt="" />
             <div className={`${s.card} ${s.saldo}`}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#6B635A' }}>Saldo em 3 contas</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--lp-muted)' }}>Saldo em 3 contas</span>
               <span className={s.disp} style={{ fontSize: 34, lineHeight: '38px', fontVariantNumeric: 'tabular-nums' }}>R$ 842,30</span>
-              <div className={s.bar}><div style={{ width: '16%', background: '#1E1B18' }} /><div style={{ width: '67%', background: '#FF5A36' }} /><div style={{ width: '17%', background: '#3DD6A0' }} /></div>
+              <div className={s.bar}><div style={{ width: '16%', background: 'var(--color-tinta-fixa)' }} /><div style={{ width: '67%', background: 'var(--color-laranja)' }} /><div style={{ width: '17%', background: 'var(--color-menta)' }} /></div>
             </div>
             <div className={s.dica}>Eita, <b>R$ 312,40 em delivery</b> esse mês. Tem uma lição de 2 minutos sobre isso.</div>
           </div>
@@ -69,19 +68,19 @@ export function Landing({ contaApagada = false }: { contaApagada?: boolean }) {
             <div className={s.mods}>{MODULOS.map((m) => <span key={m}>{m}</span>)}</div>
           </div>
           <div className={`${s.card} ${s.licao}`}>
-            <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6B635A' }}>Módulo 1 · 2 min</span>
+            <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--lp-muted)' }}>Módulo 1 · 2 min</span>
             <span className={s.disp} style={{ fontSize: 28, lineHeight: '32px' }}>Seu dinheiro é uma pizza</span>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#6B635A' }}>O ideal</span>
-              <div className={s.bar}><div style={{ width: '50%', background: '#1E1B18' }} /><div style={{ width: '30%', background: '#FF5A36' }} /><div style={{ width: '20%', background: '#3DD6A0' }} /></div>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--lp-muted)' }}>O ideal</span>
+              <div className={s.bar}><div style={{ width: '50%', background: 'var(--color-tinta-fixa)' }} /><div style={{ width: '30%', background: 'var(--color-laranja)' }} /><div style={{ width: '20%', background: 'var(--color-menta)' }} /></div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#6B635A' }}>O seu novembro</span>
-              <div className={s.bar}><div style={{ width: '16%', background: '#1E1B18' }} /><div style={{ width: '84%', background: '#FF5A36' }} /></div>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--lp-muted)' }}>O seu novembro</span>
+              <div className={s.bar}><div style={{ width: '16%', background: 'var(--color-tinta-fixa)' }} /><div style={{ width: '84%', background: 'var(--color-laranja)' }} /></div>
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
               <img src="/elenco/preocupado.webp" alt="Tostão preocupado" style={{ width: 84, height: 84, flex: 'none' }} />
-              <div style={{ background: '#FFE1E7', borderRadius: '16px 16px 16px 4px', padding: '11px 13px', fontSize: 15, lineHeight: '21px', marginBottom: 8 }}>Os desejos comeram a pizza quase inteira. Normal no começo. Bora treinar?</div>
+              <div style={{ background: 'var(--lp-pink)', borderRadius: '16px 16px 16px 4px', padding: '11px 13px', fontSize: 15, lineHeight: '21px', marginBottom: 8 }}>Os desejos comeram a pizza quase inteira. Normal no começo. Bora treinar?</div>
             </div>
           </div>
         </div>
@@ -92,10 +91,10 @@ export function Landing({ contaApagada = false }: { contaApagada?: boolean }) {
           <span className={s.eyebrow}>A turma</span>
           <h2 className={s.disp}>Dois amigos do seu lado, dois vilões que todo mundo de 20 anos já encontrou</h2>
           <div className={s.vils}>
-            <div className={s.vil} style={{ background: '#FFE1E7' }}><img src="/elenco/orgulhoso.webp" alt="Tostão orgulhoso de braços cruzados" /><span className={s.tag}>Herói</span><h3 className={s.disp}>Tostão</h3><p>Cofrinho que já quebrou e se remendou. Fala a real sobre dinheiro, sem sermão.</p></div>
-            <div className={s.vil} style={{ background: '#DDF6E8' }}><img src="/elenco/caramelo.webp" alt="Caramelo sentado, sorrindo" /><span className={s.tag}>Herói</span><h3 className={s.disp}>Caramelo</h3><p>Vira-lata de rua que fareja pechincha, chorinho no Pix e desperdício no mercado.</p></div>
-            <div className={s.vil} style={{ background: '#FFF1C7' }}><img src="/elenco/tigrinho.webp" alt="Tigrinho de óculos escuros e correntes de ouro" /><span className={s.tag}>Vilão</span><h3 className={s.disp}>Tigrinho</h3><p>Ostenta, canta e jura que hoje a cartinha solta. É a bet que nunca devolve.</p></div>
-            <div className={s.vil} style={{ background: '#DCEBFF' }}><img src="/elenco/urubu-pix.webp" alt="Urubu do Pix mostrando o celular" /><span className={s.tag}>Vilão</span><h3 className={s.disp}>Urubu do Pix</h3><p>Robô que rende 10% ao dia, falsa central, pirâmide do amigo. Some quando você precisa.</p></div>
+            <div className={s.vil} style={{ background: 'var(--lp-pink)' }}><img src="/elenco/orgulhoso.webp" alt="Tostão orgulhoso de braços cruzados" /><span className={s.tag}>Herói</span><h3 className={s.disp}>Tostão</h3><p>Cofrinho que já quebrou e se remendou. Fala a real sobre dinheiro, sem sermão.</p></div>
+            <div className={s.vil} style={{ background: 'var(--lp-mint)' }}><img src="/elenco/caramelo.webp" alt="Caramelo sentado, sorrindo" /><span className={s.tag}>Herói</span><h3 className={s.disp}>Caramelo</h3><p>Vira-lata de rua que fareja pechincha, chorinho no Pix e desperdício no mercado.</p></div>
+            <div className={s.vil} style={{ background: 'var(--lp-yellow)' }}><img src="/elenco/tigrinho.webp" alt="Tigrinho de óculos escuros e correntes de ouro" /><span className={s.tag}>Vilão</span><h3 className={s.disp}>Tigrinho</h3><p>Ostenta, canta e jura que hoje a cartinha solta. É a bet que nunca devolve.</p></div>
+            <div className={s.vil} style={{ background: 'var(--lp-blue)' }}><img src="/elenco/urubu-pix.webp" alt="Urubu do Pix mostrando o celular" /><span className={s.tag}>Vilão</span><h3 className={s.disp}>Urubu do Pix</h3><p>Robô que rende 10% ao dia, falsa central, pirâmide do amigo. Some quando você precisa.</p></div>
           </div>
         </div>
       </section>

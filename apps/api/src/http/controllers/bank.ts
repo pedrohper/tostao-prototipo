@@ -7,9 +7,14 @@ import { verifyJwt } from '../middlewares/verify-jwt.js';
 import { ResourceNotFoundError } from '../../domain/errors.js';
 
 export function bankRoutes(app: FastifyInstance, uc: UseCases, repos: Repositories) {
-  // Depois de puxar transação nova, a IA tenta categorizar o que as regras não pegaram. Roda em segundo plano.
+  // Depois de puxar transação nova, a IA tenta categorizar e depois o Tostão/Caramelo atualizam os achados. Roda em segundo plano.
   const categorizeLater = (userId: string) => {
-    void uc.autoCategorize.execute({ userId }).catch((err) => app.log.warn({ err }, 'categoria automática falhou'));
+    void uc.autoCategorize
+      .execute({ userId })
+      .catch((err) => app.log.warn({ err }, 'categoria automática falhou'))
+      .finally(() => {
+        void uc.runTostaoChecks.execute({ userId }).catch((err) => app.log.warn({ err }, 'rotina automática falhou'));
+      });
   };
 
   // A web pede um token, abre o Pluggy Connect e, no onSuccess, manda o item.id pro POST /connections.

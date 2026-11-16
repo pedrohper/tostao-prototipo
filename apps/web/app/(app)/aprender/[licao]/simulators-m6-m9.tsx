@@ -54,7 +54,7 @@ function calcIrrfCents(brutoCents: number, inssCents: number): number {
   // Desconto simplificado mensal (R$ 564,80) vs INSS legal: usa o maior
   const deducao = Math.max(inss, 564.8);
   const base = Math.max(0, bruto - deducao);
-  let ir = 0;
+  let ir: number;
   if (base <= 2259.2) ir = 0;
   else if (base <= 2826.65) ir = base * 0.075 - 169.44;
   else if (base <= 3751.05) ir = base * 0.15 - 381.44;
@@ -98,26 +98,26 @@ function CalculadoraHoleriteReal() {
           step={100}
           value={bruto}
           onChange={(e) => setBruto(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
       <div className="grid grid-cols-2 gap-2.5">
         <div className="rounded-2xl bg-papel-2 p-3">
           <span className="text-xs font-semibold text-tinta-suave">INSS progressivo</span>
-          <p className="font-display text-xl font-extrabold text-[#9F1239]">−{money(inssCents)}</p>
+          <p className="font-display text-xl font-extrabold text-vermelho-texto">−{money(inssCents)}</p>
         </div>
         <div className="rounded-2xl bg-papel-2 p-3">
           <span className="text-xs font-semibold text-tinta-suave">IRRF na fonte</span>
-          <p className="font-display text-xl font-extrabold text-[#9F1239]">−{money(irrfCents)}</p>
+          <p className="font-display text-xl font-extrabold text-vermelho-texto">−{money(irrfCents)}</p>
         </div>
       </div>
 
       <div className="rounded-2xl bg-menta-clara p-3.5">
-        <span className="text-xs font-semibold text-[#065F46]">Líquido real que cai na conta</span>
+        <span className="text-xs font-semibold text-verde-texto">Líquido real que cai na conta</span>
         <div className="flex items-baseline justify-between">
           <p className="font-display text-2xl font-extrabold text-tinta">{money(liquidoCents)}</p>
-          <span className="text-xs font-bold text-[#065F46]">−{pctDesconto}% de descontos</span>
+          <span className="text-xs font-bold text-verde-texto">−{pctDesconto}% de descontos</span>
         </div>
       </div>
 
@@ -154,7 +154,7 @@ function SaqueAniversarioVsRescisao() {
           step={100}
           value={bruto}
           onChange={(e) => setBruto(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -182,18 +182,18 @@ function SaqueAniversarioVsRescisao() {
 
       <div className="grid grid-cols-2 gap-2.5">
         <div className="rounded-2xl bg-menta-clara p-3">
-          <span className="text-xs font-semibold text-[#065F46]">Saque-Rescisão</span>
+          <span className="text-xs font-semibold text-verde-texto">Saque-Rescisão</span>
           <p className="font-display text-xl font-extrabold text-tinta">{money(saqueRescisaoCents)}</p>
-          <span className="text-[11px] text-[#065F46]">Saldo + multa de 40%</span>
+          <span className="text-[11px] text-verde-texto">Saldo + multa de 40%</span>
         </div>
         <div className="rounded-2xl bg-rosa p-3">
-          <span className="text-xs font-semibold text-[#9F1239]">Saque-Aniversário</span>
+          <span className="text-xs font-semibold text-vermelho-texto">Saque-Aniversário</span>
           <p className="font-display text-xl font-extrabold text-tinta">{money(saqueAniversarioCents)}</p>
-          <span className="text-[11px] text-[#9F1239]">Só a multa na demissão</span>
+          <span className="text-[11px] text-vermelho-texto">Só a multa na demissão</span>
         </div>
       </div>
 
-      <p className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-[#92400E]">
+      <p className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
         ⚠️ No Saque-Aniversário, <b>{money(travadoCents)}</b> do seu saldo ficam retidos se você for demitido sem justa causa — e voltar para o Saque-Rescisão leva 25 meses.
       </p>
     </div>
@@ -229,7 +229,7 @@ function FatiadorDecimoTerceiro() {
           step={100}
           value={liquido}
           onChange={(e) => setLiquido(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
         <span className="text-[11px] text-tinta-suave">
           1ª parcela (nov): ~{money(parc1Cents)} · 2ª parcela (dez, com descontos): ~{money(parc2Cents)}
@@ -240,7 +240,7 @@ function FatiadorDecimoTerceiro() {
         <label className="flex flex-col gap-1">
           <span className="flex justify-between text-xs font-semibold">
             <span>Quitar dívidas / cartão</span>
-            <span className="font-bold text-[#065F46]">{dividas}% ({money(divCents)})</span>
+            <span className="font-bold text-verde-texto">{dividas}% ({money(divCents)})</span>
           </span>
           <input
             type="range"
@@ -253,14 +253,14 @@ function FatiadorDecimoTerceiro() {
               setDividas(v);
               if (v + janeiro > 100) setJaneiro(100 - v);
             }}
-            className="accent-[#3DD6A0]"
+            className="accent-menta"
           />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className="flex justify-between text-xs font-semibold">
             <span>Janeiro (IPVA, matrícula, material)</span>
-            <span className="font-bold text-[#D97706]">{janeiro}% ({money(janCents)})</span>
+            <span className="font-bold text-laranja-texto">{janeiro}% ({money(janCents)})</span>
           </span>
           <input
             type="range"
@@ -273,28 +273,28 @@ function FatiadorDecimoTerceiro() {
               setJaneiro(v);
               if (v + dividas > 100) setDividas(100 - v);
             }}
-            className="accent-[#D97706]"
+            className="accent-amarelo"
           />
         </label>
       </div>
 
       <div className="flex h-4 w-full overflow-hidden rounded-full border border-linha bg-papel-2">
-        <div style={{ width: `${dividas}%` }} className="bg-[#3DD6A0] transition-all" />
-        <div style={{ width: `${janeiro}%` }} className="bg-[#FFC233] transition-all" />
-        <div style={{ width: `${festas}%` }} className="bg-[#FFE1E7] transition-all" />
+        <div style={{ width: `${dividas}%` }} className="bg-menta transition-all" />
+        <div style={{ width: `${janeiro}%` }} className="bg-amarelo transition-all" />
+        <div style={{ width: `${festas}%` }} className="bg-rosa transition-all" />
       </div>
 
       <div className="grid grid-cols-3 gap-2">
         <div className="rounded-xl bg-menta-clara p-2.5">
-          <span className="text-[11px] font-semibold text-[#065F46]">Dívidas</span>
+          <span className="text-[11px] font-semibold text-verde-texto">Dívidas</span>
           <p className="font-display text-sm font-extrabold text-tinta">{money(divCents)}</p>
         </div>
         <div className="rounded-xl bg-amarelo-claro p-2.5">
-          <span className="text-[11px] font-semibold text-[#92400E]">Janeiro</span>
+          <span className="text-[11px] font-semibold text-laranja-texto">Janeiro</span>
           <p className="font-display text-sm font-extrabold text-tinta">{money(janCents)}</p>
         </div>
         <div className="rounded-xl bg-rosa p-2.5">
-          <span className="text-[11px] font-semibold text-[#9F1239]">Festas ({festas}%)</span>
+          <span className="text-[11px] font-semibold text-vermelho-texto">Festas ({festas}%)</span>
           <p className="font-display text-sm font-extrabold text-tinta">{money(fesCents)}</p>
         </div>
       </div>
@@ -325,7 +325,7 @@ function ContaRetornoFerias() {
           step={100}
           value={salario}
           onChange={(e) => setSalario(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -418,7 +418,7 @@ function EquivalenciaCltPj() {
           step={250}
           value={cltBruto}
           onChange={(e) => setCltBruto(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -434,7 +434,7 @@ function EquivalenciaCltPj() {
           step={100}
           value={beneficios}
           onChange={(e) => setBeneficios(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -450,7 +450,7 @@ function EquivalenciaCltPj() {
           step={250}
           value={pjMensal}
           onChange={(e) => setPjMensal(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -512,7 +512,7 @@ function CalculadoraCDI() {
           step={500}
           value={valor}
           onChange={(e) => setValor(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -528,15 +528,15 @@ function CalculadoraCDI() {
           step={3}
           value={meses}
           onChange={(e) => setMeses(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
       <div className="grid grid-cols-2 gap-2.5">
         <div className="rounded-2xl bg-menta-clara p-3">
-          <span className="text-xs font-semibold text-[#065F46]">CDB 100% CDI (líquido)</span>
+          <span className="text-xs font-semibold text-verde-texto">CDB 100% CDI (líquido)</span>
           <p className="font-display text-xl font-extrabold text-tinta">{money(liqCdbCents)}</p>
-          <span className="text-[11px] text-[#065F46]">~11,15% a.a. − IR</span>
+          <span className="text-[11px] text-verde-texto">~11,15% a.a. − IR</span>
         </div>
         <div className="rounded-2xl bg-papel-2 p-3">
           <span className="text-xs font-semibold text-tinta-suave">Poupança (isenta)</span>
@@ -545,7 +545,7 @@ function CalculadoraCDI() {
         </div>
       </div>
 
-      <p className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-[#92400E]">
+      <p className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
         🚀 Mesmo pagando Imposto de Renda, o CDB 100% CDI coloca <b>{money(diferencaCents)}</b> a mais no seu bolso nesse prazo.
       </p>
     </div>
@@ -581,7 +581,7 @@ function RaioXGarantiaFGC() {
             <label key={b.nome} className="flex flex-col gap-1">
               <span className="flex justify-between text-xs font-semibold">
                 <span>{b.nome}</span>
-                <span className={`font-bold ${passou ? 'text-[#9F1239]' : 'text-tinta'}`}>
+                <span className={`font-bold ${passou ? 'text-vermelho-texto' : 'text-tinta'}`}>
                   {money(b.valor * 100)} {passou ? '(acima de R$ 250 mil!)' : ''}
                 </span>
               </span>
@@ -592,7 +592,7 @@ function RaioXGarantiaFGC() {
                 step={10000}
                 value={b.valor}
                 onChange={(e) => b.set(+e.target.value)}
-                className="accent-[#FF5A36]"
+                className="accent-laranja"
               />
             </label>
           );
@@ -601,7 +601,7 @@ function RaioXGarantiaFGC() {
 
       <div className="grid grid-cols-2 gap-2.5">
         <div className="rounded-2xl bg-menta-clara p-3">
-          <span className="text-xs font-semibold text-[#065F46]">Protegido pelo FGC</span>
+          <span className="text-xs font-semibold text-verde-texto">Protegido pelo FGC</span>
           <p className="font-display text-lg font-extrabold text-tinta">{money(cobertoTotal * 100)}</p>
         </div>
         <div className={`rounded-2xl p-3 ${descoberto > 0 ? 'bg-rosa' : 'bg-papel-2'}`}>
@@ -646,7 +646,7 @@ function MordidaLeaoResgate() {
           step={500}
           value={valor}
           onChange={(e) => setValor(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -668,7 +668,7 @@ function MordidaLeaoResgate() {
               </div>
               <div className="text-right">
                 <p className="font-display text-base font-extrabold text-tinta">+{money(lucroLiqCents)}</p>
-                <p className="text-[11px] text-[#9F1239]">Leão levou {money(impostoTotalCents)}</p>
+                <p className="text-[11px] text-vermelho-texto">Leão levou {money(impostoTotalCents)}</p>
               </div>
             </div>
           );
@@ -788,14 +788,14 @@ function CalculadoraGanhoReal() {
           step={0.5}
           value={nominal}
           onChange={(e) => setNominal(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
       <label className="flex flex-col gap-1">
         <span className="flex justify-between text-xs font-semibold">
           <span>Inflação IPCA (% a.a.)</span>
-          <span className="font-bold text-[#9F1239]">{ipca.toFixed(1).replace('.', ',')}%</span>
+          <span className="font-bold text-vermelho-texto">{ipca.toFixed(1).replace('.', ',')}%</span>
         </span>
         <input
           type="range"
@@ -804,7 +804,7 @@ function CalculadoraGanhoReal() {
           step={0.5}
           value={ipca}
           onChange={(e) => setIpca(+e.target.value)}
-          className="accent-[#E11D48]"
+          className="accent-alerta"
         />
       </label>
 
@@ -865,7 +865,7 @@ function SocioVsApostador() {
           type="button"
           onClick={() => setModo('dia')}
           className={`rounded-xl px-3 py-2 text-xs font-bold transition ${
-            modo === 'dia' ? 'bg-rosa text-[#9F1239] shadow-sm' : 'border border-linha bg-cartao text-tinta-suave'
+            modo === 'dia' ? 'bg-rosa text-vermelho-texto shadow-sm' : 'border border-linha bg-cartao text-tinta-suave'
           }`}
         >
           😰 Olhar todo dia
@@ -874,7 +874,7 @@ function SocioVsApostador() {
           type="button"
           onClick={() => setModo('anos')}
           className={`rounded-xl px-3 py-2 text-xs font-bold transition ${
-            modo === 'anos' ? 'bg-menta-clara text-[#065F46] shadow-sm' : 'border border-linha bg-cartao text-tinta-suave'
+            modo === 'anos' ? 'bg-menta-clara text-verde-texto shadow-sm' : 'border border-linha bg-cartao text-tinta-suave'
           }`}
         >
           🧘 Olhar em 5 anos
@@ -890,7 +890,7 @@ function SocioVsApostador() {
               className="flex items-center justify-between rounded-xl border border-linha bg-cartao px-3 py-2 text-xs"
             >
               <span className="font-bold text-tinta">{item.label}</span>
-              <span className={`font-bold ${positivo ? 'text-[#065F46]' : 'text-[#9F1239]'}`}>
+              <span className={`font-bold ${positivo ? 'text-verde-texto' : 'text-vermelho-texto'}`}>
                 {positivo ? '+' : ''}
                 {item.varPct.toFixed(1).replace('.', ',')}%
               </span>
@@ -933,7 +933,7 @@ function RendaPassivaFIIs() {
           step={50}
           value={meta}
           onChange={(e) => setMeta(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -949,20 +949,20 @@ function RendaPassivaFIIs() {
           step={0.05}
           value={dy}
           onChange={(e) => setDy(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
       <div className="grid grid-cols-2 gap-2.5">
         <div className="rounded-2xl bg-amarelo-claro p-3">
-          <span className="text-xs font-semibold text-[#92400E]">Cotas necessárias</span>
+          <span className="text-xs font-semibold text-laranja-texto">Cotas necessárias</span>
           <p className="font-display text-2xl font-extrabold text-tinta">{cotasNecessarias}</p>
-          <span className="text-[11px] text-[#92400E]">{money(Math.round(dividendoPorCota * 100))}/cota</span>
+          <span className="text-[11px] text-laranja-texto">{money(Math.round(dividendoPorCota * 100))}/cota</span>
         </div>
         <div className="rounded-2xl bg-menta-clara p-3">
-          <span className="text-xs font-semibold text-[#065F46]">Capital acumulado</span>
+          <span className="text-xs font-semibold text-verde-texto">Capital acumulado</span>
           <p className="font-display text-xl font-extrabold text-tinta">{money(capitalCents)}</p>
-          <span className="text-[11px] text-[#065F46]">para gerar a meta</span>
+          <span className="text-[11px] text-verde-texto">para gerar a meta</span>
         </div>
       </div>
     </div>
@@ -991,20 +991,20 @@ function ApostaIndividualVsIndice() {
           step={500}
           value={valor}
           onChange={(e) => setValor(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
       <div className="grid grid-cols-2 gap-2.5">
         <div className="rounded-2xl bg-rosa p-3">
-          <span className="text-xs font-semibold text-[#9F1239]">1 Ação (queda de −40%)</span>
+          <span className="text-xs font-semibold text-vermelho-texto">1 Ação (queda de −40%)</span>
           <p className="font-display text-xl font-extrabold text-tinta">{money(acaoUnicaCents)}</p>
-          <span className="text-[11px] text-[#9F1239]">Risco concentrado</span>
+          <span className="text-[11px] text-vermelho-texto">Risco concentrado</span>
         </div>
         <div className="rounded-2xl bg-menta-clara p-3">
-          <span className="text-xs font-semibold text-[#065F46]">ETF Índice (5 anos)</span>
+          <span className="text-xs font-semibold text-verde-texto">ETF Índice (5 anos)</span>
           <p className="font-display text-xl font-extrabold text-tinta">{money(etfIndiceCents)}</p>
-          <span className="text-[11px] text-[#065F46]">Média ~10% a.a. (+61%)</span>
+          <span className="text-[11px] text-verde-texto">Média ~10% a.a. (+61%)</span>
         </div>
       </div>
 
@@ -1030,7 +1030,7 @@ function DetectorCharlatanismo() {
       <label className="flex flex-col gap-1">
         <span className="flex justify-between text-xs font-semibold">
           <span>Rentabilidade mensal prometida</span>
-          <span className="font-bold text-[#9F1239]">{taxaMes.toFixed(1).replace('.', ',')}% ao mês</span>
+          <span className="font-bold text-vermelho-texto">{taxaMes.toFixed(1).replace('.', ',')}% ao mês</span>
         </span>
         <input
           type="range"
@@ -1039,7 +1039,7 @@ function DetectorCharlatanismo() {
           step={0.5}
           value={taxaMes}
           onChange={(e) => setTaxaMes(+e.target.value)}
-          className="accent-[#E11D48]"
+          className="accent-alerta"
         />
       </label>
 
@@ -1055,21 +1055,21 @@ function DetectorCharlatanismo() {
           step={500}
           value={aporte}
           onChange={(e) => setAporte(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
       <div className="flex flex-col gap-2">
         <div className="flex justify-between rounded-xl bg-amarelo-claro px-3 py-2 text-xs">
-          <span className="font-semibold text-[#92400E]">Em 5 anos (60 meses)</span>
+          <span className="font-semibold text-laranja-texto">Em 5 anos (60 meses)</span>
           <span className="font-display font-extrabold text-tinta">{formatCompactMoney(em5Anos)}</span>
         </div>
         <div className="flex justify-between rounded-xl bg-rosa px-3 py-2 text-xs">
-          <span className="font-semibold text-[#9F1239]">Em 10 anos (120 meses)</span>
+          <span className="font-semibold text-vermelho-texto">Em 10 anos (120 meses)</span>
           <span className="font-display font-extrabold text-tinta">{formatCompactMoney(em10Anos)}</span>
         </div>
         <div className="flex justify-between rounded-xl bg-rosa px-3 py-2 text-xs">
-          <span className="font-semibold text-[#9F1239]">Em 20 anos (240 meses)</span>
+          <span className="font-semibold text-vermelho-texto">Em 20 anos (240 meses)</span>
           <span className="font-display font-extrabold text-tinta">{formatCompactMoney(em20Anos)}</span>
         </div>
       </div>
@@ -1105,14 +1105,14 @@ function TesteCardiacoVolatilidade() {
           step={500}
           value={valor}
           onChange={(e) => setValor(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
       <label className="flex flex-col gap-1">
         <span className="flex justify-between text-xs font-semibold">
           <span>Queda em cripto / ativo volátil</span>
-          <span className="font-bold text-[#9F1239]">−{quedaPct}%</span>
+          <span className="font-bold text-vermelho-texto">−{quedaPct}%</span>
         </span>
         <input
           type="range"
@@ -1121,22 +1121,22 @@ function TesteCardiacoVolatilidade() {
           step={5}
           value={quedaPct}
           onChange={(e) => setQuedaPct(+e.target.value)}
-          className="accent-[#E11D48]"
+          className="accent-alerta"
         />
       </label>
 
       <div className="grid grid-cols-2 gap-2.5">
         <div className="rounded-2xl bg-rosa p-3">
-          <span className="text-xs font-semibold text-[#9F1239]">Cripto (−{quedaPct}%)</span>
+          <span className="text-xs font-semibold text-vermelho-texto">Cripto (−{quedaPct}%)</span>
           <p className="font-display text-xl font-extrabold text-tinta">{money(aposQuedaCents)}</p>
         </div>
         <div className="rounded-2xl bg-menta-clara p-3">
-          <span className="text-xs font-semibold text-[#065F46]">Renda Fixa (+1%)</span>
+          <span className="text-xs font-semibold text-verde-texto">Renda Fixa (+1%)</span>
           <p className="font-display text-xl font-extrabold text-tinta">{money(rendaFixaCents)}</p>
         </div>
       </div>
 
-      <div className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-[#92400E]">
+      <div className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
         📉 Depois de cair <b>−{quedaPct}%</b>, seu ativo precisa subir{' '}
         <b>+{altaNecessariaPct.toFixed(1).replace('.', ',')}%</b> só para voltar aos {money(valorCents)} iniciais!
       </div>
@@ -1208,8 +1208,8 @@ function TesteFalsaCentral() {
                     className={`rounded-xl px-2.5 py-2 text-left text-[11px] font-bold transition ${
                       selected
                         ? op.correto
-                          ? 'bg-menta-clara text-[#065F46]'
-                          : 'bg-rosa text-[#9F1239]'
+                          ? 'bg-menta-clara text-verde-texto'
+                          : 'bg-rosa text-vermelho-texto'
                         : 'border border-linha bg-papel-2 text-tinta'
                     }`}
                   >
@@ -1219,7 +1219,7 @@ function TesteFalsaCentral() {
               })}
             </div>
             {escolhida !== undefined && (
-              <p className={`text-[11px] leading-snug ${acertou ? 'text-[#065F46]' : 'text-[#9F1239]'}`}>
+              <p className={`text-[11px] leading-snug ${acertou ? 'text-verde-texto' : 'text-vermelho-texto'}`}>
                 {acertou ? '✅ ' : '❌ '}
                 {c.explicacao}
               </p>
@@ -1274,7 +1274,7 @@ function VantagemDaBanca() {
           step={50}
           value={bancaInicial}
           onChange={(e) => setBancaInicial(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -1290,7 +1290,7 @@ function VantagemDaBanca() {
           step={2}
           value={aposta}
           onChange={(e) => setAposta(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -1309,7 +1309,7 @@ function VantagemDaBanca() {
             <div key={idx} className="flex flex-1 flex-col items-center justify-end gap-1 h-full">
               <div
                 style={{ height: `${h}%` }}
-                className={`w-full rounded-t-md ${p >= bancaInicial ? 'bg-menta' : 'bg-[#E11D48]'}`}
+                className={`w-full rounded-t-md ${p >= bancaInicial ? 'bg-menta' : 'bg-alerta'}`}
               />
             </div>
           );
@@ -1375,13 +1375,13 @@ function QuebraGeometricaPiramide() {
           max={16}
           value={niveis}
           onChange={(e) => setNiveis(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
       <div className="grid grid-cols-2 gap-2.5">
         <div className="rounded-2xl bg-amarelo-claro p-3">
-          <span className="text-xs font-semibold text-[#92400E]">Só no nível {niveis}</span>
+          <span className="text-xs font-semibold text-laranja-texto">Só no nível {niveis}</span>
           <p className="font-display text-lg font-extrabold text-tinta">
             {noNivel.toLocaleString('pt-BR')}
           </p>
@@ -1424,10 +1424,10 @@ function EscrutinioDaVaga() {
   const score = marcados.length;
   const nivel =
     score === 0
-      ? { label: 'Sem sinais de alerta', cor: 'bg-menta-clara text-[#065F46]' }
+      ? { label: 'Sem sinais de alerta', cor: 'bg-menta-clara text-verde-texto' }
       : score <= 2
-        ? { label: 'Risco moderado — investigue', cor: 'bg-amarelo-claro text-[#92400E]' }
-        : { label: 'Alto risco de golpe! Fuja', cor: 'bg-rosa text-[#9F1239]' };
+        ? { label: 'Risco moderado — investigue', cor: 'bg-amarelo-claro text-laranja-texto' }
+        : { label: 'Alto risco de golpe! Fuja', cor: 'bg-rosa text-vermelho-texto' };
 
   return (
     <div className="flex flex-col gap-3">
@@ -1444,7 +1444,7 @@ function EscrutinioDaVaga() {
               type="button"
               onClick={() => toggle(idx)}
               className={`flex items-center gap-2.5 rounded-xl border px-3 py-2 text-left text-xs font-semibold transition ${
-                ativo ? 'border-[#E11D48] bg-rosa text-[#9F1239]' : 'border-linha bg-cartao text-tinta'
+                ativo ? 'border-alerta bg-rosa text-vermelho-texto' : 'border-linha bg-cartao text-tinta'
               }`}
             >
               <span className="text-sm">{ativo ? '🚩' : '⬜'}</span>
@@ -1486,7 +1486,7 @@ function ContaAbsurdoEconomico() {
           step={1}
           value={porVideo}
           onChange={(e) => setPorVideo(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -1502,7 +1502,7 @@ function ContaAbsurdoEconomico() {
           step={10}
           value={minutosDia}
           onChange={(e) => setMinutosDia(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -1530,11 +1530,11 @@ function ContaAbsurdoEconomico() {
 
       <div className="grid grid-cols-2 gap-2.5">
         <div className="rounded-2xl bg-amarelo-claro p-3">
-          <span className="text-xs font-semibold text-[#92400E]">Custo por dia</span>
+          <span className="text-xs font-semibold text-laranja-texto">Custo por dia</span>
           <p className="font-display text-base font-extrabold text-tinta">{formatCompactMoney(custoDiaReais)}</p>
         </div>
         <div className="rounded-2xl bg-rosa p-3">
-          <span className="text-xs font-semibold text-[#9F1239]">Custo por mês</span>
+          <span className="text-xs font-semibold text-vermelho-texto">Custo por mês</span>
           <p className="font-display text-base font-extrabold text-tinta">{formatCompactMoney(custoMesReais)}</p>
         </div>
       </div>

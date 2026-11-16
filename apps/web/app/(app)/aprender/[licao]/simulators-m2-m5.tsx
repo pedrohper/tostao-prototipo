@@ -54,7 +54,7 @@ function IlusaoDePoder() {
           step={250}
           value={limite}
           onChange={(e) => setLimite(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -70,7 +70,7 @@ function IlusaoDePoder() {
           step={100}
           value={renda}
           onChange={(e) => setRenda(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -88,8 +88,8 @@ function IlusaoDePoder() {
       <p
         className={`rounded-xl p-3 text-xs leading-relaxed ${
           multiplo > 1
-            ? 'bg-rosa text-[#9F1239]'
-            : 'bg-menta-clara text-[#065F46]'
+            ? 'bg-rosa text-vermelho-texto'
+            : 'bg-menta-clara text-verde-texto'
         }`}
       >
         {multiplo > 1 ? (
@@ -158,7 +158,7 @@ function BolaDeNeveDoMinimo() {
           step={50}
           value={faturaInicial}
           onChange={(e) => setFaturaInicial(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -175,7 +175,7 @@ function BolaDeNeveDoMinimo() {
             step={5}
             value={pctMinimo}
             onChange={(e) => setPctMinimo(+e.target.value)}
-            className="accent-[#FF5A36]"
+            className="accent-laranja"
           />
         </label>
 
@@ -191,7 +191,7 @@ function BolaDeNeveDoMinimo() {
             step={0.5}
             value={taxaMensal}
             onChange={(e) => setTaxaMensal(+e.target.value)}
-            className="accent-[#FF5A36]"
+            className="accent-laranja"
           />
         </label>
       </div>
@@ -202,7 +202,7 @@ function BolaDeNeveDoMinimo() {
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-tinta-suave">Mês {item.mes}</span>
               {item.bateuTeto && (
-                <span className="rounded-full bg-rosa px-1.5 py-0.5 text-[10px] font-bold text-[#9F1239]">
+                <span className="rounded-full bg-rosa px-1.5 py-0.5 text-[10px] font-bold text-vermelho-texto">
                   Teto 100%
                 </span>
               )}
@@ -217,7 +217,7 @@ function BolaDeNeveDoMinimo() {
         ))}
       </div>
 
-      <p className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-[#92400E]">
+      <p className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
         ⚖️ <b>Lei 14.690/2023 (Teto de 100%):</b> os juros do rotativo não podem passar do dobro
         da dívida original ({money(tetoLeiCents)}). Em 12 meses pagando só o mínimo, você já terá
         desembolsado <b>{money(m12.totalPago)}</b> e ainda deverá <b>{money(m12.saldo)}</b>.
@@ -276,7 +276,7 @@ function RaioXDoCetNoPix() {
             const minParcela = Math.ceil(v / parcelas);
             if (valorParcela < minParcela) setValorParcela(minParcela);
           }}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -298,7 +298,7 @@ function RaioXDoCetNoPix() {
               const sugestao = Math.ceil((valorPix * 1.15) / n);
               setValorParcela(sugestao);
             }}
-            className="accent-[#FF5A36]"
+            className="accent-laranja"
           />
         </label>
 
@@ -314,7 +314,7 @@ function RaioXDoCetNoPix() {
             step={2}
             value={valorParcela}
             onChange={(e) => setValorParcela(+e.target.value)}
-            className="accent-[#FF5A36]"
+            className="accent-laranja"
           />
         </label>
       </div>
@@ -326,7 +326,7 @@ function RaioXDoCetNoPix() {
         </div>
         <div className="rounded-2xl bg-rosa p-3">
           <span className="text-xs font-semibold text-tinta-suave">Juros embutidos</span>
-          <p className="font-display text-xl font-extrabold text-[#9F1239]">
+          <p className="font-display text-xl font-extrabold text-vermelho-texto">
             {jurosCents > 0 ? money(jurosCents) : money(0)}
           </p>
         </div>
@@ -392,7 +392,7 @@ function ReguaDeDatas() {
             max={28}
             value={fechamento}
             onChange={(e) => setFechamento(+e.target.value)}
-            className="accent-[#FF5A36]"
+            className="accent-laranja"
           />
         </label>
 
@@ -407,7 +407,7 @@ function ReguaDeDatas() {
             max={28}
             value={vencimento}
             onChange={(e) => setVencimento(+e.target.value)}
-            className="accent-[#FF5A36]"
+            className="accent-laranja"
           />
         </label>
       </div>
@@ -423,7 +423,7 @@ function ReguaDeDatas() {
           max={30}
           value={compra}
           onChange={(e) => setCompra(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -442,7 +442,7 @@ function ReguaDeDatas() {
 
       <p
         className={`rounded-xl p-3 text-xs leading-relaxed ${
-          caiNaProxima ? 'bg-menta-clara text-[#065F46]' : 'bg-amarelo-claro text-[#92400E]'
+          caiNaProxima ? 'bg-menta-clara text-verde-texto' : 'bg-amarelo-claro text-laranja-texto'
         }`}
       >
         {caiNaProxima ? (
@@ -515,7 +515,7 @@ function TermometroDeSangria() {
                   </span>
                   <span className="text-xs font-bold text-tinta">{d.nome}</span>
                 </button>
-                <span className="rounded-full bg-rosa px-2 py-0.5 text-[11px] font-bold text-[#9F1239]">
+                <span className="rounded-full bg-rosa px-2 py-0.5 text-[11px] font-bold text-vermelho-texto">
                   {d.taxa}%/mês · dobra em {mesesDobra.toFixed(1).replace('.', ',')}m
                 </span>
               </div>
@@ -533,7 +533,7 @@ function TermometroDeSangria() {
                     step={100}
                     value={d.saldo}
                     onChange={(e) => atualizar(d.id, { saldo: +e.target.value })}
-                    className="accent-[#FF5A36]"
+                    className="accent-laranja"
                   />
                 </div>
               )}
@@ -543,8 +543,8 @@ function TermometroDeSangria() {
       </div>
 
       <div className="rounded-2xl bg-rosa p-3 flex items-center justify-between">
-        <span className="text-xs font-semibold text-[#9F1239]">Sangria mensal total em juros</span>
-        <span className="font-display text-xl font-extrabold text-[#9F1239]">
+        <span className="text-xs font-semibold text-vermelho-texto">Sangria mensal total em juros</span>
+        <span className="font-display text-xl font-extrabold text-vermelho-texto">
           {money(jurosTotalMesCents)}/mês
         </span>
       </div>
@@ -666,7 +666,7 @@ function AvalancheVsBolaDeNeve() {
           step={50}
           value={extra}
           onChange={(e) => setExtra(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -729,7 +729,7 @@ function CalculadoraValorOriginal() {
           step={250}
           value={valorHoje}
           onChange={(e) => setValorHoje(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -745,7 +745,7 @@ function CalculadoraValorOriginal() {
             max={60}
             value={mesesAtraso}
             onChange={(e) => setMesesAtraso(+e.target.value)}
-            className="accent-[#FF5A36]"
+            className="accent-laranja"
           />
         </label>
 
@@ -761,7 +761,7 @@ function CalculadoraValorOriginal() {
             step={0.5}
             value={taxaEstimada}
             onChange={(e) => setTaxaEstimada(+e.target.value)}
-            className="accent-[#FF5A36]"
+            className="accent-laranja"
           />
         </label>
       </div>
@@ -773,13 +773,13 @@ function CalculadoraValorOriginal() {
         </div>
         <div className="rounded-2xl bg-rosa p-3">
           <span className="text-xs font-semibold text-tinta-suave">Só juros na cobrança</span>
-          <p className="font-display text-xl font-extrabold text-[#9F1239]">
+          <p className="font-display text-xl font-extrabold text-vermelho-texto">
             {money(jurosAcumuladosCents)}
           </p>
         </div>
       </div>
 
-      <div className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-[#92400E]">
+      <div className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
         🤝 <b>Faixa de contraoferta realista à vista:</b> entre{' '}
         <b>{money(ofertaMinCents)}</b> e <b>{money(ofertaMaxCents)}</b>. Nunca aceite a primeira
         proposta parcelada sem saber quanto da dívida é só bola de neve.
@@ -810,7 +810,7 @@ function SimuladorDesenrolaSerasa() {
           step={100}
           value={renda}
           onChange={(e) => setRenda(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -826,14 +826,14 @@ function SimuladorDesenrolaSerasa() {
           step={25}
           value={parcela}
           onChange={(e) => setParcela(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
       <div className="flex flex-col gap-1.5">
         <div className="flex justify-between text-xs font-semibold">
           <span>Comprometimento da renda</span>
-          <span className={`font-bold ${risco ? 'text-[#9F1239]' : 'text-[#065F46]'}`}>
+          <span className={`font-bold ${risco ? 'text-vermelho-texto' : 'text-verde-texto'}`}>
             {pct.toFixed(1).replace('.', ',')}% (limite seguro: 20%)
           </span>
         </div>
@@ -847,7 +847,7 @@ function SimuladorDesenrolaSerasa() {
 
       <p
         className={`rounded-xl p-3 text-xs leading-relaxed ${
-          risco ? 'bg-rosa text-[#9F1239]' : 'bg-menta-clara text-[#065F46]'
+          risco ? 'bg-rosa text-vermelho-texto' : 'bg-menta-clara text-verde-texto'
         }`}
       >
         {risco ? (
@@ -893,7 +893,7 @@ function CalculadoraMinimoExistencial() {
           step={50}
           value={moradia}
           onChange={(e) => setMoradia(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -909,7 +909,7 @@ function CalculadoraMinimoExistencial() {
           step={50}
           value={alimentacao}
           onChange={(e) => setAlimentacao(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -925,7 +925,7 @@ function CalculadoraMinimoExistencial() {
           step={20}
           value={basicos}
           onChange={(e) => setBasicos(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -941,7 +941,7 @@ function CalculadoraMinimoExistencial() {
           step={100}
           value={renda}
           onChange={(e) => setRenda(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -1086,29 +1086,29 @@ function ComparadorLiquidezSeguranca() {
           step={100}
           value={urgencia}
           onChange={(e) => setUrgencia(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
       <div className="grid grid-cols-2 gap-2.5">
         <div className="rounded-2xl bg-menta-clara p-3">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#065F46]">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-verde-texto">
             Reserva D+0
           </span>
           <p className="text-xs font-semibold text-tinta mt-1">CDB 100% CDI / Selic</p>
-          <p className="font-display text-xl font-extrabold text-[#065F46] mt-1">R$ 0,00</p>
-          <span className="text-[11px] text-[#065F46]">de juros pagos</span>
+          <p className="font-display text-xl font-extrabold text-verde-texto mt-1">R$ 0,00</p>
+          <span className="text-[11px] text-verde-texto">de juros pagos</span>
         </div>
 
         <div className="rounded-2xl bg-rosa p-3">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#9F1239]">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-vermelho-texto">
             Travado D+30
           </span>
           <p className="text-xs font-semibold text-tinta mt-1">Cai no rotativo 30d</p>
-          <p className="font-display text-xl font-extrabold text-[#9F1239] mt-1">
+          <p className="font-display text-xl font-extrabold text-vermelho-texto mt-1">
             −{money(prejuizoTravadoCents)}
           </p>
-          <span className="text-[11px] text-[#9F1239]">prejuízo líquido</span>
+          <span className="text-[11px] text-vermelho-texto">prejuízo líquido</span>
         </div>
       </div>
 
@@ -1122,49 +1122,16 @@ function ComparadorLiquidezSeguranca() {
   );
 }
 
-/** m4-l3: O teste do semáforo da emergência */
-function SemaforoDaEmergencia() {
-  const [inesperado, setInesperado] = useState<boolean>(true);
-  const [urgente, setUrgente] = useState<boolean>(true);
-  const [alternativa, setAlternativa] = useState<boolean>(false);
-
-  const getResultado = () => {
-    if (inesperado && urgente && !alternativa) {
-      return {
-        cor: 'bg-menta-clara text-[#065F46]',
-        titulo: '🟢 Sinal Verde — Emergência real',
-        texto:
-          'É inesperado, urgente e não há opção mais barata. É exatamente para isso que sua reserva existe: use sem culpa e planeje a reposição.',
-      };
-    }
-    if (!inesperado && !urgente) {
-      return {
-        cor: 'bg-rosa text-[#9F1239]',
-        titulo: '🔴 Sinal Vermelho — Desejo disfarçado',
-        texto:
-          'Não é inesperado nem urgente. Não toque na reserva! Se você quer isso, crie uma caixinha separada e junte antes.',
-      };
-    }
-    return {
-      cor: 'bg-amarelo-claro text-[#92400E]',
-      titulo: '🟡 Sinal Amarelo — Adie 7 dias ou reduza',
-      texto: alternativa
-        ? 'Existe uma alternativa mais barata: resolva pelo menor custo possível antes de mexer no seu colchão.'
-        : 'Espere 7 dias ou reajuste o orçamento do mês antes de sacar da reserva.',
-    };
-  };
-
-  const res = getResultado();
-
-  const ToggleSimNao = ({
-    label,
-    valor,
-    onChange,
-  }: {
-    label: string;
-    valor: boolean;
-    onChange: (v: boolean) => void;
-  }) => (
+function ToggleSimNao({
+  label,
+  valor,
+  onChange,
+}: {
+  label: string;
+  valor: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
     <div className="flex items-center justify-between gap-2 rounded-xl border border-linha bg-cartao p-2.5">
       <span className="text-xs font-semibold text-tinta">{label}</span>
       <div className="flex gap-1 shrink-0">
@@ -1189,6 +1156,41 @@ function SemaforoDaEmergencia() {
       </div>
     </div>
   );
+}
+
+/** m4-l3: O teste do semáforo da emergência */
+function SemaforoDaEmergencia() {
+  const [inesperado, setInesperado] = useState<boolean>(true);
+  const [urgente, setUrgente] = useState<boolean>(true);
+  const [alternativa, setAlternativa] = useState<boolean>(false);
+
+  const getResultado = () => {
+    if (inesperado && urgente && !alternativa) {
+      return {
+        cor: 'bg-menta-clara text-verde-texto',
+        titulo: '🟢 Sinal Verde — Emergência real',
+        texto:
+          'É inesperado, urgente e não há opção mais barata. É exatamente para isso que sua reserva existe: use sem culpa e planeje a reposição.',
+      };
+    }
+    if (!inesperado && !urgente) {
+      return {
+        cor: 'bg-rosa text-vermelho-texto',
+        titulo: '🔴 Sinal Vermelho — Desejo disfarçado',
+        texto:
+          'Não é inesperado nem urgente. Não toque na reserva! Se você quer isso, crie uma caixinha separada e junte antes.',
+      };
+    }
+    return {
+      cor: 'bg-amarelo-claro text-laranja-texto',
+      titulo: '🟡 Sinal Amarelo — Adie 7 dias ou reduza',
+      texto: alternativa
+        ? 'Existe uma alternativa mais barata: resolva pelo menor custo possível antes de mexer no seu colchão.'
+        : 'Espere 7 dias ou reajuste o orçamento do mês antes de sacar da reserva.',
+    };
+  };
+
+  const res = getResultado();
 
   return (
     <div className="flex flex-col gap-3">
@@ -1234,7 +1236,7 @@ function ReconstrucaoDoMuro() {
           step={100}
           value={usou}
           onChange={(e) => setUsou(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -1250,13 +1252,13 @@ function ReconstrucaoDoMuro() {
           step={50}
           value={porMes}
           onChange={(e) => setPorMes(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
       <div className="rounded-2xl bg-menta-clara p-3 flex items-center justify-between">
-        <span className="text-xs font-semibold text-[#065F46]">Tempo para reconstruir</span>
-        <span className="font-display text-2xl font-extrabold text-[#065F46]">
+        <span className="text-xs font-semibold text-verde-texto">Tempo para reconstruir</span>
+        <span className="font-display text-2xl font-extrabold text-verde-texto">
           {meses} {meses === 1 ? 'mês' : 'meses'}
         </span>
       </div>
@@ -1292,12 +1294,12 @@ function TermometroPazDeEspirito() {
 
   const nivel =
     mesesAutonomia < 1
-      ? { cor: 'bg-rosa text-[#9F1239]', label: 'Dependência crítica do próximo salário' }
+      ? { cor: 'bg-rosa text-vermelho-texto', label: 'Dependência crítica do próximo salário' }
       : mesesAutonomia < 3
-        ? { cor: 'bg-amarelo-claro text-[#92400E]', label: 'Colchão inicial (fôlego de curto prazo)' }
+        ? { cor: 'bg-amarelo-claro text-laranja-texto', label: 'Colchão inicial (fôlego de curto prazo)' }
         : mesesAutonomia < 6
           ? { cor: 'bg-azul text-tinta', label: 'Zona de tranquilidade (boa autonomia)' }
-          : { cor: 'bg-menta-clara text-[#065F46]', label: 'Paz de espírito plena (6+ meses)' };
+          : { cor: 'bg-menta-clara text-verde-texto', label: 'Paz de espírito plena (6+ meses)' };
 
   return (
     <div className="flex flex-col gap-4">
@@ -1313,7 +1315,7 @@ function TermometroPazDeEspirito() {
           step={200}
           value={guardado}
           onChange={(e) => setGuardado(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -1329,7 +1331,7 @@ function TermometroPazDeEspirito() {
           step={100}
           value={custoBasico}
           onChange={(e) => setCustoBasico(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -1391,7 +1393,7 @@ function AportesVsAumentoDeRenda() {
           step={25}
           value={aporteInicial}
           onChange={(e) => setAporteInicial(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -1407,7 +1409,7 @@ function AportesVsAumentoDeRenda() {
           step={50}
           value={aportePosCarreira}
           onChange={(e) => setAportePosCarreira(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -1420,13 +1422,13 @@ function AportesVsAumentoDeRenda() {
           <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-cartao">
             <div
               style={{ width: `${Math.round((cenarioACents / maxCents) * 100)}%` }}
-              className="h-full bg-[#D97706]"
+              className="h-full bg-amarelo"
             />
           </div>
         </div>
 
         <div className="rounded-xl bg-menta-clara p-3">
-          <div className="flex justify-between text-xs font-semibold text-[#065F46]">
+          <div className="flex justify-between text-xs font-semibold text-verde-texto">
             <span>Carreira + aporte maior ({money(aportePosCarreira * 100)}/mês)</span>
             <span className="font-display font-extrabold">{money(cenarioBCents)}</span>
           </div>
@@ -1478,7 +1480,7 @@ function CalculadoraRoiEducacional() {
           step={100}
           value={custo}
           onChange={(e) => setCusto(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -1494,7 +1496,7 @@ function CalculadoraRoiEducacional() {
           step={50}
           value={aumento}
           onChange={(e) => setAumento(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -1538,7 +1540,7 @@ function BalancoDoEstagio() {
       <label className="flex flex-col gap-1">
         <span className="flex justify-between text-xs font-semibold">
           <span>Bolsa-auxílio mensal</span>
-          <span className="font-bold text-[#065F46]">+{money(bolsa * 100)}</span>
+          <span className="font-bold text-verde-texto">+{money(bolsa * 100)}</span>
         </span>
         <input
           type="range"
@@ -1547,14 +1549,14 @@ function BalancoDoEstagio() {
           step={50}
           value={bolsa}
           onChange={(e) => setBolsa(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
       <label className="flex flex-col gap-1">
         <span className="flex justify-between text-xs font-semibold">
           <span>Mensalidade do curso</span>
-          <span className="font-bold text-[#9F1239]">−{money(mensalidade * 100)}</span>
+          <span className="font-bold text-vermelho-texto">−{money(mensalidade * 100)}</span>
         </span>
         <input
           type="range"
@@ -1563,14 +1565,14 @@ function BalancoDoEstagio() {
           step={50}
           value={mensalidade}
           onChange={(e) => setMensalidade(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
       <label className="flex flex-col gap-1">
         <span className="flex justify-between text-xs font-semibold">
           <span>Transporte</span>
-          <span className="font-bold text-[#9F1239]">−{money(transporte * 100)}</span>
+          <span className="font-bold text-vermelho-texto">−{money(transporte * 100)}</span>
         </span>
         <input
           type="range"
@@ -1579,14 +1581,14 @@ function BalancoDoEstagio() {
           step={20}
           value={transporte}
           onChange={(e) => setTransporte(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
       <label className="flex flex-col gap-1">
         <span className="flex justify-between text-xs font-semibold">
           <span>Alimentação fora</span>
-          <span className="font-bold text-[#9F1239]">−{money(alimentacao * 100)}</span>
+          <span className="font-bold text-vermelho-texto">−{money(alimentacao * 100)}</span>
         </span>
         <input
           type="range"
@@ -1595,7 +1597,7 @@ function BalancoDoEstagio() {
           step={20}
           value={alimentacao}
           onChange={(e) => setAlimentacao(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -1654,7 +1656,7 @@ function CalculadoraHoraDeFreela() {
             step={1}
             value={horas}
             onChange={(e) => setHoras(+e.target.value)}
-            className="accent-[#FF5A36]"
+            className="accent-laranja"
           />
         </label>
 
@@ -1670,7 +1672,7 @@ function CalculadoraHoraDeFreela() {
             step={5}
             value={valorHora}
             onChange={(e) => setValorHora(+e.target.value)}
-            className="accent-[#FF5A36]"
+            className="accent-laranja"
           />
         </label>
       </div>
@@ -1688,7 +1690,7 @@ function CalculadoraHoraDeFreela() {
             step={20}
             value={custosDiretos}
             onChange={(e) => setCustosDiretos(+e.target.value)}
-            className="accent-[#FF5A36]"
+            className="accent-laranja"
           />
         </label>
 
@@ -1704,14 +1706,14 @@ function CalculadoraHoraDeFreela() {
             step={5}
             value={margemRevisao}
             onChange={(e) => setMargemRevisao(+e.target.value)}
-            className="accent-[#FF5A36]"
+            className="accent-laranja"
           />
         </label>
       </div>
 
       <div className="rounded-2xl bg-menta-clara p-3 flex items-center justify-between">
-        <span className="text-xs font-semibold text-[#065F46]">Preço mínimo a cobrar</span>
-        <span className="font-display text-2xl font-extrabold text-[#065F46]">
+        <span className="text-xs font-semibold text-verde-texto">Preço mínimo a cobrar</span>
+        <span className="font-display text-2xl font-extrabold text-verde-texto">
           {money(precoMinimoCents)}
         </span>
       </div>
@@ -1750,7 +1752,7 @@ function AlocacaoRendaExtra() {
           step={50}
           value={valorExtra}
           onChange={(e) => setValorExtra(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -1758,7 +1760,7 @@ function AlocacaoRendaExtra() {
         <label className="flex flex-col gap-1">
           <span className="flex justify-between text-xs font-semibold">
             <span>Pendências / Dívidas</span>
-            <span className="font-bold text-[#D97706]">
+            <span className="font-bold text-laranja-texto">
               {pctPendencias}% ({money(pendenciasCents)})
             </span>
           </span>
@@ -1773,14 +1775,14 @@ function AlocacaoRendaExtra() {
               setPctPendencias(v);
               if (v + pctReserva > 100) setPctReserva(100 - v);
             }}
-            className="accent-[#D97706]"
+            className="accent-amarelo"
           />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className="flex justify-between text-xs font-semibold">
             <span>Reserva de emergência</span>
-            <span className="font-bold text-[#065F46]">
+            <span className="font-bold text-verde-texto">
               {pctReserva}% ({money(reservaCents)})
             </span>
           </span>
@@ -1795,15 +1797,15 @@ function AlocacaoRendaExtra() {
               setPctReserva(v);
               if (v + pctPendencias > 100) setPctPendencias(100 - v);
             }}
-            className="accent-[#10B981]"
+            className="accent-menta"
           />
         </label>
       </div>
 
       <div className="flex h-4 w-full overflow-hidden rounded-full bg-papel-2 border border-linha">
-        <div style={{ width: `${pctPendencias}%` }} className="bg-[#FFC233] transition-all" />
-        <div style={{ width: `${pctReserva}%` }} className="bg-[#3DD6A0] transition-all" />
-        <div style={{ width: `${pctLazer}%` }} className="bg-[#FFE1E7] transition-all" />
+        <div style={{ width: `${pctPendencias}%` }} className="bg-amarelo transition-all" />
+        <div style={{ width: `${pctReserva}%` }} className="bg-menta transition-all" />
+        <div style={{ width: `${pctLazer}%` }} className="bg-rosa transition-all" />
       </div>
 
       <div className="grid grid-cols-3 gap-2">

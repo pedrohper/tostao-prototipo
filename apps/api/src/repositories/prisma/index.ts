@@ -1,17 +1,18 @@
 // Repositórios de verdade, no Postgres via Prisma.
 // Repare que a assinatura é a mesma dos em memória: o use case nem percebe a troca.
 import type { Prisma, PrismaClient } from '@prisma/client';
-import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, Transaction, Invite, PasswordReset, ChatMessage, Battle, BattleKind, Person } from '../../domain/entities.js';
-import type { FinancialPlan } from '@tostao/contracts';
+import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, Transaction, ChatMessage, Battle, BattleKind, Person, TostaoInsight, TostaoAutoConfig, TostaoInsightStatus } from '../../domain/entities.js';
+import type { FinancialPlan, UpdateTostaoAutoConfigBody } from '@tostao/contracts';
 import type {
   AccountData, AccountsRepository, FinancialPlansRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, ChatMessagesRepository, IgnoredSubscriptionsRepository, InvitesRepository, GamesRepository, EngagementRepository, PushSub, LessonProgressRepository, PasswordResetsRepository,
-  NewTransaction, NewUser, PeopleRepository, Repositories, TransactionsRepository, UsersRepository, WhatsappLinksRepository,
+  NewTransaction, NewUser, PeopleRepository, Repositories, TransactionsRepository, UsersRepository, WhatsappLinksRepository, TostaoAutoRepository, UpsertTostaoInsight,
 } from '../types.js';
 
 class PrismaUsersRepository implements UsersRepository {
   constructor(private db: PrismaClient) {}
   findByEmail(email: string) { return this.db.user.findUnique({ where: { email } }); }
   findById(id: string) { return this.db.user.findUnique({ where: { id } }); }
+  async listAllIds() { return (await this.db.user.findMany({ select: { id: true } })).map((u) => u.id); }
   create(data: NewUser) { return this.db.user.create({ data }); }
   count() { return this.db.user.count(); }
   async updatePassword(id: string, passwordHash: string) { await this.db.user.update({ where: { id }, data: { passwordHash } }); }
@@ -248,7 +249,117 @@ class PrismaPeopleRepository implements PeopleRepository {
     return this.db.person.findFirst({ where: { userId, name: { equals: name, mode: 'insensitive' } } });
   }
   create(data: { userId: string; name: string }): Promise<Person> { return this.db.person.create({ data }); }
+  rename(id: string, name: string): Promise<Person> { return this.db.person.update({ where: { id }, data: { name } }); }
   async delete(id: string) { await this.db.person.delete({ where: { id } }); }
+}
+
+const mapInsight = (row: {
+  id: string; userId: string; routine: string; kind: string; severity: string; title: string; body: string;
+  payload: unknown; dedupeKey: string; status: string; expiresAt: Date | null; createdAt: Date; actedAt: Date | null;
+}): TostaoInsight => ({
+  id: row.id,
+  userId: row.userId,
+  routine: row.routine as TostaoInsight['routine'],
+  kind: row.kind,
+  severity: row.severity as TostaoInsight['severity'],
+  title: row.title,
+  body: row.body,
+  payload: (row.payload ?? {}) as Record<string, unknown>,
+  dedupeKey: row.dedupeKey,
+  status: row.status as TostaoInsightStatus,
+  expiresAt: row.expiresAt,
+  createdAt: row.createdAt,
+  actedAt: row.actedAt,
+});
+
+class PrismaTostaoAutoRepository implements TostaoAutoRepository {
+  constructor(private db: PrismaClient) {}
+
+  async listByUser(userId: string) {
+    const rows = await this.db.tostaoInsight.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } });
+    return rows.map(mapInsight);
+  }
+
+  async findById(id: string) {
+    const row = await this.db.tostaoInsight.findUnique({ where: { id } });
+    return row ? mapInsight(row) : null;
+  }
+
+  async upsertPending(data: UpsertTostaoInsight) {
+    const existing = await this.db.tostaoInsight.findUnique({
+      where: { userId_dedupeKey: { userId: data.userId, dedupeKey: data.dedupeKey } },
+    });
+    const payloadJson = data.payload as Prisma.InputJsonObject;
+    if (!existing) {
+      const created = await this.db.tostaoInsight.create({
+        data: {
+          userId: data.userId,
+          routine: data.routine,
+          kind: data.kind,
+          severity: data.severity,
+          title: data.title,
+          body: data.body,
+          payload: payloadJson,
+          dedupeKey: data.dedupeKey,
+          status: 'PENDING',
+          expiresAt: data.expiresAt ?? null,
+        },
+      });
+      return { insight: mapInsight(created), created: true };
+    }
+    const prevPayload = (existing.payload ?? {}) as Record<string, unknown>;
+    const reopenUncat =
+      existing.status === 'APPLIED' &&
+      data.kind === 'uncategorized_batch' &&
+      typeof data.payload.latestTxId === 'string' &&
+      data.payload.latestTxId !== prevPayload.latestTxId;
+
+    if (existing.status === 'PENDING' || reopenUncat) {
+      const updated = await this.db.tostaoInsight.update({
+        where: { id: existing.id },
+        data: {
+          title: data.title,
+          body: data.body,
+          severity: data.severity,
+          payload: payloadJson,
+          expiresAt: data.expiresAt ?? null,
+          status: 'PENDING',
+          actedAt: null,
+        },
+      });
+      return { insight: mapInsight(updated), created: reopenUncat };
+    }
+    return { insight: mapInsight(existing), created: false };
+  }
+
+  async setStatus(id: string, status: TostaoInsightStatus, actedAt: Date | null) {
+    const updated = await this.db.tostaoInsight.update({ where: { id }, data: { status, actedAt } });
+    return mapInsight(updated);
+  }
+
+  async getConfig(userId: string): Promise<TostaoAutoConfig> {
+    const row = await this.db.tostaoAutoConfig.findUnique({ where: { userId } });
+    if (row) return row;
+    return {
+      userId,
+      carameloExtrato: true,
+      tostaoPrevisao: true,
+      guardiaoLimites: true,
+      olheiroAcertos: true,
+      notifyPush: true,
+      notifyWhatsapp: false,
+      lastCheckedAt: null,
+      updatedAt: new Date(0),
+    };
+  }
+
+  async updateConfig(userId: string, patch: UpdateTostaoAutoConfigBody & { lastCheckedAt?: Date }): Promise<TostaoAutoConfig> {
+    return this.db.tostaoAutoConfig.upsert({
+      where: { userId },
+      create: { userId, ...patch },
+      update: patch,
+    });
+  }
 }
 
 export function makePrismaRepositories(db: PrismaClient): Repositories {
@@ -270,5 +381,6 @@ export function makePrismaRepositories(db: PrismaClient): Repositories {
     games: new PrismaGamesRepository(db),
     engagement: new PrismaEngagementRepository(db),
     people: new PrismaPeopleRepository(db),
+    tostaoAuto: new PrismaTostaoAutoRepository(db),
   };
 }

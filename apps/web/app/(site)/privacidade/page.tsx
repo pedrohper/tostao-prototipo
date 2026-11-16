@@ -1,12 +1,14 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { getI18n } from '@/lib/i18n-server';
 import { Contato, LegalPage, Resumo, Tabela, disp } from '../legal';
 
 export const metadata: Metadata = { title: 'Política de privacidade · Tostão', description: 'Que dados o Tostão usa, pra quê, com quem e como apagar. Conforme a LGPD.' };
 
-export default function PrivacidadePage() {
+export default async function PrivacidadePage() {
+  const { t } = await getI18n();
   return (
-    <LegalPage title="Política de privacidade">
+    <LegalPage title={t.legal.privacyTitle}>
       <Resumo>
         <ul>
           <li>Usamos seus dados só pra fazer o Tostão funcionar pra você. Não vendemos, não mostramos anúncio e não usamos rastreador.</li>
@@ -26,12 +28,13 @@ export default function PrivacidadePage() {
           <tr><td>Nome, e-mail e senha (guardada só como hash)</td><td>Você, ao criar a conta</td></tr>
           <tr><td>Contas, saldos, transações, faturas e limites de cartão</td><td>Seus bancos, pela Pluggy (Open Finance), ou o extrato que você importa</td></tr>
           <tr><td>Gastos anotados na mão, categorias, limites, renda, dia do salário, contas fixas e meta</td><td>Você, dentro do app</td></tr>
+          <tr><td>Acertos: nomes de pessoas e anotações ligadas a divisões, empréstimos ou dívidas</td><td>Você, dentro do app</td></tr>
           <tr><td>Progresso nas lições, missões feitas por dia, ofensiva e respostas dos desafios</td><td>Seu uso do app</td></tr>
           <tr><td>Amigos que você adicionou (por código ou convite)</td><td>Você</td></tr>
           <tr><td>Endereço de avisos do navegador (só se você ligar os avisos no celular)</td><td>Seu navegador</td></tr>
           <tr><td>Mensagens da conversa com o Tostão</td><td>Você, no app ou no WhatsApp</td></tr>
           <tr><td>Número do WhatsApp (só se você ligar essa função)</td><td>Você</td></tr>
-          <tr><td>Cookie de sessão, endereço IP e horário de acesso</td><td>Seu navegador, automaticamente</td></tr>
+          <tr><td>Cookie de sessão, cookie de preferência de idioma (tostao-locale), endereço IP e horário de acesso</td><td>Seu navegador, automaticamente (ou ao escolher o idioma no Perfil)</td></tr>
         </tbody>
       </Tabela>
       <p>Não pedimos CPF, documento, foto nem localização. As transações podem conter nomes de outras pessoas (por exemplo, quem te mandou um Pix); usamos isso só pra organizar o seu extrato.</p>
@@ -40,7 +43,7 @@ export default function PrivacidadePage() {
       <Tabela>
         <thead><tr><th>Finalidade</th><th>Base legal (LGPD, art. 7º)</th></tr></thead>
         <tbody>
-          <tr><td>Criar e manter sua conta, sincronizar bancos, categorizar gastos, mostrar resumo, previsão, limites e meta, liberar lições</td><td>Execução do contrato que você aceita nos <Link href="/termos">Termos de uso</Link> (inciso V)</td></tr>
+          <tr><td>Criar e manter sua conta, sincronizar bancos, categorizar gastos, mostrar resumo, previsão, limites, acertos e meta, liberar lições</td><td>Execução do contrato que você aceita nos <Link href="/termos">Termos de uso</Link> (inciso V)</td></tr>
           <tr><td>Conectar seus bancos pelo Open Finance</td><td>Seu consentimento, dado no ambiente do banco e revogável a qualquer momento (inciso I)</td></tr>
           <tr><td>Responder na conversa com o Tostão e sugerir categorias com inteligência artificial</td><td>Execução do contrato (inciso V); você pode não usar a conversa e categorizar na mão</td></tr>
           <tr><td>Segurança: limite de tentativas de login, registros de acesso, backup</td><td>Legítimo interesse de proteger você e o serviço (inciso IX)</td></tr>
@@ -71,7 +74,7 @@ export default function PrivacidadePage() {
       </ul>
 
       <h2 className={disp}>6. Cookies</h2>
-      <p>Usamos um único cookie, essencial: o da sua sessão, pra você continuar logado. Não usamos cookies de publicidade nem ferramentas de análise ou rastreamento.</p>
+      <p>Usamos apenas cookies essenciais e funcionais: o cookie de sessão, pra você continuar logado, e o cookie de preferência de idioma (tostao-locale), quando você escolhe outro idioma no Perfil. Não usamos cookies de publicidade nem ferramentas de análise ou rastreamento.</p>
 
       <h2 className={disp}>7. Seus direitos</h2>
       <p>A LGPD (art. 18) te garante, a qualquer momento:</p>

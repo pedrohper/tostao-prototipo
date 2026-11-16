@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { getI18n } from '@/lib/i18n-server';
 import { findLesson, modules } from '@/lib/lessons';
 import { LessonPlayer } from './player';
 
@@ -7,10 +8,20 @@ export function generateStaticParams() {
 }
 
 export default async function LicaoPage({ params }: { params: Promise<{ licao: string }> }) {
-  const { licao } = await params;
+  const [{ licao }, { locale, t }] = await Promise.all([params, getI18n()]);
   const found = findLesson(licao);
   if (!found) notFound();
   const all = modules.flatMap((m) => m.lessons);
   const next = all[all.findIndex((l) => l.id === licao) + 1] ?? null;
-  return <LessonPlayer lesson={found.lesson} moduleTitle={found.module.title} moduleNumber={found.module.number} nextId={next?.id ?? null} />;
+  return (
+    <LessonPlayer
+      lesson={found.lesson}
+      moduleTitle={found.module.title}
+      moduleNumber={found.module.number}
+      nextId={next?.id ?? null}
+      locale={locale}
+      t={t.pages.learnExtra}
+      calcT={t.pages.calculators}
+    />
+  );
 }

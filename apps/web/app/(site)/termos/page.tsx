@@ -1,12 +1,14 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { getI18n } from '@/lib/i18n-server';
 import { Contato, LegalPage, Resumo, disp } from '../legal';
 
 export const metadata: Metadata = { title: 'Termos de uso · Tostão', description: 'As regras pra usar o Tostão, em português de gente.' };
 
-export default function TermosPage() {
+export default async function TermosPage() {
+  const { t } = await getI18n();
   return (
-    <LegalPage title="Termos de uso">
+    <LegalPage title={t.legal.termsTitle}>
       <Resumo>
         <ul>
           <li>O Tostão organiza seu dinheiro e ensina finanças. Ele só lê seus dados: não faz Pix, não paga conta, não mexe em nada.</li>

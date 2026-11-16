@@ -1,6 +1,6 @@
 import React from 'react';
 
-export interface IconeProps {
+export interface IconProps {
   src: string;
   size?: number;
   alt?: string;
@@ -350,7 +350,7 @@ export const ICON_SVGS: Record<string, React.ReactNode> = {
 
   // Abas (aba/)
   'aba/inicio': <path d="M3 10.5L12 3l9 7.5V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />,
-  'aba/inicio-ativo': <path d="M3 10.5L12 3l9 7.5V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="#FFC233" />,
+  'aba/inicio-ativo': <path d="M3 10.5L12 3l9 7.5V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="var(--color-amarelo)" />,
   'aba/carteira': (
     <>
       <rect x="2" y="6" width="20" height="13" rx="3" />
@@ -360,13 +360,13 @@ export const ICON_SVGS: Record<string, React.ReactNode> = {
   ),
   'aba/carteira-ativo': (
     <>
-      <rect x="2" y="6" width="20" height="13" rx="3" fill="#FFC233" />
+      <rect x="2" y="6" width="20" height="13" rx="3" fill="var(--color-amarelo)" />
       <path d="M16 12a1.5 1.5 0 1 0 3 0 1.5 1.5 0 1 0-3 0z" />
       <path d="M5 6V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2" />
     </>
   ),
   'aba/tostao': <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />,
-  'aba/tostao-ativo': <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="#FFC233" />,
+  'aba/tostao-ativo': <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="var(--color-amarelo)" />,
   'aba/aprender': (
     <>
       <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5z" />
@@ -375,7 +375,7 @@ export const ICON_SVGS: Record<string, React.ReactNode> = {
   ),
   'aba/aprender-ativo': (
     <>
-      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5z" fill="#FFC233" />
+      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5z" fill="var(--color-amarelo)" />
       <path d="M4 19.5a2.5 2.5 0 0 1 2.5-2.5H20" />
     </>
   ),
@@ -387,14 +387,14 @@ export const ICON_SVGS: Record<string, React.ReactNode> = {
   ),
   'aba/perfil-ativo': (
     <>
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" fill="#FFC233" />
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" fill="var(--color-amarelo)" />
       <circle cx="12" cy="7" r="4" />
     </>
   ),
 };
 
 /** Ícones desenhados em vetor (inline ou public/icones). Todos têm fundo transparente; o tamanho é o lado em px. */
-export function Icone({ src, size = 24, alt = '', className = '' }: IconeProps) {
+export function Icon({ src, size = 24, alt = '', className = '' }: IconProps) {
   const iconContent = ICON_SVGS[src];
   if (iconContent) {
     return (
@@ -417,7 +417,6 @@ export function Icone({ src, size = 24, alt = '', className = '' }: IconeProps) 
     );
   }
   return (
-    // eslint-disable-next-line @next/next/no-img-element
     <img
       src={`/icones/${src}.svg`}
       width={size}
@@ -441,6 +440,6 @@ const CATEGORIAS_COM_ICONE = new Set([
 
 /** Ícone da categoria: desenho próprio pras do sistema, emoji pras que a pessoa criou. */
 export function CatIcon({ id, emoji, size = 24 }: { id: string | null | undefined; emoji?: string | null; size?: number }) {
-  if (id && CATEGORIAS_COM_ICONE.has(id)) return <Icone src={`cat/${id}`} size={size} />;
+  if (id && CATEGORIAS_COM_ICONE.has(id)) return <Icon src={`cat/${id}`} size={size} />;
   return <span aria-hidden="true" style={{ fontSize: size * 0.75, lineHeight: 1 }}>{emoji ?? '🏷️'}</span>;
 }

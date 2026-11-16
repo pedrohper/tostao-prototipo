@@ -1,4 +1,4 @@
-import { AddPersonEntryUseCase, DeletePersonUseCase, EnsurePersonUseCase, GetPersonUseCase, LinkTransactionPersonUseCase, ListPeopleUseCase } from './people.js';
+import { AddPersonEntryUseCase, DeletePersonUseCase, EnsurePersonUseCase, GetPersonUseCase, LinkTransactionPersonUseCase, ListPeopleUseCase, RenamePersonUseCase } from './people.js';
 import { ListLessonProgressUseCase } from './lesson-progress.js';
 import { GamesUseCase } from './games.js';
 import { EngagementUseCase } from './engagement.js';
@@ -37,6 +37,13 @@ import { GetBudgetsUseCase, SetBudgetUseCase } from './budgets.js';
 import { AutoCategorizeUseCase } from './auto-categorize.js';
 import { SearchTransactionsUseCase } from './search-transactions.js';
 import { ForecastUseCase, GoalDepositUseCase, SaveFinancialPlanUseCase, SetGoalUseCase, SuggestIncomeUseCase } from './financial-plan.js';
+import {
+  ApplyTostaoInsightUseCase,
+  DismissTostaoInsightUseCase,
+  GetTostaoAutoUseCase,
+  RunTostaoChecksUseCase,
+  UpdateTostaoAutoConfigUseCase,
+} from './tostao-auto.js';
 
 export type Deps = { repos: Repositories; bank: BankGateway; ai?: AiGateway; whatsapp?: WhatsAppGateway; chatDailyLimit?: number };
 
@@ -45,6 +52,7 @@ export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), whatsapp =
   const autoCategorize = new AutoCategorizeUseCase(repos, ai);
   const askTostao = new AskTostaoUseCase(repos, ai, chatDailyLimit);
   const createManualTransaction = new CreateManualTransactionUseCase(repos);
+  const runTostaoChecks = new RunTostaoChecksUseCase(repos);
   return {
     registerUser: new RegisterUserUseCase(repos),
     createInvite: new CreateInviteUseCase(repos),
@@ -70,6 +78,7 @@ export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), whatsapp =
     linkTransactionPerson: new LinkTransactionPersonUseCase(repos),
     addPersonEntry: new AddPersonEntryUseCase(repos),
     deletePerson: new DeletePersonUseCase(repos),
+    renamePerson: new RenamePersonUseCase(repos),
     searchTransactions: new SearchTransactionsUseCase(repos),
     getMonthSummary: new GetMonthSummaryUseCase(repos),
     accountDetail: new AccountDetailUseCase(repos),
@@ -104,6 +113,11 @@ export function makeUseCases({ repos, bank, ai = new FakeAiGateway(), whatsapp =
       },
     },
     deleteCategory: new DeleteCategoryUseCase(repos),
+    getTostaoAuto: new GetTostaoAutoUseCase(repos),
+    runTostaoChecks,
+    applyTostaoInsight: new ApplyTostaoInsightUseCase(repos, autoCategorize),
+    dismissTostaoInsight: new DismissTostaoInsightUseCase(repos),
+    updateTostaoAutoConfig: new UpdateTostaoAutoConfigUseCase(repos),
   };
 }
 export type UseCases = ReturnType<typeof makeUseCases>;

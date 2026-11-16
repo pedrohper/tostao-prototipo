@@ -1,18 +1,20 @@
-import { Mascote } from '@/components/mascote';
+import { Mascot } from '@/components/mascote';
+import { getI18n } from '@/lib/i18n-server';
 import { ResetForm } from './reset-form';
 
 export default async function RedefinirSenhaPage({ searchParams }: { searchParams: Promise<{ token?: string }> }) {
-  const { token } = await searchParams;
+  const [{ token }, { t }] = await Promise.all([searchParams, getI18n()]);
+  const p = t.authPages;
   return (
     <>
       <div className="flex items-end gap-3">
-        <Mascote pose="pensando" size={110} alt="Tostão pensando" />
-        <div className="pb-2">
-          <h1 className="font-display text-[30px] leading-[34px] font-extrabold">Senha nova</h1>
-          <p className="text-[15px] text-tinta-suave">Acontece com todo mundo.</p>
+        <Mascot pose="pensando" size={110} alt={p.resetMascotAlt} className="lg:hidden" />
+        <div className="pb-2 lg:pb-0">
+          <h1 className="font-display text-[30px] leading-[34px] font-extrabold">{p.resetTitle}</h1>
+          <p className="text-[15px] text-tinta-suave">{p.resetSubtitle}</p>
         </div>
       </div>
-      {token ? <ResetForm token={token} /> : <p className="text-[15px]">Esse link tá incompleto. Pede um novo pra quem te convidou.</p>}
+      {token ? <ResetForm token={token} t={p.resetForm} /> : <p className="text-[15px]">{p.resetInvalidToken}</p>}
     </>
   );
 }

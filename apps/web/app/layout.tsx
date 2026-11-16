@@ -6,6 +6,7 @@ import '@fontsource/inter/700.css';
 import '@fontsource/bricolage-grotesque/700.css';
 import '@fontsource/bricolage-grotesque/800.css';
 import './globals.css';
+import { getLocale } from '@/lib/i18n-server';
 
 export const metadata: Metadata = {
   title: 'Tostão',
@@ -13,11 +14,17 @@ export const metadata: Metadata = {
   manifest: '/manifest.webmanifest',
 };
 
-export const viewport: Viewport = { themeColor: '#FDFBF6' };
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#FDFBF6' },
+    { media: '(prefers-color-scheme: dark)', color: '#1A1714' },
+  ],
+};
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
   return (
-    <html lang="pt-BR">
+    <html lang={locale}>
       <body className="min-h-dvh">{children}</body>
     </html>
   );

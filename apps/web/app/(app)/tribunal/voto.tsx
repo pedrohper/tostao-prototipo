@@ -2,6 +2,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import type { TribunalResponse } from '@tostao/contracts';
+import type { Dictionary } from '@/lib/i18n';
 import { ErrorNote } from '@/components/ui';
 import { voteTribunal } from './actions';
 
@@ -12,7 +13,13 @@ export function Rich({ text }: { text: string }) {
 
 const BAR = ['bg-menta-clara', 'bg-azul', 'bg-amarelo-claro', 'bg-rosa'];
 
-export function Voto({ initial }: { initial: TribunalResponse }) {
+export function Voto({
+  initial,
+  t: labels,
+}: {
+  initial: TribunalResponse;
+  t: Dictionary['pages']['tribunal'];
+}) {
   const [t, setT] = useState(initial);
   const [error, setError] = useState<string>();
   const [pending, start] = useTransition();
@@ -46,11 +53,11 @@ export function Voto({ initial }: { initial: TribunalResponse }) {
           <p className="text-sm leading-5"><Rich text={t.verdict.text} /></p>
         </div>
       ) : (
-        <div className="rounded-2xl bg-papel-2 px-3.5 py-3 text-sm leading-5 text-tinta-suave">Vota primeiro. Depois eu mostro a conta dos dois lados e o que o resto da galera escolheu.</div>
+        <div className="rounded-2xl bg-papel-2 px-3.5 py-3 text-sm leading-5 text-tinta-suave">{labels.voteFirstHint}</div>
       )}
       <div className="grow" />
       {t.myVote !== null && (
-        <Link href="/aprender" className="flex h-[54px] shrink-0 items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel no-underline">Ganhar +20 XP e voltar</Link>
+        <Link href="/aprender" className="flex h-[54px] shrink-0 items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel no-underline">{labels.claimXpCta}</Link>
       )}
     </>
   );

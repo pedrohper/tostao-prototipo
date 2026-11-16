@@ -1,7 +1,7 @@
 import { env } from './env.js';
 import { buildApp } from './app.js';
 import { DeepSeekGateway, FakeAiGateway } from './gateways/ai-gateway.js';
-import { CloudApiWhatsAppGateway, FakeWhatsAppGateway, N8nWhatsAppGateway } from './gateways/whatsapp-gateway.js';
+import { CloudApiWhatsAppGateway, DisabledAudioTranscriber, FakeWhatsAppGateway, N8nWhatsAppGateway, WhisperAudioTranscriber } from './gateways/whatsapp-gateway.js';
 import { prisma } from './lib/prisma.js';
 import { makePrismaRepositories } from './repositories/prisma/index.js';
 import { makeBankGateway } from './gateways/make-bank-gateway.js';
@@ -10,6 +10,7 @@ import { AutoCategorizeUseCase } from './use-cases/auto-categorize.js';
 import { isSyncStale, scheduleDailySync, syncAllConnections } from './jobs/daily-sync.js';
 import { DisabledPushGateway, WebPushGateway } from './gateways/push-gateway.js';
 import { scheduleNotifications } from './jobs/notifications.js';
+import { scheduleTostaoChecks, runPeriodicTostaoChecks } from './jobs/tostao-checks.js';
 import { BcbRatesGateway } from './gateways/rates-gateway.js';
 import { buildN8nBridge, listenN8nBridge } from './http/n8n-bridge.js';
 
@@ -21,8 +22,9 @@ const whatsapp = env.WHATSAPP_TOKEN
   : env.N8N_WHATSAPP_SECRET
     ? new N8nWhatsAppGateway(env.N8N_WHATSAPP_SECRET, env.N8N_WHATSAPP_SEND_URL || null, env.WHATSAPP_NUMBER || null)
     : new FakeWhatsAppGateway();
+const audioTranscriber = env.WHISPER_URL ? new WhisperAudioTranscriber(env.WHISPER_URL) : new DisabledAudioTranscriber();
 const push = env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY ? new WebPushGateway(env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY, env.VAPID_SUBJECT) : new DisabledPushGateway();
-const app = await buildApp({ repos, bank, ai, whatsapp, push, rates: new BcbRatesGateway(), whatsappVerifyToken: env.WHATSAPP_VERIFY_TOKEN, n8nWhatsAppSecret: env.N8N_WHATSAPP_SECRET, chatDailyLimit: env.CHAT_DAILY_LIMIT, jwtSecret: env.JWT_SECRET, webOrigin: env.WEB_ORIGIN, logger: true });
+const app = await buildApp({ repos, bank, ai, whatsapp, audioTranscriber, push, rates: new BcbRatesGateway(), whatsappVerifyToken: env.WHATSAPP_VERIFY_TOKEN, n8nWhatsAppSecret: env.N8N_WHATSAPP_SECRET, chatDailyLimit: env.CHAT_DAILY_LIMIT, jwtSecret: env.JWT_SECRET, webOrigin: env.WEB_ORIGIN, logger: true });
 
 const sync = new SyncBankConnectionUseCase({ ...repos, bank });
 const autoCategorize = new AutoCategorizeUseCase(repos, ai);
@@ -37,6 +39,7 @@ const syncEverything = async () => {
       console.error('[ia] categoria automática falhou:', (err as Error).message);
     }
   }
+  await runPeriodicTostaoChecks(repos, { push, whatsapp }).catch((err) => console.error('[tostao-auto] pós-sync falhou:', (err as Error).message));
 };
 scheduleDailySync(env.SYNC_CRON, syncEverything);
 // Subiu depois de muito tempo parado? Sincroniza já, sem esperar o próximo horário.
@@ -45,7 +48,8 @@ if (await isSyncStale(repos, 6 * 3600_000).catch(() => false)) {
   void syncEverything().catch((err) => console.error('[sync] falhou:', (err as Error).message));
 }
 
-scheduleNotifications(repos, push);
+scheduleNotifications(repos, push, whatsapp);
+scheduleTostaoChecks(repos, { push, whatsapp });
 
 await app.listen({ port: env.PORT, host: env.HOST });
 

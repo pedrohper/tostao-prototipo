@@ -1,12 +1,13 @@
 // Contratos dos repositórios. O use case pede "alguém que saiba salvar usuário",
 // sem saber se é Postgres ou um array na memória (nos testes).
-import type { Account, BankConnection, Category, CategoryRule, Transaction, User, CategoryBudget, LessonProgress, Invite, PasswordReset, ChatMessage, TribunalVote, Battle, BattleKind, Person } from '../domain/entities.js';
-import type { FinancialPlan } from '@tostao/contracts';
+import type { Account, BankConnection, Category, CategoryRule, Transaction, User, CategoryBudget, LessonProgress, Invite, PasswordReset, ChatMessage, TribunalVote, Battle, BattleKind, Person, TostaoInsight, TostaoInsightSeverity, TostaoInsightStatus, TostaoRoutine, TostaoAutoConfig } from '../domain/entities.js';
+import type { FinancialPlan, UpdateTostaoAutoConfigBody } from '@tostao/contracts';
 
 export type NewUser = Pick<User, 'name' | 'email' | 'passwordHash'>;
 export interface UsersRepository {
   findByEmail(email: string): Promise<User | null>;
   findById(id: string): Promise<User | null>;
+  listAllIds(): Promise<string[]>;
   create(data: NewUser): Promise<User>;
   count(): Promise<number>;
   updatePassword(id: string, passwordHash: string): Promise<void>;
@@ -102,6 +103,7 @@ export interface PeopleRepository {
   findById(id: string): Promise<Person | null>;
   findByName(userId: string, name: string): Promise<Person | null>;
   create(data: { userId: string; name: string }): Promise<Person>;
+  rename(id: string, name: string): Promise<Person>;
   delete(id: string): Promise<void>;
 }
 
@@ -165,6 +167,28 @@ export interface EngagementRepository {
   claimNotification(userId: string, key: string): Promise<boolean>;
 }
 
+export type UpsertTostaoInsight = {
+  userId: string;
+  routine: TostaoRoutine;
+  kind: string;
+  severity: TostaoInsightSeverity;
+  title: string;
+  body: string;
+  payload: Record<string, unknown>;
+  dedupeKey: string;
+  expiresAt?: Date | null;
+};
+
+export interface TostaoAutoRepository {
+  listByUser(userId: string): Promise<TostaoInsight[]>;
+  findById(id: string): Promise<TostaoInsight | null>;
+  /** Cria se ainda não existir; se já existe PENDING (ou reabriu), atualiza título/corpo/payload e devolve { created }. */
+  upsertPending(data: UpsertTostaoInsight): Promise<{ insight: TostaoInsight; created: boolean }>;
+  setStatus(id: string, status: TostaoInsightStatus, actedAt: Date | null): Promise<TostaoInsight>;
+  getConfig(userId: string): Promise<TostaoAutoConfig>;
+  updateConfig(userId: string, patch: UpdateTostaoAutoConfigBody & { lastCheckedAt?: Date }): Promise<TostaoAutoConfig>;
+}
+
 export type Repositories = {
   users: UsersRepository;
   connections: BankConnectionsRepository;
@@ -183,4 +207,5 @@ export type Repositories = {
   games: GamesRepository;
   engagement: EngagementRepository;
   people: PeopleRepository;
+  tostaoAuto: TostaoAutoRepository;
 };

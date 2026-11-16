@@ -1,10 +1,10 @@
 // Repositórios em memória: arrays simples. Usados nos testes e pra rodar sem Postgres.
 import { randomUUID } from 'node:crypto';
-import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, LessonProgress, Transaction, User, Invite, PasswordReset, ChatMessage, TribunalVote, Battle, BattleKind, Person } from '../../domain/entities.js';
-import type { FinancialPlan } from '@tostao/contracts';
+import type { Account, BankConnection, Category, CategoryBudget, CategoryRule, LessonProgress, Transaction, User, Invite, PasswordReset, ChatMessage, TribunalVote, Battle, BattleKind, Person, TostaoInsight, TostaoAutoConfig, TostaoInsightStatus } from '../../domain/entities.js';
+import type { FinancialPlan, UpdateTostaoAutoConfigBody } from '@tostao/contracts';
 import type {
   AccountData, AccountsRepository, FinancialPlansRepository, BankConnectionsRepository, BudgetsRepository, CategoriesRepository, CategoryRulesRepository, ChatMessagesRepository, IgnoredSubscriptionsRepository, InvitesRepository, GamesRepository, EngagementRepository, PushSub, LessonProgressRepository, PasswordResetsRepository,
-  PeopleRepository, Repositories, TransactionsRepository, UsersRepository, WhatsappLink, WhatsappLinksRepository,
+  PeopleRepository, Repositories, TransactionsRepository, UsersRepository, WhatsappLink, WhatsappLinksRepository, TostaoAutoRepository, UpsertTostaoInsight,
 } from '../types.js';
 import { DEFAULT_CATEGORIES, DEFAULT_RULES } from '../../lib/defaults.js';
 
@@ -12,6 +12,7 @@ export class InMemoryUsersRepository implements UsersRepository {
   items: User[] = [];
   async findByEmail(email: string) { return this.items.find((u) => u.email === email) ?? null; }
   async findById(id: string) { return this.items.find((u) => u.id === id) ?? null; }
+  async listAllIds() { return this.items.map((u) => u.id); }
   async create(data: Pick<User, 'name' | 'email' | 'passwordHash'>) {
     const user: User = { id: randomUUID(), createdAt: new Date(), ...data };
     this.items.push(user);
@@ -287,7 +288,94 @@ export class InMemoryPeopleRepository implements PeopleRepository {
   async findById(id: string) { return this.items.find((p) => p.id === id) ?? null; }
   async findByName(userId: string, name: string) { return this.items.find((p) => p.userId === userId && p.name.toLowerCase() === name.toLowerCase()) ?? null; }
   async create(data: { userId: string; name: string }) { const p = { id: randomUUID(), createdAt: new Date(), ...data }; this.items.push(p); return p; }
+  async rename(id: string, name: string) { const p = this.items.find((x) => x.id === id); if (!p) throw new Error('Pessoa não encontrada'); p.name = name; return p; }
   async delete(id: string) { this.items = this.items.filter((p) => p.id !== id); }
+}
+
+export class InMemoryTostaoAutoRepository implements TostaoAutoRepository {
+  insights: TostaoInsight[] = [];
+  configs = new Map<string, TostaoAutoConfig>();
+
+  async listByUser(userId: string) {
+    return this.insights
+      .filter((i) => i.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async findById(id: string) {
+    return this.insights.find((i) => i.id === id) ?? null;
+  }
+
+  async upsertPending(data: UpsertTostaoInsight) {
+    const existing = this.insights.find((i) => i.userId === data.userId && i.dedupeKey === data.dedupeKey);
+    if (!existing) {
+      const created: TostaoInsight = {
+        id: randomUUID(),
+        userId: data.userId,
+        routine: data.routine,
+        kind: data.kind,
+        severity: data.severity,
+        title: data.title,
+        body: data.body,
+        payload: data.payload,
+        dedupeKey: data.dedupeKey,
+        status: 'PENDING',
+        expiresAt: data.expiresAt ?? null,
+        createdAt: new Date(),
+        actedAt: null,
+      };
+      this.insights.push(created);
+      return { insight: created, created: true };
+    }
+    const reopenUncat =
+      existing.status === 'APPLIED' &&
+      data.kind === 'uncategorized_batch' &&
+      typeof data.payload.latestTxId === 'string' &&
+      data.payload.latestTxId !== existing.payload.latestTxId;
+
+    if (existing.status === 'PENDING' || reopenUncat) {
+      existing.title = data.title;
+      existing.body = data.body;
+      existing.severity = data.severity;
+      existing.payload = data.payload;
+      existing.expiresAt = data.expiresAt ?? null;
+      existing.status = 'PENDING';
+      existing.actedAt = null;
+      return { insight: existing, created: reopenUncat };
+    }
+    return { insight: existing, created: false };
+  }
+
+  async setStatus(id: string, status: TostaoInsightStatus, actedAt: Date | null) {
+    const item = this.insights.find((i) => i.id === id);
+    if (!item) throw new Error('Achado não encontrado');
+    item.status = status;
+    item.actedAt = actedAt;
+    return item;
+  }
+
+  async getConfig(userId: string): Promise<TostaoAutoConfig> {
+    return (
+      this.configs.get(userId) ?? {
+        userId,
+        carameloExtrato: true,
+        tostaoPrevisao: true,
+        guardiaoLimites: true,
+        olheiroAcertos: true,
+        notifyPush: true,
+        notifyWhatsapp: false,
+        lastCheckedAt: null,
+        updatedAt: new Date(0),
+      }
+    );
+  }
+
+  async updateConfig(userId: string, patch: UpdateTostaoAutoConfigBody & { lastCheckedAt?: Date }): Promise<TostaoAutoConfig> {
+    const current = await this.getConfig(userId);
+    const next: TostaoAutoConfig = { ...current, ...patch, updatedAt: new Date() };
+    this.configs.set(userId, next);
+    return next;
+  }
 }
 
 export function makeInMemoryRepositories() {
@@ -311,5 +399,6 @@ export function makeInMemoryRepositories() {
     games: new InMemoryGamesRepository(),
     engagement: new InMemoryEngagementRepository(),
     people: new InMemoryPeopleRepository(),
+    tostaoAuto: new InMemoryTostaoAutoRepository(),
   } satisfies Repositories;
 }

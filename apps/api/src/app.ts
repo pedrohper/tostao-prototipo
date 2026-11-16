@@ -13,9 +13,10 @@ import { planningRoutes } from './http/controllers/planning.js';
 import { gamesRoutes } from './http/controllers/games.js';
 import { chatRoutes } from './http/controllers/chat.js';
 import { whatsappRoutes } from './http/controllers/whatsapp.js';
-import { FakeWhatsAppGateway } from './gateways/whatsapp-gateway.js';
+import { DisabledAudioTranscriber, FakeWhatsAppGateway, type AudioTranscriber } from './gateways/whatsapp-gateway.js';
 import { engagementRoutes } from './http/controllers/engagement.js';
 import { investRoutes } from './http/controllers/invest.js';
+import { tostaoAutoRoutes } from './http/controllers/tostao-auto.js';
 import { ReferenceRatesGateway, type RatesGateway } from './gateways/rates-gateway.js';
 import { DisabledPushGateway, type PushGateway } from './gateways/push-gateway.js';
 
@@ -23,9 +24,9 @@ declare module '@fastify/jwt' {
   interface FastifyJWT { user: { sub: string } }
 }
 
-type Options = Deps & { jwtSecret: string; webOrigin: string; logger?: boolean; whatsappVerifyToken?: string; n8nWhatsAppSecret?: string; push?: PushGateway; rates?: RatesGateway };
+type Options = Deps & { jwtSecret: string; webOrigin: string; logger?: boolean; whatsappVerifyToken?: string; n8nWhatsAppSecret?: string; audioTranscriber?: AudioTranscriber; push?: PushGateway; rates?: RatesGateway };
 
-export async function buildApp({ repos, bank, ai, whatsapp = new FakeWhatsAppGateway(), whatsappVerifyToken = '', n8nWhatsAppSecret = '', chatDailyLimit, jwtSecret, webOrigin, logger = false, push = new DisabledPushGateway(), rates = new ReferenceRatesGateway() }: Options) {
+export async function buildApp({ repos, bank, ai, whatsapp = new FakeWhatsAppGateway(), whatsappVerifyToken = '', n8nWhatsAppSecret = '', audioTranscriber = new DisabledAudioTranscriber(), chatDailyLimit, jwtSecret, webOrigin, logger = false, push = new DisabledPushGateway(), rates = new ReferenceRatesGateway() }: Options) {
   const app = Fastify({ logger });
   await app.register(cors, { origin: webOrigin });
   await app.register(jwt, { secret: jwtSecret, sign: { expiresIn: '7d' } });
@@ -42,7 +43,8 @@ export async function buildApp({ repos, bank, ai, whatsapp = new FakeWhatsAppGat
   planningRoutes(app, uc);
   gamesRoutes(app, uc);
   chatRoutes(app, uc);
-  whatsappRoutes(app, uc, whatsapp, whatsappVerifyToken, n8nWhatsAppSecret);
+  whatsappRoutes(app, uc, whatsapp, whatsappVerifyToken, n8nWhatsAppSecret, audioTranscriber);
+  tostaoAutoRoutes(app, uc);
   investRoutes(app, rates);
   return app;
 }

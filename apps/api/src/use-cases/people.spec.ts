@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeInMemoryRepositories } from '../repositories/in-memory/index.js';
 import { GetMonthSummaryUseCase } from './get-month-summary.js';
-import { AddPersonEntryUseCase, DeletePersonUseCase, LinkTransactionPersonUseCase, ListPeopleUseCase } from './people.js';
+import { AddPersonEntryUseCase, DeletePersonUseCase, LinkTransactionPersonUseCase, ListPeopleUseCase, RenamePersonUseCase } from './people.js';
 import { detectInternalTransfers } from '../services/internal-transfers.js';
 
 describe('acertos', () => {
@@ -40,5 +40,23 @@ describe('acertos', () => {
     expect((await repos.transactions.findById(dela.id))!.isInternalTransfer).toBe(false);
     expect((await new GetMonthSummaryUseCase(repos).execute({ userId: u.id, month: '2026-11' })).outcomeInCents).toBe(23000);
     await expect(link.execute({ userId: 'outro', transactionId: dela.id, personName: 'X' })).rejects.toThrow();
+  });
+
+  it('renomeia pessoa/grupo: limpa espaços, não deixa duplicar nome e não mexe no de outro usuário', async () => {
+    const repos = makeInMemoryRepositories();
+    const u = await repos.users.create({ name: 'Ana', email: 'r@x.com', passwordHash: 'x' });
+    const outro = await repos.users.create({ name: 'Bia', email: 'b@x.com', passwordHash: 'x' });
+    const familia = await repos.people.create({ userId: u.id, name: 'Divido com minha família' });
+    await repos.people.create({ userId: u.id, name: 'Mãe' });
+    const rename = new RenamePersonUseCase(repos);
+
+    const { person } = await rename.execute({ userId: u.id, personId: familia.id, name: '  Casa   (família) ' });
+    expect(person.name).toBe('Casa (família)');
+    expect((await repos.people.findById(familia.id))!.name).toBe('Casa (família)');
+    // Mesmo nome dela mesma (só caixa diferente) pode
+    await expect(rename.execute({ userId: u.id, personId: familia.id, name: 'casa (família)' })).resolves.toBeTruthy();
+
+    await expect(rename.execute({ userId: u.id, personId: familia.id, name: 'mãe' })).rejects.toThrow('Já tem');
+    await expect(rename.execute({ userId: outro.id, personId: familia.id, name: 'Qualquer' })).rejects.toThrow();
   });
 });

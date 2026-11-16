@@ -6,10 +6,10 @@ import type { InstitutionLogosResponse } from '@tostao/contracts';
 import { api } from '@/lib/api';
 
 type Visual = { sigla: string; bg: string; fg: string };
-export type Logo = InstitutionLogosResponse['logos'][number];
+export type BankLogo = InstitutionLogosResponse['logos'][number];
 
 /** Logos oficiais (vêm da lista de bancos do Pluggy). Se falhar, o app usa o selo com a inicial. */
-export async function logosBancos(): Promise<Logo[]> {
+export async function getBankLogos(): Promise<BankLogo[]> {
   try {
     return (await api<InstitutionLogosResponse>('/institutions/logos')).logos;
   } catch {
@@ -22,10 +22,10 @@ const temPalavra = (texto: string, termo: string) => ` ${texto} `.includes(` ${t
 const GENERICAS = new Set(['banco', 'conta', 'cartao', 'credito', 'bank', 'pay', 'digital']);
 
 /** Acha o logo pelo nome da conta: primeiro o nome inteiro do banco, depois a primeira palavra forte (ex.: "Caixa"). */
-export function logoDo(logos: Logo[], ...nomes: (string | null | undefined)[]): Logo | null {
+export function findBankLogo(logos: BankLogo[], ...nomes: (string | null | undefined)[]): BankLogo | null {
   const texto = norm(nomes.filter(Boolean).join(' '));
   if (!texto || logos.length === 0) return null;
-  let melhor: Logo | null = null;
+  let melhor: BankLogo | null = null;
   let tam = 0;
   for (const l of logos) {
     const n = norm(l.name);
@@ -63,27 +63,26 @@ const BANCOS: [RegExp, Visual][] = [
   [/amazon/i, { sigla: 'a', bg: '#232F3E', fg: '#FF9900' }],
 ];
 
-const RESERVA = ['#FF5A36', '#3DD6A0', '#7A5AF8', '#2E90FA', '#FFC233'];
+const RESERVA = ['var(--color-laranja)', 'var(--color-menta)', '#7A5AF8', '#2E90FA', 'var(--color-amarelo)'];
 
-export function visualDoBanco(...nomes: (string | null | undefined)[]): Visual & { conhecido: boolean } {
+export function getBankVisual(...nomes: (string | null | undefined)[]): Visual & { conhecido: boolean } {
   const texto = nomes.filter(Boolean).join(' ');
   for (const [re, v] of BANCOS) if (re.test(texto)) return { ...v, conhecido: true };
   const base = (nomes.find(Boolean) ?? '?').trim();
   const cor = RESERVA[[...base].reduce((s, c) => s + c.charCodeAt(0), 0) % RESERVA.length];
-  return { sigla: base.charAt(0).toUpperCase() || '?', bg: cor, fg: cor === '#FFC233' || cor === '#3DD6A0' ? '#1E1B18' : '#FFFFFF', conhecido: false };
+  return { sigla: base.charAt(0).toUpperCase() || '?', bg: cor, fg: cor === 'var(--color-amarelo)' || cor === 'var(--color-menta)' ? 'var(--color-tinta-fixa)' : '#FFFFFF', conhecido: false };
 }
 
-export function SeloBanco({ nome, instituicao, size = 20, quadrado = false, logos = [] }: { nome: string; instituicao?: string | null; size?: number; quadrado?: boolean; logos?: Logo[] }) {
-  const logo = logoDo(logos, nome, instituicao);
+export function BankBadge({ nome, instituicao, size = 20, quadrado = false, logos = [] }: { nome: string; instituicao?: string | null; size?: number; quadrado?: boolean; logos?: BankLogo[] }) {
+  const logo = findBankLogo(logos, nome, instituicao);
   if (logo) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
       <img src={logo.imageUrl} alt="" aria-hidden="true" width={size} height={size} loading="lazy"
         className={`shrink-0 bg-white object-cover ring-1 ring-black/5 dark:ring-white/10 ${quadrado ? 'rounded-[30%]' : 'rounded-full'}`}
         style={{ width: size, height: size }} />
     );
   }
-  const v = visualDoBanco(instituicao, nome);
+  const v = getBankVisual(instituicao, nome);
   const fonte = Math.round(size * (v.sigla.length >= 3 ? 0.34 : v.sigla.length === 2 ? 0.42 : 0.52));
   return (
     <span aria-hidden="true" className={`inline-flex shrink-0 items-center justify-center font-display leading-none font-extrabold ring-1 ring-black/5 dark:ring-white/10 ${quadrado ? 'rounded-[30%]' : 'rounded-full'}`}
@@ -97,11 +96,11 @@ const BANDEIRAS: Record<string, string> = {
   VISA: 'Visa', MASTERCARD: 'Master', MASTER: 'Master', ELO: 'Elo', AMEX: 'Amex', 'AMERICAN EXPRESS': 'Amex', HIPERCARD: 'Hiper', HIPER: 'Hiper', DINERS: 'Diners',
 };
 
-export const nomeBandeira = (brand: string | null | undefined) => (brand ? BANDEIRAS[brand.toUpperCase()] ?? brand.charAt(0) + brand.slice(1).toLowerCase() : null);
+export const getCardNetworkName = (brand: string | null | undefined) => (brand ? BANDEIRAS[brand.toUpperCase()] ?? brand.charAt(0) + brand.slice(1).toLowerCase() : null);
 
 /** "Visa •• 2784": bandeira em etiqueta + final do cartão. */
-export function Bandeira({ brand, last4, className = '' }: { brand?: string | null; last4?: string | null; className?: string }) {
-  const nome = nomeBandeira(brand);
+export function CardNetworkBadge({ brand, last4, className = '' }: { brand?: string | null; last4?: string | null; className?: string }) {
+  const nome = getCardNetworkName(brand);
   if (!nome && !last4) return null;
   return (
     <span className={`inline-flex items-center gap-1 whitespace-nowrap text-[11px] font-semibold text-tinta-suave ${className}`}>

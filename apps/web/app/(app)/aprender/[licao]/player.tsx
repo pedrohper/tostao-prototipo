@@ -1,50 +1,61 @@
 'use client';
-import { CatIcon, Icone } from '@/components/icone';
+import { Icon } from '@/components/icone';
 import Link from 'next/link';
 import { useState } from 'react';
+import type { Dictionary, Locale } from '@/lib/i18n';
 import type { Lesson } from '@/lib/lessons';
 import { markLessonDone } from '../actions';
-import { Mascote, type Pose } from '@/components/mascote';
+import { Mascot, type MascotPose } from '@/components/mascote';
 import { Button } from '@/components/ui';
-import { Confete } from '@/components/confete';
+import { Confetti } from '@/components/confete';
 import { SIMULATORS } from './simulators';
 
-type Props = { lesson: Lesson; moduleTitle: string; moduleNumber: number; nextId: string | null };
+type Props = {
+  lesson: Lesson;
+  moduleTitle: string;
+  moduleNumber: number;
+  nextId: string | null;
+  locale: Locale;
+  t: Dictionary['pages']['learnExtra'];
+  calcT: Dictionary['pages']['calculators'];
+};
 
-const STEPS: { label: string; pose: Pose; bg: string }[] = [
-  { label: 'Seu extrato', pose: 'investigando', bg: 'bg-amarelo-claro' },
-  { label: 'A ideia', pose: 'professor', bg: 'bg-papel' },
-  { label: 'Brinca com o número', pose: 'pensando', bg: 'bg-azul' },
-  { label: 'Dilema', pose: 'pensando', bg: 'bg-rosa' },
-  { label: 'Compromisso da semana', pose: 'orgulhoso', bg: 'bg-menta-clara' },
-  { label: 'Fechou!', pose: 'comemorando', bg: 'bg-amarelo' },
+const STEP_META: { pose: MascotPose; bg: string }[] = [
+  { pose: 'investigando', bg: 'bg-amarelo-claro' },
+  { pose: 'professor', bg: 'bg-papel' },
+  { pose: 'pensando', bg: 'bg-azul' },
+  { pose: 'pensando', bg: 'bg-rosa' },
+  { pose: 'orgulhoso', bg: 'bg-menta-clara' },
+  { pose: 'comemorando', bg: 'bg-amarelo' },
 ];
 
-export function LessonPlayer({ lesson, moduleTitle, moduleNumber, nextId }: Props) {
+export function LessonPlayer({ lesson, moduleTitle, moduleNumber, nextId, locale, t, calcT }: Props) {
   const [step, setStep] = useState(0);
   const [vote, setVote] = useState<'A' | 'B' | null>(null);
-  const s = STEPS[step];
+  const s = STEP_META[step]!;
+  const stepLabel = t.steps[step] ?? '';
   const Sim = SIMULATORS[lesson.id];
-  const last = step === STEPS.length - 1;
+  const last = step === STEP_META.length - 1;
 
   const advance = () => {
-    if (step === STEPS.length - 2) void markLessonDone(lesson.id);
+    if (step === STEP_META.length - 2) void markLessonDone(lesson.id);
     setStep(step + 1);
   };
 
   return (
-    <div className={`-mx-5 -mt-6 flex min-h-[calc(100dvh-90px)] flex-col gap-4 px-5 pt-6 pb-6 md:-mx-8 md:rounded-b-3xl md:px-8 ${s.bg}`}>
+    <div className="mx-auto w-full max-w-[680px] md:my-6 md:min-h-0 md:rounded-[28px] md:border md:border-linha md:bg-cartao md:p-6 md:pb-8">
+      <div className={`-mx-5 -mt-6 -mb-28 flex min-h-dvh flex-col gap-4 px-5 pt-6 pb-28 md:mx-0 md:mt-0 md:mb-0 md:min-h-0 md:rounded-[20px] md:p-5 ${s.bg}`}>
       <div className="flex items-center gap-3">
-        <Link href="/aprender" aria-label="Sair da lição" className="text-2xl leading-none">×</Link>
-        <div className="flex flex-1 gap-1.5" aria-label={`Passo ${step + 1} de ${STEPS.length}`}>
-          {STEPS.map((_, i) => <span key={i} className={`h-2 flex-1 rounded-full ${i <= step ? 'bg-laranja' : 'bg-tinta/10'}`} />)}
+        <Link href="/aprender" aria-label={t.exitLessonAria} className="text-2xl leading-none">×</Link>
+        <div className="flex flex-1 gap-1.5" aria-label={t.stepAria(step + 1, STEP_META.length)}>
+          {STEP_META.map((_, i) => <span key={i} className={`h-2 flex-1 rounded-full ${i <= step ? 'bg-laranja' : 'bg-tinta/10'}`} />)}
         </div>
       </div>
-      <span className="text-xs font-bold tracking-wider text-laranja-texto uppercase">Módulo {moduleNumber} · {moduleTitle}</span>
+      <span className="text-xs font-bold tracking-wider text-laranja-texto uppercase">{t.modulePrefix(moduleNumber, moduleTitle)}</span>
       <div className="flex items-center gap-3">
-        <Mascote pose={s.pose} size={84} alt="" />
+        <Mascot pose={s.pose} size={84} alt="" />
         <div>
-          <span className="text-sm font-semibold text-tinta-suave">{s.label}</span>
+          <span className="text-sm font-semibold text-tinta-suave">{stepLabel}</span>
           <h1 className="font-display text-[24px] leading-tight font-extrabold">{lesson.title}</h1>
         </div>
       </div>
@@ -55,10 +66,10 @@ export function LessonPlayer({ lesson, moduleTitle, moduleNumber, nextId }: Prop
         {step === 2 && (
           <div className="flex flex-col gap-3 rounded-[20px] bg-cartao p-4">
             <span className="font-display text-lg font-extrabold">{lesson.simulator.name}</span>
-            {Sim ? <Sim /> : (
+            {Sim ? <Sim locale={locale} calcT={calcT} /> : (
               <>
                 <p className="text-[15px]">{lesson.simulator.description.charAt(0).toUpperCase() + lesson.simulator.description.slice(1)}</p>
-                <p className="flex items-center gap-2 rounded-xl bg-papel-2 p-3 text-sm text-tinta-suave"><Icone src="ui/em-construcao" size={28} />Esse simulador ainda tá no papel. Por enquanto, imagina a conta com os seus números.</p>
+                <p className="flex items-center gap-2 rounded-xl bg-papel-2 p-3 text-sm text-tinta-suave"><Icon src="ui/em-construcao" size={28} />{t.simulatorWip}</p>
               </>
             )}
           </div>
@@ -69,8 +80,8 @@ export function LessonPlayer({ lesson, moduleTitle, moduleNumber, nextId }: Prop
             <div className="flex flex-col gap-2.5">
               {(
                 [
-                  ['A', lesson.dilemma.optionA || 'Opção A'],
-                  ['B', lesson.dilemma.optionB || 'Opção B'],
+                  ['A', lesson.dilemma.optionA || t.optionLabel('A')],
+                  ['B', lesson.dilemma.optionB || t.optionLabel('B')],
                 ] as const
               ).map(([side, text]) => (
                 <button
@@ -86,7 +97,7 @@ export function LessonPlayer({ lesson, moduleTitle, moduleNumber, nextId }: Prop
                       vote === side ? 'bg-tinta text-papel' : 'bg-papel-2 text-tinta-suave'
                     }`}
                   >
-                    Opção {side}
+                    {t.optionLabel(side)}
                   </span>
                   <span className="text-[15px] font-semibold text-tinta leading-snug">
                     {text}
@@ -96,9 +107,9 @@ export function LessonPlayer({ lesson, moduleTitle, moduleNumber, nextId }: Prop
             </div>
             {vote && (
               <div className="flex flex-col gap-2 rounded-[20px] bg-cartao p-4 text-[15px]">
-                <p><b>A favor da Opção A:</b> {lesson.dilemma.sideA}</p>
-                <p><b>A favor da Opção B:</b> {lesson.dilemma.sideB}</p>
-                <p className="text-tinta-suave">Não tem resposta única. Depende do seu momento, e tá tudo bem.</p>
+                <p><b>{t.sideAFor}</b> {lesson.dilemma.sideA}</p>
+                <p><b>{t.sideBFor}</b> {lesson.dilemma.sideB}</p>
+                <p className="text-tinta-suave">{t.dilemmaNote}</p>
               </div>
             )}
           </div>
@@ -106,23 +117,24 @@ export function LessonPlayer({ lesson, moduleTitle, moduleNumber, nextId }: Prop
         {step === 4 && <p className="rounded-[20px] bg-cartao p-4 font-semibold">{lesson.commitment}</p>}
         {step === 5 && (
           <div className="flex flex-col items-center gap-2 py-6 text-center">
-            <Confete />
+            <Confetti />
             <p className="mascote-pula font-display text-[34px] font-extrabold">+20 XP</p>
-            <p className="text-[15px]">Lição feita. O Caramelo já tá de olho no seu extrato pra conferir o compromisso.</p>
+            <p className="text-[15px]">{t.lessonDoneToast}</p>
           </div>
         )}
       </div>
 
       {last ? (
         <div className="flex flex-col gap-2.5">
-          {nextId && <Link href={`/aprender/${nextId}`} className="flex h-[54px] items-center justify-center rounded-full bg-tinta font-semibold text-papel no-underline">Próxima lição</Link>}
-          <Link href="/aprender" className="flex h-[50px] items-center justify-center rounded-full border-[1.5px] border-tinta font-semibold no-underline">Voltar pro Aprender</Link>
+          {nextId && <Link href={`/aprender/${nextId}`} className="flex h-[54px] items-center justify-center rounded-full bg-tinta font-semibold text-papel no-underline">{t.nextLesson}</Link>}
+          <Link href="/aprender" className="flex h-[50px] items-center justify-center rounded-full border-[1.5px] border-tinta font-semibold no-underline">{t.backToLearn}</Link>
         </div>
       ) : (
         <Button variant={step === 4 ? 'laranja' : 'dark'} onClick={advance} disabled={step === 3 && !vote}>
-          {step === 4 ? 'Topo o desafio' : step === 3 && !vote ? 'Escolhe um lado' : 'Continuar'}
+          {step === 4 ? t.acceptChallenge : step === 3 && !vote ? t.chooseSide : t.continueCta}
         </Button>
       )}
+      </div>
     </div>
   );
 }

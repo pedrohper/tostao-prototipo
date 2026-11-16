@@ -31,6 +31,13 @@ export function peopleRoutes(app: FastifyInstance, uc: UseCases) {
     return reply.status(201).send({ id: transaction.id });
   });
 
+  app.patch('/people/:id', { onRequest: verifyJwt }, async (request) => {
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const { name } = createPersonBody.parse(request.body);
+    const { person } = await uc.renamePerson.execute({ userId: request.user.sub, personId: id, name });
+    return { id: person.id, name: person.name };
+  });
+
   app.delete('/people/:id', { onRequest: verifyJwt }, async (request, reply) => {
     const { id } = z.object({ id: z.string() }).parse(request.params);
     await uc.deletePerson.execute({ userId: request.user.sub, personId: id });

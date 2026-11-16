@@ -2,6 +2,44 @@
 // Sem nenhum dos dois configurado, fica desligado (e os testes usam o Fake).
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
+export interface WhatsAppMedia {
+  bytes: Uint8Array;
+  mimeType: string;
+}
+
+export interface AudioTranscriber {
+  transcribe(bytes: Uint8Array, mimeType: string): Promise<string | null>;
+}
+
+export class DisabledAudioTranscriber implements AudioTranscriber {
+  async transcribe() { return null; }
+}
+
+export class FakeAudioTranscriber implements AudioTranscriber {
+  calls: { bytes: Uint8Array; mimeType: string }[] = [];
+  constructor(public next: string | null = null) {}
+  async transcribe(bytes: Uint8Array, mimeType: string) {
+    this.calls.push({ bytes, mimeType });
+    return this.next;
+  }
+}
+
+export class WhisperAudioTranscriber implements AudioTranscriber {
+  constructor(private readonly url: string) {}
+
+  async transcribe(bytes: Uint8Array, mimeType: string): Promise<string | null> {
+    const ext = mimeType.includes('mp4') ? 'm4a' : mimeType.includes('mpeg') ? 'mp3' : 'ogg';
+    const form = new FormData();
+    form.append('file', new Blob([Buffer.from(bytes)], { type: mimeType }), `audio.${ext}`);
+    form.append('language', 'pt');
+    const res = await fetch(this.url, { method: 'POST', body: form, signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) throw new Error(`Whisper respondeu ${res.status}`);
+    const data = (await res.json()) as { text?: string };
+    const text = (data.text ?? '').trim();
+    return text || null;
+  }
+}
+
 export interface WhatsAppGateway {
   readonly enabled: boolean;
   /** Número que aparece pra pessoa (só dígitos, com DDI), pro link wa.me. */
@@ -9,13 +47,17 @@ export interface WhatsAppGateway {
   send(to: string, text: string): Promise<void>;
   /** Confere a assinatura X-Hub-Signature-256 que a Meta manda no webhook. */
   verifySignature(rawBody: string, header: string | undefined): boolean;
+  /** Baixa mídia recebida pelo webhook oficial da Meta (ex.: áudio para transcrever). */
+  downloadMedia?(mediaId: string): Promise<WhatsAppMedia | null>;
 }
 
 export class FakeWhatsAppGateway implements WhatsAppGateway {
   sent: { to: string; text: string }[] = [];
+  media = new Map<string, WhatsAppMedia>();
   constructor(readonly enabled = false, readonly displayNumber: string | null = null) {}
   async send(to: string, text: string) { this.sent.push({ to, text }); }
   verifySignature() { return true; }
+  async downloadMedia(mediaId: string) { return this.media.get(mediaId) ?? null; }
 }
 
 export class CloudApiWhatsAppGateway implements WhatsAppGateway {
@@ -36,6 +78,25 @@ export class CloudApiWhatsAppGateway implements WhatsAppGateway {
       signal: AbortSignal.timeout(20_000),
     });
     if (!res.ok) throw new Error(`WhatsApp respondeu ${res.status}`);
+  }
+
+  async downloadMedia(mediaId: string): Promise<WhatsAppMedia | null> {
+    const metaRes = await fetch(`${this.graph}/${encodeURIComponent(mediaId)}`, {
+      headers: { authorization: `Bearer ${this.token}` },
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!metaRes.ok) throw new Error(`WhatsApp media meta respondeu ${metaRes.status}`);
+    const meta = (await metaRes.json()) as { url?: string; mime_type?: string };
+    if (!meta.url) return null;
+    const fileRes = await fetch(meta.url, {
+      headers: { authorization: `Bearer ${this.token}` },
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!fileRes.ok) throw new Error(`WhatsApp media download respondeu ${fileRes.status}`);
+    return {
+      bytes: new Uint8Array(await fileRes.arrayBuffer()),
+      mimeType: meta.mime_type ?? fileRes.headers.get('content-type') ?? 'audio/ogg',
+    };
   }
 
   verifySignature(rawBody: string, header: string | undefined) {

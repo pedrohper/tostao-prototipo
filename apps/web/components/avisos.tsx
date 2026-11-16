@@ -1,78 +1,117 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { apagarInscricao, salvarInscricao } from '@/lib/push-actions';
+import { deletePushSubscription, savePushSubscription } from '@/lib/push-actions';
+import { getDictionary, type Locale } from '@/lib/i18n';
 
-const toKey = (b64: string) => {
+const urlBase64ToUint8Array = (b64: string) => {
   const pad = '='.repeat((4 - (b64.length % 4)) % 4);
   const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
   return Uint8Array.from(raw, (c) => c.charCodeAt(0));
 };
 
-type Estado = 'carregando' | 'sem-suporte' | 'desligado' | 'ligado' | 'bloqueado' | 'servidor-off';
+type PushStatus = 'loading' | 'unsupported' | 'disabled' | 'enabled' | 'blocked' | 'serverOff';
 
-/** Liga/desliga os avisos neste celular: contas a vencer, ofensiva em risco e resumo da semana. */
-export function Avisos({ publicKey }: { publicKey: string | null }) {
-  const [estado, setEstado] = useState<Estado>('carregando');
-  const [ocupado, setOcupado] = useState(false);
+/** Toggles web push notifications on this device (upcoming bills, streak reminders, weekly summary). */
+export function PushNotificationCard({
+  publicKey,
+  locale = 'pt-BR',
+  embedded = false,
+}: {
+  publicKey: string | null;
+  locale?: Locale;
+  embedded?: boolean;
+}) {
+  const [status, setStatus] = useState<PushStatus>('loading');
+  const [busy, setBusy] = useState(false);
+  const t = getDictionary(locale);
 
   useEffect(() => {
     (async () => {
-      if (!publicKey) return setEstado('servidor-off');
-      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return setEstado('sem-suporte');
-      if (Notification.permission === 'denied') return setEstado('bloqueado');
-      const reg = await navigator.serviceWorker.register('/sw.js');
-      const sub = await reg.pushManager.getSubscription();
-      setEstado(sub ? 'ligado' : 'desligado');
-    })().catch(() => setEstado('sem-suporte'));
+      if (!publicKey) return setStatus('serverOff');
+      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+        return setStatus('unsupported');
+      }
+      if (Notification.permission === 'denied') return setStatus('blocked');
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      const subscription = await registration.pushManager.getSubscription();
+      setStatus(subscription ? 'enabled' : 'disabled');
+    })().catch(() => setStatus('unsupported'));
   }, [publicKey]);
 
-  async function ligar() {
+  async function enablePush() {
     if (!publicKey) return;
-    setOcupado(true);
+    setBusy(true);
     try {
-      const perm = await Notification.requestPermission();
-      if (perm !== 'granted') { setEstado(perm === 'denied' ? 'bloqueado' : 'desligado'); return; }
-      const reg = await navigator.serviceWorker.register('/sw.js');
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        setStatus(permission === 'denied' ? 'blocked' : 'disabled');
+        return;
+      }
+      const registration = await navigator.serviceWorker.register('/sw.js');
       await navigator.serviceWorker.ready;
-      const sub = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: toKey(publicKey) }));
-      const r = await salvarInscricao(sub.toJSON());
-      setEstado(r.ok ? 'ligado' : 'desligado');
+      const subscription =
+        (await registration.pushManager.getSubscription()) ??
+        (await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey),
+        }));
+      const res = await savePushSubscription(subscription.toJSON());
+      setStatus(res.ok ? 'enabled' : 'disabled');
     } catch {
-      setEstado('desligado');
-    } finally { setOcupado(false); }
+      setStatus('disabled');
+    } finally {
+      setBusy(false);
+    }
   }
 
-  async function desligar() {
-    setOcupado(true);
+  async function disablePush() {
+    setBusy(true);
     try {
-      const reg = await navigator.serviceWorker.getRegistration('/sw.js');
-      const sub = await reg?.pushManager.getSubscription();
-      if (sub) { await apagarInscricao(sub.endpoint); await sub.unsubscribe(); }
-      setEstado('desligado');
-    } finally { setOcupado(false); }
+      const registration = await navigator.serviceWorker.getRegistration('/sw.js');
+      const subscription = await registration?.pushManager.getSubscription();
+      if (subscription) {
+        await deletePushSubscription(subscription.endpoint);
+        await subscription.unsubscribe();
+      }
+      setStatus('disabled');
+    } finally {
+      setBusy(false);
+    }
   }
 
-  const texto: Record<Estado, string> = {
-    carregando: 'Conferindo…',
-    'sem-suporte': 'Esse navegador não recebe avisos. No iPhone, adiciona o Tostão à tela de início primeiro.',
-    desligado: 'Fatura e conta 2 dias antes de vencer, ofensiva em risco às 20h e o resumo da semana no domingo.',
-    ligado: 'Ligados neste celular. Fatura e conta 2 dias antes, ofensiva às 20h, resumo no domingo.',
-    bloqueado: 'Os avisos tão bloqueados pro Tostão. Libera nas configurações do navegador e volta aqui.',
-    'servidor-off': 'Os avisos ainda não tão ligados no servidor. Já já.',
-  };
   return (
-    <section id="avisos" className="flex scroll-mt-4 flex-col gap-2.5 rounded-2xl border border-linha bg-cartao p-3.5">
+    <section
+      id="avisos"
+      className={
+        embedded
+          ? 'flex scroll-mt-4 flex-col gap-1.5 py-3.5'
+          : 'flex scroll-mt-4 flex-col gap-2.5 rounded-[22px] border border-linha bg-cartao p-4'
+      }
+    >
       <div className="flex items-center justify-between gap-3">
-        <span className="text-[15px] font-bold">Avisos no celular</span>
-        {(estado === 'desligado' || estado === 'ligado') && (
-          <button type="button" role="switch" aria-checked={estado === 'ligado'} disabled={ocupado} onClick={estado === 'ligado' ? desligar : ligar}
-            aria-label="Avisos no celular"
-            className={`relative h-8 w-[52px] shrink-0 rounded-full transition-colors disabled:opacity-60 ${estado === 'ligado' ? 'bg-menta' : 'bg-papel-2 ring-1 ring-linha'}`}>
-            <span className={`absolute top-1 h-6 w-6 rounded-full bg-cartao shadow transition-all ${estado === 'ligado' ? 'left-[24px]' : 'left-1'}`} />
+        <span className="text-[15px] font-semibold text-tinta">{t.profile.pushTitle}</span>
+        {(status === 'disabled' || status === 'enabled') && (
+          <button
+            type="button"
+            role="switch"
+            aria-checked={status === 'enabled'}
+            disabled={busy}
+            onClick={status === 'enabled' ? disablePush : enablePush}
+            aria-label={t.profile.pushTitle}
+            className={`relative h-8 w-[52px] shrink-0 rounded-full transition-colors disabled:opacity-60 ${
+              status === 'enabled' ? 'bg-menta' : 'bg-papel-2 ring-1 ring-linha'
+            }`}
+          >
+            <span
+              className={`absolute top-1 h-6 w-6 rounded-full bg-cartao shadow ring-1 ring-black/5 transition-all ${
+                status === 'enabled' ? 'left-[24px]' : 'left-1'
+              }`}
+            />
           </button>
         )}
       </div>
-      <p className="text-[13px] leading-[19px] text-tinta-suave">{texto[estado]}</p>
+      <p className="text-[13px] leading-[19px] text-tinta-suave">{t.profile.pushStatus[status]}</p>
     </section>
   );
 }
+

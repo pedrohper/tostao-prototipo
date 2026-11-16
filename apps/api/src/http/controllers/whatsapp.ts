@@ -1,9 +1,16 @@
 import type { FastifyInstance } from 'fastify';
 import type { UseCases } from '../../use-cases/factories.js';
-import { normalizeWhatsAppFrom, sameSecret, type WhatsAppGateway } from '../../gateways/whatsapp-gateway.js';
+import { DisabledAudioTranscriber, normalizeWhatsAppFrom, sameSecret, type AudioTranscriber, type WhatsAppGateway } from '../../gateways/whatsapp-gateway.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
 
-type Incoming = { entry?: { changes?: { value?: { messages?: { id: string; from: string; type: string; text?: { body?: string } }[] } }[] }[] };
+type IncomingMessage = {
+  id: string;
+  from: string;
+  type: string;
+  text?: { body?: string };
+  audio?: { id?: string; mime_type?: string };
+};
+type Incoming = { entry?: { changes?: { value?: { messages?: IncomingMessage[] } }[] }[] };
 
 // WhatsApp: telas do app (ligar/desligar) + webhook da Meta (a única rota que fica pública, via Funnel).
 type N8nIncoming = { id?: string; from?: string; text?: string; fromMe?: boolean };
@@ -27,7 +34,14 @@ export function readN8nMessage(body: unknown): N8nIncoming {
   return (body ?? {}) as N8nIncoming;
 }
 
-export function whatsappRoutes(app: FastifyInstance, uc: UseCases, wa: WhatsAppGateway, verifyToken: string, n8nSecret = '') {
+export function whatsappRoutes(
+  app: FastifyInstance,
+  uc: UseCases,
+  wa: WhatsAppGateway,
+  verifyToken: string,
+  n8nSecret = '',
+  transcriber: AudioTranscriber = new DisabledAudioTranscriber(),
+) {
   app.get('/whatsapp', { onRequest: verifyJwt }, async (request) => uc.whatsappLink.status({ userId: request.user.sub }));
   app.post('/whatsapp/code', { onRequest: verifyJwt }, async (request) => uc.whatsappLink.createCode({ userId: request.user.sub }));
   app.delete('/whatsapp', { onRequest: verifyJwt }, async (request, reply) => {
@@ -57,9 +71,15 @@ export function whatsappRoutes(app: FastifyInstance, uc: UseCases, wa: WhatsAppG
       const messages = (body.entry ?? []).flatMap((e) => e.changes ?? []).flatMap((c) => c.value?.messages ?? []);
       // Responde 200 na hora (a Meta reenvia se demorar) e trata em segundo plano.
       for (const m of messages) {
-        const text = m.type === 'text' ? m.text?.body ?? '' : '';
-        if (!text.trim()) continue;
-        void uc.whatsappMessage.execute({ id: m.id, from: m.from, text }).catch((err) => request.log.error({ err }, 'whatsapp falhou'));
+        void (async () => {
+          let text = m.type === 'text' ? m.text?.body ?? '' : '';
+          if (!text && m.type === 'audio' && m.audio?.id && wa.downloadMedia) {
+            const media = await wa.downloadMedia(m.audio.id);
+            if (media) text = (await transcriber.transcribe(media.bytes, media.mimeType)) ?? '';
+          }
+          if (!text.trim()) return;
+          await uc.whatsappMessage.execute({ id: m.id, from: m.from, text });
+        })().catch((err) => request.log.error({ err }, 'whatsapp falhou'));
       }
       return reply.status(200).send();
     });

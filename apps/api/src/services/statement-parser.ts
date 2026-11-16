@@ -163,7 +163,7 @@ function parseCsv(text: string, isCardHint: boolean | undefined): ParsedStatemen
 }
 
 export function parseStatement(content: string, fileName: string, opts: { isCard?: boolean } = {}): ParsedStatement {
-  const text = content.replace(/^﻿/, '');
+  const text = content.replace(/^\uFEFF/, '');
   const looksOfx = /\.ofx$/i.test(fileName) || /<OFX>/i.test(text) || /OFXHEADER/i.test(text);
   const parsed = looksOfx ? parseOfx(text) : parseCsv(text, opts.isCard);
   if (looksOfx && opts.isCard !== undefined) parsed.kind = opts.isCard ? 'CREDIT' : 'BANK';

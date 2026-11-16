@@ -1,11 +1,26 @@
 'use client';
 import { useState, useTransition } from 'react';
-import { salvarInicio } from '@/lib/inicio-actions';
+import type { Dictionary } from '@/lib/i18n';
+import { saveHomePrefs } from '@/lib/inicio-actions';
 
 type Linha = { id: string; nome: string; dica: string };
 const seta = (d: string, off: boolean) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={off ? 'text-linha' : ''}><path d={d} /></svg>;
 
-export function PersonalizarForm({ linhas, ocultos, padrao }: { linhas: Linha[]; ocultos: string[]; padrao: string[] }) {
+export function PersonalizarForm({
+  linhas,
+  ocultos,
+  padrao,
+  t,
+  saveLabel,
+  savingLabel,
+}: {
+  linhas: Linha[];
+  ocultos: string[];
+  padrao: string[];
+  t: Dictionary['pages']['personalizar'];
+  saveLabel: string;
+  savingLabel: string;
+}) {
   const [ordem, setOrdem] = useState(linhas.map((l) => l.id));
   const [off, setOff] = useState(new Set(ocultos));
   const [pending, start] = useTransition();
@@ -32,20 +47,20 @@ export function PersonalizarForm({ linhas, ocultos, padrao }: { linhas: Linha[];
                   <span className="text-xs text-tinta-suave">{l.dica}</span>
                 </span>
               </label>
-              <button type="button" aria-label={`Subir ${l.nome}`} disabled={i === 0} onClick={() => mover(i, -1)} className="flex h-11 w-10 shrink-0 items-center justify-center">{seta('M18 15l-6-6-6 6', i === 0)}</button>
-              <button type="button" aria-label={`Descer ${l.nome}`} disabled={i === ordem.length - 1} onClick={() => mover(i, 1)} className="flex h-11 w-10 shrink-0 items-center justify-center">{seta('M6 9l6 6 6-6', i === ordem.length - 1)}</button>
+              <button type="button" aria-label={t.moveUpAria(l.nome)} disabled={i === 0} onClick={() => mover(i, -1)} className="flex h-11 w-10 shrink-0 items-center justify-center">{seta('M18 15l-6-6-6 6', i === 0)}</button>
+              <button type="button" aria-label={t.moveDownAria(l.nome)} disabled={i === ordem.length - 1} onClick={() => mover(i, 1)} className="flex h-11 w-10 shrink-0 items-center justify-center">{seta('M6 9l6 6 6-6', i === ordem.length - 1)}</button>
             </li>
           );
         })}
       </ul>
       <div className="flex flex-col gap-0.5 rounded-2xl bg-amarelo-claro px-3.5 py-3">
-        <span className="text-sm font-bold">Avisos que você fechou no X</span>
-        <span className="text-[13px] leading-[19px]">Somem até ter novidade. Se surgir gasto novo sem categoria, outra conta pra vencer ou um limite estourado, o aviso volta.</span>
+        <span className="text-sm font-bold">{t.dismissedTitle}</span>
+        <span className="text-[13px] leading-[19px]">{t.dismissedBody}</span>
       </div>
-      <button type="button" onClick={() => { setOrdem(padrao); setOff(new Set()); }} className="min-h-11 self-center text-sm font-semibold text-laranja-texto">Voltar ao padrão</button>
-      <button type="button" disabled={pending} onClick={() => start(() => salvarInicio(ordem, [...off]))}
+      <button type="button" onClick={() => { setOrdem(padrao); setOff(new Set()); }} className="min-h-11 self-center text-sm font-semibold text-laranja-texto">{t.resetDefault}</button>
+      <button type="button" disabled={pending} onClick={() => start(() => saveHomePrefs(ordem, [...off]))}
         className="sticky bottom-[104px] flex h-[52px] items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel disabled:opacity-60 md:bottom-6">
-        {pending ? 'Salvando…' : 'Salvar'}
+        {pending ? savingLabel : saveLabel}
       </button>
     </>
   );

@@ -18,6 +18,15 @@
   --color-menta-clara: #DDF6E8;
   --color-azul: #DCEBFF;
   --color-amarelo-claro: #FFF1C7;
+  --color-tinta-fixa: #1E1B18;
+  --color-papel-fixo: #FDFBF6;
+  --color-rosa-forte: #FFB4C2;
+  --color-alerta: #E5484D;
+  --color-laranja-claro: #FFE7DC;
+  --color-roxo-suave: #E9DDFF;
+  --color-bronze: #F5CDB8;
+  --color-bronze-suave: #FFF4EE;
+  --color-bronze-borda: #F5CDB8;
 
   --font-display: "Bricolage Grotesque", Inter, system-ui, sans-serif;
   --font-sans: Inter, system-ui, sans-serif;
@@ -39,6 +48,10 @@
     --color-menta-clara: #1F3A30;
     --color-azul: #1F2D40;
     --color-amarelo-claro: #3D3320;
+    --color-laranja-claro: #33241D;
+    --color-roxo-suave: #2E2440;
+    --color-bronze-suave: #33241D;
+    --color-bronze-borda: #5A3526;
   }
 }
 

@@ -41,6 +41,8 @@ model User {
   friendOf     Friendship[]    @relation("FriendIs")
   pushSubscriptions PushSubscription[]
   sentNotifications SentNotification[]
+  tostaoInsights    TostaoInsight[]
+  tostaoAutoConfig  TostaoAutoConfig?
 
   @@map("users")
 }
@@ -351,4 +353,44 @@ model SentNotification {
 
   @@id([userId, key])
   @@map("sent_notifications")
+}
+
+/// Achados automáticos do Tostão e do Caramelo pro usuário agir em 1 toque.
+model TostaoInsight {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  routine   String
+  kind      String
+  severity  String    @default("info") // info | warning | urgent
+  title     String
+  body      String
+  payload   Json
+  dedupeKey String    @map("dedupe_key")
+  status    String    @default("PENDING") // PENDING | APPLIED | DISMISSED
+  expiresAt DateTime? @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  actedAt   DateTime? @map("acted_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, status, createdAt])
+  @@map("tostao_insights")
+}
+
+/// Preferências do que o Tostão acompanha automaticamente e por quais canais avisa.
+model TostaoAutoConfig {
+  userId          String    @id @map("user_id")
+  carameloExtrato Boolean   @default(true) @map("caramelo_extrato")
+  tostaoPrevisao  Boolean   @default(true) @map("tostao_previsao")
+  guardiaoLimites Boolean   @default(true) @map("guardiao_limites")
+  olheiroAcertos  Boolean   @default(true) @map("olheiro_acertos")
+  notifyPush      Boolean   @default(true) @map("notify_push")
+  notifyWhatsapp  Boolean   @default(false) @map("notify_whatsapp")
+  lastCheckedAt   DateTime? @map("last_checked_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("tostao_auto_configs")
 }

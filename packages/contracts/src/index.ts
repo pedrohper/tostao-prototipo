@@ -452,3 +452,61 @@ export const pushSubscriptionBody = z.object({
 });
 export const pushUnsubscribeBody = z.object({ endpoint: z.string().url().max(1000) });
 export type PushKeyResponse = { publicKey: string | null; subscribed: number };
+
+// ---------- Funções automáticas do Tostão & Caramelo ----------
+export const TOSTAO_ROUTINES = ['caramelo_extrato', 'tostao_previsao', 'guardiao_limites', 'olheiro_acertos'] as const;
+export type TostaoRoutineKey = (typeof TOSTAO_ROUTINES)[number];
+export type TostaoInsightSeverity = 'info' | 'warning' | 'urgent';
+export type TostaoInsightStatus = 'PENDING' | 'APPLIED' | 'DISMISSED';
+
+export type TostaoInsightDTO = {
+  id: string;
+  routine: TostaoRoutineKey;
+  kind: string;
+  severity: TostaoInsightSeverity;
+  title: string;
+  body: string;
+  actionLabel: string;
+  actionHref: string | null;
+  canApply: boolean;
+  payload: Record<string, unknown>;
+  status: TostaoInsightStatus;
+  createdAt: string;
+  actedAt: string | null;
+};
+
+export type TostaoAutoConfigDTO = {
+  carameloExtrato: boolean;
+  tostaoPrevisao: boolean;
+  guardiaoLimites: boolean;
+  olheiroAcertos: boolean;
+  notifyPush: boolean;
+  notifyWhatsapp: boolean;
+  lastCheckedAt: string | null;
+};
+
+export const updateTostaoAutoConfigBody = z.object({
+  carameloExtrato: z.boolean().optional(),
+  tostaoPrevisao: z.boolean().optional(),
+  guardiaoLimites: z.boolean().optional(),
+  olheiroAcertos: z.boolean().optional(),
+  notifyPush: z.boolean().optional(),
+  notifyWhatsapp: z.boolean().optional(),
+});
+export type UpdateTostaoAutoConfigBody = z.infer<typeof updateTostaoAutoConfigBody>;
+
+export type TostaoAutoResponse = {
+  insights: TostaoInsightDTO[];
+  history: TostaoInsightDTO[];
+  config: TostaoAutoConfigDTO;
+};
+
+export type RunTostaoCheckResponse = TostaoAutoResponse & {
+  generated: number;
+};
+
+export type ApplyTostaoInsightResponse = {
+  insight: TostaoInsightDTO;
+  redirectTo: string | null;
+  appliedSummary: string;
+};

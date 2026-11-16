@@ -3,7 +3,7 @@ import { createHmac } from 'node:crypto';
 import { buildApp } from '../app.js';
 import { makeInMemoryRepositories } from '../repositories/in-memory/index.js';
 import { FakeBankGateway } from '../gateways/fake-bank-gateway.js';
-import { CloudApiWhatsAppGateway, FakeWhatsAppGateway, normalizeWhatsAppFrom } from '../gateways/whatsapp-gateway.js';
+import { CloudApiWhatsAppGateway, FakeAudioTranscriber, FakeWhatsAppGateway, normalizeWhatsAppFrom } from '../gateways/whatsapp-gateway.js';
 import { FakeAiGateway } from '../gateways/ai-gateway.js';
 import { buildN8nBridge } from '../http/n8n-bridge.js';
 
@@ -13,12 +13,13 @@ async function setup() {
   const repos = makeInMemoryRepositories();
   const wa = new FakeWhatsAppGateway(true, '5511900000000');
   const ai = new FakeAiGateway();
+  const transcriber = new FakeAudioTranscriber();
   ai.next = 'Você gastou **R$ 120,00** com delivery.';
-  const app = await buildApp({ repos, bank: new FakeBankGateway(), ai, whatsapp: wa, whatsappVerifyToken: 'verifica', jwtSecret: 'segredo-de-teste-123', webOrigin: '*' });
+  const app = await buildApp({ repos, bank: new FakeBankGateway(), ai, whatsapp: wa, audioTranscriber: transcriber, whatsappVerifyToken: 'verifica', jwtSecret: 'segredo-de-teste-123', webOrigin: '*' });
   const reg = await app.inject({ method: 'POST', url: '/users', payload: { name: 'Pedro Henrique', email: 'p@x.com', password: '12345678' } });
   const auth = { authorization: `Bearer ${reg.json().token}` };
   const msg = (id: string, from: string, body: string) => app.inject({ method: 'POST', url: '/whatsapp/webhook', payload: { entry: [{ changes: [{ value: { messages: [{ id, from, type: 'text', text: { body } }] } }] }] } });
-  return { app, wa, auth, msg };
+  return { app, wa, auth, msg, transcriber };
 }
 
 describe('WhatsApp', () => {
@@ -46,6 +47,38 @@ describe('WhatsApp', () => {
     await msg('m4', '5511988887777', 'e agora?');
     await wait();
     expect(wa.sent.at(-1)!.text).toMatch(/gera um código/);
+  });
+
+  it('transcreve áudio do webhook oficial da Meta e executa como mensagem', async () => {
+    const { app, wa, auth, msg, transcriber } = await setup();
+    const { code } = (await app.inject({ method: 'POST', url: '/whatsapp/code', headers: auth })).json();
+    await msg('m-link', '5511988887777', code);
+    await wait();
+
+    transcriber.next = 'gastei 30 no uber';
+    wa.media.set('media-audio-1', { bytes: new Uint8Array([1, 2, 3]), mimeType: 'audio/ogg; codecs=opus' });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/whatsapp/webhook',
+      payload: { entry: [{ changes: [{ value: { messages: [{ id: 'm-audio-1', from: '5511988887777', type: 'audio', audio: { id: 'media-audio-1', mime_type: 'audio/ogg' } }] } }] }] },
+    });
+    expect(res.statusCode).toBe(200);
+    await wait();
+
+    expect(transcriber.calls).toHaveLength(1);
+    expect(transcriber.calls[0]!.mimeType).toBe('audio/ogg; codecs=opus');
+    expect(wa.sent.at(-1)!.text).toMatch(/^Anotado! .*Saiu \*R\$\s?30,00\*: Uber/);
+
+    const sentCount = wa.sent.length;
+    transcriber.next = null;
+    wa.media.set('media-audio-2', { bytes: new Uint8Array([4, 5]), mimeType: 'audio/ogg' });
+    await app.inject({
+      method: 'POST',
+      url: '/whatsapp/webhook',
+      payload: { entry: [{ changes: [{ value: { messages: [{ id: 'm-audio-2', from: '5511988887777', type: 'audio', audio: { id: 'media-audio-2' } }] } }] }] },
+    });
+    await wait();
+    expect(wa.sent).toHaveLength(sentCount);
   });
 
   it('verificação da Meta e assinatura do webhook', async () => {

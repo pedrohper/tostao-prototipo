@@ -5,6 +5,7 @@ import { FakeAiGateway, AiUnavailableError } from '../gateways/ai-gateway.js';
 import { SyncBankConnectionUseCase } from './sync-bank-connection.js';
 import { ConnectBankUseCase } from './connect-bank.js';
 import { AskTostaoUseCase } from './ask-tostao.js';
+import { TOSTAO_TOOLS, executeTostaoTool } from './tostao-tools.js';
 
 const NOW = new Date(Date.UTC(2026, 10, 20, 18));
 
@@ -118,5 +119,28 @@ describe('chat com o Tostão', () => {
     const r2 = await new AskTostaoUseCase(repos, loopy, 40, () => NOW).execute({ userId, message: 'teste loop' });
     expect(r2.reply.content).toContain('Não achei');
     expect(loopy.calls).toHaveLength(6);
+  });
+});
+
+describe('ferramentas do chat', () => {
+  it('recusa ferramenta fora da lista permitida e não expõe ferramentas do Jarvis', async () => {
+    const { repos, userId } = await setup();
+    const allowed = new Set(TOSTAO_TOOLS.map((t) => t.function.name));
+    for (const removed of ['salvar_nota_obsidian', 'buscar_notas_obsidian', 'criar_flashcards_anki']) {
+      const r = JSON.parse(await executeTostaoTool(repos, userId, removed, '{"termo_busca":"senha"}', NOW, allowed));
+      expect(r.erro).toContain('não disponível');
+    }
+
+    class SpyAi extends FakeAiGateway {
+      offered: string[] = [];
+      override async chat(messages: Parameters<FakeAiGateway['chat']>[0], opts?: Parameters<FakeAiGateway['chat']>[1]) {
+        this.offered = (opts?.tools ?? []).map((t) => t.function.name);
+        return super.chat(messages, opts);
+      }
+    }
+
+    const ai = new SpyAi();
+    await new AskTostaoUseCase(repos, ai, 40, () => NOW).execute({ userId, message: 'oi' });
+    expect(ai.offered).toEqual(['consultar_gastos_categoria', 'verificar_limite_categoria', 'registrar_transacao']);
   });
 });

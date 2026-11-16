@@ -1,74 +1,44 @@
-import { Visita } from '@/components/visita';
+import { PageVisitTracker } from '@/components/visita';
 import type { SubscriptionsResponse } from '@tostao/contracts';
 import { api } from '@/lib/api';
-import { money } from '@/lib/format';
-import { Mascote } from '@/components/mascote';
-import { BackLink, ButtonLink, Card } from '@/components/ui';
+import { money, resolveBackHref } from '@/lib/format';
+import type { Locale } from '@/lib/i18n';
+import { getI18n } from '@/lib/i18n-server';
+import { Mascot } from '@/components/mascote';
+import { BackLink, ButtonLink, Card, PageFrame } from '@/components/ui';
 import { IgnoreButton } from './ignore-button';
 
-const day = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' });
+const day = (iso: string, locale: Locale) => new Date(iso).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' });
 
-export default async function AssinaturasPage() {
-  const { subscriptions, ignored, monthlyInCents, yearlyInCents } = await api<SubscriptionsResponse>('/subscriptions');
+export default async function AssinaturasPage({ searchParams }: { searchParams: Promise<{ voltar?: string }> }) {
+  const [{ voltar }, { subscriptions, ignored, monthlyInCents, yearlyInCents }, { locale, t }] = await Promise.all([
+    searchParams,
+    api<SubscriptionsResponse>('/subscriptions'),
+    getI18n(),
+  ]);
+  const p = t.pages.assinaturas;
   const active = subscriptions.filter((s) => s.active);
   const stopped = subscriptions.filter((s) => !s.active);
   const cheapest = active.at(-1);
+  const backHref = resolveBackHref(voltar, '/carteira?aba=planejar');
+  const selfHref = voltar ? `/assinaturas?voltar=${encodeURIComponent(backHref)}` : '/assinaturas';
 
-  return (
-    <div className="flex flex-col gap-5">
-      <Visita kind="visita:assinaturas" />
-      <BackLink href="/inicio" />
-      <div>
-        <h1 className="font-display text-[28px] leading-tight font-extrabold">Minhas assinaturas</h1>
-        <p className="mt-1 text-[15px] text-tinta-suave">O que sai todo mês sozinho, sem você abrir o app.</p>
-      </div>
+  const note = (
+    <p className="text-center text-[13px] leading-[19px] text-tinta-suave lg:text-left">
+      {p.methodologyNote}
+    </p>
+  );
 
-      {active.length === 0 ? (
-        <Card className="flex flex-col items-center gap-3 py-8 text-center">
-          <Mascote pose="investigando" size={150} alt="Tostão investigando com uma lupa" />
-          <h2 className="font-display text-xl font-extrabold">Não achei nada que cobra todo mês</h2>
-          <p className="max-w-[300px] text-[15px] text-tinta-suave">Ou você tá com tudo sob controle, ou ainda tem pouco extrato. Eu preciso ver pelo menos duas cobranças pra ter certeza.</p>
-          <ButtonLink href="/conectar" variant="outline">Ver bancos conectados</ButtonLink>
-        </Card>
-      ) : (
-        <>
-          <div className="rounded-3xl bg-amarelo p-5 text-[#1E1B18]">
-            <span className="text-sm font-semibold">{active.length} {active.length === 1 ? 'assinatura' : 'assinaturas'} ativas</span>
-            <div className="font-display text-[40px] leading-tight font-extrabold">{money(monthlyInCents)}<span className="text-xl"> /mês</span></div>
-            <p className="mt-1 text-[15px] font-semibold">Isso dá <b>{money(yearlyInCents)}</b> num ano.</p>
-          </div>
-
-          <Card className="flex flex-col divide-y divide-linha p-0">
-            {active.map((s) => (
-              <div key={s.key} className="flex items-center justify-between gap-3 p-4">
-                <div className="flex min-w-0 flex-col items-start">
-                  <span className="font-semibold [overflow-wrap:anywhere]">{s.name}</span>
-                  <span className="text-[13px] text-tinta-suave">Próxima por volta de {day(s.nextChargeAt)} · {s.installmentsLeft !== null ? `parcelado, ${s.installmentsLeft === 1 ? 'falta 1' : `faltam ${s.installmentsLeft}`}` : `já cobrou ${s.chargeCount}x`}</span>
-                  {s.duplicateOf && <span className="mt-1 rounded-full bg-rosa px-2 py-0.5 text-[12px] font-semibold text-tinta">Cobrança em dobro? Também tem “{s.duplicateOf}”</span>}
-                  <IgnoreButton subscriptionKey={s.key} ignored={false} />
-                </div>
-                <span className="shrink-0 font-bold">{money(s.amountInCents)}</span>
-              </div>
-            ))}
-          </Card>
-
-          {cheapest && (
-            <div className="flex items-center gap-3 rounded-[20px] bg-azul p-3">
-              <Mascote pose="pensando" size={64} alt="Tostão pensando" />
-              <p className="text-[15px] leading-snug">Pergunta sincera: você usou <b>{cheapest.name}</b> esse mês? Cancelar só ela já devolve <b>{money(cheapest.amountInCents * 12)}</b> por ano.</p>
-            </div>
-          )}
-        </>
-      )}
-
+  const secondarySections = (
+    <>
       {stopped.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="font-display text-lg font-extrabold">Pararam de cobrar</h2>
+          <h2 className="font-display text-lg font-extrabold">{p.stoppedTitle}</h2>
           <Card className="flex flex-col divide-y divide-linha p-0">
             {stopped.map((s) => (
               <div key={s.key} className="flex items-center justify-between gap-3 p-4 text-tinta-suave">
                 <span className="min-w-0 [overflow-wrap:anywhere]">{s.name}</span>
-                <span className="shrink-0 text-sm">última em {day(s.lastChargedAt)}</span>
+                <span className="shrink-0 text-sm">{p.lastChargeOn(day(s.lastChargedAt, locale))}</span>
               </div>
             ))}
           </Card>
@@ -77,19 +47,95 @@ export default async function AssinaturasPage() {
 
       {ignored.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="font-display text-lg font-extrabold">Você disse que não é assinatura</h2>
+          <h2 className="font-display text-lg font-extrabold">{p.ignoredTitle}</h2>
           <Card className="flex flex-col divide-y divide-linha p-0">
             {ignored.map((s) => (
               <div key={s.key} className="flex items-center justify-between gap-3 p-4 text-tinta-suave">
                 <span className="min-w-0 [overflow-wrap:anywhere]">{s.name} · {money(s.amountInCents)}</span>
-                <IgnoreButton subscriptionKey={s.key} ignored />
+                <IgnoreButton subscriptionKey={s.key} ignored ignoreLabel={p.ignoreBtn} undoLabel={p.undoBtn} />
               </div>
             ))}
           </Card>
         </section>
       )}
+    </>
+  );
 
-      <p className="text-center text-[13px] text-tinta-suave">Eu acho as assinaturas pelo padrão: mesma loja, valor parecido, uma vez por mês. Pix e pagamento de fatura ficam de fora. Plano anual parcelado aparece com as parcelas que faltam.</p>
-    </div>
+  return (
+    <PageFrame size="analytics">
+      <PageVisitTracker kind="visita:assinaturas" />
+      <BackLink href={backHref} label={t.common.back} />
+      <div>
+        <h1 className="font-display text-[28px] leading-tight font-extrabold">{p.title}</h1>
+        <p className="mt-1 text-[15px] text-tinta-suave">{p.subtitle}</p>
+      </div>
+
+      {active.length === 0 ? (
+        stopped.length === 0 && ignored.length === 0 ? (
+          <div className="flex flex-col gap-5">
+            <Card className="flex flex-col items-center gap-3 py-8 text-center">
+              <Mascot pose="investigando" size={150} alt="Tostão" />
+              <h2 className="font-display text-xl font-extrabold">{p.emptyAllTitle}</h2>
+              <p className="max-w-[360px] text-[15px] text-tinta-suave">{p.emptyAllBody}</p>
+              <ButtonLink href={`/conectar?voltar=${encodeURIComponent(selfHref)}`} variant="outline">{p.checkBanksCta}</ButtonLink>
+            </Card>
+            {note}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[0.9fr_1.1fr] lg:items-start lg:gap-6">
+            <div className="flex min-w-0 flex-col gap-4">
+              <Card className="flex flex-col items-center gap-3 py-8 text-center">
+                <Mascot pose="investigando" size={150} alt="Tostão" />
+                <h2 className="font-display text-xl font-extrabold">{p.emptyActiveTitle}</h2>
+                <p className="max-w-[320px] text-[15px] text-tinta-suave">{p.emptyActiveBody}</p>
+                <ButtonLink href={`/conectar?voltar=${encodeURIComponent(selfHref)}`} variant="outline">{p.checkBanksCta}</ButtonLink>
+              </Card>
+              {note}
+            </div>
+            <div className="flex min-w-0 flex-col gap-5">
+              {secondarySections}
+            </div>
+          </div>
+        )
+      ) : (
+        <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[0.88fr_1.12fr] lg:items-start lg:gap-6">
+          <div className="flex min-w-0 flex-col gap-4">
+            <div className="rounded-3xl bg-amarelo p-5 text-tinta-fixa">
+              <span className="text-sm font-semibold">{p.activeCount(active.length)}</span>
+              <div className="font-display text-[40px] leading-tight font-extrabold tabular-nums">{money(monthlyInCents)}<span className="text-xl">{p.perMonth}</span></div>
+              <p className="mt-1 text-[15px] font-semibold">{p.perYearBefore}<b className="tabular-nums">{money(yearlyInCents)}</b>{p.perYearAfter}</p>
+            </div>
+
+            {cheapest && (
+              <div className="flex items-center gap-3 rounded-[20px] bg-azul p-3.5">
+                <Mascot pose="pensando" size={64} alt="Tostão" />
+                <p className="text-[15px] leading-snug">{p.cheapestQuestionBefore}<b>{cheapest.name}</b>{p.cheapestQuestionMid}<b>{money(cheapest.amountInCents * 12)}</b>{p.cheapestQuestionAfter}</p>
+              </div>
+            )}
+
+            <div className="hidden lg:block">{note}</div>
+          </div>
+
+          <div className="flex min-w-0 flex-col gap-5">
+            <Card className="flex flex-col divide-y divide-linha p-0">
+              {active.map((s) => (
+                <div key={s.key} className="flex items-center justify-between gap-3 p-4">
+                  <div className="flex min-w-0 flex-col items-start">
+                    <span className="font-semibold [overflow-wrap:anywhere]">{s.name}</span>
+                    <span className="text-[13px] text-tinta-suave">{p.nextChargeMeta(day(s.nextChargeAt, locale), s.installmentsLeft, s.chargeCount)}</span>
+                    {s.duplicateOf && <span className="mt-1 rounded-full bg-rosa px-2 py-0.5 text-[12px] font-semibold text-tinta">{p.duplicateBadge(s.duplicateOf)}</span>}
+                    <IgnoreButton subscriptionKey={s.key} ignored={false} ignoreLabel={p.ignoreBtn} undoLabel={p.undoBtn} />
+                  </div>
+                  <span className="shrink-0 font-bold tabular-nums">{money(s.amountInCents)}</span>
+                </div>
+              ))}
+            </Card>
+
+            {secondarySections}
+            <div className="lg:hidden">{note}</div>
+          </div>
+        </div>
+      )}
+    </PageFrame>
   );
 }

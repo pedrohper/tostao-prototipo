@@ -60,7 +60,7 @@ export class AutoCategorizeUseCase {
     for (let i = 0; i < items.length; i += BATCH) {
       const batch = items.slice(i, i + BATCH);
       const list = batch.map((g, k) => `${k}|${g[0]!.description.replace(/\s+/g, ' ').slice(0, 90)}|${(g[0]!.amountInCents / 100).toFixed(2)}`).join('\n');
-      let answer: Record<string, unknown> = {};
+      let answer: Record<string, unknown>;
       try {
         const raw = await this.ai.reply([
           { role: 'system', content: SYSTEM },

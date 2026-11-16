@@ -1,4 +1,4 @@
-import { Icone } from './icone';
+import { Icon } from './icone';
 import Link from 'next/link';
 
 const base = 'flex items-center justify-center rounded-full font-semibold transition active:translate-y-px disabled:opacity-50';
@@ -14,7 +14,7 @@ export function Button({ children, variant = 'primary', ...props }: React.Button
 const variants = {
   // Igual ao artefato: botão principal é tinta; laranja só no "Conectar meu banco" e no desafio da lição.
   primary: 'h-[54px] bg-tinta text-papel text-base',
-  laranja: 'h-[54px] bg-laranja text-[#1E1B18] text-base font-bold shadow-[0_2px_0_rgba(30,27,24,0.14)]',
+  laranja: 'h-[54px] bg-laranja text-tinta-fixa text-base font-bold shadow-[0_2px_0_rgba(30,27,24,0.14)]',
   outline: 'h-[50px] border-[1.5px] border-tinta text-tinta text-[15px]',
   dark: 'h-[54px] bg-tinta text-papel text-base',
 };
@@ -68,11 +68,29 @@ export function BankIcon({ className = '' }: { className?: string }) {
 }
 
 /** Foguinho da ofensiva (dias seguidos com lição). */
-export function StreakChip({ days }: { days: number }) {
+export function StreakChip({ days, label }: { days: number; label?: string }) {
   return (
-    <span className="flex items-center gap-1 rounded-full bg-amarelo-claro px-2.5 py-1.5 text-sm font-bold" aria-label={`${days} ${days === 1 ? 'dia' : 'dias'} de ofensiva`}>
-      <Icone src="ui/ofensiva" size={18} />
+    <span className="flex items-center gap-1 rounded-full bg-amarelo-claro px-2.5 py-1.5 text-sm font-bold" aria-label={label ?? `${days} ${days === 1 ? 'dia' : 'dias'} de ofensiva`}>
+      <Icon src="ui/ofensiva" size={18} />
       {days}
     </span>
   );
+}
+
+const FRAME_SIZES = {
+  analytics: 'mx-auto flex w-full max-w-[1040px] flex-col gap-5',
+  focused: 'mx-auto flex w-full max-w-[760px] flex-col gap-4',
+  player: 'mx-auto w-full max-w-[680px]',
+} as const;
+
+export function PageFrame({
+  size = 'focused',
+  className = '',
+  children,
+}: {
+  size?: keyof typeof FRAME_SIZES;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return <div className={`${FRAME_SIZES[size]} ${className}`}>{children}</div>;
 }

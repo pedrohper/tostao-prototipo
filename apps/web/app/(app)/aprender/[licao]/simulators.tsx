@@ -2,19 +2,22 @@
 import { useState } from 'react';
 import { TAXAS_REFERENCIA } from '@tostao/contracts';
 import { money } from '@/lib/format';
-import { CompensaParcelar } from '@/components/juros';
+import type { Dictionary, Locale } from '@/lib/i18n';
+import { InstallmentCalculator } from '@/components/juros';
 import { SIMULATORS_M2_M5 } from './simulators-m2-m5';
 import { SIMULATORS_M6_M9 } from './simulators-m6-m9';
 
 // Simuladores interativos.
 // Cada um novo entra aqui com o id da lição.
-export const SIMULATORS: Record<string, () => React.ReactNode> = {
+export type SimulatorProps = { locale: Locale; calcT: Dictionary['pages']['calculators'] };
+
+export const SIMULATORS: Record<string, (props: SimulatorProps) => React.ReactNode> = {
   'm1-l1': RaloDoCafezinho,
   'm1-l2': AjusteDasFatias,
   'm1-l3': BisturiNoFixo,
   'm1-l4': RemanejamentoEmergencia,
   'm1-l5': DetectorGatilhos,
-  'm2-l3': () => <CompensaParcelar taxas={TAXAS_REFERENCIA} compacto />,
+  'm2-l3': ({ locale, calcT }) => <InstallmentCalculator taxas={TAXAS_REFERENCIA} compacto locale={locale} t={calcT} />,
   ...SIMULATORS_M2_M5,
   ...SIMULATORS_M6_M9,
 };
@@ -39,7 +42,7 @@ function RaloDoCafezinho() {
           max={30}
           value={valor}
           onChange={(e) => setValor(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
       <label className="flex flex-col gap-1">
@@ -53,7 +56,7 @@ function RaloDoCafezinho() {
           max={7}
           value={vezes}
           onChange={(e) => setVezes(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
       <div className="grid grid-cols-2 gap-2.5">
@@ -99,7 +102,7 @@ function AjusteDasFatias() {
           step={100}
           value={renda}
           onChange={(e) => setRenda(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
       </label>
 
@@ -107,7 +110,7 @@ function AjusteDasFatias() {
         <label className="flex flex-col gap-1">
           <span className="flex justify-between text-xs font-semibold">
             <span className="text-tinta">Necessidades (básico)</span>
-            <span className="font-bold text-[#D97706]">{nec}% ({money(necCents)})</span>
+            <span className="font-bold text-laranja-texto">{nec}% ({money(necCents)})</span>
           </span>
           <input
             type="range"
@@ -119,14 +122,14 @@ function AjusteDasFatias() {
               setNec(val);
               if (val + des > 100) setDes(100 - val);
             }}
-            className="accent-[#D97706]"
+            className="accent-amarelo"
           />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className="flex justify-between text-xs font-semibold">
             <span className="text-tinta">Desejos (lazer, estilo)</span>
-            <span className="font-bold text-[#E11D48]">{des}% ({money(desCents)})</span>
+            <span className="font-bold text-vermelho-texto">{des}% ({money(desCents)})</span>
           </span>
           <input
             type="range"
@@ -138,7 +141,7 @@ function AjusteDasFatias() {
               setDes(val);
               if (val + nec > 100) setNec(100 - val);
             }}
-            className="accent-[#E11D48]"
+            className="accent-alerta"
           />
         </label>
       </div>
@@ -147,14 +150,14 @@ function AjusteDasFatias() {
       <div className="flex flex-col gap-1.5">
         <span className="text-xs font-semibold text-tinta-suave">Distribuição da sua pizza:</span>
         <div className="flex h-5 w-full overflow-hidden rounded-full bg-papel-2 border border-linha">
-          <div style={{ width: `${nec}%` }} className="bg-[#FFC233] transition-all duration-200" title={`Necessidades: ${nec}%`} />
-          <div style={{ width: `${des}%` }} className="bg-[#FFE1E7] transition-all duration-200" title={`Desejos: ${des}%`} />
-          <div style={{ width: `${fut}%` }} className="bg-[#3DD6A0] transition-all duration-200" title={`Futuro: ${fut}%`} />
+          <div style={{ width: `${nec}%` }} className="bg-amarelo transition-all duration-200" title={`Necessidades: ${nec}%`} />
+          <div style={{ width: `${des}%` }} className="bg-rosa transition-all duration-200" title={`Desejos: ${des}%`} />
+          <div style={{ width: `${fut}%` }} className="bg-menta transition-all duration-200" title={`Futuro: ${fut}%`} />
         </div>
         <div className="flex justify-between text-[11px] font-semibold text-tinta-suave px-1">
-          <span className="flex items-center gap-1"><i className="inline-block h-2.5 w-2.5 rounded-full bg-[#FFC233]" /> Básico {nec}%</span>
-          <span className="flex items-center gap-1"><i className="inline-block h-2.5 w-2.5 rounded-full bg-[#FFE1E7]" /> Lazer {des}%</span>
-          <span className="flex items-center gap-1"><i className="inline-block h-2.5 w-2.5 rounded-full bg-[#3DD6A0]" /> Futuro {fut}%</span>
+          <span className="flex items-center gap-1"><i className="inline-block h-2.5 w-2.5 rounded-full bg-amarelo" /> Básico {nec}%</span>
+          <span className="flex items-center gap-1"><i className="inline-block h-2.5 w-2.5 rounded-full bg-rosa" /> Lazer {des}%</span>
+          <span className="flex items-center gap-1"><i className="inline-block h-2.5 w-2.5 rounded-full bg-menta" /> Futuro {fut}%</span>
         </div>
       </div>
 
@@ -174,17 +177,17 @@ function AjusteDasFatias() {
       </div>
 
       {nec > 65 && (
-        <p className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-[#92400E]">
+        <p className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
           ⚠️ <b>Aperto no essencial:</b> quando as necessidades passam de 65%, a margem de manobra diminui. Proteja o futuro com ao menos 5% e enxugue os desejos para não entrar no rotativo.
         </p>
       )}
       {fut === 0 && (
-        <p className="rounded-xl bg-rosa p-3 text-xs leading-relaxed text-[#9F1239]">
+        <p className="rounded-xl bg-rosa p-3 text-xs leading-relaxed text-vermelho-texto">
           🚨 <b>Futuro zerado:</b> o básico e o lazer engoliram 100% da renda. Qualquer imprevisto vai virar dívida no cartão. Puxe um pouco dos desejos para abrir espaço para o seu colchão.
         </p>
       )}
       {nec <= 65 && fut >= 15 && (
-        <p className="rounded-xl bg-menta-clara p-3 text-xs leading-relaxed text-[#065F46]">
+        <p className="rounded-xl bg-menta-clara p-3 text-xs leading-relaxed text-verde-texto">
           ✨ <b>Equilíbrio saudável:</b> você cobre o custo de vida, aproveita o momento com lazer e ainda guarda {money(futCents)} todo mês para seu futuro.
         </p>
       )}
@@ -295,10 +298,10 @@ function RemanejamentoEmergencia() {
     <div className="flex flex-col gap-3.5">
       <div className="flex items-center justify-between rounded-xl bg-rosa p-3">
         <div className="flex flex-col">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#9F1239]">Susto inesperado</span>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-vermelho-texto">Susto inesperado</span>
           <span className="text-sm font-semibold text-tinta">Conserto urgente na oficina / farmácia</span>
         </div>
-        <span className="font-display text-lg font-extrabold text-[#9F1239]">{money(ALVO)}</span>
+        <span className="font-display text-lg font-extrabold text-vermelho-texto">{money(ALVO)}</span>
       </div>
 
       <p className="text-xs text-tinta-suave">
@@ -318,7 +321,7 @@ function RemanejamentoEmergencia() {
             step={10}
             value={delivery}
             onChange={(e) => setDelivery(+e.target.value)}
-            className="accent-[#FF5A36]"
+            className="accent-laranja"
           />
         </label>
 
@@ -334,7 +337,7 @@ function RemanejamentoEmergencia() {
             step={10}
             value={role}
             onChange={(e) => setRole(+e.target.value)}
-            className="accent-[#FF5A36]"
+            className="accent-laranja"
           />
         </label>
 
@@ -350,7 +353,7 @@ function RemanejamentoEmergencia() {
             step={10}
             value={compras}
             onChange={(e) => setCompras(+e.target.value)}
-            className="accent-[#FF5A36]"
+            className="accent-laranja"
           />
         </label>
 
@@ -366,7 +369,7 @@ function RemanejamentoEmergencia() {
             step={10}
             value={uber}
             onChange={(e) => setUber(+e.target.value)}
-            className="accent-[#FF5A36]"
+            className="accent-laranja"
           />
         </label>
       </div>
@@ -374,7 +377,7 @@ function RemanejamentoEmergencia() {
       <div className="flex flex-col gap-1.5">
         <div className="flex justify-between text-xs font-semibold">
           <span>Total remanejado:</span>
-          <span className={`font-bold ${reequilibrado ? 'text-[#065F46]' : 'text-[#9F1239]'}`}>
+          <span className={`font-bold ${reequilibrado ? 'text-verde-texto' : 'text-vermelho-texto'}`}>
             {money(totalCortes)} de {money(ALVO)}
           </span>
         </div>
@@ -387,11 +390,11 @@ function RemanejamentoEmergencia() {
       </div>
 
       {reequilibrado ? (
-        <div className="rounded-xl bg-menta-clara p-3 text-xs leading-relaxed text-[#065F46]">
+        <div className="rounded-xl bg-menta-clara p-3 text-xs leading-relaxed text-verde-texto">
           🎉 <b>Mês reequilibrado!</b> Você cobriu os R$ 200 remanejando gastos flexíveis. O dinheiro saiu das suas escolhas conscientes, e você não pagou um real de juros pro rotativo.
         </div>
       ) : (
-        <div className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-[#92400E]">
+        <div className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
           ⏳ <b>Ainda faltam {money(ALVO - totalCortes)}:</b> se não compensar esse valor nas próximas semanas, ele vira fatura atrasada ou cheque especial. Aumente o corte em alguma categoria!
         </div>
       )}
@@ -457,7 +460,7 @@ function DetectorGatilhos() {
           max={maxTrocas}
           value={diasTrocados}
           onChange={(e) => setTrocas(+e.target.value)}
-          className="accent-[#FF5A36]"
+          className="accent-laranja"
         />
         <span className="text-[11px] text-tinta-suave">
           Economia estimada de {money(ECONOMIA_REFEICAO)} por refeição preparada em casa.

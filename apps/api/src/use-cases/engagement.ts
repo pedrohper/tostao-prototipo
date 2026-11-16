@@ -38,7 +38,7 @@ export const DAILY: MissionDef[] = [
   { id: 'assinaturas', title: 'Dar uma olhada nas assinaturas', href: '/assinaturas', kinds: ['visita:assinaturas', 'assinaturas'] },
   { id: 'tribunal', title: 'Votar no caso do Tribunal', href: '/tribunal', kinds: ['tribunal'] },
   { id: 'limites', title: 'Conferir os limites do mês', href: '/limites', kinds: ['visita:limites', 'limites'] },
-  { id: 'chat', title: 'Perguntar uma coisa pro Tostão', href: '/chat', kinds: ['chat'] },
+  { id: 'chat', title: 'Perguntar uma coisa pro Tostão', href: '/tostao', kinds: ['chat'] },
   { id: 'meta', title: 'Guardar qualquer valor na meta', href: '/meta', kinds: ['meta'] },
   { id: 'fechamento', title: 'Abrir o fechamento do mês', href: '/fechamento', kinds: ['visita:fechamento'] },
 ];

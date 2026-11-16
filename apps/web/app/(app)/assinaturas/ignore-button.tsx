@@ -1,5 +1,6 @@
 'use client';
 import { useFormStatus } from 'react-dom';
+import { getDictionary } from '@/lib/i18n';
 import { setIgnored } from './actions';
 
 function Submit({ children }: { children: React.ReactNode }) {
@@ -8,12 +9,23 @@ function Submit({ children }: { children: React.ReactNode }) {
 }
 
 /** "Não é assinatura" (ou desfazer). Guarda a escolha na conta: a cobrança sai da lista e do total. */
-export function IgnoreButton({ subscriptionKey, ignored }: { subscriptionKey: string; ignored: boolean }) {
+export function IgnoreButton({
+  subscriptionKey,
+  ignored,
+  ignoreLabel,
+  undoLabel,
+}: {
+  subscriptionKey: string;
+  ignored: boolean;
+  ignoreLabel?: string;
+  undoLabel?: string;
+}) {
+  const defaults = getDictionary('pt-BR').pages.assinaturas;
   return (
     <form action={setIgnored}>
       <input type="hidden" name="key" value={subscriptionKey} />
       <input type="hidden" name="ignored" value={String(!ignored)} />
-      <Submit>{ignored ? 'Desfazer' : 'Não é assinatura'}</Submit>
+      <Submit>{ignored ? (undoLabel ?? defaults.undoBtn) : (ignoreLabel ?? defaults.ignoreBtn)}</Submit>
     </form>
   );
 }

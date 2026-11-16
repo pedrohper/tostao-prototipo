@@ -82,3 +82,35 @@ export type TribunalVote = { userId: string; caseId: string; choice: number; vot
 export type BattleKind = 'tigrinho' | 'urubu';
 export type BattleStatus = 'ativa' | 'vencida' | 'perdida';
 export type Battle = { userId: string; kind: BattleKind; status: BattleStatus; startedAt: Date; endedAt: Date | null; steps: string[] };
+
+export type TostaoRoutine = 'caramelo_extrato' | 'tostao_previsao' | 'guardiao_limites' | 'olheiro_acertos';
+export type TostaoInsightSeverity = 'info' | 'warning' | 'urgent';
+export type TostaoInsightStatus = 'PENDING' | 'APPLIED' | 'DISMISSED';
+
+export type TostaoInsight = {
+  id: string;
+  userId: string;
+  routine: TostaoRoutine;
+  kind: string;
+  severity: TostaoInsightSeverity;
+  title: string;
+  body: string;
+  payload: Record<string, unknown>;
+  dedupeKey: string;
+  status: TostaoInsightStatus;
+  expiresAt: Date | null;
+  createdAt: Date;
+  actedAt: Date | null;
+};
+
+export type TostaoAutoConfig = {
+  userId: string;
+  carameloExtrato: boolean;
+  tostaoPrevisao: boolean;
+  guardiaoLimites: boolean;
+  olheiroAcertos: boolean;
+  notifyPush: boolean;
+  notifyWhatsapp: boolean;
+  lastCheckedAt: Date | null;
+  updatedAt: Date;
+};
