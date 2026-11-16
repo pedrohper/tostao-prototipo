@@ -9,8 +9,15 @@ Regra: **leia este arquivo antes de codar** e **registre o relatório ao termina
 
 O que está pra ser feito agora, por quem e em que branch. Tire daqui quando for pra Execução.
 
+> ⚠️ **Alerta (2026-11-15): o servidor está à frente do GitHub.** Em `~/homelab/tostao-prototipo` existe código que **não está no GitHub** e **já está no ar** (build de 15/11 11:54):
+> - 3 commits locais na `main` (Simuladores M2–M9, UX mobile/desktop e um merge);
+> - ~20 arquivos alterados sem commit + arquivos novos do i18n (`language-switcher`, `i18n.ts` etc.);
+> - ajustes de tela do thread "Corrigir ajustes de tela do app", também sem commit (contraste dos simuladores, `PATCH /people/:id` pra renomear em Acertos, `AddAccountBox` só sem contas + no Perfil, barra das aulas, "Volte amanhã" no i18n, fechamento do n8n). Patches em `~/tostao-antes-ajustes-2026-11-15.patch` e `~/tostao-ajustes-2026-11-15.patch`.
+>
+> **Regra até resolver:** ninguém faz `git pull`, `checkout`, `reset` ou `stash` no servidor, e deploy da `main` do GitHub fica suspenso (sobrescreveria o que está no ar). O servidor não tem login no GitHub, então esse código precisa ser levado pra um PR (Pedro decide quem leva). Depois disso, volta a regra de sempre: código só no GitHub, servidor só faz deploy.
+
+- [ ] **Levar o código do servidor pro GitHub** (itens do alerta acima) num PR revisável. Aguardando o Pedro escolher quem faz.
 - [ ] **"É pagamento de fatura" / "Transferi pra outra conta minha"** no detalhe do lançamento: liga ao cartão ou à conta, sai do gasto e aparece no lugar certo. Claude, thread "Deixar o Tostão pronto pros testadores". Aguardando o Pedro terminar a descrição da transferência entre bancos.
-- [ ] **"Vale a pena parcelar?" e "Escada do dinheiro"** (onde investir, só educativo). Claude, thread "Ensinar juros e onde investir".
 
 ## Execução
 
