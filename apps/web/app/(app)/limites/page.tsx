@@ -62,13 +62,7 @@ export default async function LimitesPage({ searchParams }: { searchParams: Prom
                   </span>
                   {b && <span className="text-tinta-suave tabular-nums">{p.alreadySpent(money(b.spentInCents))}</span>}
                 </div>
-                <BudgetForm
-                  categoryId={c.id}
-                  label={c.name}
-                  current={b?.limitInCents ?? null}
-                  t={p.form}
-                  saveLabel={t.common.save}
-                />
+                <BudgetForm categoryId={c.id} label={c.name} current={b?.limitInCents ?? null} locale={locale} />
               </div>
             );
           })}

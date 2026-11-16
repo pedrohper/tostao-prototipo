@@ -230,7 +230,7 @@ export default async function ConectarPage({
             )}
           </div>
 
-          {!mode.down && <ConnectPanel widget={widget} novo={Boolean(novo)} locale={locale} t={p.panel} />}
+          {!mode.down && <ConnectPanel widget={widget} novo={Boolean(novo)} locale={locale} />}
 
           {me.connections.length > 0 && (
             <section className="flex flex-col gap-2.5 pt-1">
@@ -272,9 +272,9 @@ export default async function ConectarPage({
                           {p.importMore}
                         </Link>
                       ) : (
-                        <SyncButton id={c.id} t={p.panel} />
+                        <SyncButton id={c.id} locale={locale} />
                       )}
-                      <DisconnectButton id={c.id} name={c.displayName} t={p.panel} />
+                      <DisconnectButton id={c.id} name={c.displayName} locale={locale} />
                     </div>
                   </Card>
                 );

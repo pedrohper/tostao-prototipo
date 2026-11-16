@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { AnotarForm, type ContaOption } from './anotar-form';
 
 export default async function AnotarPage() {
-  const [{ categories }, me, { t }] = await Promise.all([
+  const [{ categories }, me, { locale, t }] = await Promise.all([
     api<{ categories: CategoryDTO[] }>('/categories'),
     api<ProfileResponse>('/me').catch(() => null),
     getI18n(),
@@ -49,7 +49,7 @@ export default async function AnotarPage() {
           <span className="text-[13px] font-semibold text-tinta-suave">{a.headerTitle}</span>
           <span className="w-11" aria-hidden="true" />
         </div>
-        <AnotarForm categories={categories} contas={contas} today={todayIso()} t={a} saveLabel={t.common.save} />
+        <AnotarForm categories={categories} contas={contas} today={todayIso()} locale={locale} />
       </div>
     </div>
   );

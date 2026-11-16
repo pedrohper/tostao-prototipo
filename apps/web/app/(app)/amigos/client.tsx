@@ -1,11 +1,11 @@
 'use client';
 import { useActionState, useState } from 'react';
-import { getDictionary, type Dictionary } from '@/lib/i18n';
+import { getDictionary, type Locale } from '@/lib/i18n';
 import { addFriend, removeFriend, type AmigoState } from './actions';
 
 /** Compartilha o link (ou copia, se o celular não tiver o menu de compartilhar). */
-export function Compartilhar({ code, t }: { code: string; t?: Dictionary['pages']['amigos']['client'] }) {
-  const labels = t ?? getDictionary('pt-BR').pages.amigos.client;
+export function Compartilhar({ code, locale = 'pt-BR' }: { code: string; locale?: Locale }) {
+  const labels = getDictionary(locale).pages.amigos.client;
   const [done, setDone] = useState(false);
   return (
     <button
@@ -28,8 +28,8 @@ export function Compartilhar({ code, t }: { code: string; t?: Dictionary['pages'
   );
 }
 
-export function AdicionarAmigo({ t }: { t?: Dictionary['pages']['amigos']['client'] }) {
-  const labels = t ?? getDictionary('pt-BR').pages.amigos.client;
+export function AdicionarAmigo({ locale = 'pt-BR' }: { locale?: Locale }) {
+  const labels = getDictionary(locale).pages.amigos.client;
   const [state, action, pending] = useActionState<AmigoState, FormData>(addFriend, {});
   return (
     <form action={action} className="flex flex-col gap-2">
@@ -64,8 +64,8 @@ export function AdicionarAmigo({ t }: { t?: Dictionary['pages']['amigos']['clien
   );
 }
 
-export function Remover({ id, name, t }: { id: string; name: string; t?: Dictionary['pages']['amigos']['client'] }) {
-  const labels = t ?? getDictionary('pt-BR').pages.amigos.client;
+export function Remover({ id, name, locale = 'pt-BR' }: { id: string; name: string; locale?: Locale }) {
+  const labels = getDictionary(locale).pages.amigos.client;
   return (
     <button
       type="button"

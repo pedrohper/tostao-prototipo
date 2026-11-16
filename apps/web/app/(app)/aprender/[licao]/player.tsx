@@ -2,7 +2,7 @@
 import { Icon } from '@/components/icone';
 import Link from 'next/link';
 import { useState } from 'react';
-import type { Dictionary, Locale } from '@/lib/i18n';
+import { getDictionary, type Locale } from '@/lib/i18n';
 import type { Lesson } from '@/lib/lessons';
 import { markLessonDone } from '../actions';
 import { Mascot, type MascotPose } from '@/components/mascote';
@@ -16,8 +16,6 @@ type Props = {
   moduleNumber: number;
   nextId: string | null;
   locale: Locale;
-  t: Dictionary['pages']['learnExtra'];
-  calcT: Dictionary['pages']['calculators'];
 };
 
 const STEP_META: { pose: MascotPose; bg: string }[] = [
@@ -29,7 +27,8 @@ const STEP_META: { pose: MascotPose; bg: string }[] = [
   { pose: 'comemorando', bg: 'bg-amarelo' },
 ];
 
-export function LessonPlayer({ lesson, moduleTitle, moduleNumber, nextId, locale, t, calcT }: Props) {
+export function LessonPlayer({ lesson, moduleTitle, moduleNumber, nextId, locale }: Props) {
+  const t = getDictionary(locale).pages.learnExtra;
   const [step, setStep] = useState(0);
   const [vote, setVote] = useState<'A' | 'B' | null>(null);
   const s = STEP_META[step]!;
@@ -77,7 +76,7 @@ export function LessonPlayer({ lesson, moduleTitle, moduleNumber, nextId, locale
             <div className="flex flex-col gap-3 rounded-[20px] bg-cartao p-4">
               <span className="font-display text-lg font-extrabold">{lesson.simulator.name}</span>
               {Sim ? (
-                <Sim locale={locale} calcT={calcT} />
+                <Sim locale={locale} />
               ) : (
                 <>
                   <p className="text-[15px]">

@@ -291,8 +291,7 @@ export default async function FechamentoPage({
                 copiedLabel={f.copiedBtn}
               />
             }
-            t={f}
-            backLabel={t.common.back}
+            locale={locale}
             header={
               <>
                 <div className="flex items-center justify-between">

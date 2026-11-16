@@ -2,11 +2,11 @@
 import { useActionState, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Button, ErrorNote, Field } from '@/components/ui';
-import { getDictionary, type Dictionary } from '@/lib/i18n';
+import { getDictionary, type Locale } from '@/lib/i18n';
 import { createCategory, deleteCategory, type CategoryState } from './actions';
 
-export function CategoryForm({ t }: { t?: Dictionary['pages']['categorias']['form'] }) {
-  const labels = t ?? getDictionary('pt-BR').pages.categorias.form;
+export function CategoryForm({ locale = 'pt-BR' }: { locale?: Locale }) {
+  const labels = getDictionary(locale).pages.categorias.form;
   const [state, action, pending] = useActionState<CategoryState, FormData>(async (prev, form) => {
     const r = await createCategory(prev, form);
     if (r.ok) ref.current?.reset();
@@ -67,19 +67,10 @@ function DeleteSubmit({ deleteLabel }: { deleteLabel: string }) {
 }
 
 /** Apagar: as transações dela voltam pra "sem categoria". */
-export function DeleteCategoryButton({
-  id,
-  name,
-  t,
-  deleteLabel,
-}: {
-  id: string;
-  name: string;
-  t?: Dictionary['pages']['categorias']['form'];
-  deleteLabel?: string;
-}) {
-  const labels = t ?? getDictionary('pt-BR').pages.categorias.form;
-  const delText = deleteLabel ?? getDictionary('pt-BR').common.delete;
+export function DeleteCategoryButton({ id, name, locale = 'pt-BR' }: { id: string; name: string; locale?: Locale }) {
+  const dict = getDictionary(locale);
+  const labels = dict.pages.categorias.form;
+  const delText = dict.common.delete;
   return (
     <form
       action={deleteCategory}

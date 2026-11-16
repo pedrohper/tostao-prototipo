@@ -1,6 +1,6 @@
 'use client';
 import { useState, useTransition } from 'react';
-import type { Dictionary } from '@/lib/i18n';
+import { getDictionary, type Locale } from '@/lib/i18n';
 import { saveHomePrefs } from '@/lib/inicio-actions';
 
 type Linha = { id: string; nome: string; dica: string };
@@ -25,17 +25,17 @@ export function PersonalizarForm({
   linhas,
   ocultos,
   padrao,
-  t,
-  saveLabel,
-  savingLabel,
+  locale = 'pt-BR',
 }: {
   linhas: Linha[];
   ocultos: string[];
   padrao: string[];
-  t: Dictionary['pages']['personalizar'];
-  saveLabel: string;
-  savingLabel: string;
+  locale?: Locale;
 }) {
+  const dict = getDictionary(locale);
+  const t = dict.pages.personalizar;
+  const saveLabel = dict.common.save;
+  const savingLabel = dict.common.saving;
   const [ordem, setOrdem] = useState(linhas.map((l) => l.id));
   const [off, setOff] = useState(new Set(ocultos));
   const [pending, start] = useTransition();

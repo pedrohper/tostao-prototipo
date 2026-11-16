@@ -23,6 +23,13 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-16 · Antigravity · servidor (Fix RSC Client Component i18n props & metadataBase)
+
+- **Server → Client Component i18n props (`apps/web/app/(app)/{carteira/[id],amigos,anotar,aprender/trilha,aprender/[licao],categorias,chat,tostao,conectar,fechamento,importar,inicio/personalizar,limites,renda,tribunal,compensa,investir}`, `apps/web/components/juros.tsx`)**: removidas props de fatias do `Dictionary` que continham funções formatadoras (que causavam erro de serialização RSC `Functions cannot be passed directly to Client Components`, observado ao vivo em `/carteira/[id]`). Todos os componentes client afetados agora recebem apenas `locale` (string serializável) e resolvem o dicionário localmente via `getDictionary(locale)`.
+- **`metadataBase` (`apps/web/app/layout.tsx`)**: definido `metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000')`, zerando os warnings de Open Graph no `next build`.
+- **Migration / Env**: nenhuma migration e nenhuma variável obrigatória nova (`NEXT_PUBLIC_APP_URL` opcional).
+- **Como validei**: `pnpm format:check && pnpm typecheck && pnpm lint && pnpm test` (31 suítes, 171/171) `&& pnpm build` (86/86 rotas sem warnings), além de restart do `tostao-web` no PM2.
+
 ### 2026-11-16 · Antigravity · servidor (Separação Jarvis/Tostão + Lint/CI + Tokens + Padronização EN + i18n completo + Áudio Cloud API)
 
 - **Separação Jarvis × Tostão (`apps/api/src/use-cases/ask-tostao.ts`, `tostao-tools.ts`, `ask-tostao.spec.ts`)**: removidas de vez `JARVIS_TOOLS` (`salvar_nota_obsidian`, `buscar_notas_obsidian`, `criar_flashcards_anki`), `PEDRO_USER_ID`/`PEDRO_EMAIL` e instruções de Segundo Cérebro do Tostão; `executeTostaoTool` reforça `allowedTools` e teste em `ask-tostao.spec.ts` garante que apenas `TOSTAO_TOOLS` são expostas. Número atual (`bot-pessoal`) fica dedicado ao Tostão.

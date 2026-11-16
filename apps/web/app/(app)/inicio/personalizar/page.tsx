@@ -5,7 +5,7 @@ import { PersonalizarForm } from './form';
 import { getI18n } from '@/lib/i18n-server';
 
 export default async function CustomizeHomePage({ searchParams }: { searchParams: Promise<{ voltar?: string }> }) {
-  const [{ voltar }, prefs, { t }] = await Promise.all([searchParams, readHomePrefs(), getI18n()]);
+  const [{ voltar }, prefs, { locale, t }] = await Promise.all([searchParams, readHomePrefs(), getI18n()]);
   const tp = t.pages.personalizar;
   const rows = resolveSectionOrder(prefs)
     .map((id) => HOME_SECTIONS.find((s) => s.id === id)!)
@@ -20,14 +20,7 @@ export default async function CustomizeHomePage({ searchParams }: { searchParams
       <BackLink href={backHref} label={backHref === '/inicio' ? t.nav.home : t.common.back} />
       <h1 className="font-display text-[30px] leading-[34px] font-extrabold">{t.home.customizeHome}</h1>
       <p className="text-[15px] leading-[21px] text-tinta-suave">{tp.subtitle}</p>
-      <PersonalizarForm
-        linhas={rows}
-        ocultos={prefs.ocultos}
-        padrao={HOME_SECTIONS.map((s) => s.id)}
-        t={tp}
-        saveLabel={t.common.save}
-        savingLabel={t.common.saving}
-      />
+      <PersonalizarForm linhas={rows} ocultos={prefs.ocultos} padrao={HOME_SECTIONS.map((s) => s.id)} locale={locale} />
     </PageFrame>
   );
 }

@@ -43,7 +43,7 @@ export default async function CompensaPage({ searchParams }: { searchParams: Pro
         </div>
 
         <div className="min-w-0">
-          <InstallmentCalculator taxas={taxas} locale={locale} t={t.pages.calculators} />
+          <InstallmentCalculator taxas={taxas} locale={locale} />
         </div>
       </div>
     </PageFrame>

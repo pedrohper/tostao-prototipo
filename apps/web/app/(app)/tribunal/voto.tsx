@@ -2,7 +2,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import type { TribunalResponse } from '@tostao/contracts';
-import type { Dictionary } from '@/lib/i18n';
+import { getDictionary, type Locale } from '@/lib/i18n';
 import { ErrorNote } from '@/components/ui';
 import { voteTribunal } from './actions';
 
@@ -13,7 +13,8 @@ export function Rich({ text }: { text: string }) {
 
 const BAR = ['bg-menta-clara', 'bg-azul', 'bg-amarelo-claro', 'bg-rosa'];
 
-export function Voto({ initial, t: labels }: { initial: TribunalResponse; t: Dictionary['pages']['tribunal'] }) {
+export function Voto({ initial, locale = 'pt-BR' }: { initial: TribunalResponse; locale?: Locale }) {
+  const labels = getDictionary(locale).pages.tribunal;
   const [t, setT] = useState(initial);
   const [error, setError] = useState<string>();
   const [pending, start] = useTransition();

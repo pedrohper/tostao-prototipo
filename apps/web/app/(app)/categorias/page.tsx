@@ -8,7 +8,7 @@ import { BackLink, Card, PageFrame } from '@/components/ui';
 import { CategoryForm, DeleteCategoryButton } from './category-form';
 
 export default async function CategoriasPage({ searchParams }: { searchParams: Promise<{ voltar?: string }> }) {
-  const [{ voltar }, { categories }, { t }] = await Promise.all([
+  const [{ voltar }, { categories }, { locale, t }] = await Promise.all([
     searchParams,
     api<{ categories: CategoryDTO[] }>('/categories'),
     getI18n(),
@@ -32,7 +32,7 @@ export default async function CategoriasPage({ searchParams }: { searchParams: P
 
       <Card className="flex flex-col gap-3">
         <h2 className="font-display text-lg font-extrabold">{p.newTitle}</h2>
-        <CategoryForm t={p.form} />
+        <CategoryForm locale={locale} />
       </Card>
 
       {mine.length > 0 && (
@@ -45,7 +45,7 @@ export default async function CategoriasPage({ searchParams }: { searchParams: P
                   · {c.kind === 'saida' ? p.spendingTag : p.incomeTag}
                 </span>
               </span>
-              <DeleteCategoryButton id={c.id} name={c.name} t={p.form} deleteLabel={t.common.delete} />
+              <DeleteCategoryButton id={c.id} name={c.name} locale={locale} />
             </div>
           ))}
         </Card>

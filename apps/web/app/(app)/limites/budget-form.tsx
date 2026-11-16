@@ -1,24 +1,22 @@
 'use client';
 import { useActionState } from 'react';
-import { getDictionary, type Dictionary } from '@/lib/i18n';
+import { getDictionary, type Locale } from '@/lib/i18n';
 import { saveBudget, type BudgetState } from './actions';
 
 export function BudgetForm({
   categoryId,
   label,
   current,
-  t,
-  saveLabel,
+  locale = 'pt-BR',
 }: {
   categoryId: string;
   label: string;
   current: number | null;
-  t?: Dictionary['pages']['limites']['form'];
-  saveLabel?: string;
+  locale?: Locale;
 }) {
-  const dict = getDictionary('pt-BR');
-  const labels = t ?? dict.pages.limites.form;
-  const saveTxt = saveLabel ?? dict.common.save;
+  const dict = getDictionary(locale);
+  const labels = dict.pages.limites.form;
+  const saveTxt = dict.common.save;
   const [state, action, pending] = useActionState<BudgetState, FormData>(saveBudget, {});
   return (
     <form action={action} className="flex flex-col gap-1">

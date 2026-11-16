@@ -38,7 +38,7 @@ export default async function TribunalPage({ searchParams }: { searchParams: Pro
           <Rich text={t.case.story} />
         </p>
       </div>
-      <Voto initial={t} t={tt} />
+      <Voto initial={t} locale={locale} />
     </PageFrame>
   );
 }

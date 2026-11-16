@@ -93,9 +93,7 @@ export default async function CategorizarPage({
             options={options}
             current={t.categoryId}
             rulePattern={rulePattern}
-            labels={d}
-            saveLabel={dict.common.save}
-            savingLabel={dict.common.saving}
+            locale={locale}
           />
           <form action={toggleInternalTransfer}>
             <input type="hidden" name="id" value={t.id} />
@@ -118,8 +116,7 @@ export default async function CategorizarPage({
           description={t.description}
           amountInCents={t.amountInCents}
           occurredAt={t.occurredAt}
-          labels={d}
-          savingLabel={dict.common.saving}
+          locale={locale}
         />
       )}
       {t.source === 'manual' && (

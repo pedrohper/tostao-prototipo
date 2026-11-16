@@ -8,7 +8,7 @@ import { api } from '@/lib/api';
 import { Trilha } from './trilha';
 
 export default async function TrilhaPage() {
-  const [{ done }, { t }] = await Promise.all([
+  const [{ done }, { locale, t }] = await Promise.all([
     api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
     getI18n(),
   ]);
@@ -22,7 +22,7 @@ export default async function TrilhaPage() {
         </h1>
         <Mascot pose="professor" size={92} alt="Tostão" />
       </div>
-      <Trilha modules={modules} colors={MODULE_COLORS} done={done} t={tl} />
+      <Trilha modules={modules} colors={MODULE_COLORS} done={done} locale={locale} />
       <div className="mt-[18px] flex items-center gap-2 rounded-[20px] bg-azul py-3.5 pr-4 pl-2">
         <Mascot pose="urubu-fugindo" size={96} alt="" />
         <div className="flex flex-col gap-1">

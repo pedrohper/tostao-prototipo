@@ -2,24 +2,14 @@
 import { useActionState, useState } from 'react';
 import Link from 'next/link';
 import { Button, ErrorNote, Field } from '@/components/ui';
-import { getDictionary, type Dictionary, type Locale } from '@/lib/i18n';
+import { getDictionary, type Locale } from '@/lib/i18n';
 import { importStatement, type ImportState } from './actions';
 
 const fmt = (iso: string, locale: Locale) =>
   new Date(iso).toLocaleDateString(locale, { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' });
 
-export function ImportForm({
-  conta,
-  contas,
-  locale = 'pt-BR',
-  t,
-}: {
-  conta?: string;
-  contas: string[];
-  locale?: Locale;
-  t?: Dictionary['pages']['importar']['form'];
-}) {
-  const labels = t ?? getDictionary(locale).pages.importar.form;
+export function ImportForm({ conta, contas, locale = 'pt-BR' }: { conta?: string; contas: string[]; locale?: Locale }) {
+  const labels = getDictionary(locale).pages.importar.form;
   const [state, action, pending] = useActionState<ImportState, FormData>(importStatement, {});
   const [nome, setNome] = useState(conta ?? '');
   const [arquivos, setArquivos] = useState<string[]>([]);

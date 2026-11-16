@@ -1,25 +1,23 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { getDictionary, type Dictionary } from '@/lib/i18n';
+import { getDictionary, type Locale } from '@/lib/i18n';
 
 /** Fechamento em cartas (igual ao artefato): barrinhas no topo, uma carta por vez, "Próxima carta" embaixo. */
 export function Cartas({
   cartas,
   share,
   header,
-  t,
-  backLabel,
+  locale = 'pt-BR',
 }: {
   cartas: React.ReactNode[];
   share: React.ReactNode;
   header: React.ReactNode;
-  t?: Dictionary['pages']['fechamento'];
-  backLabel?: string;
+  locale?: Locale;
 }) {
-  const dict = getDictionary('pt-BR');
-  const labels = t ?? dict.pages.fechamento;
-  const backTxt = backLabel ?? dict.common.back;
+  const dict = getDictionary(locale);
+  const labels = dict.pages.fechamento;
+  const backTxt = dict.common.back;
   const [i, setI] = useState(0);
   const last = i >= cartas.length - 1;
   return (

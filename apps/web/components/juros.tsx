@@ -113,14 +113,12 @@ export function InstallmentCalculator({
   taxas,
   compacto = false,
   locale = 'pt-BR',
-  t,
 }: {
   taxas: TaxasResponse;
   compacto?: boolean;
   locale?: Locale;
-  t?: Dictionary['pages']['calculators'];
 }) {
-  const labels = t ?? getDictionary(locale).pages.calculators;
+  const labels = getDictionary(locale).pages.calculators;
   const [modo, setModo] = useState<'loja' | 'emprestimo'>('loja');
   return (
     <div className="flex flex-col gap-3.5">
@@ -311,7 +309,6 @@ export type InvestmentComparisonProps = {
   reservaGuardadaInCents: number | null;
   valorInicialInCents?: number;
   locale?: Locale;
-  t?: Dictionary['pages']['calculators'];
 };
 
 export function InvestmentComparison({
@@ -320,9 +317,8 @@ export function InvestmentComparison({
   reservaGuardadaInCents,
   valorInicialInCents = 100000,
   locale = 'pt-BR',
-  t,
 }: InvestmentComparisonProps) {
-  const labels = t ?? getDictionary(locale).pages.calculators;
+  const labels = getDictionary(locale).pages.calculators;
   const [valor, setValor] = useState(toText(valorInicialInCents));
   const [jaTem, setJaTem] = useState(toText(reservaGuardadaInCents ?? 0));
   const [divida, setDivida] = useState(false);

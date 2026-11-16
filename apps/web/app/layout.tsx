@@ -9,6 +9,7 @@ import './globals.css';
 import { getLocale } from '@/lib/i18n-server';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'),
   title: 'Tostão',
   description: 'Grana explicada, de tostão em tostão.',
   manifest: '/manifest.webmanifest',

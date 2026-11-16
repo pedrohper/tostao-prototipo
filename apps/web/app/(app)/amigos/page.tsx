@@ -10,7 +10,7 @@ import { AdicionarAmigo, Compartilhar, Remover } from './client';
 const MEDALHA = ['bg-amarelo text-tinta-fixa', 'bg-papel-2 text-tinta', 'bg-bronze text-tinta-fixa'];
 
 export default async function AmigosPage({ searchParams }: { searchParams: Promise<{ voltar?: string }> }) {
-  const [{ voltar }, f, { t }] = await Promise.all([searchParams, api<FriendsResponse>('/friends'), getI18n()]);
+  const [{ voltar }, f, { locale, t }] = await Promise.all([searchParams, api<FriendsResponse>('/friends'), getI18n()]);
   const am = t.pages.amigos;
   const fim = new Date(f.challenge.endsAt);
   const dias = Math.max(0, Math.ceil((fim.getTime() - nowMs()) / 86_400_000));
@@ -54,7 +54,7 @@ export default async function AmigosPage({ searchParams }: { searchParams: Promi
               <span className="shrink-0 text-[15px] tabular-nums">
                 {p.weekScore} <span className="text-xs font-normal text-tinta-suave">{am.missionsUnit}</span>
               </span>
-              {!p.me && <Remover id={p.id} name={p.name} t={am.client} />}
+              {!p.me && <Remover id={p.id} name={p.name} locale={locale} />}
             </div>
           ))}
         </div>
@@ -66,10 +66,10 @@ export default async function AmigosPage({ searchParams }: { searchParams: Promi
           <span className="text-[13px] font-semibold">{am.yourCode}</span>
           <span className="font-mono text-[17px] font-bold tracking-wide">{f.code}</span>
         </div>
-        <Compartilhar code={f.code} t={am.client} />
+        <Compartilhar code={f.code} locale={locale} />
       </section>
 
-      <AdicionarAmigo t={am.client} />
+      <AdicionarAmigo locale={locale} />
 
       <p className="flex gap-2 rounded-2xl bg-papel-2 p-3 text-[13px] leading-[19px] text-tinta-suave">
         <Icon src="modulo/9" size={22} />

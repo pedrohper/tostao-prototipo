@@ -63,7 +63,6 @@ export default async function InvestirPage({
             reservaGuardadaInCents={reserva}
             valorInicialInCents={inicial && inicial > 0 ? inicial : 100000}
             locale={locale}
-            t={t.pages.calculators}
           />
         </div>
       </div>

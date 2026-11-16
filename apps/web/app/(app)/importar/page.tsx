@@ -33,7 +33,7 @@ export default async function ImportarPage({
           <p className="text-[15px] text-tinta-suave">{p.subtitle}</p>
         </div>
       </div>
-      <ImportForm conta={conta} contas={contas} locale={locale} t={p.form} />
+      <ImportForm conta={conta} contas={contas} locale={locale} />
       <div className="flex flex-col rounded-2xl bg-papel-2 px-3.5 py-3 text-[13px] leading-[19px]">
         <h2 className="text-[14px] font-bold">{p.whereToDownload}</h2>
         {p.banks.map((b) => (

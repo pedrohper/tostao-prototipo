@@ -10,7 +10,7 @@ export default async function RendaPage({
 }: {
   searchParams: Promise<{ novo?: string; voltar?: string }>;
 }) {
-  const [{ novo, voltar }, { plan }, { suggestions }, me, { locale, t }] = await Promise.all([
+  const [{ novo, voltar }, { plan }, { suggestions }, me, { locale }] = await Promise.all([
     searchParams,
     api<FinancialPlanResponse>('/plan').catch(() => ({ plan: null })),
     api<IncomeSuggestionsResponse>('/plan/suggestions').catch(() => ({ suggestions: [] })),
@@ -28,9 +28,6 @@ export default async function RendaPage({
         novo={!!novo}
         backHref={backHref}
         locale={locale}
-        t={t.pages.renda}
-        backLabel={t.common.back}
-        savingLabel={t.common.saving}
       />
     </PageFrame>
   );

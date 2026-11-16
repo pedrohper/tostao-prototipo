@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import type { ChatMessageDTO } from '@tostao/contracts';
-import type { Dictionary } from '@/lib/i18n';
+import { getDictionary, type Locale } from '@/lib/i18n';
 import { Mascot } from '@/components/mascote';
 import { ask } from './actions';
 
@@ -75,15 +75,16 @@ export function ChatClient({
   subtitle,
   askIncome = false,
   initialQuery,
-  t,
+  locale = 'pt-BR',
 }: {
   initial: ChatMessageDTO[];
   firstName: string;
   subtitle: string;
   askIncome?: boolean;
   initialQuery?: string;
-  t: Dictionary['pages']['chatExtra'];
+  locale?: Locale;
 }) {
+  const t = getDictionary(locale).pages.chatExtra;
   const [messages, setMessages] = useState(initial);
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);

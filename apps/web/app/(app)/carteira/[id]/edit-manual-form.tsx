@@ -1,7 +1,7 @@
 'use client';
 import { useActionState, useState } from 'react';
 import { ErrorNote } from '@/components/ui';
-import type { Dictionary } from '@/lib/i18n';
+import { getDictionary, type Locale } from '@/lib/i18n';
 import { updateManualTransaction, type ActionState } from '../actions';
 
 const field =
@@ -13,17 +13,18 @@ export function EditManualForm({
   description,
   amountInCents,
   occurredAt,
-  labels,
-  savingLabel,
+  locale = 'pt-BR',
 }: {
   id: string;
   back: string;
   description: string;
   amountInCents: number;
   occurredAt: string;
-  labels: Dictionary['walletExtra']['txDetail'];
-  savingLabel: string;
+  locale?: Locale;
 }) {
+  const dict = getDictionary(locale);
+  const labels = dict.walletExtra.txDetail;
+  const savingLabel = dict.common.saving;
   const [state, action, pending] = useActionState<ActionState, FormData>(updateManualTransaction, {});
   const [kind, setKind] = useState<'saida' | 'entrada'>(amountInCents > 0 ? 'entrada' : 'saida');
   const initialAmount = (Math.abs(amountInCents) / 100).toLocaleString('pt-BR', {

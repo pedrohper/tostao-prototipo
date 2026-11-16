@@ -2,14 +2,14 @@
 import { useState } from 'react';
 import { TAXAS_REFERENCIA } from '@tostao/contracts';
 import { money } from '@/lib/format';
-import type { Dictionary, Locale } from '@/lib/i18n';
+import type { Locale } from '@/lib/i18n';
 import { InstallmentCalculator } from '@/components/juros';
 import { SIMULATORS_M2_M5 } from './simulators-m2-m5';
 import { SIMULATORS_M6_M9 } from './simulators-m6-m9';
 
 // Simuladores interativos.
 // Cada um novo entra aqui com o id da lição.
-export type SimulatorProps = { locale: Locale; calcT: Dictionary['pages']['calculators'] };
+export type SimulatorProps = { locale: Locale };
 
 export const SIMULATORS: Record<string, (props: SimulatorProps) => React.ReactNode> = {
   'm1-l1': RaloDoCafezinho,
@@ -17,7 +17,7 @@ export const SIMULATORS: Record<string, (props: SimulatorProps) => React.ReactNo
   'm1-l3': BisturiNoFixo,
   'm1-l4': RemanejamentoEmergencia,
   'm1-l5': DetectorGatilhos,
-  'm2-l3': ({ locale, calcT }) => <InstallmentCalculator taxas={TAXAS_REFERENCIA} compacto locale={locale} t={calcT} />,
+  'm2-l3': ({ locale }) => <InstallmentCalculator taxas={TAXAS_REFERENCIA} compacto locale={locale} />,
   ...SIMULATORS_M2_M5,
   ...SIMULATORS_M6_M9,
 };

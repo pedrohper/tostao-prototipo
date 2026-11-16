@@ -106,9 +106,6 @@ export function RendaForm({
   novo = false,
   backHref = '/carteira?aba=planejar',
   locale = 'pt-BR',
-  t: tProp,
-  backLabel,
-  savingLabel,
 }: {
   plan: FinancialPlan | null;
   suggestions: IncomeSuggestion[];
@@ -116,14 +113,11 @@ export function RendaForm({
   novo?: boolean;
   backHref?: string;
   locale?: Locale;
-  t?: Dictionary['pages']['renda'];
-  backLabel?: string;
-  savingLabel?: string;
 }) {
   const dict = getDictionary(locale);
-  const t = tProp ?? dict.pages.renda;
-  const backTxt = backLabel ?? dict.common.back;
-  const savingTxt = savingLabel ?? dict.common.saving;
+  const t = dict.pages.renda;
+  const backTxt = dict.common.back;
+  const savingTxt = dict.common.saving;
   const GOALS = [
     ['reserva', t.goals.reserva],
     ['viagem', t.goals.viagem],

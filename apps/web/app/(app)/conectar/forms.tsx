@@ -2,7 +2,7 @@
 import { useActionState, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { Button, ErrorNote, Field } from '@/components/ui';
-import { getDictionary, type Dictionary, type Locale } from '@/lib/i18n';
+import { getDictionary, type Locale } from '@/lib/i18n';
 import { connectBank, connectItem, disconnectBank, getConnectToken, syncNow, type ConnectState } from './actions';
 
 /**
@@ -14,14 +14,12 @@ export function ConnectPanel({
   widget,
   novo = false,
   locale = 'pt-BR',
-  t,
 }: {
   widget: boolean;
   novo?: boolean;
   locale?: Locale;
-  t?: Dictionary['pages']['conectar']['panel'];
 }) {
-  const labels = t ?? getDictionary(locale).pages.conectar.panel;
+  const labels = getDictionary(locale).pages.conectar.panel;
   const [state, setState] = useState<ConnectState>({});
   const [pending, startTransition] = useTransition();
   const [manualState, manualAction, manualPending] = useActionState<ConnectState, FormData>(connectBank, {});
@@ -105,8 +103,8 @@ export function ConnectPanel({
   );
 }
 
-export function SyncButton({ id, t }: { id: string; t?: Dictionary['pages']['conectar']['panel'] }) {
-  const labels = t ?? getDictionary('pt-BR').pages.conectar.panel;
+export function SyncButton({ id, locale = 'pt-BR' }: { id: string; locale?: Locale }) {
+  const labels = getDictionary(locale).pages.conectar.panel;
   const [state, action, pending] = useActionState<ConnectState, FormData>(syncNow, {});
   return (
     <form action={action} className="flex items-center gap-3">
@@ -124,16 +122,8 @@ export function SyncButton({ id, t }: { id: string; t?: Dictionary['pages']['con
   );
 }
 
-export function DisconnectButton({
-  id,
-  name,
-  t,
-}: {
-  id: string;
-  name: string;
-  t?: Dictionary['pages']['conectar']['panel'];
-}) {
-  const labels = t ?? getDictionary('pt-BR').pages.conectar.panel;
+export function DisconnectButton({ id, name, locale = 'pt-BR' }: { id: string; name: string; locale?: Locale }) {
+  const labels = getDictionary(locale).pages.conectar.panel;
   const [state, action, pending] = useActionState<ConnectState, FormData>(disconnectBank, {});
   return (
     <form

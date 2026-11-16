@@ -2,7 +2,7 @@
 import { Icon } from '@/components/icone';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import type { Dictionary } from '@/lib/i18n';
+import { getDictionary, type Locale } from '@/lib/i18n';
 import type { Module } from '@/lib/lessons';
 import { takeLegacyDone } from '@/lib/progress';
 import { importLocalProgress } from '../actions';
@@ -12,13 +12,14 @@ export function Trilha({
   modules,
   colors,
   done: saved,
-  t,
+  locale = 'pt-BR',
 }: {
   modules: Module[];
   colors: string[];
   done: string[];
-  t: Dictionary['pages']['learnExtra'];
+  locale?: Locale;
 }) {
+  const t = getDictionary(locale).pages.learnExtra;
   const [legacyDone, setLegacyDone] = useState<string[]>([]);
   const [open, setOpen] = useState<string | null>(null);
   const done = useMemo(() => [...new Set([...saved, ...legacyDone])], [saved, legacyDone]);

@@ -4,7 +4,7 @@ import type { CategoryDTO } from '@tostao/contracts';
 import { ErrorNote, CardIcon, BankIcon } from '@/components/ui';
 import { Mascot } from '@/components/mascote';
 import { pill } from '@/components/sheet';
-import { getDictionary, type Dictionary } from '@/lib/i18n';
+import { getDictionary, type Locale } from '@/lib/i18n';
 import { createManual, type ActionState } from '../carteira/actions';
 
 const field =
@@ -25,19 +25,18 @@ export function AnotarForm({
   categories,
   contas,
   today,
-  t,
-  saveLabel,
+  locale = 'pt-BR',
   children,
 }: {
   categories: CategoryDTO[];
   contas: ContaOption[];
   today: string;
-  t?: Dictionary['pages']['anotar'];
-  saveLabel?: string;
+  locale?: Locale;
   children?: React.ReactNode;
 }) {
-  const labels = t ?? getDictionary('pt-BR').pages.anotar;
-  const saveText = saveLabel ?? getDictionary('pt-BR').common.save;
+  const dict = getDictionary(locale);
+  const labels = dict.pages.anotar;
+  const saveText = dict.common.save;
   const [state, action, pending] = useActionState<ActionState, FormData>(createManual, {});
   const [kind, setKind] = useState<'saida' | 'entrada'>('saida');
   const [cat, setCat] = useState<string | null>(null);

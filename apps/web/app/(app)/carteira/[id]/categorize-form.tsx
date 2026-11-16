@@ -4,7 +4,7 @@ import { useActionState, useState } from 'react';
 import type { CategoryDTO } from '@tostao/contracts';
 import { ErrorNote } from '@/components/ui';
 import { pill } from '@/components/sheet';
-import type { Dictionary } from '@/lib/i18n';
+import { getDictionary, type Locale } from '@/lib/i18n';
 import { categorize, type ActionState } from '../actions';
 
 type Props = {
@@ -13,12 +13,14 @@ type Props = {
   options: CategoryDTO[];
   current: string | null;
   rulePattern: string;
-  labels: Dictionary['walletExtra']['txDetail'];
-  saveLabel: string;
-  savingLabel: string;
+  locale?: Locale;
 };
 
-export function CategorizeForm({ id, back, options, current, rulePattern, labels, saveLabel, savingLabel }: Props) {
+export function CategorizeForm({ id, back, options, current, rulePattern, locale = 'pt-BR' }: Props) {
+  const dict = getDictionary(locale);
+  const labels = dict.walletExtra.txDetail;
+  const saveLabel = dict.common.save;
+  const savingLabel = dict.common.saving;
   const [state, action, pending] = useActionState<ActionState, FormData>(categorize, {});
   const [picked, setPicked] = useState(current);
   const pickedName = options.find((o) => o.id === picked)?.name;

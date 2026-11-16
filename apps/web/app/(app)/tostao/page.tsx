@@ -228,7 +228,7 @@ export default async function TostaoPage({ searchParams }: { searchParams?: Prom
           subtitle={synced}
           askIncome={!plan}
           initialQuery={sp.q?.trim() || undefined}
-          t={tc}
+          locale={locale}
         />
       )}
     </DesktopSplitShell>

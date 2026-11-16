@@ -8,7 +8,7 @@ export function generateStaticParams() {
 }
 
 export default async function LicaoPage({ params }: { params: Promise<{ licao: string }> }) {
-  const [{ licao }, { locale, t }] = await Promise.all([params, getI18n()]);
+  const [{ licao }, { locale }] = await Promise.all([params, getI18n()]);
   const found = findLesson(licao);
   if (!found) notFound();
   const all = modules.flatMap((m) => m.lessons);
@@ -20,8 +20,6 @@ export default async function LicaoPage({ params }: { params: Promise<{ licao: s
       moduleNumber={found.module.number}
       nextId={next?.id ?? null}
       locale={locale}
-      t={t.pages.learnExtra}
-      calcT={t.pages.calculators}
     />
   );
 }
