@@ -27,7 +27,9 @@ Relatório do que foi feito. Modelo:
 
 - Carteira → Planejar: cards passavam da largura da tela no celular. O grid não tinha `grid-cols-1` (coluna `auto` cresce com o conteúdo); agora `grid-cols-1` + `min-w-0` no card e na seção.
 - Chat do Tostão: o aviso "Sabe seu salário, contas fixas e gastos até..." saiu da tela e virou um botão "?" no canto da conversa; ao tocar mostra o texto (mascote + status). Sem chave i18n nova: o `aria-label` reaproveita o texto do status.
-- Validei com `tsc`, ESLint e Prettier. **Não vi renderizado** (o Chromium do cache não abre no servidor: faltam libs do sistema). **Não deployado.**
+- Início: o card "Até o fim de <mês>" não mostra mais a linha do mês seguinte (o card é só do mês atual).
+- Planejar: o texto pequeno embaixo dos cards só aparece nos cards sem número em destaque (ele repetia o que já estava em cima). Exceção: Meta, cujo texto traz o nome e quanto guardar por mês.
+- Validei com `tsc`, ESLint e Prettier. **Não vi renderizado** (o Chromium do cache não abre no servidor: faltam libs do sistema). Deployado em 2026-11-18 (14:00 e novamente após o ajuste do Início/Planejar).
 
 ### 2026-11-18 · Claude · servidor (deploy das telas Início/Anotações + correção do deploy-tostao.sh)
 

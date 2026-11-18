@@ -396,7 +396,11 @@ export function PlannerHub({
                   />
                 </div>
               )}
-              <p className="text-[13px] leading-[18px] text-tinta-suave">{card.summary}</p>
+              {/* Com número em destaque o resumo só repetiria a informação: ele fica pros cards sem número.
+                  Exceção: o da meta traz o nome e quanto guardar por mês, que o número não mostra. */}
+              {(!card.headline || card.id === 'meta') && (
+                <p className="text-[13px] leading-[18px] text-tinta-suave">{card.summary}</p>
+              )}
             </div>
           </Link>
         ))}

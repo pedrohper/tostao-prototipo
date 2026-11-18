@@ -22,8 +22,6 @@ const chevronIcon = (
   </svg>
 );
 
-const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
-
 /** Compact banner shown when all daily missions are completed. */
 export function CompletedMissionsCard({ streak, locale = 'pt-BR' }: { streak: number; locale?: Locale }) {
   const t = getDictionary(locale);
@@ -240,10 +238,9 @@ export function WeeklySummaryCard({ w, locale = 'pt-BR' }: { w: WeeklyResponse; 
   );
 }
 
-/** Projected leftover/shortfall by the end of the current month + next month preview. */
+/** Projected leftover/shortfall by the end of the current month (the card is about this month only). */
 export function MonthLeftoverCard({ forecast, locale = 'pt-BR' }: { forecast: ForecastResponse; locale?: Locale }) {
   const current = forecast.thisMonth;
-  const nextMonth = forecast.months[0];
   if (!current) return null;
   const t = getDictionary(locale);
   const isPositive = current.leftInCents >= 0;
@@ -278,14 +275,6 @@ export function MonthLeftoverCard({ forecast, locale = 'pt-BR' }: { forecast: Fo
             upcomingBillsCents > 0 ? money(upcomingBillsCents) : null,
           )}
         </span>
-        {nextMonth && (
-          <span className="text-[13px] text-tinta-suave">
-            {capitalize(monthName(nextMonth.month, locale))}:{' '}
-            {nextMonth.leftInCents >= 0
-              ? t.home.monthLeftover(money(nextMonth.leftInCents))
-              : t.home.monthShortfall(money(-nextMonth.leftInCents))}
-          </span>
-        )}
       </div>
       {chevronIcon}
     </Link>
