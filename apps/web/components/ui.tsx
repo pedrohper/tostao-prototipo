@@ -156,8 +156,8 @@ export function StreakChip({ days, label }: { days: number; label?: string }) {
 }
 
 const FRAME_SIZES = {
-  analytics: 'mx-auto flex w-full max-w-[1040px] flex-col gap-5',
-  focused: 'mx-auto flex w-full max-w-[760px] flex-col gap-4',
+  analytics: 'mx-auto flex w-full max-w-[1040px] flex-col gap-6',
+  focused: 'mx-auto flex w-full max-w-[760px] flex-col gap-5',
   player: 'mx-auto w-full max-w-[680px]',
 } as const;
 

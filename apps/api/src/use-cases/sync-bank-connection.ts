@@ -7,6 +7,7 @@ import { categorizeByRules } from '../services/categorize.js';
 import { detectInternalTransfers } from '../services/internal-transfers.js';
 import { isGenericInstitution } from '../services/bank-names.js';
 import { nextDueDate } from './get-month-summary.js';
+import { reconcileManualEntries, SYNC_LOOKBACK_DAYS } from './reconcile-manual-entries.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const FIRST_SYNC_DAYS = 90; // primeira vez: puxa 3 meses
@@ -27,6 +28,7 @@ type Deps = Pick<Repositories, 'connections' | 'accounts' | 'transactions' | 'ru
  * 3. Pula as que já existem (externalId).
  * 4. Categoriza as novas pelas regras.
  * 5. Recalcula transferências internas na janela inteira (um lado do par pode ter chegado antes).
+ * 6. Apaga anotações à mão que o banco acabou de confirmar (par 1 pra 1: mesmo valor, data próxima, texto parecido).
  */
 export class SyncBankConnectionUseCase {
   constructor(private readonly deps: Deps) {}
@@ -117,12 +119,26 @@ export class SyncBankConnectionUseCase {
           await transactions.save({ ...t, isInternalTransfer: shouldBe });
       }
 
+      // Limpeza opcional: se falhar, a importação já feita vale e a conexão continua saudável.
+      let reconciledCount = 0;
+      try {
+        const hidden = new Set((await accounts.listByUser(connection.userId)).filter((a) => a.hidden).map((a) => a.id));
+        ({ removedCount: reconciledCount } = await reconcileManualEntries(
+          transactions,
+          connection.userId,
+          { from: new Date(now.getTime() - SYNC_LOOKBACK_DAYS * DAY), to: now },
+          hidden,
+        ));
+      } catch (err) {
+        console.error('[sync] reconciliação de anotações falhou:', (err as Error).message);
+      }
+
       // Pelo MeuPluggy o Item não diz o banco: usa o que as contas revelaram.
       const institution = isGenericInstitution(connection.institution)
         ? (remoteAccounts.map((a) => a.institution).find(Boolean) ?? connection.institution)
         : connection.institution;
       await connections.save({ ...connection, institution, status: 'ACTIVE', lastSyncedAt: now });
-      return { importedCount, accounts: keptAccounts };
+      return { importedCount, accounts: keptAccounts, reconciledCount };
     } catch (err) {
       await connections.save({ ...connection, status: 'ERROR' });
       if (err instanceof BankConnectionError) throw err;

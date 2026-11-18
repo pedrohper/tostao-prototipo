@@ -9,7 +9,7 @@ export async function syncAllConnections(repos: Repositories, sync: SyncBankConn
   for (const c of connections) {
     try {
       const r = await sync.execute({ connectionId: c.id });
-      log.info(`[sync] ${c.id}: ${r.importedCount} novas`);
+      log.info(`[sync] ${c.id}: ${r.importedCount} novas, ${r.reconciledCount ?? 0} anotações confirmadas`);
     } catch (err) {
       log.error(`[sync] ${c.id} falhou:`, (err as Error).message);
     }

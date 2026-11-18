@@ -7,7 +7,8 @@ import { Sheet } from '@/components/sheet';
 import { Mascot } from '@/components/mascote';
 import { CategorizeForm } from './categorize-form';
 import { EditManualForm } from './edit-manual-form';
-import { apagarLancamento, toggleInternalTransfer } from '../actions';
+import { NOTE_MAX } from '@tostao/contracts';
+import { apagarLancamento, saveTransactionNote, toggleInternalTransfer } from '../actions';
 
 export default async function CategorizarPage({
   params,
@@ -46,7 +47,7 @@ export default async function CategorizarPage({
         </div>
       </div>
       {acerto ? (
-        <Acerto t={t} people={people} back={back} erro={erro} labels={d.split} />
+        <Acerto t={t} people={people} back={back} erro={erro === 'nota' ? undefined : erro} labels={d.split} />
       ) : t.isInternalTransfer && !neutral ? (
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2.5 rounded-[14px] bg-azul px-3 py-2.5 text-tinta">
@@ -106,9 +107,35 @@ export default async function CategorizarPage({
               {d.markInternalTransfer}
             </button>
           </form>
-          <Acerto t={t} people={people} back={back} erro={erro} labels={d.split} />
+          <Acerto t={t} people={people} back={back} erro={erro === 'nota' ? undefined : erro} labels={d.split} />
         </>
       )}
+      <form action={saveTransactionNote} className="flex flex-col gap-2">
+        {erro === 'nota' && (
+          <p role="alert" className="rounded-xl bg-rosa px-3 py-2 text-sm text-vermelho-texto">
+            {d.noteError}
+          </p>
+        )}
+        <input type="hidden" name="id" value={t.id} />
+        <input type="hidden" name="back" value={back} />
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-semibold text-tinta-suave">{d.noteLabel}</span>
+          <textarea
+            name="note"
+            rows={2}
+            maxLength={NOTE_MAX}
+            defaultValue={t.note ?? ''}
+            placeholder={d.notePlaceholder}
+            className="min-w-0 resize-none rounded-xl border-[1.5px] border-linha bg-cartao px-3 py-2.5 text-base text-tinta outline-none focus:border-tinta"
+          />
+        </label>
+        <button
+          type="submit"
+          className="flex h-11 w-full items-center justify-center rounded-full border border-linha bg-cartao text-sm font-semibold text-tinta transition-colors hover:bg-papel-2"
+        >
+          {d.noteSave}
+        </button>
+      </form>
       {t.source === 'manual' && (
         <EditManualForm
           id={t.id}

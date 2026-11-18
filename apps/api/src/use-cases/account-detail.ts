@@ -82,6 +82,7 @@ export class AccountDetailUseCase {
           source: t.externalId ? ('bank' as const) : ('manual' as const),
           seriesId: t.seriesId ?? null,
           personId: t.personId ?? null,
+          note: t.note ?? null,
         };
       });
 

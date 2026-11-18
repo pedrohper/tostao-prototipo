@@ -6,12 +6,13 @@ export type HomePrefs = { ordem: string[]; ocultos: string[]; fechados: string[]
 
 /** Home sections that can be hidden and reordered, in default order. Balance stays on top. */
 export const HOME_SECTIONS = [
+  { id: 'atalhos', nome: 'Atalhos do Planejar', dica: 'Anotar, Acertos, Limites, Meta e mais' },
+  { id: 'aula', nome: 'Aula do Tostão', dica: 'Continuar a lição do módulo atual' },
   { id: 'sobra', nome: 'Quanto sobra no mês', dica: 'Previsão até o fim do mês' },
-  { id: 'missoes', nome: 'Missões de hoje', dica: 'E a sua ofensiva' },
   { id: 'vence', nome: 'Vence logo', dica: 'Contas, assinaturas e faturas' },
   { id: 'avisos', nome: 'Avisos do Tostão e do Caramelo', dica: 'Dicas e gastos sem categoria' },
-  { id: 'pra-onde-foi', nome: 'Pra onde foi', dica: 'Gastos por categoria' },
-  { id: 'semana', nome: 'Sua semana', dica: 'Últimos 7 dias' },
+  { id: 'pra-onde-foi', nome: 'Gastos por categoria', dica: 'Resumo do mês por categoria' },
+  { id: 'semana', nome: 'Sua semana', dica: 'Comparativo semanal' },
   { id: 'meta', nome: 'Meta', dica: 'Quanto falta pra sua meta' },
   { id: 'acertos', nome: 'Acertos', dica: 'Quem te deve e pra quem você deve' },
   { id: 'cartoes', nome: 'Cartões de crédito', dica: 'Fatura e limite' },

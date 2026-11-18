@@ -135,6 +135,7 @@ describe('Renda e previsão', () => {
       hasPlan: false,
       months: [],
       goal: null,
+      goals: [],
       thisMonth: null,
       base: null,
     });
@@ -182,6 +183,98 @@ describe('Meta', () => {
     const f = await new ForecastUseCase(repos, () => NOW).execute({ userId: 'u1' });
     expect(f.goal!.amountInCents).toBe(120000);
     expect(f.goal!.monthlyNeededInCents).toBe(Math.ceil(113000 / 2));
+  });
+
+  it('permite criar, editar, depositar por id e remover múltiplas metas', async () => {
+    const { repos } = setup();
+    const { SetGoalUseCase, GoalDepositUseCase } = await import('./financial-plan.js');
+    const setGoal = new SetGoalUseCase(repos);
+    const dep = new GoalDepositUseCase(repos);
+
+    const g1 = await setGoal.add({
+      userId: 'u1',
+      goal: { kind: 'reserva', label: 'Reserva', amountInCents: 500000, deadline: null },
+    });
+    const g2 = await setGoal.add({
+      userId: 'u1',
+      goal: { kind: 'viagem', label: 'Recife', amountInCents: 200000, deadline: '2027-05' },
+    });
+
+    await dep.execute({ userId: 'u1', goalId: g2.goal.id, amountInCents: 25000 });
+    await setGoal.update({
+      userId: 'u1',
+      id: g2.goal.id!,
+      goal: { kind: 'viagem', label: 'Recife 2027', amountInCents: 250000, deadline: '2027-05' },
+    });
+
+    const f1 = await new ForecastUseCase(repos, () => NOW).execute({ userId: 'u1' });
+    expect(f1.goals).toHaveLength(2);
+    expect(f1.goals[0]!.label).toBe('Reserva');
+    expect(f1.goals[1]!.label).toBe('Recife 2027');
+    expect(f1.goals[1]!.savedInCents).toBe(25000);
+
+    await setGoal.remove({ userId: 'u1', id: g1.goal.id! });
+    const f2 = await new ForecastUseCase(repos, () => NOW).execute({ userId: 'u1' });
+    expect(f2.goals).toHaveLength(1);
+    expect(f2.goal!.label).toBe('Recife 2027');
+    expect(f2.goal!.savedInCents).toBe(25000);
+  });
+});
+
+describe('metas: casos de borda', () => {
+  it('salvar a renda sem meta não apaga as metas existentes nem os valores guardados', async () => {
+    const { repos } = setup();
+    const { SetGoalUseCase, GoalDepositUseCase } = await import('./financial-plan.js');
+    const setGoal = new SetGoalUseCase(repos);
+    const a = await setGoal.add({
+      userId: 'u1',
+      goal: { kind: 'reserva', label: 'A', amountInCents: 100000, deadline: null },
+    });
+    await setGoal.add({ userId: 'u1', goal: { kind: 'viagem', label: 'B', amountInCents: 200000, deadline: null } });
+    await new GoalDepositUseCase(repos).execute({ userId: 'u1', goalId: a.goal.id, amountInCents: 5000 });
+
+    await new SaveFinancialPlanUseCase(repos, () => NOW).execute({ userId: 'u1', plan: plan({ goal: null }) });
+
+    const saved = await repos.plans.get('u1');
+    expect(saved!.goals).toHaveLength(2);
+    expect(saved!.goals![0]!.savedInCents).toBe(5000);
+  });
+
+  it('meta nova com id próprio não herda o saldo da meta que estava na mesma posição', async () => {
+    const { repos } = setup();
+    const { SetGoalUseCase, GoalDepositUseCase } = await import('./financial-plan.js');
+    const setGoal = new SetGoalUseCase(repos);
+    const a = await setGoal.add({
+      userId: 'u1',
+      goal: { kind: 'reserva', label: 'A', amountInCents: 100000, deadline: null },
+    });
+    await new GoalDepositUseCase(repos).execute({ userId: 'u1', goalId: a.goal.id, amountInCents: 7000 });
+
+    await new SaveFinancialPlanUseCase(repos, () => NOW).execute({
+      userId: 'u1',
+      plan: plan({
+        goals: [
+          { id: 'nova', kind: 'viagem', label: 'Nova', amountInCents: 50000, deadline: null },
+          { id: a.goal.id, kind: 'reserva', label: 'A', amountInCents: 100000, deadline: null },
+        ],
+      }),
+    });
+
+    const saved = (await repos.plans.get('u1'))!.goals!;
+    expect(saved.find((g) => g.id === 'nova')!.savedInCents).toBe(0);
+    expect(saved.find((g) => g.id === a.goal.id)!.savedInCents).toBe(7000);
+    expect(new Set(saved.map((g) => g.id)).size).toBe(2);
+  });
+
+  it('a 11ª meta volta erro 4xx (AppError), não 500', async () => {
+    const { repos } = setup();
+    const { SetGoalUseCase } = await import('./financial-plan.js');
+    const setGoal = new SetGoalUseCase(repos);
+    for (let i = 0; i < 10; i++)
+      await setGoal.add({ userId: 'u1', goal: { kind: 'outro', label: `M${i}`, amountInCents: 1000, deadline: null } });
+    await expect(
+      setGoal.add({ userId: 'u1', goal: { kind: 'outro', label: 'extra', amountInCents: 1000, deadline: null } }),
+    ).rejects.toMatchObject({ statusCode: 400 });
   });
 });
 

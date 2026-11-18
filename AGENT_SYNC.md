@@ -23,6 +23,27 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-18 · Claude · servidor (revisão geral: aula do Tostão, metas, reconciliação)
+
+- **Aula do Tostão sumida no celular**: o trabalho de missões no modal do fogo tirou o card do professor do Início e do Aprender no mobile (só o painel direito do desktop mantinha). Voltou como seção `aula` no Início ("Aula do Tostão": módulo atual, barra de progresso, próxima lição, ocultável em Personalizar Início) e o Tostão professor aparece de novo no topo do módulo em `/aprender` no celular. Quem já tinha ordem salva vê a seção nova no fim.
+- **Metas (`financial-plan.ts`)**: salvar a renda sem meta apagava todas as metas e saldos (agora preserva); meta com id novo herdava o saldo da meta da mesma posição (agora casa só por id); 11ª meta dava 500 (agora `AppError` 400).
+- **Reconciliação**: casamento mais estrito (todas as palavras da descrição mais curta têm que aparecer na outra; "Mercado Livre" não casa com "Supermercado Extra"); cobrança de conta oculta não confirma anotação; falha na reconciliação não marca mais a conexão como ERROR (try/catch próprio); import sem `Math.min(...spread)` e com guarda para arquivo vazio.
+- **Nota**: se não salvar, `/carteira/[id]` mostra o aviso (`?erro=nota`) em vez de fingir sucesso.
+- **Validação**: 194 testes (+5), tsc api/web, lint, prettier. Review com `/code-review medium`; um achado (conta oculta no insight de ambíguos) era falso: `checkCaramelo` já recebe `visibleRecentTxs`.
+- **Ficou de fora**: `SetGoalUseCase.execute(null)` continua removendo só a meta principal (legado); não vi as telas renderizadas (só tsc/testes).
+
+### 2026-11-17 · Claude · servidor (Início: Receitas/Despesas, card Mobills, atalhos Planejar, anotação e auto-apagar)
+
+- **Textos (`apps/web/lib/i18n-locales/*`)**: no Início, "Entrou/Saiu" viraram **Receitas/Despesas** (pt-BR), Income/Expenses (en), Ingresos/Gastos (es). Só o Início; Carteira, conta e fechamento continuam com Entrou/Saiu (ver "ficou de fora").
+- **Card de saldo (`inicio/page.tsx`)**: estilo Mobills: saldo grande + linha com bolinha verde ↑ Receitas e vermelha ↓ Despesas. Streak (fogo) e título Início intactos. Desktop só ganhou os novos rótulos.
+- **Atalhos do Planejar (`inicio/planejar-atalhos.tsx`, `HOME_SECTIONS` ganhou `atalhos`)**: carrossel horizontal de bolinhas com ícone + nome (Anotar, Acertos, Assinaturas, Limites, Meta, Previsão, Renda, Fechamento, Categorias), componente de servidor com scroll nativo. Seção reordenável/ocultável em "Personalizar Início". Quem já tinha ordem salva vê a seção nova no fim da lista.
+- **Anotação na transação**: coluna `transactions.note` (migration `20261117120000_transaction_note`), `note` em `manualTransactionBody`/`updateTransactionBody`/`TransactionDTO` (limite `NOTE_MAX` = 280), `UpdateTransactionUseCase` aceita `note` também em transação do banco (descrição/valor/data continuam bloqueados). Web: campo no `/anotar`, formulário "Anotação" em `/carteira/[id]` (action `saveTransactionNote`) e a nota aparece na linha da transação.
+- **Auto-apagar anotação confirmada pelo banco (`services/reconcile-manual.ts`, `use-cases/reconcile-manual-entries.ts`, chamado no fim do `SyncBankConnectionUseCase`)**: anotada à mão (sem `externalId`, sem pessoa, não transferência) casa com cobrança do banco se tiver **mesmo valor e sinal, data até ±5 dias e nome parecido**. Só apaga em par **1 pra 1**; ambíguo não mexe. A cobrança do banco herda nota e categoria da anotada se estiverem vazias. Em série "todo mês"/parcelado apaga só a ocorrência casada. Olha 35 dias pra trás, então pega também a anotação feita depois da cobrança.
+- **Migration**: `20261117120000_transaction_note` (ADD COLUMN `note` TEXT, nula) — aplicada no deploy. Env nova: nenhuma.
+- **Como validei**: `pnpm test` 187 testes (eram 171; +16 novos em `reconcile-manual-entries.spec.ts`: par exato, valor/data/nome diferentes, ambíguo, série, outro usuário, anotação tardia, nota em banco/manual), `tsc --noEmit` em api e web, `pnpm lint`. Não rodei `next build` nem migrate (o servidor em produção usa a mesma pasta/banco).
+- **Também feito depois**: achado `possible_duplicate_manual` no Caramelo (anotada que casa com 2+ cobranças: "Conferir lançamento" → `/carteira/[id]`, some sozinho quando a anotação é apagada) e reconciliação no upload de extrato (`import-statement`, resposta ganhou `reconciledCount`). Testes: 189. **Deploy feito em 2026-11-17 12:18** (`deploy-tostao.sh`, backup `tostao-20261117-1217.sql.gz`, migration aplicada, health ok).
+- **Ficou de fora**: Entrou/Saiu nas telas Carteira/conta/fechamento; revisão do Gemini pendente.
+
 ### 2026-11-16 · Antigravity · servidor (Fix RSC Client Component i18n props & metadataBase)
 
 - **Server → Client Component i18n props (`apps/web/app/(app)/{carteira/[id],amigos,anotar,aprender/trilha,aprender/[licao],categorias,chat,tostao,conectar,fechamento,importar,inicio/personalizar,limites,renda,tribunal,compensa,investir}`, `apps/web/components/juros.tsx`)**: removidas props de fatias do `Dictionary` que continham funções formatadoras (que causavam erro de serialização RSC `Functions cannot be passed directly to Client Components`, observado ao vivo em `/carteira/[id]`). Todos os componentes client afetados agora recebem apenas `locale` (string serializável) e resolvem o dicionário localmente via `getDictionary(locale)`.

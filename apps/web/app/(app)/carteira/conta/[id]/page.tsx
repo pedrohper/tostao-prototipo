@@ -84,23 +84,23 @@ export default async function ContaPage({
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[360px_1fr] lg:items-start lg:gap-6">
+      <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[310px_1fr] lg:items-start lg:gap-6 xl:grid-cols-[360px_1fr]">
         <div className="flex flex-col gap-4 lg:sticky lg:top-8">
           {/* Número principal: fatura (cartão) ou saldo (conta) */}
           <section
             className={`flex flex-col gap-3 rounded-[20px] p-4 text-tinta ${card ? 'bg-laranja-claro' : 'bg-menta-clara'}`}
           >
-            <div className="flex items-end justify-between gap-3">
-              <div className="flex flex-col">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div className="flex min-w-0 flex-col">
                 <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">
                   {card ? dLabels.currentBill : dLabels.currentBalance}
                 </span>
-                <span className="font-display text-[34px] leading-10 font-extrabold tabular-nums">
+                <span className="font-display text-[30px] leading-9 font-extrabold tabular-nums sm:text-[34px] sm:leading-10">
                   {money(card ? fatura : a.balanceInCents)}
                 </span>
               </div>
               {card && a.dueDate && (
-                <span className="rounded-full bg-cartao px-3 py-1 text-[13px] font-semibold">
+                <span className="shrink-0 rounded-full bg-cartao px-3 py-1 text-[13px] font-semibold">
                   {dLabels.dueOn(shortDate(a.dueDate, locale))}
                 </span>
               )}
@@ -190,8 +190,8 @@ export default async function ContaPage({
         <div className="flex min-w-0 flex-col gap-4">
           {monthSelector('hidden lg:flex')}
 
-          <section className="flex flex-col lg:rounded-[22px] lg:border lg:border-linha lg:bg-cartao lg:p-5">
-            <h2 className="pb-1 font-display text-xl leading-[26px] font-extrabold">
+          <section className="flex flex-col gap-4 lg:rounded-[22px] lg:border lg:border-linha lg:bg-cartao lg:p-6">
+            <h2 className="font-display text-xl leading-[26px] font-extrabold">
               {card ? dLabels.purchasesTitle : dLabels.movementsTitle}
             </h2>
             {d.transactions.length === 0 ? (
@@ -200,18 +200,18 @@ export default async function ContaPage({
                 <p className="text-[15px] text-tinta-suave">{dLabels.emptyMonth(card, monthName(month, locale))}</p>
               </div>
             ) : (
-              [...groups.entries()].map(([day, list], i) => (
-                <section key={day} className="flex flex-col">
-                  <h3
-                    className={`pb-1.5 text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase ${i === 0 ? 'pt-1.5' : 'pt-3'}`}
-                  >
-                    {day}
-                  </h3>
-                  {list.map((tx) => (
-                    <Row key={tx.id} t={tx} back={back} locale={locale} />
-                  ))}
-                </section>
-              ))
+              <div className="flex flex-col gap-6">
+                {[...groups.entries()].map(([day, list]) => (
+                  <section key={day} className="flex flex-col gap-1">
+                    <h3 className="pb-1 text-[15px] leading-5 font-bold text-tinta">{day}</h3>
+                    <div className="flex flex-col">
+                      {list.map((tx) => (
+                        <Row key={tx.id} t={tx} back={back} locale={locale} />
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
             )}
           </section>
         </div>

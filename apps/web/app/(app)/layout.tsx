@@ -5,14 +5,15 @@ import { Nav } from '@/components/nav';
 import { SidebarFooter } from '@/components/lateral';
 import { api } from '@/lib/api';
 import { NO_PROGRESS, xpFrom } from '@/lib/xp';
-import type { LessonProgressResponse, TostaoAutoResponse } from '@tostao/contracts';
+import type { LessonProgressResponse, MissionsResponse, TostaoAutoResponse } from '@tostao/contracts';
 import { getLocale } from '@/lib/i18n-server';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   if (!(await getToken())) redirect('/entrar');
-  const [progress, auto, locale] = await Promise.all([
+  const [progress, auto, missions, locale] = await Promise.all([
     api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
     api<TostaoAutoResponse>('/tostao/auto').catch(() => null),
+    api<MissionsResponse>('/missions').catch(() => null),
     getLocale(),
   ]);
   const { xp, level } = xpFrom(progress.done.length, progress.bonusXp ?? 0);
@@ -23,10 +24,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <Nav
         locale={locale}
         pendingCount={pendingCount}
-        footer={<SidebarFooter xp={xp} level={level} streakDays={progress.streakDays} locale={locale} />}
+        footer={
+          <SidebarFooter
+            xp={xp}
+            level={level}
+            streakDays={missions?.streakDays ?? progress.streakDays}
+            missions={missions}
+            locale={locale}
+          />
+        }
       />
       <TapSoundListener />
-      <main className="mx-auto w-full max-w-[640px] min-w-0 px-5 pt-6 pb-28 md:max-w-none md:flex-1 md:px-8 md:pt-8 md:pb-12">
+      <main className="mx-auto w-full max-w-[640px] min-w-0 px-5 pt-7 pb-32 md:max-w-none md:flex-1 md:px-10 md:pt-9 md:pb-16">
         {children}
       </main>
     </div>

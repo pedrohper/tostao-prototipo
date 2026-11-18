@@ -26,6 +26,8 @@ export class UpdateTransactionUseCase {
       ...(patch.description !== undefined ? { description: patch.description } : {}),
       ...(patch.amountInCents !== undefined ? { amountInCents: patch.amountInCents } : {}),
       ...(patch.occurredAt !== undefined ? { occurredAt: new Date(`${patch.occurredAt}T12:00:00-03:00`) } : {}),
+      // A anotação é da pessoa: vale também pra transação do banco. Vazio apaga.
+      ...(patch.note !== undefined ? { note: patch.note || null } : {}),
     };
     await this.repos.transactions.save(updated);
     return { transaction: updated };

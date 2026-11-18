@@ -22,13 +22,17 @@ function Submit({ children, className }: { children: React.ReactNode; className:
   );
 }
 
-/** Criar ou editar a meta. */
+/** Criar ou editar uma meta. */
 export function GoalForm({
   goal,
+  goalId,
+  voltar,
   kind: initialKind,
   t,
 }: {
   goal: GoalStatus | null;
+  goalId?: string;
+  voltar?: string;
   kind?: string;
   t?: Dictionary['pages']['meta']['form'];
 }) {
@@ -40,9 +44,11 @@ export function GoalForm({
     ['outro', labels.kinds.outro],
   ] as const;
   const [state, action] = useActionState<GoalState, FormData>(saveGoal, {});
-  const [kind, setKind] = useState(initialKind ?? 'viagem');
+  const [kind, setKind] = useState(initialKind ?? goal?.kind ?? 'viagem');
   return (
     <form action={action} className="flex flex-col gap-3.5">
+      {goalId && <input type="hidden" name="id" value={goalId} />}
+      {voltar && <input type="hidden" name="voltar" value={voltar} />}
       <input type="hidden" name="kind" value={kind} />
       <fieldset className="flex flex-wrap gap-2">
         <legend className="mb-2 text-sm font-semibold">{labels.purposeLegend}</legend>
@@ -96,8 +102,8 @@ export function GoalForm({
   );
 }
 
-/** "Guardei" (ou "Tirei") um valor da meta. */
-export function DepositForm({ t }: { t?: Dictionary['pages']['meta']['form'] }) {
+/** "Guardei" (ou "Tirei") um valor da meta selecionada. */
+export function DepositForm({ goalId, t }: { goalId?: string; t?: Dictionary['pages']['meta']['form'] }) {
   const labels = t ?? getDictionary('pt-BR').pages.meta.form;
   const [state, action] = useActionState<GoalState, FormData>(deposit, {});
   const [dir, setDir] = useState<'guardei' | 'tirei'>('guardei');
@@ -114,6 +120,7 @@ export function DepositForm({ t }: { t?: Dictionary['pages']['meta']['form'] }) 
       }}
       className="flex flex-col gap-2.5 rounded-2xl border border-linha bg-cartao p-3.5"
     >
+      {goalId && <input type="hidden" name="goalId" value={goalId} />}
       <input type="hidden" name="dir" value={dir} />
       <div className="grid grid-cols-2 gap-1 rounded-full bg-papel-2 p-1">
         {(['guardei', 'tirei'] as const).map((d) => (

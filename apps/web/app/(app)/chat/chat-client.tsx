@@ -132,56 +132,58 @@ export function ChatClient({
   }, [initialQuery]);
 
   return (
-    <div className="flex min-h-[calc(100dvh-16rem)] w-full flex-col gap-4 md:min-h-[calc(100dvh-13rem)] lg:min-h-[calc(100dvh-11rem)]">
-      <div className="flex items-center gap-2.5 rounded-2xl border border-linha bg-cartao px-3.5 py-2.5">
-        <Mascot pose="avatar" size={38} alt="Tostão" still />
-        <p className="text-xs leading-[17px] text-tinta-suave">{subtitle}</p>
+    <div className="-mb-10 flex h-[calc(100dvh-14.5rem)] min-h-[360px] w-full min-w-0 flex-col gap-3 overflow-hidden md:mb-0 md:h-[calc(100dvh-11rem)] lg:h-[calc(100dvh-10rem)]">
+      <div className="flex shrink-0 items-center gap-2.5 rounded-2xl border border-linha bg-cartao px-3.5 py-2.5">
+        <Mascot pose="avatar" size={36} alt="Tostão" still />
+        <p className="min-w-0 flex-1 text-xs leading-[17px] text-tinta-suave">{subtitle}</p>
       </div>
 
       {askIncome && (
         <Link
           href="/renda?voltar=/tostao"
-          className="flex items-center gap-2 rounded-2xl bg-amarelo-claro px-3.5 py-3 text-[13px] leading-[19px] text-tinta no-underline"
+          className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-2xl bg-amarelo-claro px-3.5 py-2.5 text-[13px] leading-[18px] text-tinta no-underline"
         >
-          <span className="grow">{t.askIncomeBanner}</span>
+          <span className="min-w-0 flex-1">{t.askIncomeBanner}</span>
           <span className="shrink-0 font-semibold text-laranja-texto">{t.askIncomeCta}</span>
         </Link>
       )}
 
-      <div className="flex flex-1 flex-col justify-end gap-2.5" aria-live="polite">
-        {messages.length === 0 && (
-          <div className="max-w-[82%] self-start rounded-[18px_18px_18px_4px] border border-linha bg-cartao px-3.5 py-[11px] text-[15px] leading-[22px]">
-            {t.emptyGreeting(firstName)}
-          </div>
-        )}
-        {messages.map((m) =>
-          m.role === 'user' ? (
-            <div
-              key={m.id}
-              className="max-w-[82%] self-end whitespace-pre-wrap rounded-[18px_18px_4px_18px] bg-tinta px-3.5 py-2.5 text-[15px] leading-[22px] text-papel"
-            >
-              {m.content}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-0.5" aria-live="polite">
+        <div className="flex min-h-full flex-col justify-end gap-2.5 py-1">
+          {messages.length === 0 && (
+            <div className="max-w-[85%] min-w-0 self-start break-words [overflow-wrap:anywhere] rounded-[18px_18px_18px_4px] border border-linha bg-cartao px-3.5 py-[11px] text-[15px] leading-[22px]">
+              {t.emptyGreeting(firstName)}
             </div>
-          ) : (
-            <div
-              key={m.id}
-              className="max-w-[82%] self-start rounded-[18px_18px_18px_4px] border border-linha bg-cartao px-3.5 py-[11px] text-[15px] leading-[22px]"
-            >
-              <Rich text={m.content} />
-            </div>
-          ),
-        )}
-        {pending && <Pensando ariaLabel={t.thinkingAria} text={t.thinkingText} />}
-        <div ref={bottom} />
+          )}
+          {messages.map((m) =>
+            m.role === 'user' ? (
+              <div
+                key={m.id}
+                className="max-w-[85%] min-w-0 self-end break-words [overflow-wrap:anywhere] whitespace-pre-wrap rounded-[18px_18px_4px_18px] bg-tinta px-3.5 py-2.5 text-[15px] leading-[22px] text-papel"
+              >
+                {m.content}
+              </div>
+            ) : (
+              <div
+                key={m.id}
+                className="max-w-[85%] min-w-0 self-start break-words [overflow-wrap:anywhere] rounded-[18px_18px_18px_4px] border border-linha bg-cartao px-3.5 py-[11px] text-[15px] leading-[22px]"
+              >
+                <Rich text={m.content} />
+              </div>
+            ),
+          )}
+          {pending && <Pensando ariaLabel={t.thinkingAria} text={t.thinkingText} />}
+          <div ref={bottom} />
+        </div>
       </div>
 
-      <div className="sticky bottom-[88px] -mx-5 flex flex-col gap-2.5 bg-papel px-5 pt-2 pb-1 md:bottom-0 md:mx-0 md:px-0 md:pb-2">
+      <div className="flex w-full min-w-0 shrink-0 flex-col gap-2 bg-papel pt-1">
         {error && (
           <p role="alert" className="text-[13px] text-vermelho-texto">
             {error}
           </p>
         )}
-        <div className="-mx-5 flex gap-2 overflow-x-auto px-5 md:mx-0 md:px-0">
+        <div className="flex w-full min-w-0 gap-2 overflow-x-auto pb-0.5">
           {t.suggestions.map((s) => (
             <button
               key={s}
@@ -199,7 +201,7 @@ export function ChatClient({
             e.preventDefault();
             send(draft);
           }}
-          className="flex items-center gap-2"
+          className="flex w-full min-w-0 items-center gap-2"
         >
           <label htmlFor="pergunta" className="sr-only">
             {t.inputAria}

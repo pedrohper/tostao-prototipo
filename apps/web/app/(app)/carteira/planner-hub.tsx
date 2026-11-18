@@ -163,29 +163,45 @@ export function PlannerHub({
         ? pc.subsEmptySummary
         : pc.subsFallbackSummary;
 
-  // 5. Minha meta
-  const goalStatus = forecast?.goal ?? null;
+  // 5. Minhas metas
+  const goalsList =
+    forecast?.goals && forecast.goals.length > 0 ? forecast.goals : forecast?.goal ? [forecast.goal] : [];
+  const goalStatus = goalsList[0] ?? null;
   const rawGoal = plan?.goal ?? null;
-  const hasGoal = Boolean(goalStatus || rawGoal);
+  const hasGoal = goalsList.length > 0 || Boolean(rawGoal);
   const goalTitle = goalStatus?.label ?? rawGoal?.label ?? (rawGoal ? goalKindFallback(rawGoal.kind, locale) : null);
-  const goalSaved = goalStatus?.savedInCents ?? rawGoal?.savedInCents ?? 0;
-  const goalTarget = goalStatus?.amountInCents ?? rawGoal?.amountInCents ?? null;
+  const goalSaved =
+    goalsList.length > 0 ? goalsList.reduce((sum, g) => sum + g.savedInCents, 0) : (rawGoal?.savedInCents ?? 0);
+  const goalTarget =
+    goalsList.length > 0
+      ? goalsList.every((g) => g.amountInCents !== null)
+        ? goalsList.reduce((sum, g) => sum + (g.amountInCents ?? 0), 0)
+        : (goalStatus?.amountInCents ?? null)
+      : (rawGoal?.amountInCents ?? null);
   const goalPct = goalTarget && goalTarget > 0 ? Math.min(100, Math.round((goalSaved / goalTarget) * 100)) : null;
   const goalHeadline = hasGoal
     ? goalTarget
       ? `${money(goalSaved)} / ${money(goalTarget)}`
       : pc.goalSavedOnly(money(goalSaved))
     : null;
-  const goalSummary = hasGoal
-    ? `${goalTitle ?? goalKindFallback('outro', locale)}${goalStatus?.monthlyNeededInCents ? pc.goalMonthlySave(money(goalStatus.monthlyNeededInCents)) : ''}`
-    : pc.goalEmptySummary;
-  const goalBadge: PlannerCardItem['badge'] = goalStatus?.reached
-    ? { text: pc.goalReachedBadge, tone: 'positive' }
-    : goalPct !== null
-      ? { text: `${goalPct}%`, tone: 'neutral' }
-      : !hasGoal
-        ? { text: pc.goalCreateBadge, tone: 'neutral' }
-        : undefined;
+  const goalSummary =
+    goalsList.length > 1
+      ? locale === 'en'
+        ? `${goalsList.length} active goals`
+        : locale === 'es'
+          ? `${goalsList.length} metas activas`
+          : `${goalsList.length} metas ativas`
+      : hasGoal
+        ? `${goalTitle ?? goalKindFallback('outro', locale)}${goalStatus?.monthlyNeededInCents ? pc.goalMonthlySave(money(goalStatus.monthlyNeededInCents)) : ''}`
+        : pc.goalEmptySummary;
+  const goalBadge: PlannerCardItem['badge'] =
+    goalsList.length > 0 && goalsList.every((g) => g.reached)
+      ? { text: pc.goalReachedBadge, tone: 'positive' }
+      : goalPct !== null
+        ? { text: `${goalPct}%`, tone: 'neutral' }
+        : !hasGoal
+          ? { text: pc.goalCreateBadge, tone: 'neutral' }
+          : undefined;
 
   // 6. Acertos
   const owedToYou = people?.owedToYouInCents ?? 0;
@@ -312,18 +328,18 @@ export function PlannerHub({
   ];
 
   return (
-    <section className="flex flex-col gap-4 pb-6">
+    <section className="flex flex-col gap-5 pb-8">
       <div className="flex flex-col gap-1">
         <h2 className="font-display text-[22px] leading-7 font-extrabold text-tinta">{t.planner.title}</h2>
         <p className="text-sm leading-5 text-tinta-suave">{t.planner.subtitle}</p>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         {cards.map((card) => (
           <Link
             key={card.id}
             href={card.href}
-            className="group flex flex-col justify-between gap-3 rounded-[22px] border border-linha bg-cartao p-4 text-tinta no-underline transition-colors hover:border-tinta/35 hover:bg-papel-2/50"
+            className="group flex flex-col justify-between gap-3.5 rounded-[22px] border border-linha bg-cartao p-5 text-tinta no-underline transition-colors hover:border-tinta/35 hover:bg-papel-2/50"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">

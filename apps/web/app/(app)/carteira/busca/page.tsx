@@ -37,7 +37,9 @@ export default async function BuscaPage({
   return (
     <PageFrame size="focused">
       <BackLink href={backHref} label={backHref === '/carteira' ? t.wallet.title : t.common.back} />
-      <h1 className="font-display text-[34px] leading-[38px] font-extrabold">{s.title}</h1>
+      <h1 className="font-display text-[24px] leading-[30px] font-extrabold lg:text-[28px] lg:leading-[34px]">
+        {s.title}
+      </h1>
       <SearchBar
         q={q}
         autoFocus={!q}
@@ -101,17 +103,15 @@ export default async function BuscaPage({
               <span className="text-xs text-tinta-suave">{s.truncatedNote(r.transactions.length)}</span>
             )}
           </div>
-          <div className="flex flex-col">
-            {[...groups.entries()].map(([label, list], i) => (
-              <section key={label} className="flex flex-col">
-                <h2
-                  className={`pb-1.5 text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase ${i === 0 ? 'pt-1.5' : 'pt-3'}`}
-                >
-                  {label}
-                </h2>
-                {list.map((tx) => (
-                  <Row key={tx.id} t={tx} back={back} showDate locale={locale} />
-                ))}
+          <div className="flex flex-col gap-6">
+            {[...groups.entries()].map(([label, list]) => (
+              <section key={label} className="flex flex-col gap-1">
+                <h2 className="pb-1 text-[15px] leading-5 font-bold text-tinta">{label}</h2>
+                <div className="flex flex-col">
+                  {list.map((tx) => (
+                    <Row key={tx.id} t={tx} back={back} showDate locale={locale} />
+                  ))}
+                </div>
               </section>
             ))}
           </div>

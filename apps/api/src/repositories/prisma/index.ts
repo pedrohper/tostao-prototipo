@@ -187,7 +187,16 @@ class PrismaTransactionsRepository implements TransactionsRepository {
   create(data: NewTransaction): Promise<Transaction> {
     return this.db.transaction.create({ data });
   }
-  async save({ id, categoryId, isInternalTransfer, description, amountInCents, occurredAt, personId }: Transaction) {
+  async save({
+    id,
+    categoryId,
+    isInternalTransfer,
+    description,
+    amountInCents,
+    occurredAt,
+    personId,
+    note,
+  }: Transaction) {
     await this.db.transaction.update({
       where: { id },
       data: {
@@ -197,6 +206,7 @@ class PrismaTransactionsRepository implements TransactionsRepository {
         amountInCents,
         occurredAt,
         ...(personId !== undefined ? { personId } : {}),
+        ...(note !== undefined ? { note } : {}),
       },
     });
   }

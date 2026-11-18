@@ -70,6 +70,8 @@ export type Transaction = {
   seriesId?: string | null;
   /** Acerto com alguém: sai do gasto e da renda e entra no saldo dessa pessoa. */
   personId?: string | null;
+  /** Observação livre da pessoa sobre o lançamento. */
+  note?: string | null;
   createdAt: Date;
 };
 

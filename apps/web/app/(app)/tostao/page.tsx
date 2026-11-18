@@ -3,12 +3,10 @@ import type {
   ChatHistoryResponse,
   FinancialPlanResponse,
   LessonProgressResponse,
-  MissionsResponse,
   ProfileResponse,
   TostaoAutoResponse,
 } from '@tostao/contracts';
 import { ChatClient } from '@/app/(app)/chat/chat-client';
-import { DailyMissions } from '@/components/engajamento';
 import { DesktopSplitShell } from '@/components/lateral';
 import { Mascot } from '@/components/mascote';
 import { TostaoFindingsBoard } from '@/components/tostao-auto-card';
@@ -44,14 +42,13 @@ const EMPTY_AUTO: TostaoAutoResponse = {
 };
 
 export default async function TostaoPage({ searchParams }: { searchParams?: Promise<{ aba?: string; q?: string }> }) {
-  const [{ locale, t }, sp, me, { messages }, { plan }, progress, missions, auto, whatsapp] = await Promise.all([
+  const [{ locale, t }, sp, me, { messages }, { plan }, progress, auto, whatsapp] = await Promise.all([
     getI18n(),
     searchParams ?? Promise.resolve<{ aba?: string; q?: string }>({}),
     api<ProfileResponse>('/me'),
     api<ChatHistoryResponse>('/chat').catch((): ChatHistoryResponse => ({ messages: [] })),
     api<FinancialPlanResponse>('/plan').catch((): FinancialPlanResponse => ({ plan: null })),
     api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
-    api<MissionsResponse>('/missions').catch(() => null),
     api<TostaoAutoResponse>('/tostao/auto').catch(() => EMPTY_AUTO),
     api<WhatsAppStatus>('/whatsapp').catch(() => EMPTY_WHATSAPP),
   ]);
@@ -124,8 +121,6 @@ export default async function TostaoPage({ searchParams }: { searchParams?: Prom
         </Link>
       </div>
 
-      {missions && <DailyMissions data={missions} compact locale={locale} />}
-
       <Link
         href="/whatsapp?voltar=/tostao"
         className="flex items-center gap-3 rounded-[20px] border border-linha bg-cartao p-4 text-tinta no-underline transition hover:bg-papel-2/50"
@@ -160,15 +155,18 @@ export default async function TostaoPage({ searchParams }: { searchParams?: Prom
 
   return (
     <DesktopSplitShell rightWidth={340} right={rightRail}>
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-[30px] leading-[34px] font-extrabold text-tinta lg:text-[36px] lg:leading-[40px]">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="font-display text-[24px] leading-[30px] font-extrabold text-tinta lg:text-[28px] lg:leading-[34px]">
           {t.auto.hubTitle}
         </h1>
-        <nav aria-label={t.auto.hubTitle} className="inline-flex rounded-full border border-linha bg-papel-2 p-1">
+        <nav
+          aria-label={t.auto.hubTitle}
+          className="grid w-full grid-cols-2 gap-1 rounded-full border border-linha bg-papel-2 p-1 sm:inline-flex sm:w-auto"
+        >
           <Link
             href="/tostao"
             aria-current={activeTab === 'conversa' ? 'page' : undefined}
-            className={`flex h-9 items-center rounded-full px-4 text-sm font-semibold no-underline transition ${
+            className={`flex h-9 items-center justify-center rounded-full px-4 text-sm font-semibold no-underline transition ${
               activeTab === 'conversa' ? 'bg-tinta text-papel' : 'text-tinta-suave hover:text-tinta'
             }`}
           >
@@ -177,7 +175,7 @@ export default async function TostaoPage({ searchParams }: { searchParams?: Prom
           <Link
             href="/tostao?aba=automatico"
             aria-current={activeTab === 'automatico' ? 'page' : undefined}
-            className={`flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold no-underline transition ${
+            className={`flex h-9 items-center justify-center gap-1.5 rounded-full px-4 text-sm font-semibold no-underline transition ${
               activeTab === 'automatico' ? 'bg-tinta text-papel' : 'text-tinta-suave hover:text-tinta'
             }`}
           >
@@ -195,7 +193,7 @@ export default async function TostaoPage({ searchParams }: { searchParams?: Prom
         <div className="flex flex-col gap-5">
           <TostaoFindingsBoard initial={auto} locale={locale} />
           <Link
-            href="/mais#avisos"
+            href="/mais/alertas?voltar=/tostao?aba=automatico"
             className="flex items-center justify-between gap-3 rounded-[20px] border border-linha bg-cartao p-4 text-tinta no-underline transition hover:bg-papel-2/50"
           >
             <div className="flex min-w-0 items-center gap-3">

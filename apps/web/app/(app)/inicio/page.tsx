@@ -16,14 +16,15 @@ import type {
 } from '@tostao/contracts';
 import { CardNetworkBadge, getBankLogos, BankBadge } from '@/components/banco';
 import { BudgetBar } from '@/components/budget-bar';
-import { DailyMissions, MonthLeftoverCard, UpcomingReminders, WeeklySummaryCard } from '@/components/engajamento';
+import { MonthLeftoverCard, UpcomingReminders, WeeklySummaryCard } from '@/components/engajamento';
 import { DismissibleCard } from '@/components/fechavel';
 import { CatIcon, Icon } from '@/components/icone';
 import { DesktopSplitShell } from '@/components/lateral';
 import { Mascot } from '@/components/mascote';
 import { MissionCompletionToast } from '@/components/sons';
+import { StreakModalButton } from '@/components/streak-modal';
 import { TostaoFindingsBoard } from '@/components/tostao-auto-card';
-import { ButtonLink, Card, StreakChip } from '@/components/ui';
+import { ButtonLink, Card } from '@/components/ui';
 import { api } from '@/lib/api';
 import {
   ago,
@@ -44,12 +45,31 @@ import { readHomePrefs, resolveSectionOrder, type HomeSectionId } from '@/lib/in
 import { modules } from '@/lib/lessons';
 import { NO_PROGRESS } from '@/lib/xp';
 import { AskTostaoCard } from './ask-card';
+import { PlanejarAtalhos } from './planejar-atalhos';
 
 const BAR_SEGMENT_CLASSES = ['bg-laranja', 'bg-tinta', 'bg-menta', 'bg-amarelo', 'bg-tinta-suave'] as const;
 const DESKTOP_LEFT_EXTRAS = new Set<HomeSectionId>(['sobra', 'cartoes', 'limites', 'acertos', 'vence']);
 
 const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
 const stripChevron = (str: string) => str.replace(/\s*›$/, '');
+
+/** Small arrow used in the income/expense badges of the balance card. */
+function FlowArrow({ direction }: { direction: 'up' | 'down' }) {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {direction === 'up' ? <path d="M12 19V5M5 12l7-7 7 7" /> : <path d="M12 5v14M19 12l-7 7-7-7" />}
+    </svg>
+  );
+}
 
 export default async function HomePage() {
   const month = currentMonth();
@@ -89,7 +109,6 @@ export default async function HomePage() {
 
   const overBudgetCategory = budgetsData.budgets.find((b) => b.spentInCents > b.limitInCents);
   const activeSubscriptionCount = subscriptions?.subscriptions.filter((sub) => sub.active).length ?? 0;
-  const firstName = profile.name.split(' ')[0];
   const currentMonthLabel = monthName(month, locale);
   const topCategories = summary.byCategory.filter((c) => c.categoryId);
   const maxCategorySpend = Math.max(1, ...summary.byCategory.map((c) => c.totalInCents));
@@ -173,6 +192,36 @@ export default async function HomePage() {
     ) : null;
 
   const sectionsById: Record<HomeSectionId, React.ReactNode> = {
+    atalhos: <PlanejarAtalhos t={t} />,
+    aula: (
+      <Link
+        href={proxima ? `/aprender/${proxima.id}` : '/aprender/trilha'}
+        className="flex items-center gap-3 rounded-[20px] bg-amarelo-claro p-3.5 pr-4 text-tinta no-underline"
+      >
+        <Mascot pose="professor" size={84} alt="Tostão" className="shrink-0" />
+        <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <span className="text-xs font-semibold text-tinta-suave">
+            {atual
+              ? t.home.learnModuleProgress(atual.number, feitas, atual.lessons.length)
+              : t.home.allModulesCompleted}
+          </span>
+          <span className="font-display text-[18px] leading-[22px] font-extrabold">
+            {proxima?.title ?? atual?.title ?? t.home.allModulesCompleted}
+          </span>
+          {atual && (
+            <span className="flex gap-1" aria-hidden="true">
+              {atual.lessons.map((lesson) => (
+                <i
+                  key={lesson.id}
+                  className={`h-1.5 flex-1 rounded-full ${progress.done.includes(lesson.id) ? 'bg-tinta' : 'bg-cartao'}`}
+                />
+              ))}
+            </span>
+          )}
+          <span className="text-[13px] font-semibold">{t.nav.continueLesson} ›</span>
+        </span>
+      </Link>
+    ),
     sobra: (
       <>
         {forecast?.thisMonth && <MonthLeftoverCard forecast={forecast} locale={locale} />}
@@ -238,14 +287,13 @@ export default async function HomePage() {
           })()}
       </>
     ),
-    missoes: <>{missions && <DailyMissions data={missions} compact locale={locale} />}</>,
     vence: (
       <>{<UpcomingReminders reminders={remindersData.reminders.filter((r) => isAlertOpen(r.key))} locale={locale} />}</>
     ),
     avisos: (
       <>
         {uncategorizedAlertCard}
-        {!isAlertOpen(tipKey) ? null : deliveryCategory && deliveryCategory.totalInCents >= 10000 ? (
+        {isAlertOpen(tipKey) && deliveryCategory && deliveryCategory.totalInCents >= 10000 ? (
           <DismissibleCard id={tipKey} label={t.home.dismissAlertLabel}>
             <div className="relative flex items-center gap-2 rounded-2xl bg-rosa py-3.5 pr-10 pl-2 text-tinta">
               <Link href="/aprender/m1-l2" aria-label={t.home.viewLessonCta} className="absolute inset-0 rounded-2xl" />
@@ -271,24 +319,7 @@ export default async function HomePage() {
               </div>
             </div>
           </DismissibleCard>
-        ) : (
-          <DismissibleCard id={tipKey} label={t.home.dismissAlertLabel}>
-            <Link
-              href="/tostao"
-              className="flex items-center gap-2 rounded-2xl bg-amarelo-claro py-3.5 pr-10 pl-2 text-tinta no-underline"
-            >
-              <Mascot pose="pensando" size={84} alt="Tostão" />
-              <div className="flex min-w-0 flex-col gap-2.5">
-                <p className="text-[15px] leading-[21px]">
-                  {t.home.chatPromptBody} <b>{t.home.chatPromptBold}</b>
-                </p>
-                <span className="flex h-9 items-center self-start rounded-full bg-tinta px-4 text-sm font-semibold text-papel">
-                  {t.home.askTostao}
-                </span>
-              </div>
-            </Link>
-          </DismissibleCard>
-        )}
+        ) : null}
         {overBudgetCategory && isAlertOpen(`estourou:${overBudgetCategory.categoryId}:${month}`) && (
           <DismissibleCard id={`estourou:${overBudgetCategory.categoryId}:${month}`} label={t.home.dismissAlertLabel}>
             <Link
@@ -362,59 +393,80 @@ export default async function HomePage() {
     meta: (
       <>
         {forecast &&
-          (forecast.goal ? (
-            (() => {
-              const goal = forecast.goal;
-              const pct = goal.amountInCents
-                ? Math.min(100, Math.round((goal.savedInCents / goal.amountInCents) * 100))
-                : 0;
+          (() => {
+            const goals =
+              forecast.goals && forecast.goals.length > 0 ? forecast.goals : forecast.goal ? [forecast.goal] : [];
+            if (goals.length === 0) {
               return (
                 <Link
                   href="/meta?voltar=/inicio"
-                  className="flex flex-col gap-2 rounded-2xl border border-linha bg-cartao p-3.5 text-tinta no-underline"
+                  className="flex items-center gap-3 rounded-2xl border border-dashed border-linha p-3.5 text-[15px] text-tinta no-underline"
                 >
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">
-                      {t.home.goalLabel(goal.label)}
-                    </span>
-                    <span className="text-[13px] font-semibold tabular-nums">{pct}%</span>
-                  </div>
-                  <div className="h-2.5 overflow-hidden rounded-full bg-papel-2">
-                    <div className="bar-fill h-full rounded-full bg-menta" style={{ width: `${pct}%` }} />
-                  </div>
-                  <span className="text-[13px] text-tinta-suave">
-                    {goal.reached ? (
-                      <span className="inline-flex items-center gap-1">
-                        <Icon src="ui/meta-batida" size={18} />
-                        {t.home.goalReached}
-                      </span>
-                    ) : (
-                      t.home.goalProgress(
-                        money(goal.savedInCents),
-                        goal.amountInCents ? money(goal.amountInCents) : null,
-                        goal.monthlyNeededInCents !== null ? money(goal.monthlyNeededInCents) : null,
-                      )
-                    )}
+                  <span
+                    aria-hidden="true"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-menta-clara text-tinta"
+                  >
+                    <Icon src="meta/outro" size={26} />
+                  </span>
+                  <span className="grow">
+                    <b>{t.home.noGoalTitle}</b> {t.home.noGoalBody}
                   </span>
                 </Link>
               );
-            })()
-          ) : (
-            <Link
-              href="/meta?voltar=/inicio"
-              className="flex items-center gap-3 rounded-2xl border border-dashed border-linha p-3.5 text-[15px] text-tinta no-underline"
-            >
-              <span
-                aria-hidden="true"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-menta-clara text-tinta"
-              >
-                <Icon src="meta/outro" size={26} />
-              </span>
-              <span className="grow">
-                <b>{t.home.noGoalTitle}</b> {t.home.noGoalBody}
-              </span>
-            </Link>
-          ))}
+            }
+            const newGoalLabel = locale === 'en' ? '+ New goal' : locale === 'es' ? '+ Nueva meta' : '+ Nova meta';
+            return (
+              <div className="flex flex-col gap-2.5">
+                {goals.map((goal) => {
+                  const pct = goal.amountInCents
+                    ? Math.min(100, Math.round((goal.savedInCents / goal.amountInCents) * 100))
+                    : 0;
+                  const href = goal.id
+                    ? `/meta?id=${encodeURIComponent(goal.id)}&voltar=/inicio`
+                    : '/meta?voltar=/inicio';
+                  return (
+                    <Link
+                      key={goal.id ?? goal.label}
+                      href={href}
+                      className="flex flex-col gap-2 rounded-2xl border border-linha bg-cartao p-3.5 text-tinta no-underline transition-colors hover:bg-papel-2/50"
+                    >
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="truncate text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">
+                          {t.home.goalLabel(goal.label)}
+                        </span>
+                        <span className="shrink-0 text-[13px] font-semibold tabular-nums">{pct}%</span>
+                      </div>
+                      <div className="h-2.5 overflow-hidden rounded-full bg-papel-2">
+                        <div className="bar-fill h-full rounded-full bg-menta" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="text-[13px] text-tinta-suave">
+                        {goal.reached ? (
+                          <span className="inline-flex items-center gap-1">
+                            <Icon src="ui/meta-batida" size={18} />
+                            {t.home.goalReached}
+                          </span>
+                        ) : (
+                          t.home.goalProgress(
+                            money(goal.savedInCents),
+                            goal.amountInCents ? money(goal.amountInCents) : null,
+                            goal.monthlyNeededInCents !== null ? money(goal.monthlyNeededInCents) : null,
+                          )
+                        )}
+                      </span>
+                    </Link>
+                  );
+                })}
+                {goals.length < 10 && (
+                  <Link
+                    href="/meta?novo=1&voltar=/inicio"
+                    className="self-end text-xs font-semibold text-laranja-texto no-underline hover:underline"
+                  >
+                    {newGoalLabel}
+                  </Link>
+                )}
+              </div>
+            );
+          })()}
       </>
     ),
     acertos: (
@@ -460,13 +512,18 @@ export default async function HomePage() {
       <>
         {creditCards.length > 0 && (
           <section className="flex flex-col gap-3">
-            <div className="flex items-baseline justify-between">
-              <h2 className="font-display text-xl leading-[26px] font-extrabold">{t.home.creditCardsTitle}</h2>
-              <Link href="/carteira" className="text-[13px] font-semibold text-laranja-texto">
+            <div className="flex items-baseline justify-between gap-3">
+              <div className="flex min-w-0 flex-wrap items-baseline gap-2">
+                <h2 className="font-display text-xl leading-[26px] font-extrabold">{t.home.creditCardsTitle}</h2>
+                <span className="rounded-full bg-bronze-suave px-2.5 py-0.5 text-xs font-bold text-tinta tabular-nums">
+                  {money(creditCards.reduce((sum, c) => sum + Math.max(0, -c.balanceInCents), 0))}
+                </span>
+              </div>
+              <Link href="/carteira?aba=contas" className="shrink-0 text-[13px] font-semibold text-laranja-texto">
                 {t.home.viewAllCards}
               </Link>
             </div>
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
               {creditCards.map((card, idx) => {
                 const currentBillCents = Math.max(0, -card.balanceInCents);
                 const usagePct = card.creditLimitInCents
@@ -476,13 +533,23 @@ export default async function HomePage() {
                   <Link
                     key={card.id}
                     href={`/carteira/conta/${card.id}`}
-                    className="flex min-w-0 flex-col gap-1 rounded-2xl border border-linha bg-cartao p-3 text-tinta no-underline"
+                    className="flex min-w-0 flex-col gap-2.5 rounded-2xl border border-linha bg-cartao p-4 text-tinta no-underline transition-colors hover:bg-papel-2/50"
                   >
-                    <span className="flex min-w-0 items-center gap-1.5 text-[13px] font-semibold text-tinta-suave">
-                      <BankBadge nome={card.name} size={18} logos={bankLogos} />
-                      <span className="truncate">{card.name}</span>
-                    </span>
-                    <span className="text-[17px] font-bold tabular-nums">{money(currentBillCents)}</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="flex min-w-0 items-center gap-2 text-[14px] font-semibold text-tinta">
+                        <BankBadge nome={card.name} size={24} quadrado logos={bankLogos} />
+                        <span className="truncate">{card.name}</span>
+                      </span>
+                      <CardNetworkBadge brand={card.brand} last4={card.last4} className="shrink-0" />
+                    </div>
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <span className="font-display text-[21px] leading-6 font-extrabold tabular-nums">
+                        {money(currentBillCents)}
+                      </span>
+                      <span className="text-xs font-medium text-tinta-suave">
+                        {card.dueDate ? t.home.billDueOn(shortDate(card.dueDate, locale)) : t.home.currentBill}
+                      </span>
+                    </div>
                     {usagePct !== null && (
                       <div className="h-1.5 rounded-full bg-papel-2" title={`${Math.round(usagePct)}%`}>
                         <div
@@ -491,10 +558,6 @@ export default async function HomePage() {
                         />
                       </div>
                     )}
-                    <span className="text-xs font-medium text-tinta-suave">
-                      {card.dueDate ? t.home.billDueOn(shortDate(card.dueDate, locale)) : t.home.currentBill}
-                    </span>
-                    <CardNetworkBadge brand={card.brand} last4={card.last4} />
                   </Link>
                 );
               })}
@@ -542,20 +605,44 @@ export default async function HomePage() {
       ) : (
         <span className="text-[13px] font-semibold text-tinta-suave">{t.home.noConnectedBankHint}</span>
       )}
-      <div className="relative z-[1] grid grid-cols-2 gap-2.5">
+      <div className="relative z-[1] grid grid-cols-2 gap-2.5 border-t border-linha pt-3.5">
         <Link
           href="/carteira?filtro=entradas#lista"
-          className="flex flex-col gap-0.5 rounded-[14px] bg-papel-2 px-3 py-2.5 text-tinta no-underline"
+          className="flex min-w-0 items-center gap-2.5 text-tinta no-underline"
         >
-          <span className="text-xs font-semibold text-tinta-suave">{t.home.incomeInMonth(currentMonthLabel)}</span>
-          <span className="text-[17px] font-bold text-verde-texto tabular-nums">+ {money(summary.incomeInCents)}</span>
+          <span
+            aria-hidden
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-menta-clara text-verde-texto"
+          >
+            <FlowArrow direction="up" />
+          </span>
+          <span className="flex min-w-0 flex-col">
+            <span className="truncate text-xs font-semibold text-tinta-suave">
+              {stripChevron(t.home.incomeInMonth(currentMonthLabel))}
+            </span>
+            <span className="text-[15px] font-bold text-verde-texto tabular-nums sm:text-[17px]">
+              {money(summary.incomeInCents)}
+            </span>
+          </span>
         </Link>
         <Link
           href="/carteira?filtro=saidas#lista"
-          className="flex flex-col gap-0.5 rounded-[14px] bg-papel-2 px-3 py-2.5 text-tinta no-underline"
+          className="flex min-w-0 items-center gap-2.5 text-tinta no-underline"
         >
-          <span className="text-xs font-semibold text-tinta-suave">{t.home.outcomeInMonth(currentMonthLabel)}</span>
-          <span className="text-[17px] font-bold tabular-nums">{money(summary.outcomeInCents)}</span>
+          <span
+            aria-hidden
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rosa text-vermelho-texto"
+          >
+            <FlowArrow direction="down" />
+          </span>
+          <span className="flex min-w-0 flex-col">
+            <span className="truncate text-xs font-semibold text-tinta-suave">
+              {stripChevron(t.home.outcomeInMonth(currentMonthLabel))}
+            </span>
+            <span className="text-[15px] font-bold text-vermelho-texto tabular-nums sm:text-[17px]">
+              {money(summary.outcomeInCents)}
+            </span>
+          </span>
         </Link>
       </div>
     </div>
@@ -849,7 +936,6 @@ export default async function HomePage() {
           {t.nav.continueLesson}
         </Link>
       </div>
-      {missions && <DailyMissions data={missions} compact locale={locale} />}
       {railGoalCard}
       {weeklyChallengeCard}
     </>
@@ -867,26 +953,32 @@ export default async function HomePage() {
       )}
 
       {/* Mobile & Tablet (< lg) */}
-      <div className="flex flex-col gap-4 lg:hidden">
-        <header className="flex items-end justify-between">
-          <h1 className="font-display text-[34px] leading-[38px] font-extrabold">{t.home.greeting(firstName)}</h1>
-          <Link href="/aprender" className="pb-1 text-tinta no-underline">
-            <StreakChip
+      <div className="flex flex-col gap-6 lg:hidden">
+        <header className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 flex-col">
+            <h1 className="font-display text-[24px] leading-[30px] font-extrabold text-tinta">{t.nav.home}</h1>
+            <span className="truncate text-xs font-medium text-tinta-suave">{fullDateLabel(new Date(), locale)}</span>
+          </div>
+          <div className="shrink-0">
+            <StreakModalButton
               days={missions?.streakDays ?? progress.streakDays}
+              missions={missions}
+              locale={locale}
               label={t.nav.streakDays(missions?.streakDays ?? progress.streakDays)}
             />
-          </Link>
+          </div>
         </header>
 
         {brokenConnectionsAlert}
 
         {isEmptyState && emptyStateCard}
-        {isEmptyState && missions && <DailyMissions data={missions} compact locale={locale} />}
 
         {!isEmptyState && (
           <>
             {balanceCard}
-            {auto && <TostaoFindingsBoard initial={auto} locale={locale} compact seeAllHref="/tostao?aba=automatico" />}
+            {auto && auto.insights.length > 0 && (
+              <TostaoFindingsBoard initial={auto} locale={locale} compact seeAllHref="/tostao?aba=automatico" />
+            )}
             {visibleSections.map((id) => (
               <Fragment key={id}>{sectionsById[id]}</Fragment>
             ))}
@@ -898,18 +990,22 @@ export default async function HomePage() {
       </div>
 
       {/* Desktop (lg+) */}
-      <div className="hidden lg:flex lg:flex-col lg:gap-[22px]">
-        <header className="flex items-end justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm text-tinta-suave">
+      <div className="hidden lg:flex lg:flex-col lg:gap-7">
+        <header className="flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-0.5">
+            <h1 className="font-display text-[28px] leading-[34px] font-extrabold text-tinta">{t.nav.home}</h1>
+            <span className="text-xs text-tinta-suave">
               {fullDateLabel(new Date(), locale)}
               {lastSyncIso ? ` · ${updatedTimeLabel(lastSyncIso, locale)}` : ''}
             </span>
-            <h1 className="font-display text-[34px] leading-[38px] font-extrabold text-tinta xl:text-[40px] xl:leading-[44px]">
-              {t.home.greeting(firstName)}
-            </h1>
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <StreakModalButton
+              days={missions?.streakDays ?? progress.streakDays}
+              missions={missions}
+              locale={locale}
+              label={t.nav.streakDays(missions?.streakDays ?? progress.streakDays)}
+            />
             <span className="flex h-10 items-center rounded-full bg-papel-2 px-4 text-sm font-semibold text-tinta">
               {capitalize(currentMonthLabel)}
             </span>
@@ -929,7 +1025,7 @@ export default async function HomePage() {
           emptyStateCard
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-4 xl:grid-cols-[1.25fr_1fr_1fr] xl:gap-[18px]">
+            <div className="grid grid-cols-2 gap-4 xl:grid-cols-[1.25fr_1fr_1fr] xl:gap-5">
               <Link
                 href="/carteira"
                 className="col-span-2 flex min-w-0 flex-col gap-1 rounded-[22px] border border-linha bg-cartao p-[22px] text-tinta no-underline xl:col-span-1"
@@ -980,9 +1076,13 @@ export default async function HomePage() {
               </Link>
             </div>
 
-            {auto && <TostaoFindingsBoard initial={auto} locale={locale} compact seeAllHref="/tostao?aba=automatico" />}
+            {auto && auto.insights.length > 0 && (
+              <TostaoFindingsBoard initial={auto} locale={locale} compact seeAllHref="/tostao?aba=automatico" />
+            )}
 
-            <div className="grid grid-cols-1 items-start gap-[18px] xl:grid-cols-2">
+            {isSectionVisible('atalhos') && sectionsById.atalhos}
+
+            <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">
               <div className="flex min-w-0 flex-col gap-[18px]">
                 {isSectionVisible('pra-onde-foi') && desktopWhereItWentCard}
                 {visibleSections

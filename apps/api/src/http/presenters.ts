@@ -24,5 +24,6 @@ export function presentTransaction(
     source: t.externalId ? 'bank' : 'manual',
     seriesId: t.seriesId ?? null,
     personId: t.personId ?? null,
+    note: t.note ?? null,
   };
 }

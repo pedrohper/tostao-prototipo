@@ -14,16 +14,13 @@ import { api } from '@/lib/api';
 import { currentMonth, dayLabel, money, monthName, shiftMonth, shortDate, updatedTimeLabel } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
 import { ButtonLink, Eyebrow } from '@/components/ui';
-import { Icon } from '@/components/icone';
 import { Mascot } from '@/components/mascote';
-import { CategoryBars, BudgetProgressBar } from '@/components/graficos';
+import { BudgetProgressBar } from '@/components/graficos';
 import { DesktopSplitShell } from '@/components/lateral';
 import { AutoCategorizeButton } from './auto-categorize-button';
-import { AddAccountBox } from './add-account';
-import { HideAccountButton } from './hide-account-button';
 import { PlannerHub } from './planner-hub';
 import { Simulacao } from './simulacao';
-import { Chevron, FilterDropdown, Row, SearchBar } from './transaction-row';
+import { Chevron, ExtratoHeaderBar, FilterDropdown, Row } from './transaction-row';
 
 const FILTER_KEYS = ['tudo', 'saidas', 'entradas', 'pendentes'] as const;
 type Filter = (typeof FILTER_KEYS)[number];
@@ -75,7 +72,7 @@ export default async function CarteiraPage({
       : Promise.resolve(null),
   ]);
 
-  // Categoria escolhida no "Pra onde foi": só os gastos dela ("sem" = sem categoria).
+  // Categoria escolhida: só os gastos dela ("sem" = sem categoria).
   const rawCat = sp.cat ?? sp.categoria;
   const cat = rawCat && /^[\w-]{1,60}$/.test(rawCat) ? rawCat : null;
   const conta = sp.conta?.trim() ? sp.conta.trim().slice(0, 80) : null;
@@ -123,7 +120,6 @@ export default async function CarteiraPage({
   const mesTitulo = `${monthName(statementMonth, locale)} ${statementMonth.slice(0, 4)}`;
   const bancos = summary.accounts.filter((a) => a.type === 'BANK');
   const cartoes = summary.accounts.filter((a) => a.type === 'CREDIT');
-  // Contas primeiro, cartões depois (como no design)
   const contas = [...bancos, ...cartoes];
 
   const transfers = transactions.filter((tx) => tx.isInternalTransfer);
@@ -167,52 +163,9 @@ export default async function CarteiraPage({
 
   const rightRail = (
     <>
-      <div className="flex flex-col gap-2.5">
-        <div className="flex items-center justify-between gap-2">
-          <Eyebrow>{t.wallet.yourAccounts}</Eyebrow>
-          {conta && (
-            <Link href={semConta} className="text-xs font-semibold text-laranja-texto no-underline hover:underline">
-              {t.wallet.allAccounts} ✕
-            </Link>
-          )}
-        </div>
-        {contas.length > 0 ? (
-          <div className="flex flex-col rounded-[22px] border border-linha bg-cartao px-4 py-1">
-            {contas.map((a) => {
-              const card = a.type === 'CREDIT';
-              const isSelectedAccount = conta === a.name;
-              return (
-                <Link
-                  key={a.id}
-                  href={`/carteira/conta/${a.id}?mes=${statementMonth}`}
-                  className="flex min-h-[54px] items-center gap-2.5 border-b border-linha py-2 text-tinta no-underline transition-colors last:border-b-0 hover:text-laranja-texto"
-                >
-                  <BankBadge nome={a.name} size={22} logos={logos} />
-                  <span
-                    className={`min-w-0 flex-1 truncate text-[15px] ${isSelectedAccount ? 'font-bold text-laranja-texto' : 'font-semibold'}`}
-                  >
-                    {a.name}
-                  </span>
-                  {card && (
-                    <span className="shrink-0 rounded-full bg-papel-2 px-2 py-0.5 text-[11px] font-semibold text-tinta-suave">
-                      {a.last4 ? `•• ${a.last4}` : tw.cardBadge}
-                    </span>
-                  )}
-                  <span className="shrink-0 text-[15px] font-bold tabular-nums">
-                    {money(card ? Math.max(0, -a.balanceInCents) : a.balanceInCents)}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-        ) : (
-          <AddAccountBox t={t.walletExtra.addAccount} cancelLabel={t.common.cancel} />
-        )}
-      </div>
-
       {summary.byCategory.length > 0 && (
-        <div className="flex flex-col gap-2.5">
-          <div className="flex items-center justify-between gap-2 pt-1.5">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-2">
             <Eyebrow>{t.wallet.byCategory}</Eyebrow>
             {cat && (
               <Link href={semCat} className="text-xs font-semibold text-laranja-texto no-underline hover:underline">
@@ -220,7 +173,7 @@ export default async function CarteiraPage({
               </Link>
             )}
           </div>
-          <div className="flex flex-col gap-3 rounded-[22px] border border-linha bg-cartao p-4">
+          <div className="flex flex-col gap-3.5 rounded-[22px] border border-linha bg-cartao p-5">
             {(() => {
               const topCats = summary.byCategory.slice(0, 6);
               const totalCat = summary.byCategory.reduce((s, c) => s + c.totalInCents, 0) || 1;
@@ -257,71 +210,100 @@ export default async function CarteiraPage({
         </div>
       )}
 
-      <div className="flex items-center gap-2 rounded-[18px] bg-menta-clara py-3 pr-3.5 pl-1.5 text-tinta">
+      <div className="flex items-center gap-2.5 rounded-[18px] bg-menta-clara py-3.5 pr-4 pl-2 text-tinta">
         <Mascot pose="caramelo-farejando" size={72} alt="Caramelo" />
         <p className="text-sm leading-5">{carameloInsight}</p>
       </div>
     </>
   );
 
+  const editWalletLabel =
+    locale === 'en' ? 'Edit my wallet' : locale === 'es' ? 'Editar mi cartera' : 'Editar minha carteira';
+
   return (
     <DesktopSplitShell rightWidth={340} right={rightRail}>
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="font-display text-[34px] leading-[38px] font-extrabold lg:text-[40px] lg:leading-[44px]">
-          {t.wallet.title}
-        </h1>
-        {aba === 'extrato' && summary.balanceInCents !== null && (
-          <span className="pb-1.5 text-[13px] font-semibold text-tinta-suave lg:hidden">
-            {tw.balanceInAccounts(money(summary.balanceInCents), bancos.length)}
-          </span>
-        )}
-        {aba === 'extrato' && (
-          <div className="hidden flex-wrap items-center gap-2 lg:flex">
-            <div className="inline-flex h-10 items-center gap-1 rounded-full bg-tinta px-1.5 text-sm font-semibold text-papel">
-              <Link
-                href={q({ mes: shiftMonth(statementMonth, -1) })}
-                aria-label={tw.prevMonth}
-                className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-papel/15"
-              >
-                <Chevron d="M15 18l-6-6 6-6" />
-              </Link>
-              <span className="px-2 capitalize whitespace-nowrap">{mesTitulo}</span>
-              <Link
-                href={q({ mes: shiftMonth(statementMonth, 1) })}
-                aria-label={statementMonth === hoje ? tw.simulateNextMonth : tw.nextMonth}
-                className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-papel/15"
-              >
-                <Chevron d="M9 18l6-6-6-6" />
-              </Link>
+      {aba === 'extrato' ? (
+        <ExtratoHeaderBar
+          title={t.wallet.title}
+          searchPlaceholder={t.walletExtra.search.placeholder}
+          searchAriaLabel={t.walletExtra.search.ariaLabel}
+          closeLabel={t.common.close}
+          filterLabel={activeCategoryLabel}
+          filterActive={Boolean(cat)}
+          filterOptions={[
+            { label: t.wallet.allCategories, href: semCat, active: !cat },
+            ...summary.byCategory.map((c) => ({
+              label: c.name,
+              href: porCat(c.categoryId),
+              active: cat === (c.categoryId ?? 'sem'),
+              dotColor: c.categoryId ? c.color : 'var(--color-rosa-forte)',
+            })),
+          ]}
+          desktopControls={
+            <div className="hidden items-center gap-2 lg:flex">
+              <div className="inline-flex h-10 items-center gap-1 rounded-full bg-tinta px-1.5 text-sm font-semibold text-papel">
+                <Link
+                  href={q({ mes: shiftMonth(statementMonth, -1) })}
+                  aria-label={tw.prevMonth}
+                  className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-papel/15"
+                >
+                  <Chevron d="M15 18l-6-6 6-6" />
+                </Link>
+                <span className="px-2 capitalize whitespace-nowrap">{mesTitulo}</span>
+                <Link
+                  href={q({ mes: shiftMonth(statementMonth, 1) })}
+                  aria-label={statementMonth === hoje ? tw.simulateNextMonth : tw.nextMonth}
+                  className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-papel/15"
+                >
+                  <Chevron d="M9 18l6-6-6-6" />
+                </Link>
+              </div>
+              <FilterDropdown
+                label={conta ?? t.wallet.allAccounts}
+                active={Boolean(conta)}
+                options={[
+                  { label: t.wallet.allAccounts, href: semConta, active: !conta },
+                  ...contas.map((a) => ({
+                    label: a.name,
+                    href: q({ conta: a.name }),
+                    active: conta === a.name,
+                  })),
+                ]}
+              />
             </div>
-            <FilterDropdown
-              label={conta ?? t.wallet.allAccounts}
-              active={Boolean(conta)}
-              options={[
-                { label: t.wallet.allAccounts, href: semConta, active: !conta },
-                ...contas.map((a) => ({
-                  label: a.name,
-                  href: q({ conta: a.name }),
-                  active: conta === a.name,
-                })),
-              ]}
-            />
-            <FilterDropdown
-              label={activeCategoryLabel}
-              active={Boolean(cat)}
-              options={[
-                { label: t.wallet.allCategories, href: semCat, active: !cat },
-                ...summary.byCategory.map((c) => ({
-                  label: c.name,
-                  href: porCat(c.categoryId),
-                  active: cat === (c.categoryId ?? 'sem'),
-                  dotColor: c.categoryId ? c.color : 'var(--color-rosa-forte)',
-                })),
-              ]}
-            />
-          </div>
-        )}
-      </div>
+          }
+        />
+      ) : (
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="font-display text-[24px] leading-[30px] font-extrabold lg:text-[28px] lg:leading-[34px]">
+            {t.wallet.title}
+          </h1>
+          {aba === 'contas' && (
+            <Link
+              href="/carteira/editar?voltar=/carteira?aba=contas"
+              aria-label={editWalletLabel}
+              title={editWalletLabel}
+              className="inline-flex h-10 items-center gap-2 rounded-full border border-linha bg-cartao px-3.5 text-sm font-semibold text-tinta no-underline transition-colors hover:bg-papel-2"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+              <span className="hidden sm:inline">{editWalletLabel}</span>
+            </Link>
+          )}
+        </div>
+      )}
 
       {/* Abas superiores: Extrato | Contas | Planejar */}
       <nav
@@ -347,9 +329,7 @@ export default async function CarteiraPage({
 
       {aba === 'extrato' && (
         <>
-          <SearchBar placeholder={t.walletExtra.search.placeholder} ariaLabel={t.walletExtra.search.ariaLabel} />
-
-          {/* Barra de filtros e seleção no desktop */}
+          {/* Barra de filtros no desktop */}
           <div className="hidden flex-wrap items-center justify-between gap-2 lg:flex">
             <div className="flex flex-wrap items-center gap-2">
               {FILTER_KEYS.map((f) => {
@@ -402,88 +382,47 @@ export default async function CarteiraPage({
             )}
           </div>
 
-          {/* Controles móveis (< lg) */}
-          <div className="flex items-center justify-between rounded-full bg-papel-2 p-1 lg:hidden">
-            <Link
-              href={q({ mes: shiftMonth(statementMonth, -1) })}
-              aria-label={tw.prevMonth}
-              className="flex h-9 w-9 items-center justify-center"
-            >
-              <Chevron d="M15 18l-6-6 6-6" />
-            </Link>
-            <span className="text-[15px] font-bold capitalize">{mesTitulo}</span>
-            <Link
-              href={q({ mes: shiftMonth(statementMonth, 1) })}
-              aria-label={statementMonth === hoje ? tw.simulateNextMonth : tw.nextMonth}
-              className="flex h-9 w-9 items-center justify-center"
-            >
-              <Chevron d="M9 18l6-6-6-6" />
-            </Link>
-          </div>
-
-          {contas.length > 0 && (
-            <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 md:-mx-8 md:px-8 lg:hidden">
-              {contas.map((a) => {
-                const card = a.type === 'CREDIT';
-                return (
-                  <Link
-                    key={a.id}
-                    href={`/carteira/conta/${a.id}?mes=${statementMonth}`}
-                    className={`flex w-[124px] shrink-0 flex-col gap-0.5 rounded-[14px] border px-3 py-2.5 text-tinta no-underline ${
-                      card ? 'border-bronze-borda bg-bronze-suave' : 'border-linha bg-cartao'
-                    }`}
-                  >
-                    <span className="flex min-w-0 items-center gap-1.5 text-xs font-semibold text-tinta-suave">
-                      <BankBadge nome={a.name} size={18} logos={logos} />
-                      <span className="truncate">{a.name}</span>
-                    </span>
-                    <span className="text-[15px] font-bold tabular-nums">
-                      {money(card ? Math.max(0, -a.balanceInCents) : a.balanceInCents)}
-                    </span>
-                    <span className="truncate text-[11px] font-semibold text-tinta-suave">
-                      {card ? (a.dueDate ? tw.dueOn(shortDate(a.dueDate, locale)) : tw.currentBill) : tw.accountBadge}
-                      {card && a.last4 ? ` · •• ${a.last4}` : ''} ›
-                    </span>
-                  </Link>
-                );
-              })}
+          {/* Seletor de mês + resumo compacto no mobile (< lg) */}
+          <div className="flex flex-col gap-3 lg:hidden">
+            <div className="flex items-center justify-between rounded-full bg-papel-2 p-1">
+              <Link
+                href={q({ mes: shiftMonth(statementMonth, -1) })}
+                aria-label={tw.prevMonth}
+                className="flex h-9 w-9 items-center justify-center"
+              >
+                <Chevron d="M15 18l-6-6 6-6" />
+              </Link>
+              <span className="text-[15px] font-bold capitalize">{mesTitulo}</span>
+              <Link
+                href={q({ mes: shiftMonth(statementMonth, 1) })}
+                aria-label={statementMonth === hoje ? tw.simulateNextMonth : tw.nextMonth}
+                className="flex h-9 w-9 items-center justify-center"
+              >
+                <Chevron d="M9 18l6-6-6-6" />
+              </Link>
             </div>
-          )}
-          {contas.length === 0 && (
-            <div className="lg:hidden">
-              <AddAccountBox t={t.walletExtra.addAccount} cancelLabel={t.common.cancel} />
-            </div>
-          )}
 
-          {(summary.outcomeInCents > 0 || summary.incomeInCents > 0) && (
-            <section className="flex flex-col gap-2.5 rounded-2xl border border-linha bg-cartao p-3.5 lg:hidden">
-              <div className="flex items-start justify-between gap-3">
+            {(summary.outcomeInCents > 0 || summary.incomeInCents > 0) && (
+              <div className="grid grid-cols-2 gap-2.5">
                 <Link
                   href={buildHref({ filtro: 'saidas', cat: null }) + '#lista'}
-                  className="flex flex-col text-tinta no-underline"
+                  className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 rounded-2xl border border-linha bg-cartao px-3.5 py-2.5 text-tinta no-underline"
                 >
-                  <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">
-                    {tw.outInMonth(monthName(statementMonth, locale))}
-                  </span>
-                  <span className="font-display text-[26px] leading-8 font-extrabold tabular-nums">
-                    {money(summary.outcomeInCents)}
-                  </span>
+                  <span className="text-xs font-semibold text-tinta-suave">{tw.filters.saidas}</span>
+                  <span className="text-[15px] font-bold tabular-nums">{money(summary.outcomeInCents)}</span>
                 </Link>
                 <Link
                   href={buildHref({ filtro: 'entradas', cat: null }) + '#lista'}
-                  className="flex flex-col items-end text-tinta no-underline"
+                  className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 rounded-2xl border border-linha bg-cartao px-3.5 py-2.5 text-tinta no-underline"
                 >
-                  <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">
-                    {tw.inHeading}
-                  </span>
-                  <span className="font-display text-[22px] leading-8 font-extrabold text-verde-texto tabular-nums">
-                    {money(summary.incomeInCents)}
+                  <span className="text-xs font-semibold text-tinta-suave">{tw.filters.entradas}</span>
+                  <span className="text-[15px] font-bold text-verde-texto tabular-nums">
+                    + {money(summary.incomeInCents)}
                   </span>
                 </Link>
               </div>
-              <CategoryBars items={summary.byCategory} max={6} href={porCat} ativa={cat} otherLabel={t.common.other} />
-            </section>
-          )}
+            )}
+          </div>
 
           {conta && (
             <div className="flex items-center justify-between gap-2 rounded-2xl bg-papel-2 py-2 pr-1.5 pl-3 lg:hidden">
@@ -498,9 +437,9 @@ export default async function CarteiraPage({
             </div>
           )}
 
-          <div id="lista" className="scroll-mt-4 flex flex-col gap-4">
+          <div id="lista" className="scroll-mt-4 flex flex-col gap-5 pb-20 lg:pb-0">
             {cat ? (
-              <div className="flex items-center gap-2 rounded-2xl bg-papel-2 py-2 pr-1.5 pl-3 lg:hidden">
+              <div className="flex items-center gap-2 rounded-2xl bg-papel-2 py-2.5 pr-2 pl-3.5 lg:hidden">
                 <i
                   className="h-2.5 w-2.5 shrink-0 rounded-full"
                   style={{ background: catInfo?.categoryId ? catInfo.color : 'var(--color-rosa-forte)' }}
@@ -520,18 +459,18 @@ export default async function CarteiraPage({
                 <Link
                   href={semCat}
                   aria-label={tw.clearCategoryFilter}
-                  className="flex h-10 shrink-0 items-center rounded-full bg-cartao px-3 text-[13px] font-semibold text-tinta no-underline"
+                  className="flex h-9 shrink-0 items-center rounded-full bg-cartao px-3 text-[13px] font-semibold text-tinta no-underline"
                 >
                   {tw.viewAll} ✕
                 </Link>
               </div>
             ) : (
-              <div className="-mx-5 flex gap-2 overflow-x-auto px-5 lg:hidden">
+              <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 md:-mx-10 md:px-10 lg:hidden">
                 {FILTER_KEYS.map((f) => (
                   <Link
                     key={f}
                     href={q({ filtro: f })}
-                    className={`shrink-0 rounded-full px-3 py-1.5 text-[13px] font-semibold no-underline ${
+                    className={`shrink-0 rounded-full px-3.5 py-2 text-[13px] font-semibold no-underline ${
                       filter === f
                         ? 'bg-tinta text-papel'
                         : f === 'pendentes' && summary.uncategorizedCount > 0
@@ -550,7 +489,7 @@ export default async function CarteiraPage({
             )}
 
             {shown.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 py-10 text-center">
+              <div className="flex flex-col items-center gap-3 py-12 text-center">
                 <Mascot
                   pose={filter === 'pendentes' && !cat && !conta ? 'caramelo-feliz' : 'dormindo'}
                   size={140}
@@ -569,41 +508,37 @@ export default async function CarteiraPage({
               </div>
             ) : (
               <>
-                <div className="flex flex-col lg:hidden">
-                  {[...groups.entries()].map(([day, list], i) => (
-                    <section key={day} className="flex flex-col">
-                      <h2
-                        className={`pb-1.5 text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase ${
-                          i === 0 ? 'pt-1.5' : 'pt-3'
-                        }`}
-                      >
-                        {day}
-                      </h2>
-                      {list.map((tx) => (
-                        <Row key={tx.id} t={tx} back={back} locale={locale} labels={t.walletExtra.txRow} />
-                      ))}
+                <div className="flex flex-col gap-6 lg:hidden">
+                  {[...groups.entries()].map(([day, list]) => (
+                    <section key={day} className="flex flex-col gap-1">
+                      <h2 className="pb-1 text-[15px] leading-5 font-bold text-tinta">{day}</h2>
+                      <div className="flex flex-col">
+                        {list.map((tx) => (
+                          <Row key={tx.id} t={tx} back={back} locale={locale} labels={t.walletExtra.txRow} />
+                        ))}
+                      </div>
                     </section>
                   ))}
                 </div>
 
-                <div className="hidden overflow-hidden rounded-[22px] border border-linha bg-cartao px-[18px] py-2 lg:block">
+                <div className="hidden overflow-hidden rounded-[22px] border border-linha bg-cartao px-4 py-2 lg:block xl:px-5">
                   <div className="overflow-x-auto">
                     <table className="w-full table-fixed border-collapse">
                       <thead>
                         <tr className="border-b border-linha text-left">
-                          <th className="w-[56px] px-2 py-3 text-xs font-semibold text-tinta-suave">
+                          <th className="w-[54px] px-2 py-3.5 text-xs font-semibold text-tinta-suave xl:w-[64px] xl:px-3">
                             {t.wallet.tableHeaders.date}
                           </th>
-                          <th className="w-auto px-2 py-3 text-xs font-semibold text-tinta-suave">
+                          <th className="w-auto px-2 py-3.5 text-xs font-semibold text-tinta-suave xl:px-3">
                             {t.wallet.tableHeaders.description}
                           </th>
-                          <th className="w-[148px] px-2 py-3 text-xs font-semibold text-tinta-suave">
+                          <th className="w-[128px] px-2 py-3.5 text-xs font-semibold text-tinta-suave xl:w-[156px] xl:px-3">
                             {t.wallet.tableHeaders.category}
                           </th>
-                          <th className="w-[128px] px-2 py-3 text-xs font-semibold text-tinta-suave">
+                          <th className="hidden w-[132px] px-3 py-3.5 text-xs font-semibold text-tinta-suave xl:table-cell">
                             {t.wallet.tableHeaders.account}
                           </th>
-                          <th className="w-[116px] px-2 py-3 text-right text-xs font-semibold text-tinta-suave">
+                          <th className="w-[96px] px-2 py-3.5 text-right text-xs font-semibold text-tinta-suave xl:w-[120px] xl:px-3">
                             {t.wallet.tableHeaders.amount}
                           </th>
                         </tr>
@@ -617,18 +552,21 @@ export default async function CarteiraPage({
                               key={tx.id}
                               className="border-b border-linha transition-colors last:border-b-0 hover:bg-papel-2/40"
                             >
-                              <td className="px-2 py-3 text-[13px] whitespace-nowrap text-tinta-suave">
+                              <td className="px-2 py-4 text-[13px] whitespace-nowrap text-tinta-suave xl:px-3">
                                 {shortDate(tx.occurredAt, locale)}
                               </td>
-                              <td className="min-w-0 px-2 py-3">
+                              <td className="min-w-0 px-2 py-4 xl:px-3">
                                 <Link
                                   href={href}
                                   className="block truncate text-[15px] font-semibold text-tinta no-underline hover:underline"
                                 >
                                   {tx.description}
                                 </Link>
+                                <span className="block truncate text-xs text-tinta-suave xl:hidden">
+                                  {tx.accountName ?? tw.manualLabel}
+                                </span>
                               </td>
-                              <td className="min-w-0 px-2 py-3">
+                              <td className="min-w-0 px-2 py-4 xl:px-3">
                                 {pending ? (
                                   <Link
                                     href={href}
@@ -659,11 +597,11 @@ export default async function CarteiraPage({
                                   </Link>
                                 )}
                               </td>
-                              <td className="truncate px-2 py-3 text-[13px] text-tinta-suave">
+                              <td className="hidden truncate px-3 py-4 text-[13px] text-tinta-suave xl:table-cell">
                                 {tx.accountName ?? tw.manualLabel}
                               </td>
                               <td
-                                className={`px-2 py-3 text-right text-[15px] font-bold whitespace-nowrap tabular-nums ${
+                                className={`px-2 py-4 text-right text-[14px] font-bold whitespace-nowrap tabular-nums xl:px-3 xl:text-[15px] ${
                                   tx.isInternalTransfer
                                     ? 'text-tinta-suave line-through'
                                     : tx.amountInCents > 0
@@ -688,16 +626,16 @@ export default async function CarteiraPage({
       )}
 
       {aba === 'contas' && (
-        <section className="flex flex-col gap-5 pb-6">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="flex flex-col gap-1 rounded-[22px] bg-menta-clara p-4 text-tinta">
+        <section className="flex flex-col gap-6 pb-8">
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5 rounded-[22px] bg-menta-clara p-5 text-tinta">
               <Eyebrow>{tw.accountsBalanceLabel}</Eyebrow>
               <span className="font-display text-[28px] leading-8 font-extrabold tabular-nums">
                 {money(totalBankBalance)}
               </span>
               <span className="text-[13px] text-tinta-suave">{tw.visibleAccounts(bancos.length)}</span>
             </div>
-            <div className="flex flex-col gap-1 rounded-[22px] border border-bronze-borda bg-bronze-suave p-4 text-tinta">
+            <div className="flex flex-col gap-1.5 rounded-[22px] border border-bronze-borda bg-bronze-suave p-5 text-tinta">
               <Eyebrow>{tw.openBillsLabel}</Eyebrow>
               <span className="font-display text-[28px] leading-8 font-extrabold tabular-nums">
                 {money(totalOpenBills)}
@@ -707,8 +645,11 @@ export default async function CarteiraPage({
           </div>
 
           {bancos.length > 0 && (
-            <div className="flex flex-col gap-2.5">
-              <Eyebrow>{tw.bankAccountsHeading}</Eyebrow>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-baseline justify-between gap-2">
+                <Eyebrow>{tw.bankAccountsHeading}</Eyebrow>
+                <span className="text-sm font-bold text-tinta tabular-nums">{money(totalBankBalance)}</span>
+              </div>
               <div className="flex flex-col divide-y divide-linha rounded-[22px] border border-linha bg-cartao px-4">
                 {bancos.map((a) => {
                   const conn = connByAccountId.get(a.id);
@@ -722,31 +663,29 @@ export default async function CarteiraPage({
                           : tw.connectedStatus
                     : tw.manualAccount;
                   return (
-                    <div key={a.id} className="flex min-h-[64px] items-center gap-3 py-2.5">
-                      <Link
-                        href={`/carteira/conta/${a.id}?mes=${statementMonth}`}
-                        className="flex min-w-0 flex-1 items-center gap-3 text-tinta no-underline hover:text-laranja-texto"
-                      >
-                        <BankBadge nome={a.name} instituicao={conn?.displayName} size={36} quadrado logos={logos} />
-                        <div className="flex min-w-0 flex-col">
-                          <span className="truncate text-[15px] font-semibold">{a.name}</span>
-                          <span
-                            className={`truncate text-xs ${
-                              conn?.status === 'ERROR' && !conn.isImported
-                                ? 'font-semibold text-vermelho-texto'
-                                : 'text-tinta-suave'
-                            }`}
-                          >
-                            {conn?.displayName && conn.displayName !== a.name ? `${conn.displayName} · ` : ''}
-                            {syncText}
-                          </span>
-                        </div>
-                      </Link>
+                    <Link
+                      key={a.id}
+                      href={`/carteira/conta/${a.id}?mes=${statementMonth}`}
+                      className="flex min-h-[70px] items-center gap-3.5 py-3.5 text-tinta no-underline transition-colors hover:text-laranja-texto"
+                    >
+                      <BankBadge nome={a.name} instituicao={conn?.displayName} size={38} quadrado logos={logos} />
+                      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <span className="truncate text-[15px] font-semibold">{a.name}</span>
+                        <span
+                          className={`truncate text-xs ${
+                            conn?.status === 'ERROR' && !conn.isImported
+                              ? 'font-semibold text-vermelho-texto'
+                              : 'text-tinta-suave'
+                          }`}
+                        >
+                          {conn?.displayName && conn.displayName !== a.name ? `${conn.displayName} · ` : ''}
+                          {syncText}
+                        </span>
+                      </div>
                       <span className="shrink-0 font-display text-[17px] font-extrabold tabular-nums">
                         {money(a.balanceInCents)}
                       </span>
-                      <HideAccountButton accountId={a.id} hidden={false} t={t.walletExtra.hideAccount} />
-                    </div>
+                    </Link>
                   );
                 })}
               </div>
@@ -754,37 +693,38 @@ export default async function CarteiraPage({
           )}
 
           {cartoes.length > 0 && (
-            <div className="flex flex-col gap-2.5">
-              <Eyebrow>{tw.creditCardsHeading}</Eyebrow>
-              <div className="grid gap-3 md:grid-cols-2">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-baseline justify-between gap-2">
+                <Eyebrow>{tw.creditCardsHeading}</Eyebrow>
+                <span className="text-sm font-bold text-tinta tabular-nums">{money(totalOpenBills)}</span>
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {cartoes.map((a) => {
                   const conn = connByAccountId.get(a.id);
                   const fatura = Math.max(0, -a.balanceInCents);
                   return (
-                    <div key={a.id} className="flex flex-col gap-3 rounded-[22px] border border-linha bg-cartao p-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <Link
-                          href={`/carteira/conta/${a.id}?mes=${statementMonth}`}
-                          className="flex min-w-0 flex-1 items-center gap-2.5 text-tinta no-underline hover:text-laranja-texto"
-                        >
+                    <Link
+                      key={a.id}
+                      href={`/carteira/conta/${a.id}?mes=${statementMonth}`}
+                      className="flex min-w-0 flex-col gap-3.5 rounded-[22px] border border-linha bg-cartao p-5 text-tinta no-underline transition-colors hover:bg-papel-2/50"
+                    >
+                      <div className="flex items-center justify-between gap-2.5">
+                        <div className="flex min-w-0 items-center gap-3">
                           <BankBadge nome={a.name} instituicao={conn?.displayName} size={36} quadrado logos={logos} />
-                          <div className="flex min-w-0 flex-col">
-                            <span className="truncate text-[15px] font-bold">{a.name}</span>
-                            <CardNetworkBadge brand={a.brand} last4={a.last4} />
-                          </div>
-                        </Link>
-                        <HideAccountButton accountId={a.id} hidden={false} t={t.walletExtra.hideAccount} />
+                          <span className="truncate text-[15px] font-bold">{a.name}</span>
+                        </div>
+                        <CardNetworkBadge brand={a.brand} last4={a.last4} className="shrink-0" />
                       </div>
 
-                      <div className="flex items-end justify-between gap-2">
-                        <div className="flex flex-col">
+                      <div className="flex flex-wrap items-end justify-between gap-2">
+                        <div className="flex flex-col gap-0.5">
                           <span className="text-xs font-semibold text-tinta-suave">{tw.currentBill}</span>
                           <span className="font-display text-2xl leading-7 font-extrabold tabular-nums">
                             {money(fatura)}
                           </span>
                         </div>
                         {a.dueDate && (
-                          <span className="rounded-full bg-papel-2 px-2.5 py-1 text-xs font-semibold text-tinta-suave">
+                          <span className="shrink-0 rounded-full bg-papel-2 px-3 py-1 text-xs font-semibold text-tinta-suave">
                             {tw.dueOn(shortDate(a.dueDate, locale))}
                           </span>
                         )}
@@ -797,14 +737,7 @@ export default async function CarteiraPage({
                           t={t.walletExtra.accountDetail}
                         />
                       ) : null}
-
-                      <Link
-                        href={`/carteira/conta/${a.id}?mes=${statementMonth}`}
-                        className="self-start text-[13px] font-semibold text-laranja-texto no-underline hover:underline"
-                      >
-                        {tw.viewBillAndInstallments}
-                      </Link>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>
@@ -818,72 +751,27 @@ export default async function CarteiraPage({
             </div>
           )}
 
-          {summary.hiddenAccounts.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <Eyebrow>{tw.hiddenAccountsHeading}</Eyebrow>
-              <div className="flex flex-col divide-y divide-linha rounded-[22px] border border-linha bg-cartao px-4">
-                {summary.hiddenAccounts.map((h) => {
-                  const conn = connByAccountId.get(h.id);
-                  const isCard = conn?.type === 'CREDIT';
-                  return (
-                    <div key={h.id} className="flex min-h-[54px] items-center gap-3 py-2 text-tinta-suave">
-                      <Link
-                        href={`/carteira/conta/${h.id}?mes=${statementMonth}`}
-                        className="flex min-w-0 flex-1 items-center gap-2.5 text-tinta-suave no-underline hover:text-tinta"
-                      >
-                        <BankBadge nome={h.name} instituicao={conn?.displayName} size={26} logos={logos} />
-                        <span className="truncate text-[14px] font-medium line-through">{h.name}</span>
-                      </Link>
-                      <span className="shrink-0 text-[14px] font-semibold tabular-nums">
-                        {money(isCard ? Math.max(0, -h.balanceInCents) : h.balanceInCents)}
-                      </span>
-                      <HideAccountButton accountId={h.id} hidden={true} t={t.walletExtra.hideAccount} />
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="text-xs text-tinta-suave">{tw.hiddenAccountsHint}</p>
-            </div>
-          )}
-
-          <div className="flex flex-col gap-3">
-            <AddAccountBox t={t.walletExtra.addAccount} cancelLabel={t.common.cancel} />
-            <div className="grid gap-2.5 sm:grid-cols-2">
-              <Link
-                href="/conectar?voltar=/carteira?aba=contas"
-                className="flex min-h-[58px] items-center justify-between gap-3 rounded-2xl border border-linha bg-cartao px-4 py-3 text-tinta no-underline transition-colors hover:bg-papel-2"
+          <div className="flex justify-center pt-1">
+            <Link
+              href="/carteira/editar?voltar=/carteira?aba=contas"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-linha bg-cartao px-5 text-sm font-semibold text-tinta no-underline transition-colors hover:bg-papel-2"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
               >
-                <span className="flex items-center gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-menta-clara text-tinta">
-                    <Icon src="conectar/banco" size={20} />
-                  </span>
-                  <span className="flex flex-col">
-                    <span className="text-[14px] font-bold">{tw.connectBankTitle}</span>
-                    <span className="text-xs text-tinta-suave">{tw.connectBankSub}</span>
-                  </span>
-                </span>
-                <span aria-hidden="true" className="text-tinta-suave">
-                  ›
-                </span>
-              </Link>
-              <Link
-                href="/importar?voltar=/carteira?aba=contas"
-                className="flex min-h-[58px] items-center justify-between gap-3 rounded-2xl border border-linha bg-cartao px-4 py-3 text-tinta no-underline transition-colors hover:bg-papel-2"
-              >
-                <span className="flex items-center gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-azul text-tinta">
-                    <Icon src="conectar/extrato" size={20} />
-                  </span>
-                  <span className="flex flex-col">
-                    <span className="text-[14px] font-bold">{tw.importStatementTitle}</span>
-                    <span className="text-xs text-tinta-suave">{tw.importStatementSub}</span>
-                  </span>
-                </span>
-                <span aria-hidden="true" className="text-tinta-suave">
-                  ›
-                </span>
-              </Link>
-            </div>
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+              {editWalletLabel}
+            </Link>
           </div>
         </section>
       )}
@@ -902,24 +790,26 @@ export default async function CarteiraPage({
         />
       )}
 
-      <Link
-        href="/anotar"
-        className="sticky bottom-[104px] z-10 ml-auto flex h-14 items-center gap-2 rounded-full bg-tinta pr-[22px] pl-[18px] text-[15px] font-semibold text-papel no-underline shadow-[0_4px_14px_rgba(30,27,24,0.22)] md:hidden"
-      >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          aria-hidden="true"
+      {aba === 'extrato' && (
+        <Link
+          href="/anotar"
+          className="fixed right-5 bottom-[calc(86px+env(safe-area-inset-bottom))] z-20 flex h-13 items-center gap-2 rounded-full bg-tinta pr-5 pl-4 text-[15px] font-semibold text-papel no-underline shadow-[0_4px_16px_rgba(30,27,24,0.28)] md:hidden"
         >
-          <path d="M12 5v14M5 12h14" />
-        </svg>
-        {t.nav.addExpense}
-      </Link>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          {t.nav.addExpense}
+        </Link>
+      )}
     </DesktopSplitShell>
   );
 }

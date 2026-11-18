@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { FinancialPlanResponse, ForecastResponse } from '@tostao/contracts';
+import type { ForecastResponse } from '@tostao/contracts';
 import { Confetti } from '@/components/confete';
 import { Icon } from '@/components/icone';
 import { Mascot } from '@/components/mascote';
@@ -13,75 +13,157 @@ import { DepositForm, GoalForm } from './forms';
 
 const prazo = (m: string, locale: Locale) => `${monthName(m, locale).slice(0, 3)}/${m.slice(2, 4)}`;
 
+function metaUrl(params: { id?: string; editar?: boolean; novo?: boolean; voltar?: string }) {
+  const qs = new URLSearchParams();
+  if (params.id) qs.set('id', params.id);
+  if (params.editar) qs.set('editar', '1');
+  if (params.novo) qs.set('novo', '1');
+  if (params.voltar) qs.set('voltar', params.voltar);
+  const str = qs.toString();
+  return str ? `/meta?${str}` : '/meta';
+}
+
 export default async function MetaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ editar?: string; voltar?: string }>;
+  searchParams: Promise<{ id?: string; editar?: string; novo?: string; voltar?: string }>;
 }) {
-  const [{ editar, voltar }, f, { plan }, { locale, t }] = await Promise.all([
+  const [{ id, editar, novo, voltar }, f, { locale, t }] = await Promise.all([
     searchParams,
     api<ForecastResponse>('/forecast').catch((): ForecastResponse => ({
       hasPlan: false,
       months: [],
       goal: null,
+      goals: [],
       thisMonth: null,
     })),
-    api<FinancialPlanResponse>('/plan').catch(() => ({ plan: null })),
     getI18n(),
   ]);
   const p = t.pages.meta;
-  const g = f.goal;
-  const backHref = resolveBackHref(voltar, '/carteira?aba=planejar');
-  const selfHref = voltar ? `/meta?voltar=${encodeURIComponent(backHref)}` : '/meta';
+  const goals = f.goals && f.goals.length > 0 ? f.goals : f.goal ? [f.goal] : [];
+  const active = (id ? goals.find((item) => item.id === id) : undefined) ?? goals[0] ?? null;
 
-  if (!g || editar) {
+  const backHref = resolveBackHref(voltar, '/carteira?aba=planejar');
+  const voltarParam = voltar ? backHref : undefined;
+  const selfHref = metaUrl({ id: active?.id, voltar: voltarParam });
+
+  const myGoalsTitle = locale === 'en' ? 'My goals' : locale === 'es' ? 'Mis metas' : 'Minhas metas';
+  const newGoalBtnLabel = locale === 'en' ? 'New goal' : locale === 'es' ? 'Nueva meta' : 'Nova meta';
+
+  if (!active || novo === '1') {
     return (
       <PageFrame size="analytics">
-        <BackLink href={g ? selfHref : backHref} label={t.common.back} />
-        <h1 className="font-display text-[30px] leading-[34px] font-extrabold">{g ? p.editTitle : p.newTitle}</h1>
+        <BackLink href={active ? metaUrl({ id: active.id, voltar: voltarParam }) : backHref} label={t.common.back} />
+        <h1 className="font-display text-[24px] leading-[30px] font-extrabold lg:text-[28px] lg:leading-[34px]">
+          {p.newTitle}
+        </h1>
         <div className="flex max-w-[560px] flex-col gap-4">
-          {!g && (
+          {!active && (
             <div className="flex items-center gap-1.5 rounded-2xl bg-amarelo-claro py-3 pr-3.5 pl-1.5 text-tinta">
               <Mascot pose="professor" size={72} alt="" />
               <p className="text-[15px] leading-[21px]">{p.emptyTip}</p>
             </div>
           )}
-          <GoalForm goal={g} kind={plan?.goal?.kind} t={p.form} />
-          {g && (
-            <form action={deleteGoal}>
-              <button type="submit" className="w-full py-2 text-sm font-semibold text-vermelho-texto underline">
-                {p.deleteGoal}
-              </button>
-            </form>
-          )}
+          <GoalForm goal={null} voltar={voltarParam} t={p.form} />
         </div>
       </PageFrame>
     );
   }
 
-  const pct = g.amountInCents ? Math.min(100, Math.round((g.savedInCents / g.amountInCents) * 100)) : 0;
-  const falta = g.amountInCents ? Math.max(0, g.amountInCents - g.savedInCents) : 0;
+  if (editar === '1') {
+    return (
+      <PageFrame size="analytics">
+        <BackLink href={selfHref} label={t.common.back} />
+        <h1 className="font-display text-[24px] leading-[30px] font-extrabold lg:text-[28px] lg:leading-[34px]">
+          {p.editTitle}
+        </h1>
+        <div className="flex max-w-[560px] flex-col gap-4">
+          <GoalForm goal={active} goalId={active.id} voltar={voltarParam} kind={active.kind} t={p.form} />
+          <form action={deleteGoal}>
+            {active.id && <input type="hidden" name="id" value={active.id} />}
+            {voltarParam && <input type="hidden" name="voltar" value={voltarParam} />}
+            <button type="submit" className="w-full py-2 text-sm font-semibold text-vermelho-texto underline">
+              {p.deleteGoal}
+            </button>
+          </form>
+        </div>
+      </PageFrame>
+    );
+  }
+
+  const pct = active.amountInCents ? Math.min(100, Math.round((active.savedInCents / active.amountInCents) * 100)) : 0;
+  const falta = active.amountInCents ? Math.max(0, active.amountInCents - active.savedInCents) : 0;
 
   return (
     <PageFrame size="analytics">
       <BackLink href={backHref} label={t.common.back} />
-      <div className="flex items-end justify-between gap-3">
-        <h1 className="font-display text-[30px] leading-[34px] font-extrabold">{g.label}</h1>
-        <Link
-          href={voltar ? `/meta?editar=1&voltar=${encodeURIComponent(backHref)}` : '/meta?editar=1'}
-          className="pb-1 text-[13px] font-semibold text-laranja-texto"
-        >
-          {t.common.edit}
-        </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-display text-[24px] leading-[30px] font-extrabold lg:text-[28px] lg:leading-[34px]">
+          {goals.length > 1 ? myGoalsTitle : active.label}
+        </h1>
+        <div className="flex items-center gap-2">
+          {goals.length < 10 && (
+            <Link
+              href={metaUrl({ novo: true, voltar: voltarParam })}
+              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-tinta px-3.5 text-xs font-semibold text-papel no-underline transition hover:opacity-90"
+            >
+              <span>+</span>
+              <span>{newGoalBtnLabel}</span>
+            </Link>
+          )}
+          <Link
+            href={metaUrl({ id: active.id, editar: true, voltar: voltarParam })}
+            className="inline-flex h-9 items-center rounded-full border border-linha bg-cartao px-3.5 text-xs font-semibold text-tinta no-underline transition hover:bg-papel-2"
+          >
+            {t.common.edit}
+          </Link>
+        </div>
       </div>
+
+      {goals.length > 1 && (
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+          {goals.map((item) => {
+            const selected = item.id === active.id;
+            const itemPct = item.amountInCents
+              ? Math.min(100, Math.round((item.savedInCents / item.amountInCents) * 100))
+              : 0;
+            return (
+              <Link
+                key={item.id ?? item.label}
+                href={metaUrl({ id: item.id, voltar: voltarParam })}
+                className={`flex min-w-0 flex-col gap-2 rounded-2xl border p-3.5 no-underline transition-colors ${
+                  selected
+                    ? 'border-tinta bg-cartao text-tinta shadow-xs'
+                    : 'border-linha bg-papel-2/50 text-tinta hover:bg-cartao'
+                }`}
+              >
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="truncate text-[14px] font-bold">{item.label}</span>
+                  <span className="shrink-0 text-xs font-bold tabular-nums">{itemPct}%</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-papel-2">
+                  <div className="h-full rounded-full bg-menta" style={{ width: `${itemPct}%` }} />
+                </div>
+                <span className="truncate text-xs text-tinta-suave tabular-nums">
+                  {money(item.savedInCents)}
+                  {item.amountInCents ? ` / ${money(item.amountInCents)}` : ''}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
 
       <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[1.15fr_0.85fr] lg:items-start lg:gap-6">
         <div className="flex min-w-0 flex-col gap-4">
           <div className="flex flex-col gap-3 rounded-[20px] border border-linha bg-cartao p-4">
+            {goals.length > 1 && (
+              <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">{active.label}</span>
+            )}
             <div className="flex items-baseline justify-between gap-3">
-              <span className="font-display text-[28px] font-extrabold tabular-nums">{money(g.savedInCents)}</span>
-              {g.amountInCents && (
-                <span className="text-sm text-tinta-suave tabular-nums">{p.ofTarget(money(g.amountInCents))}</span>
+              <span className="font-display text-[28px] font-extrabold tabular-nums">{money(active.savedInCents)}</span>
+              {active.amountInCents && (
+                <span className="text-sm text-tinta-suave tabular-nums">{p.ofTarget(money(active.amountInCents))}</span>
               )}
             </div>
             <div
@@ -95,29 +177,29 @@ export default async function MetaPage({
               <div className="bar-fill h-full rounded-full bg-menta" style={{ width: `${pct}%` }} />
             </div>
             <span className="text-[13px] font-semibold text-tinta-suave">
-              {pct}%{g.deadline ? p.deadlinePrefix(prazo(g.deadline, locale)) : ''}
+              {pct}%{active.deadline ? p.deadlinePrefix(prazo(active.deadline, locale)) : ''}
             </span>
           </div>
 
-          {g.reached ? (
+          {active.reached ? (
             <div className="flex items-center gap-1.5 rounded-2xl bg-menta-clara py-3 pr-3.5 pl-1.5 text-tinta">
               <Confetti />
               <Mascot pose="comemorando" size={76} alt="Tostão" />
               <p className="text-[15px] leading-[21px]">
-                <b>{p.reachedBold}</b> {p.reachedBody(money(g.savedInCents))}
+                <b>{p.reachedBold}</b> {p.reachedBody(money(active.savedInCents))}
               </p>
             </div>
           ) : (
-            g.monthlyNeededInCents !== null && (
+            active.monthlyNeededInCents !== null && (
               <div
-                className={`flex items-center gap-1.5 rounded-2xl py-3 pr-3.5 pl-1.5 text-tinta ${g.fits === false ? 'bg-rosa' : 'bg-amarelo-claro'}`}
+                className={`flex items-center gap-1.5 rounded-2xl py-3 pr-3.5 pl-1.5 text-tinta ${active.fits === false ? 'bg-rosa' : 'bg-amarelo-claro'}`}
               >
-                <Mascot pose={g.fits === false ? 'preocupado' : 'professor'} size={72} alt="" />
+                <Mascot pose={active.fits === false ? 'preocupado' : 'professor'} size={72} alt="" />
                 <p className="text-[15px] leading-[21px]">
-                  {p.leftSummary(money(falta), money(g.monthlyNeededInCents), monthName(g.deadline!, locale))}
-                  {g.fits === true && p.fitsTrue}
-                  {g.fits === false && p.fitsFalse}
-                  {g.fits === null && (
+                  {p.leftSummary(money(falta), money(active.monthlyNeededInCents), monthName(active.deadline!, locale))}
+                  {active.fits === true && p.fitsTrue}
+                  {active.fits === false && p.fitsFalse}
+                  {active.fits === null && (
                     <>
                       {' '}
                       <Link
@@ -136,9 +218,9 @@ export default async function MetaPage({
         </div>
 
         <div className="flex min-w-0 flex-col gap-4">
-          <DepositForm t={p.form} />
+          <DepositForm goalId={active.id} t={p.form} />
           <Link
-            href={`/investir?de=meta&voltar=${encodeURIComponent(selfHref)}${falta ? `&centavos=${Math.min(falta, g.monthlyNeededInCents ?? falta)}` : ''}`}
+            href={`/investir?de=meta&voltar=${encodeURIComponent(selfHref)}${falta ? `&centavos=${Math.min(falta, active.monthlyNeededInCents ?? falta)}` : ''}`}
             className="flex items-center gap-3 rounded-2xl border border-linha bg-cartao p-3.5 text-tinta no-underline"
           >
             <Icon src="meta/reserva" size={40} />

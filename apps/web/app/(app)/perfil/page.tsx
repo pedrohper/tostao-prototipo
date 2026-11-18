@@ -35,9 +35,11 @@ export default async function PerfilPage({ searchParams }: { searchParams?: Prom
 
   return (
     <PageFrame size="focused">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <BackLink href={backHref} label={t.common.back} />
-        <h1 className="font-display text-[28px] leading-8 font-extrabold text-tinta">{t.profile.profilePageTitle}</h1>
+        <h1 className="font-display text-[24px] leading-[30px] font-extrabold text-tinta">
+          {t.profile.profilePageTitle}
+        </h1>
       </div>
 
       {/* Identidade e nível */}
@@ -86,7 +88,7 @@ export default async function PerfilPage({ searchParams }: { searchParams?: Prom
         </div>
       </section>
 
-      {/* Ações rápidas da conta */}
+      {/* Gestão da conta */}
       <section className="flex flex-col divide-y divide-linha rounded-[22px] border border-linha bg-cartao px-[18px] py-1">
         <Link
           href="/aprender?voltar=/perfil"
@@ -94,6 +96,15 @@ export default async function PerfilPage({ searchParams }: { searchParams?: Prom
         >
           <span>{t.profile.continueTrailLink}</span>
           <span className="shrink-0 text-tinta-suave" aria-hidden="true">
+            ›
+          </span>
+        </Link>
+        <Link
+          href="/conectar?voltar=/perfil"
+          className="flex min-h-12 items-center justify-between gap-3 text-[15px] font-semibold text-vermelho-texto no-underline hover:underline"
+        >
+          <span>{t.profile.disconnectBanks}</span>
+          <span className="shrink-0" aria-hidden="true">
             ›
           </span>
         </Link>

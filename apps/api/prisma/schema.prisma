@@ -132,6 +132,8 @@ model Transaction {
   seriesId           String?  @map("series_id")
   // Acerto com alguém (emprestei o cartão, emprestei/peguei grana, me pagou): não é gasto nem renda.
   personId           String?  @map("person_id")
+  // Anotação livre da pessoa ("pago pro João, devolve dia 10"). Pode existir mesmo em transação do banco.
+  note               String?
   createdAt          DateTime @default(now()) @map("created_at")
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)

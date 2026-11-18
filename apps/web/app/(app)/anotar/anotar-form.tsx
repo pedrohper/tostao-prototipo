@@ -114,6 +114,10 @@ export function AnotarForm({
           <input name="description" placeholder={labels.descPlaceholder} required className={field} />
         </label>
         <label className="flex flex-col gap-[5px]">
+          <span className="text-[13px] font-semibold">{labels.noteLabel}</span>
+          <input name="note" maxLength={280} placeholder={labels.notePlaceholder} className={field} />
+        </label>
+        <label className="flex flex-col gap-[5px]">
           <span className="text-[13px] font-semibold">{labels.dateLabel}</span>
           <input name="occurredAt" type="date" defaultValue={today} required className={field} />
         </label>

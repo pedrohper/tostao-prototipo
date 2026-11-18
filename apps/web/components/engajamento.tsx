@@ -146,7 +146,7 @@ export function UpcomingReminders({ reminders, locale = 'pt-BR' }: { reminders: 
     <section id="vence" className="flex scroll-mt-4 flex-col gap-2">
       <div className="flex items-baseline justify-between">
         <h2 className="font-display text-xl leading-[26px] font-extrabold">{t.engagement.dueSoonTitle}</h2>
-        <Link href="/mais#avisos" className="text-[13px] font-semibold text-laranja-texto">
+        <Link href="/mais/alertas?voltar=/inicio" className="text-[13px] font-semibold text-laranja-texto">
           {t.engagement.remindMeLink}
         </Link>
       </div>

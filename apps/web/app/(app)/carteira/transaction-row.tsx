@@ -14,18 +14,20 @@ export function SearchBar({
   hidden = {},
   placeholder = 'Buscar loja, pessoa, categoria…',
   ariaLabel = 'Buscar transações',
+  className = '',
 }: {
   q?: string;
   autoFocus?: boolean;
   hidden?: Record<string, string>;
   placeholder?: string;
   ariaLabel?: string;
+  className?: string;
 }) {
   return (
     <form
       action="/carteira/busca"
       role="search"
-      className="flex h-11 items-center gap-2 rounded-full border border-linha bg-cartao px-4 transition-colors focus-within:border-tinta"
+      className={`flex h-11 items-center gap-2 rounded-full border border-linha bg-cartao px-3.5 transition-colors focus-within:border-tinta sm:px-4 ${className}`}
     >
       <svg
         width="18"
@@ -83,15 +85,17 @@ export type FilterDropdownOption = {
   dotColor?: string | null;
 };
 
-/** Pill dropdown para filtros da Carteira no desktop, mantendo links reais de navegação. */
+/** Pill dropdown para filtros da Carteira, mantendo links reais de navegação. */
 export function FilterDropdown({
   label,
   active = false,
   options,
+  iconOnly = false,
 }: {
   label: string;
   active?: boolean;
   options: FilterDropdownOption[];
+  iconOnly?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -113,36 +117,70 @@ export function FilterDropdown({
   }, [open]);
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className="relative shrink-0">
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
         aria-haspopup="menu"
-        className={`inline-flex h-10 max-w-[220px] items-center gap-1.5 rounded-full px-4 text-sm font-semibold whitespace-nowrap transition-colors ${
-          active ? 'bg-tinta text-papel' : 'bg-papel-2 text-tinta hover:bg-linha/60'
-        }`}
+        aria-label={label}
+        title={label}
+        className={
+          iconOnly
+            ? `relative flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${
+                active ? 'border-tinta bg-tinta text-papel' : 'border-linha bg-cartao text-tinta hover:bg-papel-2'
+              }`
+            : `inline-flex h-11 max-w-[44vw] items-center gap-1.5 rounded-full border px-3 text-[13px] font-semibold whitespace-nowrap transition-colors sm:max-w-[220px] sm:px-4 sm:text-sm ${
+                active ? 'border-tinta bg-tinta text-papel' : 'border-linha bg-cartao text-tinta hover:bg-papel-2'
+              }`
+        }
       >
-        <span className="truncate">{label}</span>
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.25"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-          className={`shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
-        >
-          <path d="M6 9l6 6 6-6" />
-        </svg>
+        {iconOnly ? (
+          <>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+            </svg>
+            {active && (
+              <span
+                className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-laranja ring-2 ring-papel"
+                aria-hidden="true"
+              />
+            )}
+          </>
+        ) : (
+          <>
+            <span className="truncate">{label}</span>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.25"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className={`shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </>
+        )}
       </button>
       {open && (
         <div
           role="menu"
-          className="absolute top-full right-0 z-20 mt-2 max-h-[320px] min-w-[220px] overflow-y-auto rounded-2xl border border-linha bg-cartao p-1.5 shadow-xl"
+          className="absolute top-full right-0 z-30 mt-2 max-h-[320px] min-w-[220px] overflow-y-auto rounded-2xl border border-linha bg-cartao p-1.5 shadow-xl"
         >
           {options.map((opt) => (
             <Link
@@ -150,7 +188,7 @@ export function FilterDropdown({
               href={opt.href}
               role="menuitem"
               onClick={() => setOpen(false)}
-              className={`flex min-h-9 items-center gap-2 rounded-xl px-3 py-1.5 text-sm no-underline transition-colors ${
+              className={`flex min-h-10 items-center gap-2 rounded-xl px-3 py-1.5 text-sm no-underline transition-colors ${
                 opt.active ? 'bg-papel-2 font-bold text-tinta' : 'font-medium text-tinta hover:bg-papel-2/70'
               }`}
             >
@@ -180,6 +218,92 @@ export function FilterDropdown({
               )}
             </Link>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Cabeçalho do Extrato com ícones compactos de Lupa (expande busca) e Filtro de categorias. */
+export function ExtratoHeaderBar({
+  title,
+  searchPlaceholder,
+  searchAriaLabel,
+  closeLabel,
+  filterLabel,
+  filterActive,
+  filterOptions,
+  desktopControls,
+}: {
+  title: string;
+  searchPlaceholder: string;
+  searchAriaLabel: string;
+  closeLabel: string;
+  filterLabel: string;
+  filterActive: boolean;
+  filterOptions: FilterDropdownOption[];
+  desktopControls?: React.ReactNode;
+}) {
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="font-display text-[24px] leading-[30px] font-extrabold lg:text-[28px] lg:leading-[34px]">
+          {title}
+        </h1>
+        <div className="flex items-center gap-2">
+          {desktopControls}
+          <button
+            type="button"
+            onClick={() => setSearchOpen((prev) => !prev)}
+            aria-expanded={searchOpen}
+            aria-label={searchAriaLabel}
+            title={searchAriaLabel}
+            className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${
+              searchOpen ? 'border-tinta bg-tinta text-papel' : 'border-linha bg-cartao text-tinta hover:bg-papel-2'
+            }`}
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="M20 20l-3.5-3.5" />
+            </svg>
+          </button>
+          <FilterDropdown label={filterLabel} active={filterActive} options={filterOptions} iconOnly />
+        </div>
+      </div>
+
+      {searchOpen && (
+        <div className="flex items-center gap-2">
+          <SearchBar autoFocus placeholder={searchPlaceholder} ariaLabel={searchAriaLabel} className="min-w-0 flex-1" />
+          <button
+            type="button"
+            onClick={() => setSearchOpen(false)}
+            aria-label={closeLabel}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-linha bg-cartao text-tinta-suave transition-colors hover:text-tinta"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.25"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
         </div>
       )}
     </div>
@@ -225,20 +349,23 @@ export function Row({
   return (
     <Link
       href={`/carteira/${t.id}?voltar=${encodeURIComponent(back)}`}
-      className={`flex min-h-[58px] items-center gap-3 border-b border-linha py-2 text-tinta no-underline transition-colors last:border-b-0 hover:bg-papel-2/40 ${t.isInternalTransfer ? 'opacity-60' : ''}`}
+      className={`flex min-h-[76px] items-center gap-3.5 border-b border-linha/60 py-4 text-tinta no-underline transition-colors last:border-b-0 hover:bg-papel-2/40 ${t.isInternalTransfer ? 'opacity-60' : ''}`}
     >
       <div
-        className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl text-lg font-bold ${pending ? 'bg-rosa text-tinta' : bg ? 'text-tinta-fixa' : 'bg-papel-2 text-tinta'}`}
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg font-bold ${pending ? 'bg-rosa text-tinta' : bg ? 'text-tinta-fixa' : 'bg-papel-2 text-tinta'}`}
         style={bg ? { background: bg } : undefined}
         aria-hidden="true"
       >
         {icon}
       </div>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate text-[15px] font-semibold">{t.description}</span>
-        <span className={`truncate text-xs ${pending ? 'font-semibold text-laranja-texto' : 'text-tinta-suave'}`}>
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="truncate text-[15px] leading-5 font-semibold">{t.description}</span>
+        <span
+          className={`truncate text-[13px] leading-4 ${pending ? 'font-semibold text-laranja-texto' : 'text-tinta-suave'}`}
+        >
           {line}
         </span>
+        {t.note && <span className="truncate text-[12px] leading-4 text-tinta-suave italic">“{t.note}”</span>}
       </div>
       <span
         className={`shrink-0 text-[15px] tabular-nums ${t.amountInCents > 0 ? 'font-bold text-verde-texto' : 'font-semibold'}`}

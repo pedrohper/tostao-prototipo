@@ -14,6 +14,7 @@ type Input = {
   accountId?: string | null;
   repeat?: 'nao' | 'mensal' | 'parcelado';
   times?: number;
+  note?: string;
 };
 
 /** Quantos meses o "todo mês" já deixa lançado. Dá pra apagar a série inteira depois. */
@@ -63,6 +64,7 @@ export class CreateManualTransactionUseCase {
           categoryId,
           isInternalTransfer: isNeutral(categoryId),
           seriesId,
+          note: input.note || null,
         }),
       );
     }

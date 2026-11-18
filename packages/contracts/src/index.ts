@@ -86,6 +86,9 @@ export const searchQuery = z.object({
 });
 export type SearchQuery = z.infer<typeof searchQuery>;
 
+/** Tamanho máximo da anotação de uma transação. */
+export const NOTE_MAX = 280;
+
 export const manualTransactionBody = z
   .object({
     description: z.string().trim().min(1, 'Diz o que foi'),
@@ -98,6 +101,7 @@ export const manualTransactionBody = z
     /** nao = só esse; mensal = repete todo mês (12 meses lançados); parcelado = o valor é o total, dividido em `times` meses. */
     repeat: z.enum(['nao', 'mensal', 'parcelado']).default('nao'),
     times: z.number().int().min(2, 'Parcela em pelo menos 2x').max(48, 'No máximo 48x').optional(),
+    note: z.string().trim().max(NOTE_MAX, `Anotação até ${NOTE_MAX} caracteres`).optional(),
   })
   .refine((b) => b.repeat !== 'parcelado' || (b.times ?? 0) >= 2, { message: 'Diz em quantas vezes', path: ['times'] });
 export type ManualTransactionBody = z.infer<typeof manualTransactionBody>;
@@ -118,6 +122,8 @@ export const updateTransactionBody = z.object({
     .refine((n) => n !== 0, 'Valor precisa ser diferente de zero')
     .optional(),
   occurredAt: z.iso.date().optional(),
+  /** Texto vazio ou null apaga a anotação. Pode ser editada também em transação do banco. */
+  note: z.string().trim().max(NOTE_MAX, `Anotação até ${NOTE_MAX} caracteres`).nullable().optional(),
 });
 export type UpdateTransactionBody = z.infer<typeof updateTransactionBody>;
 
@@ -144,6 +150,8 @@ export type TransactionDTO = {
   seriesId: string | null;
   /** Acerto com alguém (empréstimo, cartão emprestado): fora do gasto e da renda. */
   personId: string | null;
+  /** Anotação livre da pessoa sobre o lançamento. */
+  note: string | null;
 };
 
 // ---------- Acertos (quem te deve / pra quem você deve) ----------
@@ -342,8 +350,9 @@ export type ImportResponse = {
 // ---------- Renda, contas fixas e previsão ----------
 const cents = z.number().int().min(0).max(100_000_000);
 const day = z.number().int().min(1).max(31);
-/** A meta (uma só por pessoa). savedInCents = quanto já guardou; o app soma com "Guardei". */
+/** Uma meta financeira. savedInCents = quanto já guardou; o app soma com "Guardei". */
 export const goalBody = z.object({
+  id: z.string().min(1).max(64).optional(),
   kind: z.enum(['reserva', 'viagem', 'sair-do-vermelho', 'outro']),
   label: z.string().trim().max(60).nullable().default(null),
   amountInCents: cents.nullable().default(null),
@@ -357,6 +366,7 @@ export const goalBody = z.object({
 export type Goal = z.infer<typeof goalBody>;
 /** "Guardei R$ 50" (positivo) ou "tirei R$ 20" (negativo). */
 export const goalDepositBody = z.object({
+  goalId: z.string().min(1).max(64).optional(),
   amountInCents: z
     .number()
     .int()
@@ -400,6 +410,7 @@ export const financialPlanBody = z.object({
     .max(4)
     .default([]),
   goal: goalBody.nullable().default(null),
+  goals: z.array(goalBody).max(10).optional(),
 });
 export type FinancialPlan = z.infer<typeof financialPlanBody>;
 export type FinancialPlanResponse = { plan: FinancialPlan | null };
@@ -448,6 +459,8 @@ export type ForecastItem = {
 };
 /** Situação da meta: quanto falta e quanto guardar por mês pra chegar no prazo. */
 export type GoalStatus = {
+  id?: string;
+  kind?: Goal['kind'];
   label: string;
   amountInCents: number | null;
   savedInCents: number;
@@ -500,6 +513,7 @@ export type ForecastResponse = {
   hasPlan: boolean;
   months: ForecastMonth[];
   goal: GoalStatus | null;
+  goals?: GoalStatus[];
   thisMonth: ThisMonthForecast | null;
   base?: SpendingBase | null;
 };

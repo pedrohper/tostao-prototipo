@@ -40,6 +40,7 @@ export async function createManual(_: ActionState, form: FormData): Promise<Acti
     accountId: form.get('accountId') || null,
     repeat: form.get('repeat') || 'nao',
     times: form.get('repeat') === 'parcelado' ? Number(form.get('times') || 0) : undefined,
+    note: String(form.get('note') ?? ''),
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
   try {
@@ -135,6 +136,26 @@ export async function updateManualTransaction(_: ActionState, form: FormData): P
   }
   revalidatePath('/', 'layout');
   redirect(back.startsWith('/') ? back : '/carteira');
+}
+
+/** Salva (ou apaga, se vier vazia) a anotação de qualquer lançamento, inclusive os que vieram do banco. */
+export async function saveTransactionNote(form: FormData) {
+  const id = String(form.get('id') ?? '');
+  const back = String(form.get('back') || '/carteira');
+  const safeBack = back.startsWith('/') ? back : '/carteira';
+  const parsed = updateTransactionBody.safeParse({ note: String(form.get('note') ?? '') });
+  let failed = !parsed.success;
+  if (id && parsed.success) {
+    try {
+      await api(`/transactions/${encodeURIComponent(id)}`, { method: 'PATCH', body: parsed.data });
+    } catch {
+      failed = true;
+    }
+  }
+  revalidatePath('/', 'layout');
+  // Se não salvou, volta pra mesma tela com o aviso em vez de fingir que deu certo.
+  if (failed && id) redirect(`/carteira/${encodeURIComponent(id)}?voltar=${encodeURIComponent(safeBack)}&erro=nota`);
+  redirect(safeBack);
 }
 
 export async function createManualAccount(_: ActionState, form: FormData): Promise<ActionState> {

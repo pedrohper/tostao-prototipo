@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { modules } from '@/lib/lessons';
 import type { FriendsResponse, MissionsResponse } from '@tostao/contracts';
 import { Mascot } from '@/components/mascote';
-import { Eyebrow, StreakChip } from '@/components/ui';
+import { Eyebrow } from '@/components/ui';
 import type {
   BattlesResponse,
   LessonProgressResponse,
@@ -15,21 +15,20 @@ import { api } from '@/lib/api';
 import { currentMonth, todayIso } from '@/lib/format';
 import { NO_PROGRESS, xpFrom } from '@/lib/xp';
 import { DesktopSplitShell } from '@/components/lateral';
-import { DailyMissions } from '@/components/engajamento';
+import { StreakModalButton } from '@/components/streak-modal';
 import { getI18n } from '@/lib/i18n-server';
 import { LegacyProgress } from './legacy-progress';
 
 export default async function AprenderPage() {
-  const [{ locale, t }, { done, streakDays, doneToday, bonusXp = 0 }, summary, tribunal, battles, missions, friends] =
-    await Promise.all([
-      getI18n(),
-      api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
-      api<MonthSummaryResponse>(`/summary?month=${currentMonth()}`).catch(() => null),
-      api<TribunalResponse>('/tribunal').catch(() => null),
-      api<BattlesResponse>('/battles').catch(() => null),
-      api<MissionsResponse>('/missions').catch(() => null),
-      api<FriendsResponse>('/friends').catch(() => null),
-    ]);
+  const [{ locale, t }, { done, streakDays, bonusXp = 0 }, , tribunal, battles, missions, friends] = await Promise.all([
+    getI18n(),
+    api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
+    api<MonthSummaryResponse>(`/summary?month=${currentMonth()}`).catch(() => null),
+    api<TribunalResponse>('/tribunal').catch(() => null),
+    api<BattlesResponse>('/battles').catch(() => null),
+    api<MissionsResponse>('/missions').catch(() => null),
+    api<FriendsResponse>('/friends').catch(() => null),
+  ]);
   const th = t.pages.learnExtra.hub;
   const tig = battles?.tigrinho;
   const batalhaLinha = !tig
@@ -43,7 +42,6 @@ export default async function AprenderPage() {
         : th.battleTryAgain;
   const battlePct =
     tig && tig.totalDays > 0 ? Math.min(100, Math.max(0, Math.round((tig.day / tig.totalDays) * 100))) : 0;
-  const pendentes = summary?.uncategorizedCount ?? 0;
   const { xp } = xpFrom(done.length, bonusXp);
   // Módulo atual = o primeiro que ainda tem lição por fazer
   const atualIdx = modules.findIndex((m) => m.lessons.some((l) => !done.includes(l.id)));
@@ -63,26 +61,10 @@ export default async function AprenderPage() {
 
   const rightRail = (
     <>
-      {missions ? (
-        <DailyMissions data={missions} compact locale={locale} />
-      ) : (
-        <section className="flex flex-col gap-2.5 rounded-[18px] border border-linha bg-cartao p-3.5">
-          <Eyebrow>{th.todayMissions}</Eyebrow>
-          <Missao
-            feita={doneToday > 0}
-            href={proxima ? `/aprender/${proxima.id}` : '/aprender/trilha'}
-            doneSr={th.doneSr}
-            pendingSr={th.pendingSr}
-          >
-            {th.doLesson}
-          </Missao>
-        </section>
-      )}
-
-      <Eyebrow className="mt-1.5">{t.learn.activeBattleLabel}</Eyebrow>
+      <Eyebrow>{t.learn.activeBattleLabel}</Eyebrow>
       <Link
         href="/batalha?voltar=/aprender"
-        className="flex items-center gap-2 rounded-[18px] bg-amarelo-claro p-2.5 pr-3.5 pl-1.5 text-tinta no-underline"
+        className="flex items-center gap-2 rounded-[18px] bg-amarelo-claro p-3 pr-4 pl-2 text-tinta no-underline"
       >
         <Mascot
           pose={tig?.status === 'vencida' ? 'urubu-pix' : 'tigrinho'}
@@ -103,7 +85,7 @@ export default async function AprenderPage() {
       <Eyebrow className="mt-1.5">{t.learn.weekTribunalLabel}</Eyebrow>
       <Link
         href="/tribunal?voltar=/aprender"
-        className="flex flex-col gap-1.5 rounded-[22px] border border-linha bg-cartao p-3.5 text-tinta no-underline"
+        className="flex flex-col gap-1.5 rounded-[22px] border border-linha bg-cartao p-4 text-tinta no-underline"
       >
         <span className="text-base font-bold">{tribunal?.case.title ?? th.caseOfWeek}</span>
         <span className="text-[13px] leading-[19px] text-tinta-suave">
@@ -124,67 +106,29 @@ export default async function AprenderPage() {
           locale={locale}
         />
       )}
-      <div className="flex items-end justify-between gap-3">
-        <h1 className="font-display text-[34px] leading-[38px] font-extrabold lg:text-[40px] lg:leading-[44px]">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="min-w-0 font-display text-[24px] leading-[30px] font-extrabold lg:text-[28px] lg:leading-[34px]">
           {t.learn.title}
         </h1>
-        <div className="flex gap-1.5 lg:hidden">
-          <StreakChip
+        <div className="flex shrink-0 items-center gap-2">
+          <StreakModalButton
             days={missions?.streakDays ?? streakDays}
+            missions={missions}
+            locale={locale}
             label={t.nav.streakDays(missions?.streakDays ?? streakDays)}
+            backHref="/aprender"
           />
-          <span className="flex items-center gap-1 rounded-full bg-amarelo px-2.5 py-1.5 text-sm font-bold text-tinta-fixa">
+          <span className="flex items-center gap-1 rounded-full bg-amarelo px-2.5 py-1.5 text-sm font-bold text-tinta-fixa lg:hidden">
             <Icon src="ui/xp" size={18} />
             {xp} XP
           </span>
+          <Link
+            href="/aprender/trilha"
+            className="hidden h-10 items-center rounded-full bg-papel-2 px-4 text-sm font-semibold text-tinta no-underline lg:inline-flex"
+          >
+            {t.learn.fullTrailCta}
+          </Link>
         </div>
-        <Link
-          href="/aprender/trilha"
-          className="hidden h-10 items-center rounded-full bg-papel-2 px-4 text-sm font-semibold text-tinta no-underline lg:inline-flex"
-        >
-          {t.learn.fullTrailCta}
-        </Link>
-      </div>
-
-      <div className="lg:hidden">
-        {missions && missions.missions.length > 0 && missions.missions.every((m) => m.done) ? (
-          <div className="flex items-center gap-1.5 rounded-[18px] bg-menta-clara py-2 pr-3.5 pl-1.5">
-            <Mascot pose="comemorando" size={56} alt="Tostão" />
-            <div className="flex min-w-0 grow flex-col">
-              <span className="text-[15px] font-bold">{t.engagement.allDoneTitle}</span>
-              <span className="text-[13px] text-tinta-suave">{t.engagement.allDoneSubtitle}</span>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center gap-1.5 rounded-[18px] border border-linha bg-cartao py-3 pr-3.5 pl-1.5">
-            <Mascot pose="professor" size={84} alt="Tostão" />
-            <div className="flex min-w-0 grow flex-col gap-[9px]">
-              <Eyebrow>{th.todayMissions}</Eyebrow>
-              {missions ? (
-                missions.missions.map((m) => (
-                  <Missao
-                    key={m.id}
-                    feita={m.done}
-                    href={m.id === 'licao' && proxima ? `/aprender/${proxima.id}` : m.href}
-                    doneSr={th.doneSr}
-                    pendingSr={th.pendingSr}
-                  >
-                    {m.id === 'gastos' && pendentes > 0 && !m.done ? th.categorizePending(pendentes) : m.title}
-                  </Missao>
-                ))
-              ) : (
-                <Missao
-                  feita={doneToday > 0}
-                  href={proxima ? `/aprender/${proxima.id}` : '/aprender/trilha'}
-                  doneSr={th.doneSr}
-                  pendingSr={th.pendingSr}
-                >
-                  {th.doLesson}
-                </Missao>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {atual && proxima ? (
@@ -192,10 +136,15 @@ export default async function AprenderPage() {
           <div className="flex flex-col items-start gap-4 rounded-[24px] bg-amarelo-claro p-5 sm:flex-row sm:items-center sm:p-6 lg:py-5 lg:pr-6 lg:pl-3">
             <Mascot pose="professor" size={150} alt="Tostão" className="hidden lg:block" />
             <div className="flex min-w-0 w-full flex-1 flex-col gap-2.5">
-              <Eyebrow>{t.learn.moduleCounter(atual.number, feitas, atual.lessons.length)}</Eyebrow>
-              <h2 className="font-display text-[22px] leading-[27px] font-extrabold lg:text-[34px] lg:leading-[38px]">
-                {atual.title}
-              </h2>
+              <div className="flex items-center gap-3">
+                <Mascot pose="professor" size={72} alt="Tostão" className="lg:hidden" />
+                <div className="flex min-w-0 flex-col gap-1.5">
+                  <Eyebrow>{t.learn.moduleCounter(atual.number, feitas, atual.lessons.length)}</Eyebrow>
+                  <h2 className="font-display text-[22px] leading-[27px] font-extrabold lg:text-[34px] lg:leading-[38px]">
+                    {atual.title}
+                  </h2>
+                </div>
+              </div>
               <p className="hidden max-w-[520px] text-[15px] leading-[22px] lg:block">{atual.goal}</p>
               <div
                 className="flex w-full gap-1.5 lg:max-w-[420px]"
@@ -322,7 +271,7 @@ export default async function AprenderPage() {
 
       <section className="flex flex-col gap-2">
         <Eyebrow>{th.calculatorsHeading}</Eyebrow>
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-1 gap-2.5 min-[360px]:grid-cols-2">
           <Link
             href="/compensa?voltar=/aprender"
             className="flex flex-col gap-1 rounded-[18px] border border-linha bg-cartao p-3 text-tinta no-underline transition-colors hover:bg-papel-2 lg:p-4"
@@ -344,7 +293,7 @@ export default async function AprenderPage() {
 
       <section className="flex flex-col gap-2 lg:hidden">
         <Eyebrow>{th.weekGamesHeading}</Eyebrow>
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-1 gap-2.5 min-[360px]:grid-cols-2">
           <Link
             href="/tribunal?voltar=/aprender"
             className="flex flex-col gap-1 rounded-[18px] bg-azul p-3 text-tinta no-underline"
@@ -474,32 +423,5 @@ export default async function AprenderPage() {
         )}
       </section>
     </DesktopSplitShell>
-  );
-}
-
-function Missao({
-  feita,
-  href,
-  doneSr,
-  pendingSr,
-  children,
-}: {
-  feita: boolean;
-  href: string;
-  doneSr: string;
-  pendingSr: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Link href={href} className="flex flex-col gap-1 text-tinta no-underline">
-      <span className="flex justify-between text-[13px] font-semibold">
-        <span className={feita ? 'text-tinta-suave line-through' : ''}>{children}</span>
-        <span>{feita ? '1/1' : '0/1'}</span>
-      </span>
-      <span className="h-2 rounded-full bg-papel-2" aria-hidden="true">
-        <span className={`bar-fill block h-full rounded-full ${feita ? 'w-full bg-menta' : 'w-[4%] bg-tinta'}`} />
-      </span>
-      <span className="sr-only">{feita ? doneSr : pendingSr}</span>
-    </Link>
   );
 }

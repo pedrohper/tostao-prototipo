@@ -40,6 +40,8 @@ export interface Dictionary {
     logManualExpenseCta: string;
     balanceInAccounts: (count: number) => string;
     noConnectedBankHint: string;
+    shortcutsAria: string;
+    shortcutAnnotate: string;
     incomeInMonth: (month: string) => string;
     outcomeInMonth: (month: string) => string;
     tellIncomePromptTitle: string;
@@ -458,6 +460,10 @@ export interface Dictionary {
       neutralHint: string;
       alwaysRule: (pattern: string, catName: string) => string;
       editToggle: string;
+      noteLabel: string;
+      notePlaceholder: string;
+      noteSave: string;
+      noteError: string;
       editSub: string;
       kindOut: string;
       kindIn: string;
@@ -568,6 +574,8 @@ export interface Dictionary {
       amountLabel: string;
       descLabel: string;
       descPlaceholder: string;
+      noteLabel: string;
+      notePlaceholder: string;
       dateLabel: string;
       repeatLegend: string;
       repeatNo: string;

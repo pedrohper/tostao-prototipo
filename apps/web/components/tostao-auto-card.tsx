@@ -67,13 +67,7 @@ export function TostaoFindingsBoard({
         const next = await runTostaoCheckAction();
         setState(next);
         setNowTick(Date.now());
-        setBanner(
-          next.generated > 0
-            ? t.auto.newFindingsBanner(next.generated)
-            : next.insights.length === 0
-              ? t.auto.emptyFoundTitle
-              : t.auto.allCheckedBanner,
-        );
+        setBanner(next.generated > 0 ? t.auto.newFindingsBanner(next.generated) : t.auto.allCheckedBanner);
       } catch {
         setBanner(t.auto.checkErrorBanner);
       }
@@ -125,7 +119,7 @@ export function TostaoFindingsBoard({
   return (
     <section className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-col gap-0.5">
+        <div className="flex min-w-0 flex-col gap-0.5">
           <div className="flex items-center gap-2">
             <h2 className="font-display text-lg font-extrabold">{t.auto.foundTitle}</h2>
             {state.insights.length > 0 && (
@@ -133,6 +127,30 @@ export function TostaoFindingsBoard({
                 {state.insights.length}
               </span>
             )}
+            <button
+              type="button"
+              onClick={handleCheck}
+              disabled={isPending}
+              aria-label={isPending && !busyId ? t.auto.checkingNow : t.auto.checkNow}
+              title={isPending && !busyId ? t.auto.checkingNow : t.auto.checkNow}
+              className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-linha bg-cartao text-tinta transition hover:bg-papel-2 disabled:opacity-50 after:absolute after:-inset-1 after:content-['']"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.1"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className={isPending && !busyId ? 'animate-spin' : ''}
+              >
+                <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+                <path d="M21 3v6h-6" />
+              </svg>
+            </button>
           </div>
           {!compact && (
             <span className="text-xs text-tinta-suave">
@@ -144,25 +162,15 @@ export function TostaoFindingsBoard({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        {compact && state.insights.length > 0 && (
           <button
             type="button"
-            onClick={handleCheck}
-            disabled={isPending}
-            className="flex h-9 items-center gap-1.5 rounded-full border border-linha bg-cartao px-3.5 text-xs font-semibold text-tinta transition hover:bg-papel-2 disabled:opacity-50"
+            onClick={() => router.push(seeAllHref)}
+            className="text-xs font-semibold text-laranja-texto hover:underline"
           >
-            {isPending && !busyId ? t.auto.checkingNow : t.auto.checkNow}
+            {t.home.viewAll}
           </button>
-          {compact && state.insights.length > 0 && (
-            <button
-              type="button"
-              onClick={() => router.push(seeAllHref)}
-              className="text-xs font-semibold text-laranja-texto hover:underline"
-            >
-              {t.home.viewAll}
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
       {banner && (
@@ -190,19 +198,19 @@ export function TostaoFindingsBoard({
             return (
               <div
                 key={item.id}
-                className={`flex flex-col justify-between gap-3 rounded-[20px] border p-4 ${SEVERITY_CARD[item.severity]}`}
+                className={`flex min-w-0 flex-col justify-between gap-3 rounded-[20px] border p-4 ${SEVERITY_CARD[item.severity]}`}
               >
-                <div className="flex items-start gap-3">
+                <div className="flex min-w-0 items-start gap-3">
                   <Mascot pose={ROUTINE_POSE[item.routine]} size={44} alt="" still />
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <span className="text-[11px] font-bold tracking-[0.06em] text-tinta-suave uppercase">
                       {routineMeta.badge}
                     </span>
-                    <span className="text-[15px] leading-5 font-bold">{item.title}</span>
-                    <p className="text-[13px] leading-[18px] text-tinta-suave">{item.body}</p>
+                    <span className="break-words text-[15px] leading-5 font-bold">{item.title}</span>
+                    <p className="break-words text-[13px] leading-[18px] text-tinta-suave">{item.body}</p>
                   </div>
                 </div>
-                <div className="flex items-center justify-end gap-2 pt-1">
+                <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
                   <button
                     type="button"
                     disabled={isBusy}

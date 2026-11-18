@@ -17,6 +17,7 @@ import { GetBudgetsUseCase } from './budgets.js';
 import { EngagementUseCase } from './engagement.js';
 import { ForecastUseCase } from './financial-plan.js';
 import { ListSubscriptionsUseCase } from './list-subscriptions.js';
+import { findManualDuplicates } from '../services/reconcile-manual.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const SEVERITY_RANK = { urgent: 0, warning: 1, info: 2 } as const;
@@ -45,6 +46,12 @@ function actionMeta(insight: TostaoInsight): { actionLabel: string; actionHref: 
         actionLabel: 'Marcar como transferência',
         actionHref: txId ? `/carteira/${txId}` : '/carteira',
         canApply: true,
+      };
+    case 'possible_duplicate_manual':
+      return {
+        actionLabel: 'Conferir lançamento',
+        actionHref: txId ? `/carteira/${txId}` : '/carteira',
+        canApply: false,
       };
     case 'month_shortfall': {
       const amount = typeof p.shortfallInCents === 'number' ? money(p.shortfallInCents) : 'dinheiro';
@@ -263,6 +270,20 @@ export class RunTostaoChecksUseCase {
         body: `"${tx.description}" (${money(Math.abs(tx.amountInCents))}) está contando como gasto/entrada. Quer marcar como transferência interna?`,
         payload: { transactionId: tx.id, amountInCents: tx.amountInCents, description: tx.description },
         dedupeKey: `caramelo:transfer:${tx.id}`,
+      });
+    }
+
+    // Anotada à mão que parece igual a mais de uma cobrança do banco: não dá pra apagar sozinho, então pergunta.
+    for (const tx of findManualDuplicates(recentTxs).ambiguous.slice(0, 2)) {
+      out.push({
+        userId,
+        routine: 'caramelo_extrato',
+        kind: 'possible_duplicate_manual',
+        severity: 'info',
+        title: 'Esse gasto anotado já caiu no banco?',
+        body: `"${tx.description}" (${money(Math.abs(tx.amountInCents))}) parece igual a mais de uma cobrança do banco, então não apaguei sozinho. Confere e apaga a anotação se for repetida.`,
+        payload: { transactionId: tx.id, amountInCents: tx.amountInCents, description: tx.description },
+        dedupeKey: `caramelo:dup-manual:${tx.id}`,
       });
     }
 

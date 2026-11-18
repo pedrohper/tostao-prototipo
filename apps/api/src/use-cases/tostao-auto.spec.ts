@@ -22,6 +22,54 @@ beforeEach(() => {
 });
 
 describe('funções automáticas do Tostão & Caramelo', () => {
+  it('avisa quando uma anotada parece igual a mais de uma cobrança do banco (ambíguo) e some quando resolvida', async () => {
+    const u = await setupUser('amb@x.com');
+    const conn = await repos.connections.create({ userId: u.id, itemId: 'item-amb', institution: 'Nubank' });
+    const acc = await repos.accounts.upsertByExternalId({
+      userId: u.id,
+      connectionId: conn.id,
+      externalId: 'a1',
+      name: 'Nubank',
+      type: 'BANK',
+      balanceInCents: 0,
+      fingerprint: null,
+    });
+    const bankTx = (externalId: string) =>
+      repos.transactions.create({
+        userId: u.id,
+        accountId: acc.id,
+        externalId,
+        description: 'SPOTIFY',
+        amountInCents: -2190,
+        occurredAt: new Date('2026-11-14T14:00:00Z'),
+        categoryId: 'assinaturas',
+        isInternalTransfer: false,
+      });
+    await bankTx('s1');
+    await bankTx('s2');
+    const manual = await repos.transactions.create({
+      userId: u.id,
+      accountId: null,
+      externalId: null,
+      description: 'Spotify',
+      amountInCents: -2190,
+      occurredAt: new Date('2026-11-14T14:00:00Z'),
+      categoryId: 'assinaturas',
+      isInternalTransfer: false,
+    });
+
+    const runner = new RunTostaoChecksUseCase(repos, () => now);
+    const first = await runner.execute({ userId: u.id });
+    const found = first.insights.find((i) => i.kind === 'possible_duplicate_manual');
+    expect(found).toBeDefined();
+    expect(found!.actionHref).toBe(`/carteira/${manual.id}`);
+
+    // A pessoa apaga a anotação: o aviso se resolve sozinho na próxima checagem.
+    await repos.transactions.delete(manual.id);
+    const second = await runner.execute({ userId: u.id });
+    expect(second.insights.some((i) => i.kind === 'possible_duplicate_manual' && i.status === 'PENDING')).toBe(false);
+  });
+
   it('detecta pendentes, fatura/transferência, limites, acertos e aposta sem duplicar', async () => {
     const u = await setupUser();
     const conn = await repos.connections.create({ userId: u.id, itemId: 'item-1', institution: 'Nubank' });

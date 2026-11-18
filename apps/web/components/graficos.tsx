@@ -206,7 +206,7 @@ export function BudgetProgressBar({
           style={{ width: `${pct}%` }}
         />
       </div>
-      <div className="flex justify-between text-xs text-tinta-suave">
+      <div className="flex flex-wrap justify-between gap-x-2 gap-y-0.5 text-xs text-tinta-suave">
         <span>{labels.usedLabel(money(usado), pct)}</span>
         <span>{labels.freeLabel(money(Math.max(0, limite - usado)))}</span>
       </div>

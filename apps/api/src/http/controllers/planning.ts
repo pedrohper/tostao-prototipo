@@ -65,7 +65,7 @@ export function planningRoutes(app: FastifyInstance, uc: UseCases) {
     return (await uc.forecast.execute({ userId: request.user.sub })) satisfies ForecastResponse;
   });
 
-  // Meta: criar/trocar (body = meta) ou apagar (body = null), e "Guardei"/"Tirei"
+  // Metas: criar/trocar/apagar e "Guardei"/"Tirei"
   app.put('/goal', { onRequest: verifyJwt }, async (request) => {
     const goal = goalBody.nullable().parse(request.body ?? null);
     const r = await uc.setGoal.execute({ userId: request.user.sub, goal });
@@ -73,9 +73,31 @@ export function planningRoutes(app: FastifyInstance, uc: UseCases) {
     return r;
   });
 
+  app.post('/goals', { onRequest: verifyJwt }, async (request) => {
+    const goal = goalBody.parse(request.body);
+    const r = await uc.setGoal.add({ userId: request.user.sub, goal });
+    checkLater(request.user.sub);
+    return r;
+  });
+
+  app.put('/goals/:id', { onRequest: verifyJwt }, async (request) => {
+    const { id } = z.object({ id: z.string().min(1) }).parse(request.params);
+    const goal = goalBody.parse(request.body);
+    const r = await uc.setGoal.update({ userId: request.user.sub, id, goal });
+    checkLater(request.user.sub);
+    return r;
+  });
+
+  app.delete('/goals/:id', { onRequest: verifyJwt }, async (request) => {
+    const { id } = z.object({ id: z.string().min(1) }).parse(request.params);
+    const r = await uc.setGoal.remove({ userId: request.user.sub, id });
+    checkLater(request.user.sub);
+    return r;
+  });
+
   app.post('/goal/deposits', { onRequest: verifyJwt }, async (request) => {
-    const { amountInCents } = goalDepositBody.parse(request.body);
-    const r = await uc.goalDeposit.execute({ userId: request.user.sub, amountInCents });
+    const { amountInCents, goalId } = goalDepositBody.parse(request.body);
+    const r = await uc.goalDeposit.execute({ userId: request.user.sub, amountInCents, goalId });
     checkLater(request.user.sub);
     return r;
   });

@@ -1,36 +1,28 @@
 import Link from 'next/link';
 import type { MissionsResponse } from '@tostao/contracts';
-import { DailyMissions } from './engajamento';
 import { Mascot } from './mascote';
+import { SidebarStreakButton } from './streak-modal';
 import { getDictionary, type Locale } from '@/lib/i18n';
 
-/** Desktop sidebar footer: streak, XP bar, and quick "Log expense" action. */
+/** Desktop sidebar footer: clickable streak/XP card (opens streak sequence + missions) and quick "Log expense" action. */
 export function SidebarFooter({
   xp,
   level,
   streakDays,
+  missions = null,
   locale = 'pt-BR',
 }: {
   xp: number;
   level: number;
   streakDays: number;
+  missions?: MissionsResponse | null;
   locale?: Locale;
 }) {
-  const xpRemaining = level * 100 - xp;
   const t = getDictionary(locale);
 
   return (
-    <div className="mt-auto hidden flex-col gap-2.5 md:flex">
-      <div className="flex flex-col gap-2 rounded-2xl bg-amarelo-claro p-3.5">
-        <div className="flex justify-between text-[13px] font-bold">
-          <span>{t.nav.streakDays(streakDays)}</span>
-          <span>{xp} XP</span>
-        </div>
-        <div className="h-2 rounded-full bg-cartao">
-          <div className="h-full rounded-full bg-tinta" style={{ width: `${Math.max(4, xp % 100)}%` }} />
-        </div>
-        <span className="text-xs text-tinta-suave">{t.nav.xpToNextLevel(xpRemaining, level + 1)}</span>
-      </div>
+    <div className="mt-auto hidden flex-col gap-3 md:flex">
+      <SidebarStreakButton xp={xp} level={level} streakDays={streakDays} missions={missions} locale={locale} />
       <Link
         href="/anotar"
         className="flex h-12 items-center justify-center gap-2 rounded-full bg-tinta text-[15px] font-semibold text-papel no-underline"
@@ -66,12 +58,12 @@ export function DesktopSplitShell({
   const asideWidth =
     rightWidth === 320 ? 'lg:w-[290px] xl:w-[320px] 2xl:w-[348px]' : 'lg:w-[300px] xl:w-[340px] 2xl:w-[360px]';
   return (
-    <div className="lg:-mt-8 lg:-mr-8 lg:-mb-12 lg:flex lg:min-h-dvh">
-      <div className="flex min-w-0 flex-1 flex-col lg:px-7 lg:py-8 xl:px-9 xl:py-9">
-        <div className="mx-auto flex w-full max-w-[1040px] flex-col gap-4 lg:gap-5 xl:gap-[22px]">{children}</div>
+    <div className="lg:-mt-9 lg:-mr-10 lg:-mb-16 lg:flex lg:min-h-dvh">
+      <div className="flex min-w-0 flex-1 flex-col lg:px-9 lg:py-9 xl:px-11 xl:py-10">
+        <div className="mx-auto flex w-full max-w-[1040px] flex-col gap-6 lg:gap-7 xl:gap-8">{children}</div>
       </div>
       <aside
-        className={`hidden shrink-0 flex-col gap-4 border-l border-linha px-5 py-8 lg:flex xl:px-6 xl:py-9 ${asideWidth}`}
+        className={`hidden shrink-0 flex-col gap-5 border-l border-linha px-6 py-9 lg:flex xl:px-7 xl:py-10 ${asideWidth}`}
       >
         {right}
       </aside>
@@ -79,11 +71,11 @@ export function DesktopSplitShell({
   );
 }
 
-/** Right column on desktop screens: active lesson and today's missions. */
-export function RightRail({ missions, locale = 'pt-BR' }: { missions: MissionsResponse | null; locale?: Locale }) {
+/** Right column on desktop screens: active lesson. */
+export function RightRail({ locale = 'pt-BR' }: { missions?: MissionsResponse | null; locale?: Locale }) {
   const t = getDictionary(locale);
   return (
-    <aside className="hidden w-80 shrink-0 flex-col gap-4 border-l border-linha px-6 pt-9 pb-10 lg:flex">
+    <aside className="hidden w-80 shrink-0 flex-col gap-5 border-l border-linha px-6 pt-9 pb-10 lg:flex">
       <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">{t.nav.learnHeader}</span>
       <div className="flex flex-col gap-2.5 rounded-[20px] bg-amarelo-claro p-4">
         <Mascot pose="professor" size={88} alt="Tostão" />
@@ -95,7 +87,6 @@ export function RightRail({ missions, locale = 'pt-BR' }: { missions: MissionsRe
           {t.nav.continueLesson}
         </Link>
       </div>
-      {missions && <DailyMissions data={missions} compact locale={locale} />}
     </aside>
   );
 }
