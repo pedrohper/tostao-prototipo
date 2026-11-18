@@ -23,13 +23,20 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-18 · Claude · servidor (deploy das telas Início/Anotações + correção do deploy-tostao.sh)
+
+- Deploy de `2b9e7ac` + `ea6f8ec` (branch `feat/inicio-mobills-anotacoes`, sem push/merge): backup `tostao-20261118-1342.sql.gz`, 196 testes, migration `20261118120000_reconciled_notes` aplicada, build ok, API e Web recarregadas.
+- **Bug achado:** `pm2 reload tostao-api tostao-web` (dois nomes numa chamada) só recarregava a API. A web ficava com o processo antigo (uptime de 4h) lendo o `.next` novo, o que gera "This page couldn't load" em algumas telas. O script agora recarrega um processo por vez e o healthcheck tenta por até 60s (antes falhava porque a API ainda estava subindo).
+- Conferido depois: 27 telas autenticadas respondem 200 sem a tela de erro no HTML; sem cookie ou com token inválido redireciona pra `/entrar` e `/sair`.
+- Em aberto (baixa confiança): 2 erros antigos `ApiError 401` em `/inicio` e `/carteira` no log da web (provavelmente do mesmo processo desatualizado). Se voltarem com a web recém-recarregada, investigar.
+
 ### 2026-11-18 · Claude · branch feat/inicio-mobills-anotacoes (tela Anotações)
 
 - **Tela `/anotacoes`**: lista o que foi anotado à mão (agrupado por mês, abre a transação) e o histórico do que o app apagou sozinho ("Confirmados pelo banco": "Virou: <cobrança>", data em que foi anotado, nota, link pra cobrança). Botão "+ Anotar" no topo; `/anotar` agora respeita `?voltar=` e volta pra tela de origem. Entradas: círculo "Anotações" do carrossel do Início (antes "Anotar") e card "Anotações" no Planejar da Carteira. Sem 6ª aba no menu de baixo (decisão do Pedro).
 - **API**: `GET /notes` (`ListNotesUseCase`), `TransactionsRepository.findManualByUser`, tabela `reconciled_notes` + `ReconciledNotesRepository`. `reconcileManualEntries` grava o histórico **antes** de apagar a anotação.
 - **Migration**: `20261118120000_reconciled_notes` (CREATE TABLE, sem mexer em dados) — **rodar `prisma migrate deploy` no deploy**. Env nova: nenhuma.
 - **Validação**: 196 testes (+2: lista de anotadas/confirmadas e isolamento entre usuários), tsc api/web, lint, prettier. Telas não vistas renderizadas.
-- **Ficou de fora**: transações do banco que só têm nota (não aparecem na lista; a nota aparece na linha da Carteira); restaurar uma anotação que o app apagou; recuperar anotações apagadas antes deste registro existir (só pelo backup do banco). **Não deployado.**
+- **Ficou de fora**: transações do banco que só têm nota (não aparecem na lista; a nota aparece na linha da Carteira); restaurar uma anotação que o app apagou; recuperar anotações apagadas antes deste registro existir (só pelo backup do banco). **Deployado em 2026-11-18 13:44** (ver entrada abaixo).
 
 ### 2026-11-18 · Claude · servidor (revisão geral: aula do Tostão, metas, reconciliação)
 
