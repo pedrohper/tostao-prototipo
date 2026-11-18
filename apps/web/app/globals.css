@@ -32,9 +32,40 @@
   --font-sans: Inter, system-ui, sans-serif;
 }
 
+@custom-variant dark {
+  &:where([data-theme='dark'], [data-theme='dark'] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:not([data-theme='light']):not([data-theme='light'] *)) {
+      @slot;
+    }
+  }
+}
+
 /* Modo escuro: mesmos nomes, outras cores. Os componentes não mudam. */
+:root[data-theme='dark'] {
+  --color-papel: #1a1714;
+  --color-papel-2: #24201c;
+  --color-cartao: #2b2622;
+  --color-tinta: #f6efe4;
+  --color-tinta-suave: #b8aea2;
+  --color-linha: #3a342e;
+  --color-laranja-texto: #ff8a6e;
+  --color-verde-texto: #5fe3b4;
+  --color-vermelho-texto: #ff8a80;
+  --color-rosa: #43272e;
+  --color-menta-clara: #1f3a30;
+  --color-azul: #1f2d40;
+  --color-amarelo-claro: #3d3320;
+  --color-laranja-claro: #33241d;
+  --color-roxo-suave: #2e2440;
+  --color-bronze-suave: #33241d;
+  --color-bronze-borda: #5a3526;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --color-papel: #1a1714;
     --color-papel-2: #24201c;
     --color-cartao: #2b2622;

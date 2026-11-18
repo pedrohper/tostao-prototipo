@@ -45,6 +45,7 @@ import { readHomePrefs, resolveSectionOrder, type HomeSectionId } from '@/lib/in
 import { modules } from '@/lib/lessons';
 import { NO_PROGRESS } from '@/lib/xp';
 import { AskTostaoCard } from './ask-card';
+import { DesktopBalanceRow, MobileBalanceCard, type BalanceCardProps } from './balance-card';
 import { PlanejarAtalhos } from './planejar-atalhos';
 
 const BAR_SEGMENT_CLASSES = ['bg-laranja', 'bg-tinta', 'bg-menta', 'bg-amarelo', 'bg-tinta-suave'] as const;
@@ -52,24 +53,6 @@ const DESKTOP_LEFT_EXTRAS = new Set<HomeSectionId>(['sobra', 'cartoes', 'limites
 
 const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
 const stripChevron = (str: string) => str.replace(/\s*›$/, '');
-
-/** Small arrow used in the income/expense badges of the balance card. */
-function FlowArrow({ direction }: { direction: 'up' | 'down' }) {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      {direction === 'up' ? <path d="M12 19V5M5 12l7-7 7 7" /> : <path d="M12 5v14M19 12l-7 7-7-7" />}
-    </svg>
-  );
-}
 
 export default async function HomePage() {
   const month = currentMonth();
@@ -590,63 +573,26 @@ export default async function HomePage() {
 
   const visibleSections = resolveSectionOrder(prefs).filter(isSectionVisible);
 
-  const balanceCard = (
-    <div className="relative flex flex-col gap-3.5 rounded-[22px] border border-linha bg-cartao p-[18px]">
-      <Link href="/carteira" aria-label={t.nav.wallet} className="absolute inset-0 rounded-[22px]" />
-      {summary.balanceInCents !== null ? (
-        <div className="flex flex-col gap-0.5">
-          <span className="text-[13px] font-semibold text-tinta-suave">
-            {t.home.balanceInAccounts(bankAccounts.length)}
-          </span>
-          <span className="font-display text-[40px] leading-[44px] font-extrabold tracking-[-0.5px] tabular-nums">
-            {money(summary.balanceInCents)}
-          </span>
-        </div>
-      ) : (
-        <span className="text-[13px] font-semibold text-tinta-suave">{t.home.noConnectedBankHint}</span>
-      )}
-      <div className="relative z-[1] grid grid-cols-2 gap-2.5 border-t border-linha pt-3.5">
-        <Link
-          href="/carteira?filtro=entradas#lista"
-          className="flex min-w-0 items-center gap-2.5 text-tinta no-underline"
-        >
-          <span
-            aria-hidden
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-menta-clara text-verde-texto"
-          >
-            <FlowArrow direction="up" />
-          </span>
-          <span className="flex min-w-0 flex-col">
-            <span className="truncate text-xs font-semibold text-tinta-suave">
-              {stripChevron(t.home.incomeInMonth(currentMonthLabel))}
-            </span>
-            <span className="text-[15px] font-bold text-verde-texto tabular-nums sm:text-[17px]">
-              {money(summary.incomeInCents)}
-            </span>
-          </span>
-        </Link>
-        <Link
-          href="/carteira?filtro=saidas#lista"
-          className="flex min-w-0 items-center gap-2.5 text-tinta no-underline"
-        >
-          <span
-            aria-hidden
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rosa text-vermelho-texto"
-          >
-            <FlowArrow direction="down" />
-          </span>
-          <span className="flex min-w-0 flex-col">
-            <span className="truncate text-xs font-semibold text-tinta-suave">
-              {stripChevron(t.home.outcomeInMonth(currentMonthLabel))}
-            </span>
-            <span className="text-[15px] font-bold text-vermelho-texto tabular-nums sm:text-[17px]">
-              {money(summary.outcomeInCents)}
-            </span>
-          </span>
-        </Link>
-      </div>
-    </div>
-  );
+  const balanceProps: BalanceCardProps = {
+    balanceInCents: summary.balanceInCents,
+    incomeInCents: summary.incomeInCents,
+    outcomeInCents: summary.outcomeInCents,
+    outcomePct,
+    walletLabel: t.nav.wallet,
+    balanceLabel: t.home.balanceInAccounts(bankAccounts.length),
+    balanceLabelDesktop: stripChevron(t.home.balanceInAccounts(bankAccounts.length)),
+    noConnectedBankHint: t.home.noConnectedBankHint,
+    incomeLabel: stripChevron(t.home.incomeInMonth(currentMonthLabel)),
+    incomeLabelDesktop: stripChevron(t.home.incomeInMonth(currentMonthLabel)),
+    outcomeLabel: stripChevron(t.home.outcomeInMonth(currentMonthLabel)),
+    outcomeLabelDesktop: stripChevron(t.home.outcomeInMonth(currentMonthLabel)),
+    percentOfIncomeLabel: outcomePct !== null ? t.home.percentOfIncome(outcomePct) : null,
+    hideBalanceAria: t.home.hideBalanceAria,
+    showBalanceAria: t.home.showBalanceAria,
+    accountsPreview: bankAccounts.slice(0, 3).map((a) => ({ name: a.name, balanceInCents: a.balanceInCents })),
+  };
+
+  const balanceCard = <MobileBalanceCard {...balanceProps} />;
 
   const brokenConnectionsAlert = brokenConnections.length > 0 && (
     <Link
@@ -1025,56 +971,7 @@ export default async function HomePage() {
           emptyStateCard
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-4 xl:grid-cols-[1.25fr_1fr_1fr] xl:gap-5">
-              <Link
-                href="/carteira"
-                className="col-span-2 flex min-w-0 flex-col gap-1 rounded-[22px] border border-linha bg-cartao p-[22px] text-tinta no-underline xl:col-span-1"
-              >
-                <span className="text-sm font-semibold text-tinta-suave">
-                  {stripChevron(t.home.balanceInAccounts(bankAccounts.length))}
-                </span>
-                <span className="font-display text-[32px] leading-[36px] font-extrabold tracking-[-0.5px] tabular-nums xl:text-[36px] xl:leading-[40px] min-[1400px]:text-[46px] min-[1400px]:leading-[50px]">
-                  {summary.balanceInCents !== null ? money(summary.balanceInCents) : '—'}
-                </span>
-                {bankAccounts.length > 0 ? (
-                  <span className="text-[13px] leading-[18px] text-tinta-suave">
-                    {bankAccounts
-                      .slice(0, 3)
-                      .map((a) => `${a.name} ${money(a.balanceInCents)}`)
-                      .join(' · ')}
-                  </span>
-                ) : summary.balanceInCents === null ? (
-                  <span className="text-[13px] leading-[18px] text-tinta-suave">{t.home.noConnectedBankHint}</span>
-                ) : null}
-              </Link>
-
-              <Link
-                href="/carteira?filtro=entradas#lista"
-                className="flex min-w-0 flex-col gap-1 rounded-[22px] border border-linha bg-cartao p-[22px] text-tinta no-underline"
-              >
-                <span className="text-sm font-semibold text-tinta-suave">
-                  {stripChevron(t.home.incomeInMonth(currentMonthLabel))}
-                </span>
-                <span className="font-display text-[22px] leading-[28px] font-extrabold whitespace-nowrap text-verde-texto tabular-nums xl:text-[24px] xl:leading-[32px] min-[1400px]:text-[30px] min-[1400px]:leading-[38px]">
-                  + {money(summary.incomeInCents)}
-                </span>
-              </Link>
-
-              <Link
-                href="/carteira?filtro=saidas#lista"
-                className="flex min-w-0 flex-col gap-1 rounded-[22px] border border-linha bg-cartao p-[22px] text-tinta no-underline"
-              >
-                <span className="text-sm font-semibold text-tinta-suave">
-                  {stripChevron(t.home.outcomeInMonth(currentMonthLabel))}
-                </span>
-                <span className="font-display text-[22px] leading-[28px] font-extrabold whitespace-nowrap tabular-nums xl:text-[24px] xl:leading-[32px] min-[1400px]:text-[30px] min-[1400px]:leading-[38px]">
-                  {money(summary.outcomeInCents)}
-                </span>
-                {outcomePct !== null && (
-                  <span className="text-[13px] text-tinta-suave">{t.home.percentOfIncome(outcomePct)}</span>
-                )}
-              </Link>
-            </div>
+            <DesktopBalanceRow {...balanceProps} />
 
             {auto && auto.insights.length > 0 && (
               <TostaoFindingsBoard initial={auto} locale={locale} compact seeAllHref="/tostao?aba=automatico" />

@@ -39,6 +39,8 @@ export interface Dictionary {
     connectExpensesCta: string;
     logManualExpenseCta: string;
     balanceInAccounts: (count: number) => string;
+    hideBalanceAria: string;
+    showBalanceAria: string;
     noConnectedBankHint: string;
     shortcutsAria: string;
     shortcutAnnotate: string;
@@ -163,6 +165,13 @@ export interface Dictionary {
     languageDescription: string;
     soundsTitle: string;
     soundsDescription: string;
+    themeTitle: string;
+    themeDescription: string;
+    themeOptions: {
+      system: string;
+      light: string;
+      dark: string;
+    };
     streakToast: (days: number) => string;
     missionDoneToast: string;
     pushTitle: string;
@@ -396,6 +405,8 @@ export interface Dictionary {
     closingActiveSummary: (prevMonth: string, currentMonth: string, outAmount: string) => string;
     closingEmptySummary: (prevMonth: string) => string;
     notesSummary: string;
+    moreInfoAria: (title: string) => string;
+    openCard: string;
     titles: {
       income: string;
       forecast: string;
@@ -1249,6 +1260,8 @@ export interface Dictionary {
         nextModules: string;
         allModules: string;
         seeTrail: string;
+        seeAllModules: string;
+        lessonOfTotal: (num: number, total: number) => string;
         optionalSuffix: string;
         notStartedAria: string;
         doneSr: string;

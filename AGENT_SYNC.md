@@ -23,6 +23,15 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-18 · Antigravity · branch feat/inicio-mobills-anotacoes (olhinho no Início, Planejar com 3 pontinhos, Aprender capa de livro, tema Claro/Escuro/Sistema)
+
+- **Início (`apps/web/app/(app)/inicio/balance-card.tsx`, `page.tsx`):** adicionado o botão de olhinho no card de saldo (mobile e desktop) para ocultar/mostrar saldo em contas, receitas e despesas com persistência em `localStorage` (`tostao-hide-balance` via `useSyncExternalStore`).
+- **Carteira → Planejar (`apps/web/app/(app)/carteira/planner-card-grid.tsx`, `planner-hub.tsx`):** removidos os subtextos soltos dos cards; cada card agora mostra só ícone, título, valor/badge (e barra na Meta) + botão de três pontinhos (`⋯`) que expande o resumo detalhado e link de abertura sob demanda.
+- **Aprender (`apps/web/app/(app)/aprender/page.tsx`):** card principal redesenhado em formato vertical "capa de livro" com arte temática do Tostão por módulo, informações completas da aula primeiro (`hook`, meta e CTA), bloco do módulo + barra de progresso abaixo e botão **"Ver todos os módulos"** (`/aprender/trilha`) logo em seguida.
+- **Preferências / Tema (`apps/web/components/theme-switcher.tsx`, `lib/theme.ts`, `lib/theme-actions.ts`, `app/layout.tsx`, `app/globals.css`, `app/(app)/mais/preferencias/page.tsx`):** seletor **Sistema / Claro / Escuro** com cookie `tostao-tema` aplicado no `<html>` em SSR (sem flash) e suporte a `@custom-variant dark` no Tailwind v4.
+- **i18n (`pt-br.ts`, `en.ts`, `es.ts`, `types.ts`):** adicionadas chaves de visibilidade do saldo, detalhes dos três pontinhos no Planejar, capa do Aprender e seletor de tema nos 3 idiomas.
+- Sem migration no banco e sem env nova. Validado com Prettier, `pnpm typecheck`, `pnpm lint`, `pnpm test` (196 testes) e `pnpm build`.
+
 ### 2026-11-18 · Claude · branch feat/inicio-mobills-anotacoes (ajustes de UI: Planejar e chat)
 
 - Carteira → Planejar: cards passavam da largura da tela no celular. O grid não tinha `grid-cols-1` (coluna `auto` cresce com o conteúdo); agora `grid-cols-1` + `min-w-0` no card e na seção.

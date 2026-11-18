@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import type {
   BudgetDTO,
   FinancialPlan,
@@ -9,28 +8,9 @@ import type {
 } from '@tostao/contracts';
 import { money, monthName, shiftMonth } from '@/lib/format';
 import type { Dictionary, Locale } from '@/lib/i18n';
-import { Icon } from '@/components/icone';
+import { PlannerCardGrid, type PlannerCardViewItem } from './planner-card-grid';
 
-type BadgeTone = 'neutral' | 'positive' | 'warning' | 'alert';
-
-interface PlannerCardItem {
-  id: string;
-  href: string;
-  icon: string;
-  iconBg: string;
-  title: string;
-  headline: string | null;
-  summary: string;
-  badge?: { text: string; tone: BadgeTone };
-  progressPct?: number | null;
-}
-
-const BADGE_CLASSES: Record<BadgeTone, string> = {
-  neutral: 'bg-papel-2 text-tinta-suave',
-  positive: 'bg-menta-clara text-verde-texto',
-  warning: 'bg-amarelo-claro text-tinta',
-  alert: 'bg-rosa text-vermelho-texto',
-};
+type PlannerCardItem = PlannerCardViewItem;
 
 function goalKindFallback(kind: NonNullable<FinancialPlan['goal']>['kind'], locale: Locale): string {
   if (locale === 'en') {
@@ -337,74 +317,14 @@ export function PlannerHub({
   ];
 
   return (
-    <section className="flex min-w-0 flex-col gap-5 pb-8">
-      <div className="flex flex-col gap-1">
-        <h2 className="font-display text-[22px] leading-7 font-extrabold text-tinta">{t.planner.title}</h2>
-        <p className="text-sm leading-5 text-tinta-suave">{t.planner.subtitle}</p>
-      </div>
+    <section className="flex min-w-0 flex-col gap-4 pb-8">
+      <h2 className="font-display text-[22px] leading-7 font-extrabold text-tinta">{t.planner.title}</h2>
 
-      {/* grid-cols-1 = minmax(0,1fr): sem isso a coluna cresce com o conteúdo e o card passa da tela. */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {cards.map((card) => (
-          <Link
-            key={card.id}
-            href={card.href}
-            className="group flex min-w-0 flex-col justify-between gap-3.5 rounded-[22px] border border-linha bg-cartao p-5 text-tinta no-underline transition-colors hover:border-tinta/35 hover:bg-papel-2/50"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3">
-                <span
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${card.iconBg}`}
-                  aria-hidden="true"
-                >
-                  <Icon src={card.icon} size={22} />
-                </span>
-                <div className="flex min-w-0 flex-col">
-                  <span className="truncate text-[15px] font-bold group-hover:text-laranja-texto">{card.title}</span>
-                  {card.headline && (
-                    <span className="font-display text-lg leading-6 font-extrabold tabular-nums">{card.headline}</span>
-                  )}
-                </div>
-              </div>
-              <div className="flex shrink-0 items-center gap-1.5">
-                {card.badge && (
-                  <span
-                    className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold whitespace-nowrap ${BADGE_CLASSES[card.badge.tone]}`}
-                  >
-                    {card.badge.text}
-                  </span>
-                )}
-                <span aria-hidden="true" className="text-lg leading-none text-tinta-suave">
-                  ›
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              {card.progressPct !== undefined && card.progressPct !== null && (
-                <div
-                  className="h-2 overflow-hidden rounded-full bg-papel-2"
-                  role="progressbar"
-                  aria-valuenow={card.progressPct}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-label={card.title}
-                >
-                  <div
-                    className="h-full rounded-full bg-menta transition-all"
-                    style={{ width: `${Math.max(4, card.progressPct)}%` }}
-                  />
-                </div>
-              )}
-              {/* Com número em destaque o resumo só repetiria a informação: ele fica pros cards sem número.
-                  Exceção: o da meta traz o nome e quanto guardar por mês, que o número não mostra. */}
-              {(!card.headline || card.id === 'meta') && (
-                <p className="text-[13px] leading-[18px] text-tinta-suave">{card.summary}</p>
-              )}
-            </div>
-          </Link>
-        ))}
-      </div>
+      <PlannerCardGrid
+        cards={cards}
+        moreInfoAria={t.plannerCards.moreInfoAria}
+        openCardLabel={t.plannerCards.openCard}
+      />
     </section>
   );
 }

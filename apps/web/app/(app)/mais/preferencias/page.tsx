@@ -1,13 +1,21 @@
+import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { SoundToggleCard } from '@/components/sons';
+import { ThemeSwitcher } from '@/components/theme-switcher';
 import { BackLink, PageFrame } from '@/components/ui';
 import { resolveBackHref } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
+import { parseTheme, THEME_COOKIE } from '@/lib/theme';
 
 export default async function MaisPreferenciasPage({ searchParams }: { searchParams?: Promise<{ voltar?: string }> }) {
-  const [sp, { locale, t }] = await Promise.all([searchParams ?? Promise.resolve<{ voltar?: string }>({}), getI18n()]);
+  const [sp, cookieStore, { locale, t }] = await Promise.all([
+    searchParams ?? Promise.resolve<{ voltar?: string }>({}),
+    cookies(),
+    getI18n(),
+  ]);
 
+  const initialTheme = parseTheme(cookieStore.get(THEME_COOKIE)?.value);
   const backHref = resolveBackHref(sp.voltar, '/mais');
   const title = locale === 'en' ? 'Preferences' : locale === 'es' ? 'Preferencias' : 'Preferências';
 
@@ -19,6 +27,7 @@ export default async function MaisPreferenciasPage({ searchParams }: { searchPar
       </div>
 
       <div className="flex flex-col divide-y divide-linha rounded-[22px] border border-linha bg-cartao px-[18px] py-1">
+        <ThemeSwitcher initialTheme={initialTheme} locale={locale} embedded />
         <SoundToggleCard locale={locale} embedded />
         <LanguageSwitcher locale={locale} embedded />
       </div>
