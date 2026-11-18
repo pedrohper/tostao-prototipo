@@ -54,7 +54,7 @@ export const es: Dictionary = {
     balanceInAccounts: (count) => `Saldo en ${count} ${count === 1 ? 'cuenta' : 'cuentas'} ›`,
     noConnectedBankHint: 'Sin banco conectado, contando solo lo que anotaste',
     shortcutsAria: 'Atajos de planificación',
-    shortcutAnnotate: 'Anotar',
+    shortcutAnnotate: 'Anotaciones',
     incomeInMonth: (month) => `Ingresos en ${month} ›`,
     outcomeInMonth: (month) => `Gastos en ${month} ›`,
     tellIncomePromptTitle: '¿Cuánto entra al mes?',
@@ -377,6 +377,20 @@ export const es: Dictionary = {
     privacyTitle: 'Política de privacidad',
     termsTitle: 'Términos de uso',
   },
+  notesPage: {
+    title: 'Anotaciones',
+    subtitle: 'Todo lo que anotaste a mano y lo que Tostão ya confirmó con tu banco.',
+    addCta: '+ Anotar',
+    manualHeading: 'Anotado por ti',
+    manualEmpty: 'Todavía no anotaste nada. Anota un gasto que aún no llegó al banco y queda aquí.',
+    confirmedHeading: 'Confirmado por el banco',
+    confirmedHint:
+      'Tostão borró estas anotaciones solo porque el cobro real ya llegó del banco. Tu nota pasó al cobro.',
+    confirmedEmpty: 'Nada confirmado todavía.',
+    becamePrefix: 'Pasó a: ',
+    notedOnPrefix: 'anotado el ',
+    seeCharge: 'Ver cobro',
+  },
   plannerCards: {
     fixedBillCount: (count, total) => `${count} ${count === 1 ? 'recibo fijo' : 'recibos fijos'} (${total})`,
     otherIncomePlus: (amount) => `+ ${amount} de otros ingresos`,
@@ -430,6 +444,7 @@ export const es: Dictionary = {
     closingActiveSummary: (prevMonth, currentMonth, outAmount) =>
       `Mira el cierre completo de ${prevMonth} o sigue ${currentMonth} (${outAmount} de salida).`,
     closingEmptySummary: (prevMonth) => `Resumen visual de ${prevMonth}: cuánto entró, salió y qué cambió.`,
+    notesSummary: 'Todo lo que anotaste a mano y lo que el banco ya confirmó.',
     titles: {
       income: 'Ingresos y gastos fijos',
       forecast: 'Previsión (3 meses)',
@@ -439,6 +454,7 @@ export const es: Dictionary = {
       splits: 'Cuentas por cobrar',
       categories: 'Mis categorías',
       closing: 'Cierre del mes',
+      notes: 'Anotaciones',
     },
   },
   walletExtra: {

@@ -53,7 +53,7 @@ export const ptBR: Dictionary = {
     balanceInAccounts: (count) => `Saldo em ${count} ${count === 1 ? 'conta' : 'contas'} ›`,
     noConnectedBankHint: 'Sem banco conectado, contando só o que você anotou',
     shortcutsAria: 'Atalhos do planejamento',
-    shortcutAnnotate: 'Anotar',
+    shortcutAnnotate: 'Anotações',
     incomeInMonth: (month) => `Receitas em ${month} ›`,
     outcomeInMonth: (month) => `Despesas em ${month} ›`,
     tellIncomePromptTitle: 'Quanto entra por mês?',
@@ -375,6 +375,20 @@ export const ptBR: Dictionary = {
     privacyTitle: 'Política de privacidade',
     termsTitle: 'Termos de uso',
   },
+  notesPage: {
+    title: 'Anotações',
+    subtitle: 'Tudo que você anotou à mão e o que o Tostão já confirmou com o banco.',
+    addCta: '+ Anotar',
+    manualHeading: 'Anotados por você',
+    manualEmpty: 'Você ainda não anotou nada. Anote um gasto que ainda não caiu no banco e ele fica aqui.',
+    confirmedHeading: 'Confirmados pelo banco',
+    confirmedHint:
+      'O Tostão apagou estas anotações sozinho porque a cobrança real já chegou do banco. A nota que você escreveu foi pra cobrança.',
+    confirmedEmpty: 'Nada confirmado ainda.',
+    becamePrefix: 'Virou: ',
+    notedOnPrefix: 'anotado em ',
+    seeCharge: 'Ver cobrança',
+  },
   plannerCards: {
     fixedBillCount: (count, total) => `${count} ${count === 1 ? 'conta fixa' : 'contas fixas'} (${total})`,
     otherIncomePlus: (amount) => `+ ${amount} de outras entradas`,
@@ -427,6 +441,7 @@ export const ptBR: Dictionary = {
     closingActiveSummary: (prevMonth, currentMonth, outAmount) =>
       `Veja o fechamento completo de ${prevMonth} ou acompanhe ${currentMonth} (${outAmount} de saída).`,
     closingEmptySummary: (prevMonth) => `Resumo visual de ${prevMonth}: quanto entrou, saiu e o que mudou.`,
+    notesSummary: 'Tudo que você anotou à mão e o que o banco já confirmou.',
     titles: {
       income: 'Renda e contas fixas',
       forecast: 'Previsão (3 meses)',
@@ -436,6 +451,7 @@ export const ptBR: Dictionary = {
       splits: 'Acertos',
       categories: 'Minhas categorias',
       closing: 'Fechamento do mês',
+      notes: 'Anotações',
     },
   },
   walletExtra: {

@@ -154,6 +154,29 @@ export type TransactionDTO = {
   note: string | null;
 };
 
+// ---------- Anotações ----------
+/** Anotação à mão que o app apagou sozinho porque o banco confirmou a cobrança. */
+export type ConfirmedNoteDTO = {
+  id: string;
+  description: string;
+  amountInCents: number;
+  /** Data em que a pessoa tinha anotado. */
+  occurredAt: string;
+  note: string | null;
+  categoryName: string | null;
+  categoryEmoji: string | null;
+  /** Cobrança do banco que a substituiu. */
+  bankTransactionId: string | null;
+  bankDescription: string;
+  reconciledAt: string;
+};
+export type NotesResponse = {
+  /** Tudo que foi anotado à mão e continua valendo. */
+  entries: TransactionDTO[];
+  /** O que o app apagou sozinho (histórico). */
+  confirmed: ConfirmedNoteDTO[];
+};
+
 // ---------- Acertos (quem te deve / pra quem você deve) ----------
 /** saldo > 0: a pessoa te deve. saldo < 0: você deve pra ela. */
 export type PersonDTO = { id: string; name: string; balanceInCents: number; count: number; lastAt: string | null };

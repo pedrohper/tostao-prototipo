@@ -49,6 +49,9 @@ export async function createManual(_: ActionState, form: FormData): Promise<Acti
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
   revalidatePath('/', 'layout');
+  // Veio de outra tela (ex.: Anotações)? Volta pra ela. Senão, mostra o mês na Carteira.
+  const back = String(form.get('back') ?? '');
+  if (back.startsWith('/') && !back.startsWith('//') && back !== '/carteira') redirect(back);
   redirect(`/carteira?mes=${parsed.data.occurredAt.slice(0, 7)}`);
 }
 

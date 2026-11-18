@@ -15,7 +15,7 @@ const OVERLAP_DAYS = 3; // depois: volta 3 dias, porque o banco às vezes lança
 const FUTURE_DAYS = 400; // cartão: parcelas futuras vêm com data lá na frente
 const CARD_BACK_DAYS = 45;
 
-type Deps = Pick<Repositories, 'connections' | 'accounts' | 'transactions' | 'rules'> & {
+type Deps = Pick<Repositories, 'connections' | 'accounts' | 'transactions' | 'rules' | 'reconciledNotes'> & {
   bank: BankGateway;
   now?: () => Date;
 };
@@ -124,7 +124,7 @@ export class SyncBankConnectionUseCase {
       try {
         const hidden = new Set((await accounts.listByUser(connection.userId)).filter((a) => a.hidden).map((a) => a.id));
         ({ removedCount: reconciledCount } = await reconcileManualEntries(
-          transactions,
+          this.deps,
           connection.userId,
           { from: new Date(now.getTime() - SYNC_LOOKBACK_DAYS * DAY), to: now },
           hidden,

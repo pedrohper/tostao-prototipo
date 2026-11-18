@@ -1,17 +1,19 @@
 import type { CategoryDTO, ProfileResponse } from '@tostao/contracts';
 import { api } from '@/lib/api';
-import { todayIso } from '@/lib/format';
+import { resolveBackHref, todayIso } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
 import Link from 'next/link';
 import { AnotarForm, type ContaOption } from './anotar-form';
 
-export default async function AnotarPage() {
-  const [{ categories }, me, { locale, t }] = await Promise.all([
+export default async function AnotarPage({ searchParams }: { searchParams: Promise<{ voltar?: string }> }) {
+  const [{ voltar }, { categories }, me, { locale, t }] = await Promise.all([
+    searchParams,
     api<{ categories: CategoryDTO[] }>('/categories'),
     api<ProfileResponse>('/me').catch(() => null),
     getI18n(),
   ]);
   const a = t.pages.anotar;
+  const backHref = resolveBackHref(voltar, '/carteira');
   // "Pago com" / "Recebido em": contas visíveis. As que vêm do banco atualizam sozinhas, então avisamos do risco de duplicar.
   const contas: ContaOption[] = (me?.connections ?? []).flatMap((c) =>
     c.accounts
@@ -29,7 +31,7 @@ export default async function AnotarPage() {
       <div className="flex min-h-0 w-full grow flex-col md:max-h-[90dvh] md:max-w-[560px] md:grow-0 md:overflow-hidden md:rounded-[26px] md:border md:border-linha md:bg-papel md:shadow-2xl">
         <div className="mx-auto flex w-full max-w-[520px] shrink-0 items-center justify-between px-3 pt-[max(12px,env(safe-area-inset-top))] pb-1 md:max-w-none md:px-5 md:pt-4">
           <Link
-            href="/carteira"
+            href={backHref}
             aria-label={a.closeAria}
             className="flex h-11 w-11 items-center justify-center rounded-full text-tinta transition-colors hover:bg-papel-2"
           >
@@ -49,7 +51,7 @@ export default async function AnotarPage() {
           <span className="text-[13px] font-semibold text-tinta-suave">{a.headerTitle}</span>
           <span className="w-11" aria-hidden="true" />
         </div>
-        <AnotarForm categories={categories} contas={contas} today={todayIso()} locale={locale} />
+        <AnotarForm categories={categories} contas={contas} today={todayIso()} back={backHref} locale={locale} />
       </div>
     </div>
   );

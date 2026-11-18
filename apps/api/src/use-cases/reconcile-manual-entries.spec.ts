@@ -6,6 +6,7 @@ import { ConnectBankUseCase } from './connect-bank.js';
 import { CreateManualTransactionUseCase } from './create-manual-transaction.js';
 import { UpdateTransactionUseCase } from './update-transaction.js';
 import { ImportStatementUseCase } from './import-statement.js';
+import { ListNotesUseCase } from './list-notes.js';
 import { descriptionsLookAlike } from '../services/reconcile-manual.js';
 import { AppError } from '../domain/errors.js';
 
@@ -135,6 +136,64 @@ describe('anotação à mão some quando a cobrança real chega no sync', () => 
   });
 });
 
+describe('tela Anotações', () => {
+  it('lista o que foi anotado à mão e o histórico do que o app apagou sozinho', async () => {
+    const repos = makeInMemoryRepositories();
+    const manual = new CreateManualTransactionUseCase(repos);
+    await manual.execute({
+      userId: 'u1',
+      description: 'Netflix',
+      amountInCents: 5790,
+      kind: 'saida',
+      occurredAt: NETFLIX_DAY,
+      note: 'plano da família',
+    });
+    await manual.execute({
+      userId: 'u1',
+      description: 'Pastel na feira',
+      amountInCents: 1200,
+      kind: 'saida',
+      occurredAt: new Date(Date.UTC(2026, 10, 15, 15)),
+    });
+    await manual.execute({ userId: 'u2', description: 'Do outro', amountInCents: 100, kind: 'saida', occurredAt: NOW });
+
+    const bank = new FakeBankGateway(() => NOW);
+    const sync = new SyncBankConnectionUseCase({ ...repos, bank, now: () => NOW });
+    await new ConnectBankUseCase(repos.connections, bank, sync).execute({ userId: 'u1', itemId: 'item-123456' });
+
+    const r = await new ListNotesUseCase(repos).execute({ userId: 'u1' });
+
+    // Netflix saiu da lista de anotadas (foi confirmada); a do pastel continua; a do u2 não aparece.
+    expect(r.entries.map((e) => e.description)).toEqual(['Pastel na feira']);
+    expect(r.confirmed).toHaveLength(1);
+    expect(r.confirmed[0]).toMatchObject({
+      description: 'Netflix',
+      amountInCents: -5790,
+      note: 'plano da família',
+      bankDescription: 'NETFLIX.COM',
+    });
+    expect(r.confirmed[0]!.bankTransactionId).toBe(
+      repos.transactions.items.find((t) => t.description === 'NETFLIX.COM')!.id,
+    );
+  });
+
+  it('histórico de outro usuário não vaza', async () => {
+    const repos = makeInMemoryRepositories();
+    await repos.reconciledNotes.create({
+      userId: 'u2',
+      description: 'Segredo',
+      amountInCents: -100,
+      occurredAt: NOW,
+      categoryId: null,
+      note: null,
+      bankTransactionId: null,
+      bankDescription: 'X',
+    });
+    const r = await new ListNotesUseCase(repos).execute({ userId: 'u1' });
+    expect(r).toEqual({ entries: [], confirmed: [] });
+  });
+});
+
 describe('proteções da reconciliação', () => {
   it('cobrança de conta oculta não apaga a anotação', async () => {
     const repos = makeInMemoryRepositories();
@@ -168,7 +227,7 @@ describe('proteções da reconciliação', () => {
     });
     const { reconcileManualEntries } = await import('./reconcile-manual-entries.js');
     const r = await reconcileManualEntries(
-      repos.transactions,
+      repos,
       'u1',
       { from: new Date(NETFLIX_DAY.getTime() - 86_400_000), to: NOW },
       new Set([acc.id]),

@@ -22,6 +22,7 @@ model User {
   accounts     Account[]
   transactions Transaction[]
   people       Person[]
+  reconciledNotes ReconciledNote[]
   rules        CategoryRule[]
   budgets      CategoryBudget[]
   lessons      LessonProgress[]
@@ -395,4 +396,24 @@ model TostaoAutoConfig {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("tostao_auto_configs")
+}
+
+// Anotação à mão que o app apagou sozinho quando o banco confirmou a cobrança (aparece em /anotacoes).
+model ReconciledNote {
+  id                String   @id @default(uuid())
+  userId            String   @map("user_id")
+  description       String
+  amountInCents     Int      @map("amount_in_cents")
+  occurredAt        DateTime @map("occurred_at")
+  categoryId        String?  @map("category_id")
+  note              String?
+  // Cobrança do banco que a substituiu (sem FK: ela pode ser apagada depois).
+  bankTransactionId String?  @map("bank_transaction_id")
+  bankDescription   String   @map("bank_description")
+  reconciledAt      DateTime @default(now()) @map("reconciled_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, reconciledAt])
+  @@map("reconciled_notes")
 }

@@ -15,6 +15,7 @@ import type {
   TostaoInsight,
   TostaoAutoConfig,
   TostaoInsightStatus,
+  ReconciledNote,
 } from '../../domain/entities.js';
 import type { FinancialPlan, UpdateTostaoAutoConfigBody } from '@tostao/contracts';
 import type {
@@ -42,6 +43,8 @@ import type {
   WhatsappLinksRepository,
   TostaoAutoRepository,
   UpsertTostaoInsight,
+  ReconciledNotesRepository,
+  NewReconciledNote,
 } from '../types.js';
 
 class PrismaUsersRepository implements UsersRepository {
@@ -213,6 +216,9 @@ class PrismaTransactionsRepository implements TransactionsRepository {
   findByPerson(userId: string, personId: string): Promise<Transaction[]> {
     return this.db.transaction.findMany({ where: { userId, personId }, orderBy: { occurredAt: 'desc' } });
   }
+  findManualByUser(userId: string): Promise<Transaction[]> {
+    return this.db.transaction.findMany({ where: { userId, externalId: null }, orderBy: { occurredAt: 'desc' } });
+  }
   async clearCategory(categoryId: string) {
     await this.db.transaction.updateMany({ where: { categoryId }, data: { categoryId: null } });
   }
@@ -221,6 +227,16 @@ class PrismaTransactionsRepository implements TransactionsRepository {
   }
   async deleteSeriesFrom(userId: string, seriesId: string, from: Date) {
     return (await this.db.transaction.deleteMany({ where: { userId, seriesId, occurredAt: { gte: from } } })).count;
+  }
+}
+
+class PrismaReconciledNotesRepository implements ReconciledNotesRepository {
+  constructor(private db: PrismaClient) {}
+  create(data: NewReconciledNote, at?: Date): Promise<ReconciledNote> {
+    return this.db.reconciledNote.create({ data: { ...data, ...(at ? { reconciledAt: at } : {}) } });
+  }
+  listByUser(userId: string, limit = 100): Promise<ReconciledNote[]> {
+    return this.db.reconciledNote.findMany({ where: { userId }, orderBy: { reconciledAt: 'desc' }, take: limit });
   }
 }
 
@@ -642,5 +658,6 @@ export function makePrismaRepositories(db: PrismaClient): Repositories {
     engagement: new PrismaEngagementRepository(db),
     people: new PrismaPeopleRepository(db),
     tostaoAuto: new PrismaTostaoAutoRepository(db),
+    reconciledNotes: new PrismaReconciledNotesRepository(db),
   };
 }

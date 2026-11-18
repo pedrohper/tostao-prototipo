@@ -19,6 +19,7 @@ import type {
   TostaoInsight,
   TostaoAutoConfig,
   TostaoInsightStatus,
+  ReconciledNote,
 } from '../../domain/entities.js';
 import type { FinancialPlan, UpdateTostaoAutoConfigBody } from '@tostao/contracts';
 import type {
@@ -45,6 +46,8 @@ import type {
   WhatsappLinksRepository,
   TostaoAutoRepository,
   UpsertTostaoInsight,
+  ReconciledNotesRepository,
+  NewReconciledNote,
 } from '../types.js';
 import { DEFAULT_CATEGORIES, DEFAULT_RULES } from '../../lib/defaults.js';
 
@@ -218,6 +221,11 @@ export class InMemoryTransactionsRepository implements TransactionsRepository {
   async delete(id: string) {
     this.items = this.items.filter((t) => t.id !== id);
   }
+  async findManualByUser(userId: string) {
+    return this.items
+      .filter((t) => t.userId === userId && t.externalId === null)
+      .sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
+  }
   async findByPerson(userId: string, personId: string) {
     return this.items
       .filter((t) => t.userId === userId && t.personId === personId)
@@ -227,6 +235,21 @@ export class InMemoryTransactionsRepository implements TransactionsRepository {
     const before = this.items.length;
     this.items = this.items.filter((t) => !(t.userId === userId && t.seriesId === seriesId && t.occurredAt >= from));
     return before - this.items.length;
+  }
+}
+
+export class InMemoryReconciledNotesRepository implements ReconciledNotesRepository {
+  items: ReconciledNote[] = [];
+  async create(data: NewReconciledNote, at: Date = new Date()) {
+    const row: ReconciledNote = { id: randomUUID(), reconciledAt: at, ...data };
+    this.items.push(row);
+    return row;
+  }
+  async listByUser(userId: string, limit = 100) {
+    return this.items
+      .filter((n) => n.userId === userId)
+      .sort((a, b) => b.reconciledAt.getTime() - a.reconciledAt.getTime())
+      .slice(0, limit);
   }
 }
 
@@ -592,5 +615,6 @@ export function makeInMemoryRepositories() {
     engagement: new InMemoryEngagementRepository(),
     people: new InMemoryPeopleRepository(),
     tostaoAuto: new InMemoryTostaoAutoRepository(),
+    reconciledNotes: new InMemoryReconciledNotesRepository(),
   } satisfies Repositories;
 }

@@ -335,6 +335,19 @@ export interface Dictionary {
     privacyTitle: string;
     termsTitle: string;
   };
+  notesPage: {
+    title: string;
+    subtitle: string;
+    addCta: string;
+    manualHeading: string;
+    manualEmpty: string;
+    confirmedHeading: string;
+    confirmedHint: string;
+    confirmedEmpty: string;
+    becamePrefix: string;
+    notedOnPrefix: string;
+    seeCharge: string;
+  };
   plannerCards: {
     fixedBillCount: (count: number, total: string) => string;
     otherIncomePlus: (amount: string) => string;
@@ -382,6 +395,7 @@ export interface Dictionary {
     categoriesPendingBadge: (count: number) => string;
     closingActiveSummary: (prevMonth: string, currentMonth: string, outAmount: string) => string;
     closingEmptySummary: (prevMonth: string) => string;
+    notesSummary: string;
     titles: {
       income: string;
       forecast: string;
@@ -391,6 +405,7 @@ export interface Dictionary {
       splits: string;
       categories: string;
       closing: string;
+      notes: string;
     };
   };
   walletExtra: {

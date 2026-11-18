@@ -53,7 +53,7 @@ export const en: Dictionary = {
     balanceInAccounts: (count) => `Balance across ${count} ${count === 1 ? 'account' : 'accounts'} ›`,
     noConnectedBankHint: 'No connected bank — counting manual entries only',
     shortcutsAria: 'Planning shortcuts',
-    shortcutAnnotate: 'Log',
+    shortcutAnnotate: 'Notes',
     incomeInMonth: (month) => `Income in ${month} ›`,
     outcomeInMonth: (month) => `Expenses in ${month} ›`,
     tellIncomePromptTitle: 'How much comes in monthly?',
@@ -373,6 +373,20 @@ export const en: Dictionary = {
     privacyTitle: 'Privacy policy',
     termsTitle: 'Terms of use',
   },
+  notesPage: {
+    title: 'Notes',
+    subtitle: 'Everything you logged by hand and what Tostão already confirmed with your bank.',
+    addCta: '+ Log',
+    manualHeading: 'Logged by you',
+    manualEmpty: "You haven't logged anything yet. Log an expense that hasn't hit your bank yet and it stays here.",
+    confirmedHeading: 'Confirmed by your bank',
+    confirmedHint:
+      'Tostão removed these entries on its own because the real charge arrived from your bank. Your note moved to the charge.',
+    confirmedEmpty: 'Nothing confirmed yet.',
+    becamePrefix: 'Became: ',
+    notedOnPrefix: 'logged on ',
+    seeCharge: 'See charge',
+  },
   plannerCards: {
     fixedBillCount: (count, total) => `${count} ${count === 1 ? 'fixed bill' : 'fixed bills'} (${total})`,
     otherIncomePlus: (amount) => `+ ${amount} from other income`,
@@ -424,6 +438,7 @@ export const en: Dictionary = {
     closingActiveSummary: (prevMonth, currentMonth, outAmount) =>
       `See your full ${prevMonth} wrap-up or follow ${currentMonth} (${outAmount} spent).`,
     closingEmptySummary: (prevMonth) => `Visual summary of ${prevMonth}: what came in, went out, and changed.`,
+    notesSummary: 'Everything you logged by hand and what the bank already confirmed.',
     titles: {
       income: 'Income & fixed bills',
       forecast: 'Forecast (3 months)',
@@ -433,6 +448,7 @@ export const en: Dictionary = {
       splits: 'Splits',
       categories: 'My categories',
       closing: 'Monthly wrap-up',
+      notes: 'Notes',
     },
   },
   walletExtra: {

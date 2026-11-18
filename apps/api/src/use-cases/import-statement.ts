@@ -28,7 +28,12 @@ type Input = { userId: string; accountName: string; fileName: string; content: s
  * com uma conta só; importar o mesmo arquivo de novo não duplica (externalId estável).
  */
 export class ImportStatementUseCase {
-  constructor(private readonly repos: Pick<Repositories, 'connections' | 'accounts' | 'transactions' | 'rules'>) {}
+  constructor(
+    private readonly repos: Pick<
+      Repositories,
+      'connections' | 'accounts' | 'transactions' | 'rules' | 'reconciledNotes'
+    >,
+  ) {}
 
   async execute({ userId, accountName, fileName, content, isCard }: Input) {
     let parsed;
@@ -97,7 +102,7 @@ export class ImportStatementUseCase {
     // Anotações à mão que o extrato acabou de confirmar saem (par 1 pra 1).
     const hidden = new Set((await accounts.listByUser(userId)).filter((a) => a.hidden).map((a) => a.id));
     const { removedCount: reconciledCount } = await reconcileManualEntries(
-      transactions,
+      this.repos,
       userId,
       { from: new Date(firstTime), to: new Date(lastTime) },
       hidden,

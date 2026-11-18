@@ -4,6 +4,7 @@ import {
   type AutoCategorizeResponse,
   searchQuery,
   type SearchResponse,
+  type NotesResponse,
   categorizeBody,
   manualTransactionBody,
   updateTransactionBody,
@@ -90,6 +91,11 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
   });
 
   // Busca (vem antes do /:id pra "search" não virar id)
+  // Tela Anotações: o que foi anotado à mão + histórico do que o app apagou sozinho.
+  app.get('/notes', { onRequest: verifyJwt }, async (request): Promise<NotesResponse> => {
+    return uc.listNotes.execute({ userId: request.user.sub });
+  });
+
   app.get('/transactions/search', { onRequest: verifyJwt }, async (request) => {
     const query = searchQuery.parse(request.query);
     const r = await uc.searchTransactions.execute({ ...query, userId: request.user.sub });

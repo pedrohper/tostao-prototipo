@@ -317,6 +317,15 @@ export function PlannerHub({
       badge: pendingCount > 0 ? { text: pc.categoriesPendingBadge(pendingCount), tone: 'warning' } : undefined,
     },
     {
+      id: 'anotacoes',
+      href: '/anotacoes?voltar=/carteira?aba=planejar',
+      icon: 'conectar/anotar',
+      iconBg: 'bg-laranja text-papel',
+      title: pc.titles.notes,
+      headline: null,
+      summary: pc.notesSummary,
+    },
+    {
       id: 'fechamento',
       href: '/fechamento?voltar=/carteira?aba=planejar',
       icon: 'ui/meta-batida',

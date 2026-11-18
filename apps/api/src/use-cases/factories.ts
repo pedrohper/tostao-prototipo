@@ -44,6 +44,7 @@ import { ListSubscriptionsUseCase } from './list-subscriptions.js';
 import { GetBudgetsUseCase, SetBudgetUseCase } from './budgets.js';
 import { AutoCategorizeUseCase } from './auto-categorize.js';
 import { SearchTransactionsUseCase } from './search-transactions.js';
+import { ListNotesUseCase } from './list-notes.js';
 import {
   ForecastUseCase,
   GoalDepositUseCase,
@@ -108,6 +109,7 @@ export function makeUseCases({
     deletePerson: new DeletePersonUseCase(repos),
     renamePerson: new RenamePersonUseCase(repos),
     searchTransactions: new SearchTransactionsUseCase(repos),
+    listNotes: new ListNotesUseCase(repos),
     getMonthSummary: new GetMonthSummaryUseCase(repos),
     accountDetail: new AccountDetailUseCase(repos),
     getTransaction: new GetTransactionUseCase(repos),

@@ -25,12 +25,15 @@ export function AnotarForm({
   categories,
   contas,
   today,
+  back = '/carteira',
   locale = 'pt-BR',
   children,
 }: {
   categories: CategoryDTO[];
   contas: ContaOption[];
   today: string;
+  /** Pra onde voltar depois de salvar. */
+  back?: string;
   locale?: Locale;
   children?: React.ReactNode;
 }) {
@@ -56,6 +59,7 @@ export function AnotarForm({
 
   return (
     <form action={action} className="flex min-h-0 grow flex-col">
+      <input type="hidden" name="back" value={back} />
       <div className="mx-auto flex min-h-0 w-full max-w-[520px] grow flex-col gap-3.5 overflow-y-auto px-5 pt-1 pb-4 md:max-w-none md:px-6">
         {children ?? (
           <div className="flex items-center justify-between gap-2.5">

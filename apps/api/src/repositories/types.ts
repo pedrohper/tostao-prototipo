@@ -6,6 +6,7 @@ import type {
   Category,
   CategoryRule,
   Transaction,
+  ReconciledNote,
   User,
   CategoryBudget,
   LessonProgress,
@@ -120,6 +121,15 @@ export interface TransactionsRepository {
   /** Apaga as ocorrências da série a partir de uma data (inclusive). Devolve quantas. */
   deleteSeriesFrom(userId: string, seriesId: string, from: Date): Promise<number>;
   findByPerson(userId: string, personId: string): Promise<Transaction[]>;
+  /** Tudo que foi anotado à mão (sem externalId), mais recente primeiro. */
+  findManualByUser(userId: string): Promise<Transaction[]>;
+}
+
+export type NewReconciledNote = Omit<ReconciledNote, 'id' | 'reconciledAt'>;
+export interface ReconciledNotesRepository {
+  create(data: NewReconciledNote, at?: Date): Promise<ReconciledNote>;
+  /** Mais recentes primeiro. */
+  listByUser(userId: string, limit?: number): Promise<ReconciledNote[]>;
 }
 
 export interface PeopleRepository {
@@ -238,4 +248,5 @@ export type Repositories = {
   engagement: EngagementRepository;
   people: PeopleRepository;
   tostaoAuto: TostaoAutoRepository;
+  reconciledNotes: ReconciledNotesRepository;
 };

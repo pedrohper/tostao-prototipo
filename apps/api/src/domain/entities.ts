@@ -75,6 +75,20 @@ export type Transaction = {
   createdAt: Date;
 };
 
+/** Anotação à mão apagada sozinha porque o banco confirmou a cobrança. Fica de histórico. */
+export type ReconciledNote = {
+  id: string;
+  userId: string;
+  description: string;
+  amountInCents: number;
+  occurredAt: Date;
+  categoryId: string | null;
+  note: string | null;
+  bankTransactionId: string | null;
+  bankDescription: string;
+  reconciledAt: Date;
+};
+
 export type Person = { id: string; userId: string; name: string; createdAt: Date };
 
 export type CategoryBudget = { id: string; userId: string; categoryId: string; limitInCents: number };

@@ -11,7 +11,7 @@ export const SYNC_LOOKBACK_DAYS = 35;
  * Só age em par seguro (1 anotação ↔ 1 cobrança); o que for ambíguo continua como está.
  */
 export async function reconcileManualEntries(
-  transactions: Repositories['transactions'],
+  { transactions, reconciledNotes }: Pick<Repositories, 'transactions' | 'reconciledNotes'>,
   userId: string,
   range: { from: Date; to: Date },
   hiddenAccountIds: ReadonlySet<string> = new Set(),
@@ -31,6 +31,17 @@ export async function reconcileManualEntries(
       ...(!bank.categoryId && manual.categoryId ? { categoryId: manual.categoryId } : {}),
     };
     if (Object.keys(inherit).length > 0) await transactions.save({ ...bank, ...inherit });
+    // Guarda o histórico antes de apagar: a pessoa vê em /anotacoes o que o app removeu e por quê.
+    await reconciledNotes.create({
+      userId,
+      description: manual.description,
+      amountInCents: manual.amountInCents,
+      occurredAt: manual.occurredAt,
+      categoryId: manual.categoryId,
+      note: manual.note ?? null,
+      bankTransactionId: bank.id,
+      bankDescription: bank.description,
+    });
     await transactions.delete(manual.id);
   }
   return { removedCount: matched.length, ambiguousCount: ambiguous.length };

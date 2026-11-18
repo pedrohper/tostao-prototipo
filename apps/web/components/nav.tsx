@@ -74,7 +74,8 @@ export function Nav({
         pathname.startsWith('/assinaturas') ||
         pathname.startsWith('/acertos') ||
         pathname.startsWith('/fechamento') ||
-        pathname.startsWith('/categorias')
+        pathname.startsWith('/categorias') ||
+        pathname.startsWith('/anotacoes')
       );
     }
     if (href === '/tostao') return pathname.startsWith('/tostao') || pathname.startsWith('/chat');

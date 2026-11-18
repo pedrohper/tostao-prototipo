@@ -23,6 +23,14 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-18 · Claude · branch feat/inicio-mobills-anotacoes (tela Anotações)
+
+- **Tela `/anotacoes`**: lista o que foi anotado à mão (agrupado por mês, abre a transação) e o histórico do que o app apagou sozinho ("Confirmados pelo banco": "Virou: <cobrança>", data em que foi anotado, nota, link pra cobrança). Botão "+ Anotar" no topo; `/anotar` agora respeita `?voltar=` e volta pra tela de origem. Entradas: círculo "Anotações" do carrossel do Início (antes "Anotar") e card "Anotações" no Planejar da Carteira. Sem 6ª aba no menu de baixo (decisão do Pedro).
+- **API**: `GET /notes` (`ListNotesUseCase`), `TransactionsRepository.findManualByUser`, tabela `reconciled_notes` + `ReconciledNotesRepository`. `reconcileManualEntries` grava o histórico **antes** de apagar a anotação.
+- **Migration**: `20261118120000_reconciled_notes` (CREATE TABLE, sem mexer em dados) — **rodar `prisma migrate deploy` no deploy**. Env nova: nenhuma.
+- **Validação**: 196 testes (+2: lista de anotadas/confirmadas e isolamento entre usuários), tsc api/web, lint, prettier. Telas não vistas renderizadas.
+- **Ficou de fora**: transações do banco que só têm nota (não aparecem na lista; a nota aparece na linha da Carteira); restaurar uma anotação que o app apagou; recuperar anotações apagadas antes deste registro existir (só pelo backup do banco). **Não deployado.**
+
 ### 2026-11-18 · Claude · servidor (revisão geral: aula do Tostão, metas, reconciliação)
 
 - **Aula do Tostão sumida no celular**: o trabalho de missões no modal do fogo tirou o card do professor do Início e do Aprender no mobile (só o painel direito do desktop mantinha). Voltou como seção `aula` no Início ("Aula do Tostão": módulo atual, barra de progresso, próxima lição, ocultável em Personalizar Início) e o Tostão professor aparece de novo no topo do módulo em `/aprender` no celular. Quem já tinha ordem salva vê a seção nova no fim.
