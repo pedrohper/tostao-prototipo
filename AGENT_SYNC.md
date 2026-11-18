@@ -30,6 +30,8 @@ Relatório do que foi feito. Modelo:
 - **Aprender (`apps/web/app/(app)/aprender/page.tsx`):** card principal redesenhado em formato vertical "capa de livro" com arte temática do Tostão por módulo, informações completas da aula primeiro (`hook`, meta e CTA), bloco do módulo + barra de progresso abaixo e botão **"Ver todos os módulos"** (`/aprender/trilha`) logo em seguida.
 - **Preferências / Tema (`apps/web/components/theme-switcher.tsx`, `lib/theme.ts`, `lib/theme-actions.ts`, `app/layout.tsx`, `app/globals.css`, `app/(app)/mais/preferencias/page.tsx`):** seletor **Sistema / Claro / Escuro** com cookie `tostao-tema` aplicado no `<html>` em SSR (sem flash) e suporte a `@custom-variant dark` no Tailwind v4.
 - **i18n (`pt-br.ts`, `en.ts`, `es.ts`, `types.ts`):** adicionadas chaves de visibilidade do saldo, detalhes dos três pontinhos no Planejar, capa do Aprender e seletor de tema nos 3 idiomas.
+- **Hotfix Planejar (`planner-card-grid.tsx`, `planner-hub.tsx`):** `moreInfoAria` passou de função para string resolvida em cada item do array (Next RSC não serializa função para Client Component).
+- **Prompts (`docs/prompts-ilustracoes-tostao.md`):** guia completo com 45 páginas dos 9 livros, 14 slides internos de aulas e 51 ícones refeitos.
 - Sem migration no banco e sem env nova. Validado com Prettier, `pnpm typecheck`, `pnpm lint`, `pnpm test` (196 testes) e `pnpm build`.
 
 ### 2026-11-18 · Claude · branch feat/inicio-mobills-anotacoes (ajustes de UI: Planejar e chat)

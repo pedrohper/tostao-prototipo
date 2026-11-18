@@ -12,6 +12,7 @@ export interface PlannerCardViewItem {
   icon: string;
   iconBg: string;
   title: string;
+  moreInfoAria?: string;
   headline: string | null;
   summary: string;
   badge?: { text: string; tone: PlannerBadgeTone };
@@ -25,15 +26,7 @@ const BADGE_CLASSES: Record<PlannerBadgeTone, string> = {
   alert: 'bg-rosa text-vermelho-texto',
 };
 
-export function PlannerCardGrid({
-  cards,
-  moreInfoAria,
-  openCardLabel,
-}: {
-  cards: PlannerCardViewItem[];
-  moreInfoAria: (title: string) => string;
-  openCardLabel: string;
-}) {
+export function PlannerCardGrid({ cards, openCardLabel }: { cards: PlannerCardViewItem[]; openCardLabel: string }) {
   const [openId, setOpenId] = useState<string | null>(null);
 
   return (
@@ -80,7 +73,7 @@ export function PlannerCardGrid({
                     setOpenId((prev) => (prev === card.id ? null : card.id));
                   }}
                   aria-expanded={isOpen}
-                  aria-label={moreInfoAria(card.title)}
+                  aria-label={card.moreInfoAria ?? card.title}
                   className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors after:absolute after:-inset-1 after:content-[''] ${
                     isOpen ? 'bg-papel-2 text-tinta' : 'text-tinta-suave hover:bg-papel-2 hover:text-tinta'
                   }`}

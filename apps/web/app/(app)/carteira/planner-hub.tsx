@@ -321,9 +321,8 @@ export function PlannerHub({
       <h2 className="font-display text-[22px] leading-7 font-extrabold text-tinta">{t.planner.title}</h2>
 
       <PlannerCardGrid
-        cards={cards}
-        moreInfoAria={t.plannerCards.moreInfoAria}
-        openCardLabel={t.plannerCards.openCard}
+        cards={cards.map((c) => ({ ...c, moreInfoAria: pc.moreInfoAria(c.title) }))}
+        openCardLabel={pc.openCard}
       />
     </section>
   );
