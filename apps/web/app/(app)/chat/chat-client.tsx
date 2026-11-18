@@ -88,6 +88,7 @@ export function ChatClient({
   const [messages, setMessages] = useState(initial);
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [showInfo, setShowInfo] = useState(false);
   const [pending, start] = useTransition();
   const bottom = useRef<HTMLDivElement>(null);
   const autoSent = useRef(false);
@@ -133,11 +134,6 @@ export function ChatClient({
 
   return (
     <div className="-mb-10 flex h-[calc(100dvh-14.5rem)] min-h-[360px] w-full min-w-0 flex-col gap-3 overflow-hidden md:mb-0 md:h-[calc(100dvh-11rem)] lg:h-[calc(100dvh-10rem)]">
-      <div className="flex shrink-0 items-center gap-2.5 rounded-2xl border border-linha bg-cartao px-3.5 py-2.5">
-        <Mascot pose="avatar" size={36} alt="Tostão" still />
-        <p className="min-w-0 flex-1 text-xs leading-[17px] text-tinta-suave">{subtitle}</p>
-      </div>
-
       {askIncome && (
         <Link
           href="/renda?voltar=/tostao"
@@ -148,32 +144,56 @@ export function ChatClient({
         </Link>
       )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-0.5" aria-live="polite">
-        <div className="flex min-h-full flex-col justify-end gap-2.5 py-1">
-          {messages.length === 0 && (
-            <div className="max-w-[85%] min-w-0 self-start break-words [overflow-wrap:anywhere] rounded-[18px_18px_18px_4px] border border-linha bg-cartao px-3.5 py-[11px] text-[15px] leading-[22px]">
-              {t.emptyGreeting(firstName)}
+      <div className="relative min-h-0 flex-1">
+        {/* "?" flutuando no canto: o status (o que o Tostão sabe até quando) só ocupa lugar quando a pessoa pede. */}
+        <div className="absolute top-0 right-0 z-10 flex max-w-[85%] flex-col items-end gap-2">
+          <button
+            type="button"
+            onClick={() => setShowInfo((v) => !v)}
+            aria-expanded={showInfo}
+            aria-controls="chat-status"
+            aria-label={`Tostão: ${subtitle}`}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-linha bg-cartao text-sm font-bold text-tinta-suave shadow-sm transition hover:text-tinta"
+          >
+            ?
+          </button>
+          {showInfo && (
+            <div
+              id="chat-status"
+              className="flex items-center gap-2.5 rounded-2xl border border-linha bg-cartao px-3.5 py-2.5 shadow-md"
+            >
+              <Mascot pose="avatar" size={32} alt="" still />
+              <p className="min-w-0 flex-1 text-xs leading-[17px] text-tinta-suave">{subtitle}</p>
             </div>
           )}
-          {messages.map((m) =>
-            m.role === 'user' ? (
-              <div
-                key={m.id}
-                className="max-w-[85%] min-w-0 self-end break-words [overflow-wrap:anywhere] whitespace-pre-wrap rounded-[18px_18px_4px_18px] bg-tinta px-3.5 py-2.5 text-[15px] leading-[22px] text-papel"
-              >
-                {m.content}
+        </div>
+        <div className="h-full overflow-y-auto overscroll-contain pr-0.5" aria-live="polite">
+          <div className="flex min-h-full flex-col justify-end gap-2.5 py-1">
+            {messages.length === 0 && (
+              <div className="max-w-[85%] min-w-0 self-start break-words [overflow-wrap:anywhere] rounded-[18px_18px_18px_4px] border border-linha bg-cartao px-3.5 py-[11px] text-[15px] leading-[22px]">
+                {t.emptyGreeting(firstName)}
               </div>
-            ) : (
-              <div
-                key={m.id}
-                className="max-w-[85%] min-w-0 self-start break-words [overflow-wrap:anywhere] rounded-[18px_18px_18px_4px] border border-linha bg-cartao px-3.5 py-[11px] text-[15px] leading-[22px]"
-              >
-                <Rich text={m.content} />
-              </div>
-            ),
-          )}
-          {pending && <Pensando ariaLabel={t.thinkingAria} text={t.thinkingText} />}
-          <div ref={bottom} />
+            )}
+            {messages.map((m) =>
+              m.role === 'user' ? (
+                <div
+                  key={m.id}
+                  className="max-w-[85%] min-w-0 self-end break-words [overflow-wrap:anywhere] whitespace-pre-wrap rounded-[18px_18px_4px_18px] bg-tinta px-3.5 py-2.5 text-[15px] leading-[22px] text-papel"
+                >
+                  {m.content}
+                </div>
+              ) : (
+                <div
+                  key={m.id}
+                  className="max-w-[85%] min-w-0 self-start break-words [overflow-wrap:anywhere] rounded-[18px_18px_18px_4px] border border-linha bg-cartao px-3.5 py-[11px] text-[15px] leading-[22px]"
+                >
+                  <Rich text={m.content} />
+                </div>
+              ),
+            )}
+            {pending && <Pensando ariaLabel={t.thinkingAria} text={t.thinkingText} />}
+            <div ref={bottom} />
+          </div>
         </div>
       </div>
 

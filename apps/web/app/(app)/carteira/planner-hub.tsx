@@ -337,18 +337,19 @@ export function PlannerHub({
   ];
 
   return (
-    <section className="flex flex-col gap-5 pb-8">
+    <section className="flex min-w-0 flex-col gap-5 pb-8">
       <div className="flex flex-col gap-1">
         <h2 className="font-display text-[22px] leading-7 font-extrabold text-tinta">{t.planner.title}</h2>
         <p className="text-sm leading-5 text-tinta-suave">{t.planner.subtitle}</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      {/* grid-cols-1 = minmax(0,1fr): sem isso a coluna cresce com o conteúdo e o card passa da tela. */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {cards.map((card) => (
           <Link
             key={card.id}
             href={card.href}
-            className="group flex flex-col justify-between gap-3.5 rounded-[22px] border border-linha bg-cartao p-5 text-tinta no-underline transition-colors hover:border-tinta/35 hover:bg-papel-2/50"
+            className="group flex min-w-0 flex-col justify-between gap-3.5 rounded-[22px] border border-linha bg-cartao p-5 text-tinta no-underline transition-colors hover:border-tinta/35 hover:bg-papel-2/50"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">

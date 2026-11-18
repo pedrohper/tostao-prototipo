@@ -23,6 +23,12 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-18 · Claude · branch feat/inicio-mobills-anotacoes (ajustes de UI: Planejar e chat)
+
+- Carteira → Planejar: cards passavam da largura da tela no celular. O grid não tinha `grid-cols-1` (coluna `auto` cresce com o conteúdo); agora `grid-cols-1` + `min-w-0` no card e na seção.
+- Chat do Tostão: o aviso "Sabe seu salário, contas fixas e gastos até..." saiu da tela e virou um botão "?" no canto da conversa; ao tocar mostra o texto (mascote + status). Sem chave i18n nova: o `aria-label` reaproveita o texto do status.
+- Validei com `tsc`, ESLint e Prettier. **Não vi renderizado** (o Chromium do cache não abre no servidor: faltam libs do sistema). **Não deployado.**
+
 ### 2026-11-18 · Claude · servidor (deploy das telas Início/Anotações + correção do deploy-tostao.sh)
 
 - Deploy de `2b9e7ac` + `ea6f8ec` (branch `feat/inicio-mobills-anotacoes`, sem push/merge): backup `tostao-20261118-1342.sql.gz`, 196 testes, migration `20261118120000_reconciled_notes` aplicada, build ok, API e Web recarregadas.
