@@ -101,8 +101,8 @@ export function LessonPlayer({
           {step === 1 && (
             <div className="flex flex-col gap-3">
               {slideAsset && (
-                <div className="overflow-hidden rounded-[20px] border border-linha bg-cartao">
-                  <img src={slideAsset} alt={lesson.title} className="max-h-[260px] w-full object-contain" />
+                <div className="mx-auto w-full max-w-[480px] overflow-hidden rounded-[20px] border border-linha bg-cartao">
+                  <img src={slideAsset} alt={lesson.title} className="aspect-[4/3] w-full object-cover" />
                 </div>
               )}
               <p className="rounded-[20px] bg-cartao p-4">{lesson.concept}</p>

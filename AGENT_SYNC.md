@@ -23,6 +23,12 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-19 · Antigravity · branch feat/inicio-mobills-anotacoes (14/14 slides internos das aulas)
+
+- **Slides (`apps/web/public/slides/*.webp`):** adicionados todos os 14 diagramas explicativos (`1200×896`, `4:3`) mapeados em `apps/web/lib/story-cast.ts`.
+- **Player (`apps/web/app/(app)/aprender/[licao]/player.tsx`):** container do passo 1 ("A ideia") ajustado para `aspect-[4/3] w-full max-w-[480px]` exibindo o diagrama de ponta a ponta sem faixas laterais.
+- Validado com Prettier, `pnpm typecheck`, `pnpm lint` e `pnpm build`.
+
 ### 2026-11-19 · Antigravity · branch feat/inicio-mobills-anotacoes (artes completas dos Livros 2 a 9 — 45/45 páginas)
 
 - **Livros 2 a 9 (`apps/web/public/livros/m2-l1.webp` … `m9-l5.webp`):** adicionadas todas as 40 páginas restantes (`896×1200`), completando 45/45 páginas ilustradas em todo o Aprender e na Biblioteca.
