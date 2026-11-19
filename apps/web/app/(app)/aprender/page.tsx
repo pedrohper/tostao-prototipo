@@ -18,17 +18,21 @@ import { DesktopSplitShell } from '@/components/lateral';
 import { StreakModalButton } from '@/components/streak-modal';
 import { getI18n } from '@/lib/i18n-server';
 import { LegacyProgress } from './legacy-progress';
+import { BookCarousel } from './book-carousel';
+import { getBookPageAssets } from '@/lib/art-assets';
 
-export default async function AprenderPage() {
-  const [{ locale, t }, { done, streakDays, bonusXp = 0 }, , tribunal, battles, missions, friends] = await Promise.all([
-    getI18n(),
-    api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
-    api<MonthSummaryResponse>(`/summary?month=${currentMonth()}`).catch(() => null),
-    api<TribunalResponse>('/tribunal').catch(() => null),
-    api<BattlesResponse>('/battles').catch(() => null),
-    api<MissionsResponse>('/missions').catch(() => null),
-    api<FriendsResponse>('/friends').catch(() => null),
-  ]);
+export default async function AprenderPage({ searchParams }: { searchParams: Promise<{ livro?: string }> }) {
+  const [{ livro }, { locale, t }, { done, streakDays, bonusXp = 0 }, , tribunal, battles, missions, friends] =
+    await Promise.all([
+      searchParams,
+      getI18n(),
+      api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
+      api<MonthSummaryResponse>(`/summary?month=${currentMonth()}`).catch(() => null),
+      api<TribunalResponse>('/tribunal').catch(() => null),
+      api<BattlesResponse>('/battles').catch(() => null),
+      api<MissionsResponse>('/missions').catch(() => null),
+      api<FriendsResponse>('/friends').catch(() => null),
+    ]);
   const th = t.pages.learnExtra.hub;
   const tig = battles?.tigrinho;
   const batalhaLinha = !tig
@@ -46,9 +50,10 @@ export default async function AprenderPage() {
   // Módulo atual = o primeiro que ainda tem lição por fazer
   const atualIdx = modules.findIndex((m) => m.lessons.some((l) => !done.includes(l.id)));
   const atual = atualIdx >= 0 ? modules[atualIdx] : null;
-  const proxima = atual?.lessons.find((l) => !done.includes(l.id));
-  const feitas = atual ? atual.lessons.filter((l) => done.includes(l.id)).length : 0;
   const proximos = atualIdx >= 0 ? modules.slice(atualIdx + 1, atualIdx + 4) : [];
+  const requestedBook = livro ? modules.find((m) => m.id === livro) : null;
+  const initialBookId = requestedBook?.id ?? atual?.id ?? modules[modules.length - 1]?.id ?? 'm1';
+  const pageAssets = getBookPageAssets(modules.flatMap((m) => m.lessons.map((l) => l.id)));
 
   const myRankIdx = friends ? friends.ranking.findIndex((p) => p.me) : -1;
   const friendsTitle =
@@ -131,193 +136,7 @@ export default async function AprenderPage() {
         </div>
       </div>
 
-      {atual && proxima ? (
-        (() => {
-          const MODULE_POSES = [
-            'investigando',
-            'preocupado',
-            'caramelo-bravo',
-            'orgulhoso',
-            'pensando',
-            'comemorando',
-            'caramelo-moeda',
-            'professor',
-            'dupla',
-          ] as const;
-          const coverPose = MODULE_POSES[(atual.number - 1) % MODULE_POSES.length] ?? 'professor';
-          const coverBgClass =
-            atual.number % 3 === 1 ? 'bg-amarelo-claro' : atual.number % 3 === 2 ? 'bg-azul' : 'bg-menta-clara';
-
-          return (
-            <>
-              <div className="flex flex-col gap-3">
-                <article className="flex flex-col overflow-hidden rounded-[26px] border border-linha bg-cartao">
-                  {/* Capa ilustrada do livro */}
-                  <div
-                    className={`relative flex min-h-[210px] flex-col items-center justify-center overflow-hidden px-6 pt-6 pb-4 sm:min-h-[236px] ${coverBgClass}`}
-                  >
-                    <div className="pointer-events-none absolute -top-4 -right-4 opacity-10">
-                      <Icon src={`modulo/${atual.number}`} size={136} />
-                    </div>
-                    <div className="mb-1 flex items-center gap-1.5 rounded-full bg-cartao/85 px-3 py-1 text-[11px] font-bold tracking-[0.06em] text-tinta uppercase backdrop-blur-xs">
-                      <Icon src={`modulo/${atual.number}`} size={14} />
-                      <span>{th.lessonOfTotal(proxima.number, atual.lessons.length)}</span>
-                    </div>
-                    <Mascot pose={coverPose} size={160} alt={`Tostão — ${proxima.title}`} />
-                  </div>
-
-                  {/* Conteúdo: 1º informações da aula, 2º módulo e progresso */}
-                  <div className="flex flex-col gap-4 p-5 sm:p-6">
-                    <div className="flex flex-col gap-2">
-                      <span className="text-xs font-semibold text-tinta-suave">
-                        {th.nextLessonMeta} · {proxima.simulator.name}
-                      </span>
-                      <h2 className="font-display text-[24px] leading-[29px] font-extrabold text-tinta sm:text-[28px] sm:leading-[33px]">
-                        {proxima.title}
-                      </h2>
-                      <p className="text-[15px] leading-[22px] text-tinta-suave">{proxima.hook}</p>
-                      <Link
-                        href={`/aprender/${proxima.id}`}
-                        className="mt-2 flex h-12 items-center justify-center rounded-full bg-tinta px-6 text-[15px] font-semibold text-papel no-underline transition-opacity hover:opacity-90"
-                      >
-                        {done.length ? t.learn.continueCta : t.learn.startCta}
-                      </Link>
-                    </div>
-
-                    {/* Bloco do módulo */}
-                    <div className="flex flex-col gap-2 border-t border-linha pt-4">
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-xs font-bold tracking-[0.06em] text-tinta-suave uppercase">
-                          {t.learn.moduleCounter(atual.number, feitas, atual.lessons.length)}
-                        </span>
-                      </div>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-display text-[17px] leading-[22px] font-extrabold text-tinta">
-                          {atual.title}
-                        </span>
-                        <span className="text-[13px] leading-[18px] text-tinta-suave">{atual.goal}</span>
-                      </div>
-                      <div
-                        className="mt-1 flex w-full gap-1.5"
-                        role="img"
-                        aria-label={t.learn.moduleCounter(atual.number, feitas, atual.lessons.length)}
-                      >
-                        {atual.lessons.map((l) => (
-                          <i
-                            key={l.id}
-                            className={`h-2 grow rounded-full ${done.includes(l.id) ? 'bg-tinta' : 'bg-papel-2'}`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </article>
-
-                {/* 3º Botão Ver todos os módulos */}
-                <Link
-                  href="/aprender/trilha"
-                  className="flex h-12 items-center justify-center gap-2 rounded-full border border-linha bg-cartao px-5 text-[15px] font-semibold text-tinta no-underline transition-colors hover:bg-papel-2"
-                >
-                  <span>{th.seeAllModules}</span>
-                  <span aria-hidden="true" className="text-tinta-suave">
-                    ›
-                  </span>
-                </Link>
-              </div>
-
-              <div className="hidden rounded-[22px] border border-linha bg-cartao px-5 py-1.5 lg:block">
-                {atual.lessons.map((l) => {
-                  const isDone = done.includes(l.id);
-                  const isActive = l.id === proxima.id;
-                  if (isDone) {
-                    return (
-                      <Link
-                        key={l.id}
-                        href={`/aprender/${l.id}`}
-                        className="flex min-h-[64px] items-center gap-3 border-b border-linha py-2 text-tinta no-underline transition-opacity hover:opacity-80 last:border-b-0"
-                      >
-                        <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl bg-tinta text-amarelo dark:text-papel">
-                          <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            aria-hidden="true"
-                          >
-                            <path d="M5 12.5l4.5 4.5L19 7.5" />
-                          </svg>
-                        </span>
-                        <div className="flex min-w-0 flex-1 flex-col">
-                          <span className="text-base font-semibold">{l.title}</span>
-                          <span className="text-xs text-tinta-suave">{t.learn.lessonRowMeta(l.number)}</span>
-                        </div>
-                        <span className="shrink-0 text-[13px] text-tinta-suave">{t.learn.doneBadge}</span>
-                      </Link>
-                    );
-                  }
-                  if (isActive) {
-                    return (
-                      <div
-                        key={l.id}
-                        className="flex min-h-[64px] items-center gap-3 border-b border-linha py-2 text-tinta last:border-b-0"
-                      >
-                        <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl bg-laranja text-sm font-bold text-tinta-fixa">
-                          {l.number}
-                        </span>
-                        <div className="flex min-w-0 flex-1 flex-col">
-                          <span className="text-base font-semibold">{l.title}</span>
-                          <span className="text-xs text-tinta-suave">{t.learn.lessonRowMeta(l.number)}</span>
-                        </div>
-                        <Link
-                          href={`/aprender/${l.id}`}
-                          className="flex h-10 shrink-0 items-center rounded-full bg-tinta px-[18px] text-sm font-semibold text-papel no-underline"
-                        >
-                          {done.length ? t.learn.continueCta : t.learn.startCta}
-                        </Link>
-                      </div>
-                    );
-                  }
-                  return (
-                    <Link
-                      key={l.id}
-                      href={`/aprender/${l.id}`}
-                      className="flex min-h-[64px] items-center gap-3 border-b border-linha py-2 text-tinta no-underline transition-opacity hover:opacity-80 last:border-b-0"
-                    >
-                      <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl bg-papel-2 text-sm font-bold text-tinta-suave">
-                        {l.number}
-                      </span>
-                      <div className="flex min-w-0 flex-1 flex-col">
-                        <span className="text-base font-semibold">{l.title}</span>
-                        <span className="text-xs text-tinta-suave">{t.learn.lessonRowMeta(l.number)}</span>
-                      </div>
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.75"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        role="img"
-                        aria-label={t.learn.lockedLabel}
-                        className="shrink-0 text-tinta-suave"
-                      >
-                        <rect x="4" y="11" width="16" height="10" rx="2" />
-                        <path d="M8 11V7a4 4 0 0 1 8 0v4" />
-                      </svg>
-                    </Link>
-                  );
-                })}
-              </div>
-            </>
-          );
-        })()
-      ) : (
+      {!atual && (
         <div className="flex items-center gap-2 rounded-[24px] bg-menta-clara p-4 lg:p-6">
           <Mascot pose="comemorando" size={84} alt="Tostão" />
           <p className="text-[15px] leading-[21px]">
@@ -325,6 +144,15 @@ export default async function AprenderPage() {
           </p>
         </div>
       )}
+
+      <BookCarousel
+        modules={modules}
+        initialBookId={initialBookId}
+        currentBookId={atual?.id ?? null}
+        done={done}
+        pageAssets={pageAssets}
+        locale={locale}
+      />
 
       <section className="flex flex-col gap-2">
         <Eyebrow>{th.calculatorsHeading}</Eyebrow>

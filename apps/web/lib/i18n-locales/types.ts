@@ -1266,6 +1266,23 @@ export interface Dictionary {
         notStartedAria: string;
         doneSr: string;
         pendingSr: string;
+        bookOfTotal: (num: number, total: number) => string;
+        pageOfTotal: (num: number, total: number) => string;
+        pageDoneBadge: string;
+        pageLockedBadge: string;
+        unlockHint: (prevNum: number) => string;
+        reviewPageCta: string;
+        goToCurrentPage: string;
+        prevPageAria: string;
+        nextPageAria: string;
+        swipeHint: string;
+        libraryTitle: string;
+        librarySubtitle: string;
+        openBookInCarousel: string;
+        bookReadBadge: string;
+        bookReadingBadge: string;
+        bookLockedBadge: string;
+        speakers: Record<'tostao' | 'caramelo' | 'tigrinho' | 'urubu' | 'dupla', string>;
       };
     };
     batalha: {

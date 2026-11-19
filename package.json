@@ -9,6 +9,7 @@
     "db:migrate": "pnpm --filter @tostao/api db:migrate",
     "db:seed": "pnpm --filter @tostao/api db:seed",
     "content:build": "node scripts/build-lessons.mjs",
+    "assets:sync": "node scripts/sync-art-manifest.mjs",
     "db:deploy": "pnpm --filter @tostao/api db:deploy",
     "build": "pnpm --filter @tostao/web build",
     "typecheck": "pnpm --filter @tostao/api typecheck && pnpm --filter @tostao/web typecheck && apps/api/node_modules/.bin/tsc -p packages/contracts/tsconfig.json --noEmit",

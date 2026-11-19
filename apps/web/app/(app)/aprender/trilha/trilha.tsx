@@ -5,24 +5,31 @@ import { useEffect, useMemo, useState } from 'react';
 import { getDictionary, type Locale } from '@/lib/i18n';
 import type { Module } from '@/lib/lessons';
 import { takeLegacyDone } from '@/lib/progress';
+import { BOOK_THEMES, getStoryPageMeta } from '@/lib/story-cast';
 import { importLocalProgress } from '../actions';
 
-/** Caminho em zigue-zague com os 9 módulos (tela "Todos os módulos" do design). Toque abre as lições. */
+/** Biblioteca do Tostão: os 9 módulos em formato de livros na estante, com índice de 5 páginas cada. */
 export function Trilha({
   modules,
   colors,
   done: saved,
+  coverAssets = {},
+  firstPageAssets = {},
   locale = 'pt-BR',
 }: {
   modules: Module[];
   colors: string[];
   done: string[];
+  coverAssets?: Record<number, string>;
+  firstPageAssets?: Record<string, string>;
   locale?: Locale;
 }) {
   const t = getDictionary(locale).pages.learnExtra;
+  const th = t.hub;
   const [legacyDone, setLegacyDone] = useState<string[]>([]);
-  const [open, setOpen] = useState<string | null>(null);
+  const [openBookId, setOpenBookId] = useState<string | null>(null);
   const done = useMemo(() => [...new Set([...saved, ...legacyDone])], [saved, legacyDone]);
+
   useEffect(() => {
     const legacy = takeLegacyDone().filter((id) => !saved.includes(id));
     if (!legacy.length) return;
@@ -30,12 +37,14 @@ export function Trilha({
     void importLocalProgress(legacy);
     return () => clearTimeout(timer);
   }, [saved]);
+
   const total = modules.reduce((s, m) => s + m.lessons.length, 0);
   const atualIdx = modules.findIndex((m) => m.lessons.some((l) => !done.includes(l.id)));
+  const selectedBook = modules.find((m) => m.id === openBookId) ?? null;
 
   return (
-    <div className="flex flex-col gap-2.5">
-      <p className="-mt-2 text-sm text-tinta-suave">{t.modulesSummary(modules.length, done.length, total)}</p>
+    <div className="flex flex-col gap-4">
+      <p className="text-sm text-tinta-suave">{t.modulesSummary(modules.length, done.length, total)}</p>
       <div className="flex flex-wrap gap-2">
         <span className="flex h-[30px] items-center gap-1.5 rounded-full bg-papel-2 px-3 text-xs font-semibold">
           <i className="h-2.5 w-2.5 rounded-full bg-laranja" />
@@ -46,61 +55,68 @@ export function Trilha({
           {t.legendOptional}
         </span>
       </div>
-      <div className="flex flex-col gap-[22px] pt-[18px] md:mx-auto md:w-full md:max-w-[560px]">
+
+      {/* Estante de livros */}
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 md:grid-cols-3">
         {modules.map((m, i) => {
-          const left = i % 2 === 0;
           const atual = i === atualIdx;
           const feitas = m.lessons.filter((l) => done.includes(l.id)).length;
           const completo = feitas === m.lessons.length;
-          const size = atual ? 86 : 76;
-          const pad = left ? (i % 4 === 0 ? 4 : 18) : i % 4 === 1 ? 4 : 18;
-          const meta = atual
-            ? t.inProgressCount(feitas, m.lessons.length)
-            : completo
-              ? t.completedLabel
+          const lockedBook = !atual && !completo && feitas === 0;
+          const isOpen = openBookId === m.id;
+          const theme = BOOK_THEMES[m.number] ?? BOOK_THEMES[1]!;
+          const coverImg = coverAssets[m.number] ?? (m.lessons[0] ? firstPageAssets[m.lessons[0].id] : undefined);
+
+          const statusBadge = completo
+            ? th.bookReadBadge
+            : atual
+              ? th.bookReadingBadge
               : m.optional
                 ? t.optionalLabel
-                : feitas
-                  ? t.lessonsPartial(feitas, m.lessons.length)
-                  : t.lessonsCount(m.lessons.length);
-          const isOpen = open === m.id;
+                : th.bookLockedBadge;
+
           return (
-            <div key={m.id} className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => setOpen(isOpen ? null : m.id)}
-                aria-expanded={isOpen}
-                className={`flex items-center gap-3.5 rounded-2xl py-1 text-tinta transition-colors hover:bg-papel-2/50 ${left ? 'text-left' : 'flex-row-reverse text-right'}`}
-                style={left ? { paddingLeft: pad } : { paddingRight: pad }}
-              >
-                <span
-                  className={`relative flex shrink-0 items-center justify-center rounded-full font-display font-extrabold ${atual ? 'text-[34px] text-tinta-fixa' : 'text-[28px] text-tinta-suave'} ${m.optional && !atual ? 'border-2 border-dashed border-tinta-suave' : ''}`}
-                  style={{
-                    width: size,
-                    height: size,
-                    background: colors[i],
-                    boxShadow: atual
-                      ? '0 6px 0 var(--color-laranja-texto), 0 0 0 6px var(--color-rosa)'
-                      : '0 5px 0 var(--color-linha)',
-                  }}
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => setOpenBookId((prev) => (prev === m.id ? null : m.id))}
+              aria-expanded={isOpen}
+              style={{ borderLeftColor: theme.spineColor }}
+              className={`group relative flex flex-col justify-between gap-3 rounded-r-[20px] rounded-l-[8px] border border-l-[10px] p-4 text-left transition-all ${
+                isOpen
+                  ? 'border-tinta bg-cartao ring-2 ring-tinta/20'
+                  : atual
+                    ? 'border-laranja bg-cartao shadow-sm hover:-translate-y-0.5'
+                    : lockedBook
+                      ? 'border-linha bg-cartao/80 opacity-60 grayscale hover:opacity-85'
+                      : 'border-linha bg-cartao hover:-translate-y-0.5'
+              } ${m.optional && !atual && !isOpen ? 'border-dashed' : ''}`}
+            >
+              {/* Topo do livro: capa miniatura + status */}
+              <div className="flex items-start justify-between gap-2">
+                <div
+                  className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-linha/60"
+                  style={{ background: colors[i] }}
                 >
-                  <Icon src={`modulo/${m.number}`} size={Math.round(size * 0.94)} alt={t.moduleAlt(m.number)} />
+                  {coverImg ? (
+                    <img src={coverImg} alt={t.moduleAlt(m.number)} className="h-full w-full object-cover" />
+                  ) : (
+                    <Icon src={`modulo/${m.number}`} size={34} alt={t.moduleAlt(m.number)} />
+                  )}
                   {completo && (
-                    <span className={`absolute -bottom-1 ${left ? '-right-1' : '-left-1'}`}>
-                      <Icon src="jogo/dia-cumprido" size={28} alt={t.completedAlt} />
+                    <span className="absolute -right-1 -bottom-1">
+                      <Icon src="jogo/dia-cumprido" size={20} alt={t.completedAlt} />
                     </span>
                   )}
-                  {!atual && !completo && feitas === 0 && (
-                    <span
-                      className={`absolute -bottom-1 ${left ? '-right-1' : '-left-1'} flex h-7 w-7 items-center justify-center rounded-full border-[1.5px] border-linha bg-cartao text-tinta-suave`}
-                    >
+                  {lockedBook && (
+                    <span className="absolute -right-1 -bottom-1 flex h-6 w-6 items-center justify-center rounded-full border border-linha bg-cartao text-tinta-suave">
                       <svg
-                        width="14"
-                        height="14"
+                        width="11"
+                        height="11"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
-                        strokeWidth="2.2"
+                        strokeWidth="2.4"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         aria-hidden="true"
@@ -110,38 +126,111 @@ export function Trilha({
                       </svg>
                     </span>
                   )}
+                </div>
+
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                    completo
+                      ? 'bg-menta-clara text-verde-texto'
+                      : atual
+                        ? 'bg-amarelo-claro text-tinta'
+                        : 'bg-papel-2 text-tinta-suave'
+                  }`}
+                >
+                  {statusBadge}
                 </span>
-                <span className={`flex min-w-0 flex-col gap-[3px] ${left ? '' : 'items-end'}`}>
-                  <span className={`text-xs font-bold ${atual ? 'text-laranja-texto' : 'text-tinta-suave'}`}>
-                    {meta}
-                  </span>
-                  <span className="font-display text-[19px] leading-[23px] font-extrabold">{m.title}</span>
-                  <span className="text-[13px] leading-[18px] text-tinta-suave">{t.moduleShort[m.number] ?? ''}</span>
+              </div>
+
+              {/* Título do livro */}
+              <div className="flex min-w-0 flex-col gap-1">
+                <span className="text-[11px] font-bold tracking-[0.06em] text-tinta-suave uppercase">
+                  {t.moduleAlt(m.number)}
+                  {m.optional ? th.optionalSuffix : ''}
                 </span>
-              </button>
-              {isOpen && (
-                <ol className="mt-2 flex flex-col rounded-2xl border border-linha bg-cartao px-3">
+                <span className="font-display text-[18px] leading-[22px] font-extrabold text-tinta">{m.title}</span>
+                <span className="text-[13px] leading-[18px] text-tinta-suave">{t.moduleShort[m.number] ?? ''}</span>
+              </div>
+
+              {/* Progresso em 5 capítulos */}
+              <div className="flex flex-col gap-1.5 pt-1">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-tinta-suave">
+                  <span>{feitas ? t.lessonsPartial(feitas, m.lessons.length) : t.lessonsCount(m.lessons.length)}</span>
+                  <span aria-hidden="true">{isOpen ? '▴' : '▾'}</span>
+                </div>
+                <div className="flex gap-1">
                   {m.lessons.map((l) => (
-                    <li key={l.id} className="border-b border-linha last:border-b-0">
-                      <Link
-                        href={`/aprender/${l.id}`}
-                        className="flex min-h-12 items-center gap-3 text-tinta no-underline"
-                      >
-                        <span
-                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${done.includes(l.id) ? 'bg-menta text-tinta-fixa' : 'bg-papel-2'}`}
-                        >
-                          {done.includes(l.id) ? '✓' : l.number}
-                        </span>
-                        <span className="text-[15px]">{l.title}</span>
-                      </Link>
-                    </li>
+                    <i
+                      key={l.id}
+                      className={`h-1.5 grow rounded-full ${done.includes(l.id) ? 'bg-tinta' : 'bg-papel-2'}`}
+                    />
                   ))}
-                </ol>
-              )}
-            </div>
+                </div>
+              </div>
+            </button>
           );
         })}
       </div>
+
+      {/* Painel aberto com as 5 páginas do livro selecionado */}
+      {selectedBook && (
+        <section className="flex flex-col gap-3 rounded-[24px] border border-tinta/30 bg-cartao p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <span className="text-xs font-bold tracking-[0.06em] text-tinta-suave uppercase">
+                {th.bookOfTotal(selectedBook.number, modules.length)}
+              </span>
+              <h2 className="font-display text-[20px] leading-[25px] font-extrabold text-tinta">
+                {selectedBook.title}
+              </h2>
+              <p className="text-[13px] text-tinta-suave">{selectedBook.goal}</p>
+            </div>
+            <Link
+              href={`/aprender?livro=${selectedBook.id}`}
+              className="flex h-10 shrink-0 items-center justify-center rounded-full bg-tinta px-4 text-xs font-semibold text-papel no-underline transition-opacity hover:opacity-90"
+            >
+              {th.openBookInCarousel} ›
+            </Link>
+          </div>
+
+          <ol className="flex flex-col divide-y divide-linha rounded-2xl border border-linha bg-papel/40 px-3">
+            {selectedBook.lessons.map((l, idx) => {
+              const isDone = done.includes(l.id);
+              const firstUndone = selectedBook.lessons.findIndex((item) => !done.includes(item.id));
+              const isLocked = firstUndone >= 0 && idx > firstUndone;
+              const meta = getStoryPageMeta(l.id);
+              return (
+                <li key={l.id}>
+                  <Link
+                    href={`/aprender/${l.id}`}
+                    className={`flex min-h-14 items-center gap-3 py-2.5 text-tinta no-underline transition-opacity hover:opacity-80 ${
+                      isLocked ? 'opacity-65 grayscale' : ''
+                    }`}
+                  >
+                    <span
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                        isDone
+                          ? 'bg-menta text-tinta-fixa'
+                          : !isLocked
+                            ? 'bg-laranja text-tinta-fixa'
+                            : 'bg-papel-2 text-tinta-suave'
+                      }`}
+                    >
+                      {isDone ? '✓' : l.number}
+                    </span>
+                    <div className="flex min-w-0 flex-1 flex-col">
+                      <span className="text-[15px] font-semibold">{l.title}</span>
+                      <span className="text-xs text-tinta-suave">{th.speakers[meta.speaker]}</span>
+                    </div>
+                    <span aria-hidden="true" className="text-sm text-tinta-suave">
+                      ›
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+      )}
     </div>
   );
 }

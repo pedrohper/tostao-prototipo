@@ -1,4 +1,7 @@
 import React from 'react';
+import iconOverrides from '@/lib/icon-overrides.json';
+
+const OVERRIDES = iconOverrides as Record<string, string>;
 
 export interface IconProps {
   src: string;
@@ -401,6 +404,20 @@ export const ICON_SVGS: Record<string, React.ReactNode> = {
 
 /** Ícones desenhados em vetor (inline ou public/icones). Todos têm fundo transparente; o tamanho é o lado em px. */
 export function Icon({ src, size = 24, alt = '', className = '' }: IconProps) {
+  const customSrc = OVERRIDES[src];
+  if (customSrc) {
+    return (
+      <img
+        src={customSrc}
+        width={size}
+        height={size}
+        alt={alt}
+        aria-hidden={alt ? undefined : true}
+        className={`shrink-0 object-contain select-none ${className}`}
+        draggable={false}
+      />
+    );
+  }
   const iconContent = ICON_SVGS[src];
   if (iconContent) {
     return (

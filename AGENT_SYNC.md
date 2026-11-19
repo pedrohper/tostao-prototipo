@@ -23,6 +23,15 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-18 · Antigravity · branch feat/inicio-mobills-anotacoes (Aprender Carrossel Livro de História + Biblioteca + Elenco + Slots de Arte)
+
+- **Carrossel Livro de História (`apps/web/app/(app)/aprender/book-carousel.tsx`, `page.tsx`):** cada módulo virou um livro de 5 páginas em carrossel horizontal com arraste lateral (`snap-x`), seletor rápido de livros (`L1`–`L9` + suporte a `?livro=mX`), páginas já feitas/atual coloridas e próximas páginas bloqueadas em preto e branco meio apagado (`grayscale opacity-60`) com atalho para voltar à página atual.
+- **Biblioteca do Tostão (`apps/web/app/(app)/aprender/trilha/page.tsx`, `trilha.tsx`):** `/aprender/trilha` reformulada para estante de 9 livros com lombada colorida, status (`Lido` / `Lendo agora` / `Na estante` em P&B apagado), abertura das 5 páginas do livro selecionado e botão para abrir no carrossel.
+- **Elenco e Currículo (`content/curriculo.md`, `content/lessons/modules.json`, `apps/web/lib/story-cast.ts`, `apps/web/app/(app)/aprender/[licao]/page.tsx`, `player.tsx`):** textos dos 9 módulos enriquecidos com **Caramelo**, **Tigrinho** e **Urubu do Pix** ao lado do **Tostão**, mantendo fatos e simuladores; `LessonPlayer` exibe o narrador da página e slots opcionais para página do livro (`public/livros/{id}.webp`) e slide (`public/slides/{slideKey}.webp`).
+- **Descoberta de artes e ícones (`apps/web/lib/art-assets.ts`, `apps/web/lib/icon-overrides.json`, `apps/web/components/icone.tsx`, `scripts/sync-art-manifest.mjs`, `package.json`, `docs/prompts-icones-tostao.md`):** criado guia pronto com os 52 prompts dos ícones e infraestrutura automática sem 404 para páginas de livros, slides e ícones rasterizados (`pnpm assets:sync`).
+- **i18n (`types.ts`, `pt-br.ts`, `en.ts`, `es.ts`):** adicionadas chaves de livro/página/biblioteca e falantes do elenco nos 3 idiomas.
+- Sem migration no banco e sem env nova. Validado com `pnpm content:build` (9 módulos, 45 lições), Prettier, `pnpm typecheck`, `pnpm lint`, `pnpm test` (196 testes) e `pnpm build`.
+
 ### 2026-11-18 · Antigravity · branch feat/inicio-mobills-anotacoes (olhinho no Início, Planejar com 3 pontinhos, Aprender capa de livro, tema Claro/Escuro/Sistema)
 
 - **Início (`apps/web/app/(app)/inicio/balance-card.tsx`, `page.tsx`):** adicionado o botão de olhinho no card de saldo (mobile e desktop) para ocultar/mostrar saldo em contas, receitas e despesas com persistência em `localStorage` (`tostao-hide-balance` via `useSyncExternalStore`).

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { getDictionary, type Locale } from '@/lib/i18n';
 import type { Lesson } from '@/lib/lessons';
+import { getStoryPageMeta } from '@/lib/story-cast';
 import { markLessonDone } from '../actions';
 import { Mascot, type MascotPose } from '@/components/mascote';
 import { Button } from '@/components/ui';
@@ -15,6 +16,8 @@ type Props = {
   moduleTitle: string;
   moduleNumber: number;
   nextId: string | null;
+  pageAsset?: string | null;
+  slideAsset?: string | null;
   locale: Locale;
 };
 
@@ -27,11 +30,21 @@ const STEP_META: { pose: MascotPose; bg: string }[] = [
   { pose: 'comemorando', bg: 'bg-amarelo' },
 ];
 
-export function LessonPlayer({ lesson, moduleTitle, moduleNumber, nextId, locale }: Props) {
+export function LessonPlayer({
+  lesson,
+  moduleTitle,
+  moduleNumber,
+  nextId,
+  pageAsset = null,
+  slideAsset = null,
+  locale,
+}: Props) {
   const t = getDictionary(locale).pages.learnExtra;
   const [step, setStep] = useState(0);
   const [vote, setVote] = useState<'A' | 'B' | null>(null);
   const s = STEP_META[step]!;
+  const storyMeta = getStoryPageMeta(lesson.id);
+  const headerPose: MascotPose = step <= 1 ? storyMeta.poses[0] : s.pose;
   const stepLabel = t.steps[step] ?? '';
   const Sim = SIMULATORS[lesson.id];
   const last = step === STEP_META.length - 1;
@@ -56,11 +69,16 @@ export function LessonPlayer({ lesson, moduleTitle, moduleNumber, nextId, locale
             ))}
           </div>
         </div>
-        <span className="text-xs font-bold tracking-wider text-laranja-texto uppercase">
-          {t.modulePrefix(moduleNumber, moduleTitle)}
-        </span>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs font-bold tracking-wider text-laranja-texto uppercase">
+            {t.modulePrefix(moduleNumber, moduleTitle)}
+          </span>
+          <span className="rounded-full bg-cartao/80 px-2.5 py-0.5 text-[11px] font-bold text-tinta">
+            {t.hub.speakers[storyMeta.speaker]}
+          </span>
+        </div>
         <div className="flex items-center gap-3">
-          <Mascot pose={s.pose} size={84} alt="" />
+          <Mascot pose={headerPose} size={84} alt="" />
           <div>
             <span className="text-sm font-semibold text-tinta-suave">{stepLabel}</span>
             <h1 className="font-display text-[24px] leading-tight font-extrabold">{lesson.title}</h1>
@@ -69,9 +87,27 @@ export function LessonPlayer({ lesson, moduleTitle, moduleNumber, nextId, locale
 
         <div className="flex flex-1 flex-col gap-3 text-[16px] leading-relaxed">
           {step === 0 && (
-            <p className="rounded-[20px] bg-cartao p-4 font-display text-xl leading-snug font-bold">“{lesson.hook}”</p>
+            <div className="flex flex-col gap-3">
+              {pageAsset && (
+                <div className="overflow-hidden rounded-[20px] border border-linha bg-cartao">
+                  <img src={pageAsset} alt={lesson.title} className="max-h-[280px] w-full object-cover" />
+                </div>
+              )}
+              <p className="rounded-[20px] bg-cartao p-4 font-display text-xl leading-snug font-bold">
+                “{lesson.hook}”
+              </p>
+            </div>
           )}
-          {step === 1 && <p className="rounded-[20px] bg-cartao p-4">{lesson.concept}</p>}
+          {step === 1 && (
+            <div className="flex flex-col gap-3">
+              {slideAsset && (
+                <div className="overflow-hidden rounded-[20px] border border-linha bg-cartao">
+                  <img src={slideAsset} alt={lesson.title} className="max-h-[260px] w-full object-contain" />
+                </div>
+              )}
+              <p className="rounded-[20px] bg-cartao p-4">{lesson.concept}</p>
+            </div>
+          )}
           {step === 2 && (
             <div className="flex flex-col gap-3 rounded-[20px] bg-cartao p-4">
               <span className="font-display text-lg font-extrabold">{lesson.simulator.name}</span>
