@@ -23,6 +23,13 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-19 · Antigravity · branch feat/inicio-mobills-anotacoes (43 ícones customizados em .webp)
+
+- **Ícones (`apps/web/public/icones/**/*.webp`):** integrados os 43 ícones únicos enviados (17/17 `cat/*`, 4/4 `meta/*`, 4/4 `jogo/*`, 3/3 `conectar/*`, 9/9 `ui/*`, 5 `aba/*-ativo` e `modulo/9`), com remoção de fundo branco para transparência alfa real (incluindo alças/recortes internos em `compras`, `delivery`, `mercado`, `conectar/anotar`, `ui/meta-batida` e `ui/minhas-categorias`), anti-halo nas bordas, recorte ajustado e normalização para `256×256` RGBA `.webp`.
+- **Manifesto (`apps/web/lib/icon-overrides.json`):** atualizado via `pnpm assets:sync` com os 43 overrides.
+- **Pendentes:** faltam `modulo/1` a `modulo/8` e os 5 ícones inativos `aba/{inicio,carteira,tostao,aprender,perfil}.webp` (`nav.tsx` segue usando SVG inline até os pares estarem completos).
+- Validado com Prettier, `pnpm typecheck`, `pnpm lint`, `pnpm test` e `pnpm build`.
+
 ### 2026-11-19 · Antigravity · branch feat/inicio-mobills-anotacoes (ajuste da interface do /aprender)
 
 - **Carrossel (`apps/web/app/(app)/aprender/book-carousel.tsx`):** removidos a faixa de pílulas `L1–L9`, as setinhas laterais `‹ ›` de troca de livro, o bloco com sinopse (`book.goal`), a tag de personagem (`Cuidado: Tigrinho` etc.) no canto e no texto do card, o aviso `"Arraste pro lado para espiar as próximas páginas"` e o botão `"Ver todos os livros na biblioteca"`. Barra do livro reduzida a uma linha clicável em largura total (menu sob demanda ao tocar), e card do carrossel ampliado para `w-[90%] max-w-[420px]` destacando a ilustração `3:4` na tela.
