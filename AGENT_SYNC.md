@@ -25,7 +25,7 @@ Relatório do que foi feito. Modelo:
 
 ### 2026-11-19 · Antigravity · branch feat/inicio-mobills-anotacoes (ajuste da interface do /aprender)
 
-- **Carrossel (`apps/web/app/(app)/aprender/book-carousel.tsx`):** removidos a faixa de pílulas `L1–L9`, o bloco com sinopse (`book.goal`), a tag de personagem (`Cuidado: Tigrinho` etc.) no canto e no texto do card, o aviso `"Arraste pro lado para espiar as próximas páginas"` e o botão `"Ver todos os livros na biblioteca"`. Barra de livro reduzida a uma linha compacta clicável (com troca rápida por setas ou menu sob demanda), e card do carrossel ampliado para `w-[90%] max-w-[420px]` destacando a ilustração `3:4` na tela.
+- **Carrossel (`apps/web/app/(app)/aprender/book-carousel.tsx`):** removidos a faixa de pílulas `L1–L9`, as setinhas laterais `‹ ›` de troca de livro, o bloco com sinopse (`book.goal`), a tag de personagem (`Cuidado: Tigrinho` etc.) no canto e no texto do card, o aviso `"Arraste pro lado para espiar as próximas páginas"` e o botão `"Ver todos os livros na biblioteca"`. Barra do livro reduzida a uma linha clicável em largura total (menu sob demanda ao tocar), e card do carrossel ampliado para `w-[90%] max-w-[420px]` destacando a ilustração `3:4` na tela.
 - **Hub Aprender (`apps/web/app/(app)/aprender/page.tsx`):** removidos o link `"Trilha completa"` no topo e a seção `"Próximos livros / Biblioteca completa"` do rodapé.
 - Validado com Prettier, `pnpm typecheck`, `pnpm lint`, `pnpm test` (196 testes) e `pnpm build`.
 
