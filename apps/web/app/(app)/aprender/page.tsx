@@ -48,9 +48,7 @@ export default async function AprenderPage({ searchParams }: { searchParams: Pro
     tig && tig.totalDays > 0 ? Math.min(100, Math.max(0, Math.round((tig.day / tig.totalDays) * 100))) : 0;
   const { xp } = xpFrom(done.length, bonusXp);
   // Módulo atual = o primeiro que ainda tem lição por fazer
-  const atualIdx = modules.findIndex((m) => m.lessons.some((l) => !done.includes(l.id)));
-  const atual = atualIdx >= 0 ? modules[atualIdx] : null;
-  const proximos = atualIdx >= 0 ? modules.slice(atualIdx + 1, atualIdx + 4) : [];
+  const atual = modules.find((m) => m.lessons.some((l) => !done.includes(l.id))) ?? null;
   const requestedBook = livro ? modules.find((m) => m.id === livro) : null;
   const initialBookId = requestedBook?.id ?? atual?.id ?? modules[modules.length - 1]?.id ?? 'm1';
   const pageAssets = getBookPageAssets(modules.flatMap((m) => m.lessons.map((l) => l.id)));
@@ -127,12 +125,6 @@ export default async function AprenderPage({ searchParams }: { searchParams: Pro
             <Icon src="ui/xp" size={18} />
             {xp} XP
           </span>
-          <Link
-            href="/aprender/trilha"
-            className="hidden h-10 items-center rounded-full bg-papel-2 px-4 text-sm font-semibold text-tinta no-underline lg:inline-flex"
-          >
-            {t.learn.fullTrailCta}
-          </Link>
         </div>
       </div>
 
@@ -240,72 +232,6 @@ export default async function AprenderPage({ searchParams }: { searchParams: Pro
             </span>
           </Link>
         </div>
-      </section>
-
-      <section className="flex flex-col gap-2">
-        <div className="flex min-h-9 items-center justify-between">
-          <Eyebrow>{proximos.length ? th.nextModules : th.allModules}</Eyebrow>
-          <Link
-            href="/aprender/trilha"
-            className="flex h-9 items-center gap-1 text-sm font-semibold text-laranja-texto no-underline"
-          >
-            {th.seeTrail}
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M9 18l6-6-6-6" />
-            </svg>
-          </Link>
-        </div>
-        {proximos.length > 0 && (
-          <div className="flex flex-col lg:rounded-[22px] lg:border lg:border-linha lg:bg-cartao lg:px-5 lg:py-1">
-            {proximos.map((m) => {
-              const começou = m.lessons.some((l) => done.includes(l.id));
-              return (
-                <Link
-                  key={m.id}
-                  href="/aprender/trilha"
-                  className="flex min-h-14 items-center gap-3 border-b border-linha text-tinta no-underline last:border-b-0"
-                >
-                  <Icon src={`modulo/${m.number}`} size={38} alt={t.pages.learnExtra.moduleAlt(m.number)} />
-                  <div className="flex min-w-0 grow flex-col py-2">
-                    <span className="text-[15px] font-semibold">
-                      {m.title}
-                      {m.optional ? th.optionalSuffix : ''}
-                    </span>
-                    <span className="truncate text-xs text-tinta-suave">{m.goal}</span>
-                  </div>
-                  {!começou && (
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.75"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      role="img"
-                      aria-label={th.notStartedAria}
-                      className="shrink-0 text-tinta-suave"
-                    >
-                      <rect x="4" y="11" width="16" height="10" rx="2" />
-                      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
-                    </svg>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-        )}
       </section>
     </DesktopSplitShell>
   );
