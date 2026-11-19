@@ -357,6 +357,19 @@ export const en: Dictionary = {
       hasAccountPrefix: 'Already have an account? ',
       noAccountPrefix: 'New to Tostão? ',
     },
+    social: {
+      continueGoogle: 'Continue with Google',
+      continueApple: 'Continue with Apple',
+      orEmail: 'or with email',
+      signupTermsPrefix: 'By continuing with Google or Apple, you confirm you are 18+ and accept the ',
+      errors: {
+        unconfiguredGoogle: 'Google sign-in is not enabled on this server yet. Use email for now.',
+        unconfiguredApple: 'Apple sign-in is not enabled on this server yet. Use email for now.',
+        cancelled: 'Sign-in cancelled. Feel free to try again whenever you want.',
+        unverifiedEmail: 'Your provider did not verify this email. Verify it there or sign in with email and password.',
+        failed: 'Could not complete sign-in right now. Please try again.',
+      },
+    },
     resetForm: {
       newPassword: 'New password',
       confirmPassword: 'Confirm password',
@@ -1343,6 +1356,8 @@ export const en: Dictionary = {
       privacyLink: 'Privacy policy',
       form: {
         passwordLabel: 'Your password',
+        emailLabel: 'Your email to confirm',
+        emailHint: (email) => `Type ${email} to confirm.`,
         confirmLabel: 'I understand this permanently deletes everything and cannot be undone.',
         submit: 'Delete my account',
         pending: 'Deleting…',

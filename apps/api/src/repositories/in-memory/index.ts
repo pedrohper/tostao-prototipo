@@ -20,6 +20,8 @@ import type {
   TostaoAutoConfig,
   TostaoInsightStatus,
   ReconciledNote,
+  OAuthAccount,
+  OAuthProvider,
 } from '../../domain/entities.js';
 import type { FinancialPlan, UpdateTostaoAutoConfigBody } from '@tostao/contracts';
 import type {
@@ -42,6 +44,8 @@ import type {
   Repositories,
   TransactionsRepository,
   UsersRepository,
+  NewOAuthAccount,
+  OAuthAccountsRepository,
   WhatsappLink,
   WhatsappLinksRepository,
   TostaoAutoRepository,
@@ -51,8 +55,24 @@ import type {
 } from '../types.js';
 import { DEFAULT_CATEGORIES, DEFAULT_RULES } from '../../lib/defaults.js';
 
+export class InMemoryOAuthAccountsRepository implements OAuthAccountsRepository {
+  items: OAuthAccount[] = [];
+  async findByProviderAccount(provider: OAuthProvider, providerAccountId: string) {
+    return this.items.find((a) => a.provider === provider && a.providerAccountId === providerAccountId) ?? null;
+  }
+  async listByUser(userId: string) {
+    return this.items.filter((a) => a.userId === userId);
+  }
+  async create(data: NewOAuthAccount) {
+    const account: OAuthAccount = { id: randomUUID(), createdAt: new Date(), ...data };
+    this.items.push(account);
+    return account;
+  }
+}
+
 export class InMemoryUsersRepository implements UsersRepository {
   items: User[] = [];
+  constructor(private readonly cascade?: { oauthAccounts: InMemoryOAuthAccountsRepository }) {}
   async findByEmail(email: string) {
     return this.items.find((u) => u.email === email) ?? null;
   }
@@ -76,6 +96,9 @@ export class InMemoryUsersRepository implements UsersRepository {
   }
   async delete(id: string) {
     this.items = this.items.filter((u) => u.id !== id);
+    if (this.cascade) {
+      this.cascade.oauthAccounts.items = this.cascade.oauthAccounts.items.filter((a) => a.userId !== id);
+    }
   }
 }
 
@@ -594,10 +617,12 @@ export class InMemoryTostaoAutoRepository implements TostaoAutoRepository {
 }
 
 export function makeInMemoryRepositories() {
+  const oauthAccounts = new InMemoryOAuthAccountsRepository();
   const transactions = new InMemoryTransactionsRepository();
   const accounts = new InMemoryAccountsRepository(transactions);
   return {
-    users: new InMemoryUsersRepository(),
+    users: new InMemoryUsersRepository({ oauthAccounts }),
+    oauthAccounts,
     connections: new InMemoryBankConnectionsRepository({ accounts, transactions }),
     accounts,
     categories: new InMemoryCategoriesRepository(),

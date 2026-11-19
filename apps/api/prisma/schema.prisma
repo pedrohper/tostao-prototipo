@@ -15,9 +15,10 @@ model User {
   id           String   @id @default(uuid())
   name         String
   email        String   @unique
-  passwordHash String   @map("password_hash")
+  passwordHash String?  @map("password_hash")
   createdAt    DateTime @default(now()) @map("created_at")
 
+  oauthAccounts OAuthAccount[]
   connections  BankConnection[]
   accounts     Account[]
   transactions Transaction[]
@@ -46,6 +47,22 @@ model User {
   tostaoAutoConfig  TostaoAutoConfig?
 
   @@map("users")
+}
+
+// Conta social ligada ao usuário (Google ou Apple). Uma pessoa pode ter mais de um provedor.
+model OAuthAccount {
+  id                String   @id @default(uuid())
+  userId            String   @map("user_id")
+  provider          String   // "google" | "apple"
+  providerAccountId String   @map("provider_account_id")
+  email             String?
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("oauth_accounts")
 }
 
 // Uma conexão = um "Item" do Pluggy (um banco autorizado no Meu Pluggy)

@@ -16,6 +16,8 @@ import type {
   TostaoAutoConfig,
   TostaoInsightStatus,
   ReconciledNote,
+  OAuthAccount,
+  OAuthProvider,
 } from '../../domain/entities.js';
 import type { FinancialPlan, UpdateTostaoAutoConfigBody } from '@tostao/contracts';
 import type {
@@ -36,6 +38,8 @@ import type {
   PasswordResetsRepository,
   NewTransaction,
   NewUser,
+  NewOAuthAccount,
+  OAuthAccountsRepository,
   PeopleRepository,
   Repositories,
   TransactionsRepository,
@@ -70,6 +74,24 @@ class PrismaUsersRepository implements UsersRepository {
   async delete(id: string) {
     await this.db.user.delete({ where: { id } });
   } // o resto vai junto (onDelete: Cascade)
+}
+
+class PrismaOAuthAccountsRepository implements OAuthAccountsRepository {
+  constructor(private db: PrismaClient) {}
+  async findByProviderAccount(provider: OAuthProvider, providerAccountId: string) {
+    return (await this.db.oAuthAccount.findUnique({
+      where: { provider_providerAccountId: { provider, providerAccountId } },
+    })) as OAuthAccount | null;
+  }
+  async listByUser(userId: string) {
+    return (await this.db.oAuthAccount.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'asc' },
+    })) as OAuthAccount[];
+  }
+  async create(data: NewOAuthAccount) {
+    return (await this.db.oAuthAccount.create({ data })) as OAuthAccount;
+  }
 }
 
 class PrismaBankConnectionsRepository implements BankConnectionsRepository {
@@ -641,6 +663,7 @@ class PrismaTostaoAutoRepository implements TostaoAutoRepository {
 export function makePrismaRepositories(db: PrismaClient): Repositories {
   return {
     users: new PrismaUsersRepository(db),
+    oauthAccounts: new PrismaOAuthAccountsRepository(db),
     connections: new PrismaBankConnectionsRepository(db),
     accounts: new PrismaAccountsRepository(db),
     categories: new PrismaCategoriesRepository(db),

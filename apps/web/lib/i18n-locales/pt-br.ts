@@ -359,6 +359,19 @@ export const ptBR: Dictionary = {
       hasAccountPrefix: 'Já tem conta? ',
       noAccountPrefix: 'Ainda não tem conta? ',
     },
+    social: {
+      continueGoogle: 'Continuar com Google',
+      continueApple: 'Continuar com Apple',
+      orEmail: 'ou com e-mail',
+      signupTermsPrefix: 'Ao continuar com Google ou Apple, você confirma ter 18+ e aceita os ',
+      errors: {
+        unconfiguredGoogle: 'O login com Google ainda não foi ativado neste servidor. Por enquanto, entra com e-mail.',
+        unconfiguredApple: 'O login com Apple ainda não foi ativado neste servidor. Por enquanto, entra com e-mail.',
+        cancelled: 'Login cancelado. Quando quiser, é só tentar de novo.',
+        unverifiedEmail: 'O provedor não confirmou seu e-mail. Confirma lá ou entra com e-mail e senha.',
+        failed: 'Não deu pra concluir o login agora. Tenta de novo.',
+      },
+    },
     resetForm: {
       newPassword: 'Senha nova',
       confirmPassword: 'Repete a senha',
@@ -1342,6 +1355,8 @@ export const ptBR: Dictionary = {
       privacyLink: 'Política de privacidade',
       form: {
         passwordLabel: 'Sua senha',
+        emailLabel: 'Seu e-mail pra confirmar',
+        emailHint: (email) => `Digite ${email} pra confirmar.`,
         confirmLabel: 'Entendi que isso apaga tudo de vez e não tem como desfazer.',
         submit: 'Apagar minha conta',
         pending: 'Apagando…',

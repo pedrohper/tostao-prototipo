@@ -21,15 +21,47 @@ export type LoginBody = z.infer<typeof loginBody>;
 
 export type AuthResponse = { token: string };
 
+export const oauthProviderSchema = z.enum(['google', 'apple']);
+export type OAuthProvider = z.infer<typeof oauthProviderSchema>;
+
+export type OAuthProvidersResponse = { google: boolean; apple: boolean };
+
+export const oauthStartBody = z.object({
+  provider: oauthProviderSchema,
+  redirectUri: z.string().url('redirectUri inválida'),
+  state: z.string().min(16).max(128),
+  nonce: z.string().min(16).max(128),
+  codeChallenge: z.string().min(43).max(128).optional(),
+});
+export type OAuthStartBody = z.infer<typeof oauthStartBody>;
+export type OAuthStartResponse = { url: string };
+
+export const oauthCallbackBody = z.object({
+  provider: oauthProviderSchema,
+  code: z.string().min(1, 'Código de autorização ausente'),
+  redirectUri: z.string().url('redirectUri inválida'),
+  codeVerifier: z.string().min(43).max(128).optional(),
+  expectedNonce: z.string().min(16).max(128),
+  name: z.string().trim().max(120).optional(),
+  inviteCode: z.string().trim().max(40).optional(),
+});
+export type OAuthCallbackBody = z.infer<typeof oauthCallbackBody>;
+export type OAuthAuthResponse = { token: string; isNewUser: boolean };
+
 export const resetPasswordBody = z.object({
   token: z.string().min(20),
   password: z.string().min(8, 'A senha precisa de pelo menos 8 caracteres'),
 });
 
-// Apagar a conta: confirma com a senha.
-export const deleteAccountBody = z.object({
-  password: z.string().min(1, 'Digite sua senha pra confirmar'),
-});
+// Apagar a conta: confirma com a senha (ou com o e-mail, se a conta entrou só com Google/Apple).
+export const deleteAccountBody = z
+  .object({
+    password: z.string().optional(),
+    confirmEmail: z.string().trim().optional(),
+  })
+  .refine((v) => Boolean(v.password?.length) || Boolean(v.confirmEmail?.length), {
+    message: 'Confirme sua senha ou seu e-mail pra apagar a conta',
+  });
 
 export type InviteDTO = { code: string; createdAt: string; usedAt: string | null; usedBy: string | null };
 export type InvitesResponse = { invites: InviteDTO[] };
@@ -38,6 +70,8 @@ export type ProfileResponse = {
   id: string;
   name: string;
   email: string;
+  hasPassword: boolean;
+  providers: OAuthProvider[];
   createdAt: string;
   connections: {
     id: string;

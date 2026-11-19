@@ -361,6 +361,19 @@ export const es: Dictionary = {
       hasAccountPrefix: '¿Ya tienes cuenta? ',
       noAccountPrefix: '¿Aún no tienes cuenta? ',
     },
+    social: {
+      continueGoogle: 'Continuar con Google',
+      continueApple: 'Continuar con Apple',
+      orEmail: 'o con correo',
+      signupTermsPrefix: 'Al continuar con Google o Apple, confirmas tener 18+ y aceptas los ',
+      errors: {
+        unconfiguredGoogle: 'El acceso con Google aún no está activado en este servidor. Usa correo por ahora.',
+        unconfiguredApple: 'El acceso con Apple aún no está activado en este servidor. Usa correo por ahora.',
+        cancelled: 'Inicio de sesión cancelado. Inténtalo de nuevo cuando quieras.',
+        unverifiedEmail: 'El proveedor no verificó tu correo. Verifícalo allí o entra con correo y contraseña.',
+        failed: 'No se pudo completar el acceso ahora. Inténtalo de nuevo.',
+      },
+    },
     resetForm: {
       newPassword: 'Nueva contraseña',
       confirmPassword: 'Repite la contraseña',
@@ -1348,6 +1361,8 @@ export const es: Dictionary = {
       privacyLink: 'Política de privacidad',
       form: {
         passwordLabel: 'Tu contraseña',
+        emailLabel: 'Tu correo para confirmar',
+        emailHint: (email) => `Escribe ${email} para confirmar.`,
         confirmLabel: 'Entiendo que esto borra todo definitivamente y no se puede deshacer.',
         submit: 'Borrar mi cuenta',
         pending: 'Borrando…',

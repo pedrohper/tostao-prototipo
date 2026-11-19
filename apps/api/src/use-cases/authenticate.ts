@@ -7,8 +7,8 @@ export class AuthenticateUseCase {
 
   async execute({ email, password }: { email: string; password: string }) {
     const user = await this.users.findByEmail(email);
-    // Mesmo erro pra "e-mail não existe" e "senha errada": não entrega quais e-mails têm conta.
-    if (!user) throw new InvalidCredentialsError();
+    // Mesmo erro pra "e-mail não existe", "conta só social" e "senha errada": não entrega quais e-mails têm conta.
+    if (!user || !user.passwordHash) throw new InvalidCredentialsError();
     if (!(await bcrypt.compare(password, user.passwordHash))) throw new InvalidCredentialsError();
     return { user };
   }

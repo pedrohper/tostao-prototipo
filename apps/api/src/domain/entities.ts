@@ -1,11 +1,22 @@
 // Entidades do domínio: o formato "puro" dos dados, sem Prisma, sem HTTP.
 // Os use cases só conhecem isso aqui. Trocar o banco não muda nada nesse arquivo.
 
+export type OAuthProvider = 'google' | 'apple';
+
 export type User = {
   id: string;
   name: string;
   email: string;
-  passwordHash: string;
+  passwordHash: string | null;
+  createdAt: Date;
+};
+
+export type OAuthAccount = {
+  id: string;
+  userId: string;
+  provider: OAuthProvider;
+  providerAccountId: string;
+  email: string | null;
   createdAt: Date;
 };
 

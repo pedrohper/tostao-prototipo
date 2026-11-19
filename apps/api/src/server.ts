@@ -18,6 +18,7 @@ import { DisabledPushGateway, WebPushGateway } from './gateways/push-gateway.js'
 import { scheduleNotifications } from './jobs/notifications.js';
 import { scheduleTostaoChecks, runPeriodicTostaoChecks } from './jobs/tostao-checks.js';
 import { BcbRatesGateway } from './gateways/rates-gateway.js';
+import { OidcOAuthGateway } from './gateways/oauth-gateway.js';
 import { buildN8nBridge, listenN8nBridge } from './http/n8n-bridge.js';
 
 const repos = makePrismaRepositories(prisma);
@@ -40,11 +41,27 @@ const push =
   env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY
     ? new WebPushGateway(env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY, env.VAPID_SUBJECT)
     : new DisabledPushGateway();
+const oauth = new OidcOAuthGateway({
+  google:
+    env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+      ? { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET }
+      : undefined,
+  apple:
+    env.APPLE_CLIENT_ID && env.APPLE_TEAM_ID && env.APPLE_KEY_ID && env.APPLE_PRIVATE_KEY
+      ? {
+          clientId: env.APPLE_CLIENT_ID,
+          teamId: env.APPLE_TEAM_ID,
+          keyId: env.APPLE_KEY_ID,
+          privateKey: env.APPLE_PRIVATE_KEY,
+        }
+      : undefined,
+});
 const app = await buildApp({
   repos,
   bank,
   ai,
   whatsapp,
+  oauth,
   audioTranscriber,
   push,
   rates: new BcbRatesGateway(),
@@ -88,6 +105,10 @@ await app.listen({ port: env.PORT, host: env.HOST });
 if (env.N8N_WHATSAPP_SECRET && env.N8N_LISTEN_HOST) {
   void listenN8nBridge(buildN8nBridge(app), env.N8N_LISTEN_HOST, env.N8N_LISTEN_PORT, (m) => console.info(m));
 }
+const oauthProviders = Object.entries(oauth.enabledProviders())
+  .filter(([, on]) => on)
+  .map(([name]) => name)
+  .join(', ');
 console.log(
-  `🪙 Tostão API em http://localhost:${env.PORT} (banco: ${env.BANK_GATEWAY}, IA: ${ai.enabled ? 'DeepSeek' : 'desligada'}, WhatsApp: ${whatsapp.enabled ? (env.WHATSAPP_TOKEN ? 'Meta' : 'n8n') : 'desligado'}, avisos: ${push.enabled ? 'ligados' : 'desligados'})`,
+  `🪙 Tostão API em http://localhost:${env.PORT} (banco: ${env.BANK_GATEWAY}, IA: ${ai.enabled ? 'DeepSeek' : 'desligada'}, WhatsApp: ${whatsapp.enabled ? (env.WHATSAPP_TOKEN ? 'Meta' : 'n8n') : 'desligado'}, avisos: ${push.enabled ? 'ligados' : 'desligados'}, login social: ${oauthProviders || 'desligado'})`,
 );

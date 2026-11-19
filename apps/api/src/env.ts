@@ -50,6 +50,13 @@ const schema = z
       .string()
       .refine((v) => !v || /^https?:\/\//.test(v), 'WHISPER_URL precisa ser uma URL http(s)')
       .default('http://127.0.0.1:8000/v1/audio/transcriptions'),
+    // Login social (Google e Apple). Vazio = provedor desligado.
+    GOOGLE_CLIENT_ID: z.string().default(''),
+    GOOGLE_CLIENT_SECRET: z.string().default(''),
+    APPLE_CLIENT_ID: z.string().default(''),
+    APPLE_TEAM_ID: z.string().default(''),
+    APPLE_KEY_ID: z.string().default(''),
+    APPLE_PRIVATE_KEY: z.string().default(''),
   })
   .refine(
     (e) => !e.WHATSAPP_TOKEN || (e.WHATSAPP_PHONE_NUMBER_ID && e.WHATSAPP_APP_SECRET && e.WHATSAPP_VERIFY_TOKEN),
@@ -62,7 +69,21 @@ const schema = z
   })
   .refine((e) => e.BANK_GATEWAY !== 'pluggy' || (e.PLUGGY_CLIENT_ID && e.PLUGGY_CLIENT_SECRET), {
     message: 'Com BANK_GATEWAY=pluggy, preencha PLUGGY_CLIENT_ID e PLUGGY_CLIENT_SECRET',
-  });
+  })
+  .refine(
+    (e) => (!e.GOOGLE_CLIENT_ID && !e.GOOGLE_CLIENT_SECRET) || Boolean(e.GOOGLE_CLIENT_ID && e.GOOGLE_CLIENT_SECRET),
+    {
+      message: 'Para ativar login com Google, preencha GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET',
+    },
+  )
+  .refine(
+    (e) =>
+      (!e.APPLE_CLIENT_ID && !e.APPLE_TEAM_ID && !e.APPLE_KEY_ID && !e.APPLE_PRIVATE_KEY) ||
+      Boolean(e.APPLE_CLIENT_ID && e.APPLE_TEAM_ID && e.APPLE_KEY_ID && e.APPLE_PRIVATE_KEY),
+    {
+      message: 'Para ativar login com Apple, preencha APPLE_CLIENT_ID, APPLE_TEAM_ID, APPLE_KEY_ID e APPLE_PRIVATE_KEY',
+    },
+  );
 
 const parsed = schema.safeParse(process.env);
 if (!parsed.success) {

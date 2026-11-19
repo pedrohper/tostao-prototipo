@@ -21,10 +21,12 @@ import type { Repositories } from '../repositories/types.js';
 import type { BankGateway } from '../gateways/bank-gateway.js';
 import { FakeAiGateway, type AiGateway } from '../gateways/ai-gateway.js';
 import { FakeWhatsAppGateway, type WhatsAppGateway } from '../gateways/whatsapp-gateway.js';
+import { DisabledOAuthGateway, type OAuthGateway } from '../gateways/oauth-gateway.js';
 import { HandleWhatsAppMessageUseCase, WhatsAppLinkUseCase } from './whatsapp.js';
 import { AskTostaoUseCase } from './ask-tostao.js';
 import { RegisterUserUseCase } from './register-user.js';
 import { AuthenticateUseCase } from './authenticate.js';
+import { AuthenticateOAuthUseCase } from './authenticate-oauth.js';
 import { GetProfileUseCase } from './get-profile.js';
 import { SyncBankConnectionUseCase } from './sync-bank-connection.js';
 import { ConnectBankUseCase } from './connect-bank.js';
@@ -65,6 +67,7 @@ export type Deps = {
   bank: BankGateway;
   ai?: AiGateway;
   whatsapp?: WhatsAppGateway;
+  oauth?: OAuthGateway;
   chatDailyLimit?: number;
 };
 
@@ -73,6 +76,7 @@ export function makeUseCases({
   bank,
   ai = new FakeAiGateway(),
   whatsapp = new FakeWhatsAppGateway(),
+  oauth = new DisabledOAuthGateway(),
   chatDailyLimit = 40,
 }: Deps) {
   const sync = new SyncBankConnectionUseCase({ ...repos, bank });
@@ -86,7 +90,8 @@ export function makeUseCases({
     listInvites: new ListInvitesUseCase(repos),
     resetPassword: new ResetPasswordUseCase(repos),
     authenticate: new AuthenticateUseCase(repos.users),
-    getProfile: new GetProfileUseCase(repos.users, repos.connections, repos.accounts),
+    authenticateOAuth: new AuthenticateOAuthUseCase(repos, oauth),
+    getProfile: new GetProfileUseCase(repos.users, repos.connections, repos.accounts, repos.oauthAccounts),
     syncBankConnection: sync,
     connectBank: new ConnectBankUseCase(repos.connections, bank, sync),
     institutionLogos: new InstitutionLogosUseCase(bank),

@@ -2,9 +2,14 @@ import { Mascot } from '@/components/mascote';
 import { BackLink } from '@/components/ui';
 import { getI18n } from '@/lib/i18n-server';
 import { AuthForm } from '../auth-form';
+import { SocialAuthButtons } from '../social-buttons';
 
-export default async function CriarContaPage({ searchParams }: { searchParams: Promise<{ convite?: string }> }) {
-  const [{ convite }, { t }] = await Promise.all([searchParams, getI18n()]);
+export default async function CriarContaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ convite?: string; oauthError?: string }>;
+}) {
+  const [{ convite, oauthError }, { t }] = await Promise.all([searchParams, getI18n()]);
   const p = t.authPages;
   return (
     <>
@@ -25,6 +30,7 @@ export default async function CriarContaPage({ searchParams }: { searchParams: P
         </div>
         <Mascot pose="dupla" size={92} alt={p.signupMascotAlt} className="lg:hidden" />
       </div>
+      <SocialAuthButtons mode="criar" invite={convite} oauthError={oauthError} social={p.social} form={p.form} />
       <AuthForm mode="criar" invite={convite} t={p.form} />
     </>
   );

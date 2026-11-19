@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import type { ProfileResponse } from '@tostao/contracts';
+import { api } from '@/lib/api';
 import { resolveBackHref } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
 import { Mascot } from '@/components/mascote';
@@ -8,7 +10,7 @@ import { DeleteAccountForm } from './delete-form';
 export const metadata = { title: 'Apagar minha conta · Tostão' };
 
 export default async function ApagarContaPage({ searchParams }: { searchParams: Promise<{ voltar?: string }> }) {
-  const [{ voltar }, { t }] = await Promise.all([searchParams, getI18n()]);
+  const [{ voltar }, { t }, me] = await Promise.all([searchParams, getI18n(), api<ProfileResponse>('/me')]);
   const backHref = resolveBackHref(voltar, '/mais');
   const td = t.pages.deleteAccount;
 
@@ -39,7 +41,18 @@ export default async function ApagarContaPage({ searchParams }: { searchParams: 
         </p>
       </Card>
 
-      <DeleteAccountForm t={td.form} />
+      <DeleteAccountForm
+        hasPassword={me.hasPassword}
+        email={me.email}
+        labels={{
+          passwordLabel: td.form.passwordLabel,
+          emailLabel: td.form.emailLabel,
+          emailHint: td.form.emailHint(me.email),
+          confirmLabel: td.form.confirmLabel,
+          submit: td.form.submit,
+          pending: td.form.pending,
+        }}
+      />
     </PageFrame>
   );
 }

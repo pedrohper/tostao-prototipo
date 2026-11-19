@@ -19,6 +19,8 @@ import { investRoutes } from './http/controllers/invest.js';
 import { tostaoAutoRoutes } from './http/controllers/tostao-auto.js';
 import { ReferenceRatesGateway, type RatesGateway } from './gateways/rates-gateway.js';
 import { DisabledPushGateway, type PushGateway } from './gateways/push-gateway.js';
+import { DisabledOAuthGateway } from './gateways/oauth-gateway.js';
+import { LoginLimiter } from './http/login-limiter.js';
 
 declare module '@fastify/jwt' {
   interface FastifyJWT {
@@ -42,6 +44,7 @@ export async function buildApp({
   bank,
   ai,
   whatsapp = new FakeWhatsAppGateway(),
+  oauth = new DisabledOAuthGateway(),
   whatsappVerifyToken = '',
   n8nWhatsAppSecret = '',
   audioTranscriber = new DisabledAudioTranscriber(),
@@ -57,10 +60,10 @@ export async function buildApp({
   await app.register(jwt, { secret: jwtSecret, sign: { expiresIn: '7d' } });
   app.setErrorHandler(errorHandler);
 
-  const uc = makeUseCases({ repos, bank, ai, whatsapp, chatDailyLimit });
+  const uc = makeUseCases({ repos, bank, ai, whatsapp, oauth, chatDailyLimit });
   app.get('/health', async () => ({ ok: true }));
   engagementRoutes(app, uc, repos, push);
-  authRoutes(app, uc);
+  authRoutes(app, uc, new LoginLimiter(), oauth, webOrigin);
   accountRoutes(app, uc);
   bankRoutes(app, uc, repos);
   transactionRoutes(app, uc);

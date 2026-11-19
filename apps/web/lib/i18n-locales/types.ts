@@ -319,6 +319,19 @@ export interface Dictionary {
       hasAccountPrefix: string;
       noAccountPrefix: string;
     };
+    social: {
+      continueGoogle: string;
+      continueApple: string;
+      orEmail: string;
+      signupTermsPrefix: string;
+      errors: {
+        unconfiguredGoogle: string;
+        unconfiguredApple: string;
+        cancelled: string;
+        unverifiedEmail: string;
+        failed: string;
+      };
+    };
     resetForm: {
       newPassword: string;
       confirmPassword: string;
@@ -1151,6 +1164,8 @@ export interface Dictionary {
       privacyLink: string;
       form: {
         passwordLabel: string;
+        emailLabel: string;
+        emailHint: (email: string) => string;
         confirmLabel: string;
         submit: string;
         pending: string;

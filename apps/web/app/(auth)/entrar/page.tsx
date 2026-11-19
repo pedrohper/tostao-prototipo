@@ -1,9 +1,10 @@
 import { Mascot } from '@/components/mascote';
 import { getI18n } from '@/lib/i18n-server';
 import { AuthForm } from '../auth-form';
+import { SocialAuthButtons } from '../social-buttons';
 
-export default async function EntrarPage() {
-  const { t } = await getI18n();
+export default async function EntrarPage({ searchParams }: { searchParams: Promise<{ oauthError?: string }> }) {
+  const [{ oauthError }, { t }] = await Promise.all([searchParams, getI18n()]);
   const p = t.authPages;
   return (
     <>
@@ -15,6 +16,7 @@ export default async function EntrarPage() {
         </div>
         <Mascot pose="acenando" size={84} alt={p.loginMascotAlt} className="lg:hidden" />
       </div>
+      <SocialAuthButtons mode="entrar" oauthError={oauthError} social={p.social} form={p.form} />
       <AuthForm mode="entrar" t={p.form} />
     </>
   );

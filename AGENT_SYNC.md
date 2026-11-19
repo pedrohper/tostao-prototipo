@@ -23,6 +23,21 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-19 · Antigravity · branch feat/inicio-mobills-anotacoes (login social com Google e Apple)
+
+- **Banco & Domínio (`apps/api/prisma/schema.prisma`, migration `20261119173000_oauth_accounts`, `entities.ts`, `repositories/`):** `users.password_hash` passou a ser opcional (`String?`) e foi criada a tabela `oauth_accounts` (`[provider, provider_account_id]` único, `onDelete: Cascade`) com `PrismaOAuthAccountsRepository` e `InMemoryOAuthAccountsRepository`.
+- **Gateway OIDC sem dependências novas (`apps/api/src/gateways/oauth-gateway.ts`):** Google (Authorization Code + PKCE S256 + verificação RS256 via JWKS com cache e refresh em rotação de `kid`) e Apple (`response_mode=form_post` + geração de `client_secret` JWT ES256 a partir da chave `.p8` + verificação RS256 via JWKS), usando apenas `node:crypto` + `fetch`.
+- **Use cases & API (`authenticate-oauth.ts`, `authenticate.ts`, `delete-account.ts`, `get-profile.ts`, `http/controllers/auth.ts`, `account.ts`, `env.ts`, `server.ts`, `packages/contracts`):**
+  - Rotas `GET /auth/oauth/providers`, `POST /auth/oauth/start`, `POST /auth/oauth/callback` com validação de `redirectUri` contra `WEB_ORIGIN`.
+  - Criação de conta social com suporte a convite/código de amigo, vinculação automática por e-mail verificado, proteção no login por senha para contas sem `passwordHash`, `hasPassword`/`providers` no `GET /me` e confirmação de exclusão LGPD via e-mail (`confirmEmail`) em contas só sociais.
+  - Novas variáveis opcionais no `apps/api/.env` (documentadas em `.env.example`): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `APPLE_CLIENT_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`.
+- **Web (`apps/web/lib/oauth.ts`, `app/api/auth/[provider]/{start,callback}/route.ts`, `app/(auth)/{social-buttons.tsx,entrar/page.tsx,criar-conta/page.tsx}`, `app/(app)/perfil/apagar-conta/*`, `proxy.ts`, i18n `pt-br`/`en`/`es`):**
+  - Botões **Continuar com Google** e **Continuar com Apple** em `/entrar` e `/criar-conta` (com erro amigável se clicados antes das chaves estarem no `.env`).
+  - Route handlers no Next para `start` e `callback` (`GET` Google e `POST form_post` Apple com cookie `tostao_oauth` usando `SameSite=None; Secure` em HTTPS para Apple e redirect `303 See Other`).
+  - Tela `/perfil/apagar-conta` exibe confirmação por e-mail quando `hasPassword === false`.
+- **Validação:** `prisma migrate deploy` aplicado no Postgres, Prettier, `pnpm typecheck`, `pnpm lint`, `pnpm test` (34 arquivos, 203 testes incluindo testes criptográficos RS256/ES256 em `oauth-gateway.spec.ts` e fluxo completo em `authenticate-oauth.spec.ts`), `pnpm build`, reload de `tostao-api` e `tostao-web` via PM2 e smoke checks HTTP.
+- **Pendente de configuração externa:** preencher `GOOGLE_*` e/ou `APPLE_*` em `apps/api/.env` após cadastrar os callbacks no Google Cloud Console / Apple Developer e reiniciar `tostao-api`.
+
 ### 2026-11-19 · Antigravity · branch feat/inicio-mobills-anotacoes (animações na landing)
 
 - **Landing (`apps/web/app/(site)/landing.tsx`, `scroll-reveal.tsx`, `site.module.css`):** hero entra em cascata (título, texto, botões), destaque amarelo do título é "marcado" da esquerda pra direita, Tostão flutua, cards de saldo/dica entram com pop e as barras enchem, botão principal pulsa. Mais abaixo, passos, módulos, lição, elenco, segurança e CTA final entram ao rolar (`IntersectionObserver` via `ScrollReveal`, atributos `data-reveal`/`data-in`), com barras da lição enchendo e hover nos cards.

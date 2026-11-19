@@ -16,11 +16,19 @@ export class DeleteAccountUseCase {
     private readonly bank: BankGateway,
   ) {}
 
-  async execute({ userId, password }: { userId: string; password: string }) {
+  async execute({ userId, password, confirmEmail }: { userId: string; password?: string; confirmEmail?: string }) {
     const user = await this.repos.users.findById(userId);
     if (!user) throw new ResourceNotFoundError('Conta');
     // 403, não 401: a web trata 401 como sessão vencida e deslogaria a pessoa.
-    if (!(await bcrypt.compare(password, user.passwordHash))) throw new AppError('Senha não confere.', 403);
+    if (user.passwordHash) {
+      if (!password || !(await bcrypt.compare(password, user.passwordHash))) {
+        throw new AppError('Senha não confere.', 403);
+      }
+    } else {
+      if (!confirmEmail || confirmEmail.trim().toLowerCase() !== user.email.toLowerCase()) {
+        throw new AppError('E-mail não confere.', 403);
+      }
+    }
 
     let providerFailures = 0;
     for (const connection of await this.repos.connections.listByUser(userId)) {

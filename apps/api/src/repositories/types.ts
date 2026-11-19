@@ -22,6 +22,8 @@ import type {
   TostaoInsightStatus,
   TostaoRoutine,
   TostaoAutoConfig,
+  OAuthAccount,
+  OAuthProvider,
 } from '../domain/entities.js';
 import type { FinancialPlan, UpdateTostaoAutoConfigBody } from '@tostao/contracts';
 
@@ -35,6 +37,13 @@ export interface UsersRepository {
   updatePassword(id: string, passwordHash: string): Promise<void>;
   /** Apaga a pessoa e, em cascata, tudo que é dela (LGPD: direito de eliminação). */
   delete(id: string): Promise<void>;
+}
+
+export type NewOAuthAccount = Pick<OAuthAccount, 'userId' | 'provider' | 'providerAccountId' | 'email'>;
+export interface OAuthAccountsRepository {
+  findByProviderAccount(provider: OAuthProvider, providerAccountId: string): Promise<OAuthAccount | null>;
+  listByUser(userId: string): Promise<OAuthAccount[]>;
+  create(data: NewOAuthAccount): Promise<OAuthAccount>;
 }
 
 export interface BankConnectionsRepository {
@@ -231,6 +240,7 @@ export interface TostaoAutoRepository {
 
 export type Repositories = {
   users: UsersRepository;
+  oauthAccounts: OAuthAccountsRepository;
   connections: BankConnectionsRepository;
   accounts: AccountsRepository;
   categories: CategoriesRepository;
