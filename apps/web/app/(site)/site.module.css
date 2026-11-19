@@ -611,3 +611,215 @@
     line-height: 24px;
   }
 }
+
+/* ── Movimento da landing ────────────────────────────────────────────────
+   Entrada do hero em cascata, Tostão flutuando, destaque do título sendo "marcado",
+   barras enchendo e blocos que entram ao rolar (scroll-reveal.tsx liga o `data-armed`).
+   Tudo dentro de `no-preference`: com "reduzir movimento" a página fica parada e completa. */
+.eyebrow {
+  display: inline-block;
+}
+.hero .mark {
+  background: linear-gradient(var(--lp-yellow-mark), var(--lp-yellow-mark)) no-repeat left center / 100% 100%;
+}
+.card,
+.vil {
+  transition:
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+.step:hover,
+.licao:hover,
+.seg > .card:hover {
+  box-shadow: 0 18px 40px rgba(30, 27, 24, 0.14);
+}
+.vil:hover {
+  box-shadow: 0 18px 40px rgba(30, 27, 24, 0.12);
+}
+.vil img,
+.step img {
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1.3);
+}
+.vil:hover img {
+  transform: scale(1.07) rotate(-3deg);
+}
+.step:hover img {
+  transform: translateY(-6px) rotate(3deg);
+}
+
+@keyframes lpUp {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes lpPop {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.85);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes lpPigIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) rotate(-12deg) scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(-4deg) scale(1);
+  }
+}
+@keyframes lpFloat {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-4deg);
+  }
+  50% {
+    transform: translateY(-14px) rotate(-1.5deg);
+  }
+}
+@keyframes lpBob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+@keyframes lpMark {
+  from {
+    background-size: 0% 100%;
+  }
+  to {
+    background-size: 100% 100%;
+  }
+}
+@keyframes lpGrow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes lpWave {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(-4deg) translateY(-4px);
+  }
+  75% {
+    transform: rotate(4deg) translateY(-2px);
+  }
+}
+@keyframes lpPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(30, 27, 24, 0.35);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 14px rgba(30, 27, 24, 0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero h1,
+  .hero p,
+  .hero-ctas,
+  .trust {
+    animation: lpUp 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .hero p {
+    animation-delay: 0.12s;
+  }
+  .hero-ctas {
+    animation-delay: 0.24s;
+  }
+  .trust {
+    animation-delay: 0.36s;
+  }
+  .hero .mark {
+    animation: lpMark 0.9s cubic-bezier(0.6, 0, 0.2, 1) 0.55s both;
+  }
+  .hero-ctas .btn-dark {
+    animation: lpPulse 2.4s ease-out 1.6s infinite;
+  }
+
+  .pig {
+    animation:
+      lpPigIn 0.9s cubic-bezier(0.2, 0.8, 0.2, 1.1) 0.1s both,
+      lpFloat 5s ease-in-out 1s infinite;
+  }
+  .saldo {
+    animation:
+      lpPop 0.7s cubic-bezier(0.2, 0.8, 0.2, 1.1) 0.5s both,
+      lpBob 6s ease-in-out 1.3s infinite;
+  }
+  .dica {
+    animation:
+      lpPop 0.7s cubic-bezier(0.2, 0.8, 0.2, 1.1) 0.8s both,
+      lpBob 6s ease-in-out 1.5s infinite reverse;
+  }
+  .saldo .bar > div {
+    transform-origin: left;
+    animation: lpGrow 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .saldo .bar > div:nth-child(1) {
+    animation-delay: 0.9s;
+  }
+  .saldo .bar > div:nth-child(2) {
+    animation-delay: 1.05s;
+  }
+  .saldo .bar > div:nth-child(3) {
+    animation-delay: 1.2s;
+  }
+
+  .final img {
+    transform-origin: 50% 90%;
+    animation: lpWave 3.6s ease-in-out infinite;
+  }
+
+  /* Ao rolar: blocos sobem e aparecem em cascata (--d vem do landing.tsx). */
+  .lp[data-armed] [data-reveal] {
+    transition:
+      opacity 0.7s ease var(--d, 0ms),
+      transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) var(--d, 0ms),
+      box-shadow 0.25s ease,
+      border-color 0.25s ease;
+  }
+  .lp[data-armed] [data-reveal]:not([data-in]) {
+    opacity: 0;
+    transform: translateY(32px) scale(0.97);
+  }
+  .lp[data-armed] .licao .bar > div {
+    transform-origin: left;
+    transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 0.4s;
+  }
+  .lp[data-armed] .licao:not([data-in]) .bar > div {
+    transform: scaleX(0);
+  }
+  .lp[data-armed] .licao .bar:nth-of-type(2) > div {
+    transition-delay: 0.6s;
+  }
+  .lp[data-armed] .step:not([data-in]) .num {
+    transform: scale(0);
+  }
+  .lp[data-armed] .step .num {
+    transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1.6) calc(var(--d, 0ms) + 0.35s);
+  }
+}

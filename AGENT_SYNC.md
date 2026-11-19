@@ -23,6 +23,12 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-19 · Antigravity · branch feat/inicio-mobills-anotacoes (animações na landing)
+
+- **Landing (`apps/web/app/(site)/landing.tsx`, `scroll-reveal.tsx`, `site.module.css`):** hero entra em cascata (título, texto, botões), destaque amarelo do título é "marcado" da esquerda pra direita, Tostão flutua, cards de saldo/dica entram com pop e as barras enchem, botão principal pulsa. Mais abaixo, passos, módulos, lição, elenco, segurança e CTA final entram ao rolar (`IntersectionObserver` via `ScrollReveal`, atributos `data-reveal`/`data-in`), com barras da lição enchendo e hover nos cards.
+- Tudo dentro de `prefers-reduced-motion: no-preference`; sem JS ou com movimento reduzido a página aparece completa e parada. Sem dependência nova.
+- Validado com Prettier, `pnpm typecheck`, `pnpm lint` e `pnpm build`.
+
 ### 2026-11-19 · Antigravity · branch feat/inicio-mobills-anotacoes (43 ícones customizados em .webp)
 
 - **Ícones (`apps/web/public/icones/**/*.webp`):** integrados os 43 ícones únicos enviados (17/17 `cat/*`, 4/4 `meta/*`, 4/4 `jogo/*`, 3/3 `conectar/*`, 9/9 `ui/*`, 5 `aba/*-ativo` e `modulo/9`), com remoção de fundo branco para transparência alfa real (incluindo alças/recortes internos em `compras`, `delivery`, `mercado`, `conectar/anotar`, `ui/meta-batida` e `ui/minhas-categorias`), anti-halo nas bordas, recorte ajustado e normalização para `256×256` RGBA `.webp`.
