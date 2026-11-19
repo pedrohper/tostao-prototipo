@@ -89,8 +89,8 @@ export function LessonPlayer({
           {step === 0 && (
             <div className="flex flex-col gap-3">
               {pageAsset && (
-                <div className="overflow-hidden rounded-[20px] border border-linha bg-cartao">
-                  <img src={pageAsset} alt={lesson.title} className="max-h-[280px] w-full object-cover" />
+                <div className="mx-auto w-full max-w-[300px] overflow-hidden rounded-[20px] border border-linha bg-cartao">
+                  <img src={pageAsset} alt={lesson.title} className="aspect-[3/4] w-full object-cover" />
                 </div>
               )}
               <p className="rounded-[20px] bg-cartao p-4 font-display text-xl leading-snug font-bold">

@@ -23,6 +23,12 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-19 · Antigravity · branch feat/inicio-mobills-anotacoes (artes do Livro 1 + apple-icon.png + enquadramento 3:4)
+
+- **Artes integradas:** `apps/web/app/apple-icon.png` (180x180) e as 5 páginas ilustradas do Livro 1 (`apps/web/public/livros/m1-l1.webp` a `m1-l5.webp`, 896x1200).
+- **Enquadramento 3:4 (`apps/web/app/(app)/aprender/book-carousel.tsx`, `apps/web/app/(app)/aprender/[licao]/player.tsx`):** cards com arte dedicada agora usam `aspect-[3/4]` (`w-[78%] max-w-[340px]` no carrossel e `max-w-[300px]` no passo 0 da lição) para exibir a cena inteira sem cortes verticais.
+- Validado com Prettier, `pnpm typecheck`, `pnpm lint` e `pnpm build`.
+
 ### 2026-11-18 · Antigravity · branch feat/inicio-mobills-anotacoes (Aprender Carrossel Livro de História + Biblioteca + Elenco + Slots de Arte)
 
 - **Carrossel Livro de História (`apps/web/app/(app)/aprender/book-carousel.tsx`, `page.tsx`):** cada módulo virou um livro de 5 páginas em carrossel horizontal com arraste lateral (`snap-x`), seletor rápido de livros (`L1`–`L9` + suporte a `?livro=mX`), páginas já feitas/atual coloridas e próximas páginas bloqueadas em preto e branco meio apagado (`grayscale opacity-60`) com atalho para voltar à página atual.

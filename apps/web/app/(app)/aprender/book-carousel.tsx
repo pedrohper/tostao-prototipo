@@ -166,7 +166,9 @@ export function BookCarousel({ modules, initialBookId, currentBookId, done, page
                 ref={(el) => {
                   cardRefs.current[idx] = el;
                 }}
-                className={`flex w-[86%] shrink-0 snap-center flex-col overflow-hidden rounded-[26px] border bg-cartao transition-all duration-300 sm:w-[76%] ${
+                className={`flex shrink-0 snap-center flex-col overflow-hidden rounded-[26px] border bg-cartao transition-all duration-300 ${
+                  customImg ? 'w-[78%] max-w-[340px]' : 'w-[86%] sm:w-[76%]'
+                } ${
                   isLocked
                     ? 'border-linha/70 opacity-60 grayscale'
                     : isCurrentPage
@@ -176,15 +178,15 @@ export function BookCarousel({ modules, initialBookId, currentBookId, done, page
               >
                 {/* Ilustração da página do livro */}
                 <div
-                  className={`relative flex min-h-[225px] flex-col items-center justify-center overflow-hidden px-5 pt-5 pb-4 sm:min-h-[260px] ${
-                    isLocked ? 'bg-papel-2' : theme.bgClass
-                  }`}
+                  className={`relative flex flex-col items-center justify-center overflow-hidden ${
+                    customImg ? 'aspect-[3/4] w-full' : 'min-h-[225px] px-5 pt-5 pb-4 sm:min-h-[260px]'
+                  } ${isLocked ? 'bg-papel-2' : theme.bgClass}`}
                 >
                   {customImg ? (
                     <img
                       src={customImg}
                       alt={lesson.title}
-                      className="absolute inset-0 h-full w-full object-cover select-none"
+                      className="h-full w-full object-cover select-none"
                       draggable={false}
                     />
                   ) : (
