@@ -22,11 +22,7 @@ export function BookCarousel({ modules, initialBookId, currentBookId, done, page
   const th = t.pages.learnExtra.hub;
   const [selectedBookId, setSelectedBookId] = useState(initialBookId);
   const [bookPickerOpen, setBookPickerOpen] = useState(false);
-  const bookIndex = Math.max(
-    0,
-    modules.findIndex((m) => m.id === selectedBookId),
-  );
-  const book = modules[bookIndex] ?? modules[0]!;
+  const book = modules.find((m) => m.id === selectedBookId) ?? modules[0]!;
   const theme = BOOK_THEMES[book.number] ?? BOOK_THEMES[1]!;
 
   const firstUndoneIdx = book.lessons.findIndex((l) => !done.includes(l.id));
@@ -82,66 +78,39 @@ export function BookCarousel({ modules, initialBookId, currentBookId, done, page
     <div className="flex flex-col gap-2.5">
       {/* Barra compacta do livro atual + troca de livro */}
       <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={() => setBookPickerOpen((v) => !v)}
-            aria-expanded={bookPickerOpen}
-            className="flex min-w-0 flex-1 items-center gap-2.5 rounded-2xl border border-linha bg-cartao px-3 py-1.5 text-left transition hover:bg-papel-2"
+        <button
+          type="button"
+          onClick={() => setBookPickerOpen((v) => !v)}
+          aria-expanded={bookPickerOpen}
+          className="flex w-full min-w-0 items-center gap-2.5 rounded-2xl border border-linha bg-cartao px-3 py-1.5 text-left transition hover:bg-papel-2"
+        >
+          <span
+            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-linha/60 ${theme.bgClass}`}
           >
-            <span
-              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-linha/60 ${theme.bgClass}`}
-            >
-              <Icon src={`modulo/${book.number}`} size={18} alt={t.pages.learnExtra.moduleAlt(book.number)} />
+            <Icon src={`modulo/${book.number}`} size={18} alt={t.pages.learnExtra.moduleAlt(book.number)} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className={`block text-[10px] font-extrabold tracking-[0.06em] uppercase ${theme.accentTextClass}`}>
+              {th.bookOfTotal(book.number, modules.length)} · {doneInBook}/{book.lessons.length}
+              {book.optional ? th.optionalSuffix : ''}
             </span>
-            <span className="min-w-0 flex-1">
-              <span className={`block text-[10px] font-extrabold tracking-[0.06em] uppercase ${theme.accentTextClass}`}>
-                {th.bookOfTotal(book.number, modules.length)} · {doneInBook}/{book.lessons.length}
-                {book.optional ? th.optionalSuffix : ''}
-              </span>
-              <span className="block text-[15px] leading-[19px] font-extrabold text-tinta">{book.title}</span>
-            </span>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-              className={`shrink-0 text-tinta-suave transition-transform ${bookPickerOpen ? 'rotate-180' : ''}`}
-            >
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-          </button>
-
-          <div className="flex shrink-0 items-center gap-1">
-            <button
-              type="button"
-              onClick={() => bookIndex > 0 && selectBook(modules[bookIndex - 1]!.id)}
-              disabled={bookIndex <= 0}
-              aria-label={
-                modules[bookIndex - 1] ? t.pages.learnExtra.moduleAlt(modules[bookIndex - 1]!.number) : th.prevPageAria
-              }
-              className="flex h-10 w-9 items-center justify-center rounded-xl border border-linha bg-cartao text-base font-bold text-tinta transition hover:bg-papel-2 disabled:opacity-35"
-            >
-              ‹
-            </button>
-            <button
-              type="button"
-              onClick={() => bookIndex < modules.length - 1 && selectBook(modules[bookIndex + 1]!.id)}
-              disabled={bookIndex >= modules.length - 1}
-              aria-label={
-                modules[bookIndex + 1] ? t.pages.learnExtra.moduleAlt(modules[bookIndex + 1]!.number) : th.nextPageAria
-              }
-              className="flex h-10 w-9 items-center justify-center rounded-xl border border-linha bg-cartao text-base font-bold text-tinta transition hover:bg-papel-2 disabled:opacity-35"
-            >
-              ›
-            </button>
-          </div>
-        </div>
+            <span className="block text-[15px] leading-[19px] font-extrabold text-tinta">{book.title}</span>
+          </span>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            className={`shrink-0 text-tinta-suave transition-transform ${bookPickerOpen ? 'rotate-180' : ''}`}
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
 
         {/* Seletor rápido de livros sob demanda */}
         {bookPickerOpen && (
