@@ -23,6 +23,12 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-19 · Antigravity · branch feat/inicio-mobills-anotacoes (artes completas dos Livros 2 a 9 — 45/45 páginas)
+
+- **Livros 2 a 9 (`apps/web/public/livros/m2-l1.webp` … `m9-l5.webp`):** adicionadas todas as 40 páginas restantes (`896×1200`), completando 45/45 páginas ilustradas em todo o Aprender e na Biblioteca.
+- **Biblioteca (`apps/web/app/(app)/aprender/trilha/trilha.tsx`):** miniatura de capa ajustada para `h-20 w-[60px]` (`3:4`) para casar com a proporção vertical das ilustrações.
+- Validado com Prettier, `pnpm typecheck`, `pnpm lint` e `pnpm build`.
+
 ### 2026-11-19 · Antigravity · branch feat/inicio-mobills-anotacoes (artes do Livro 1 + apple-icon.png + enquadramento 3:4)
 
 - **Artes integradas:** `apps/web/app/apple-icon.png` (180x180) e as 5 páginas ilustradas do Livro 1 (`apps/web/public/livros/m1-l1.webp` a `m1-l5.webp`, 896x1200).

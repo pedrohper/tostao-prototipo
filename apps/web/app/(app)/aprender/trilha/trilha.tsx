@@ -95,7 +95,7 @@ export function Trilha({
               {/* Topo do livro: capa miniatura + status */}
               <div className="flex items-start justify-between gap-2">
                 <div
-                  className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-linha/60"
+                  className="relative flex h-20 w-[60px] shrink-0 items-center justify-center overflow-hidden rounded-xl border border-linha/60"
                   style={{ background: colors[i] }}
                 >
                   {coverImg ? (
