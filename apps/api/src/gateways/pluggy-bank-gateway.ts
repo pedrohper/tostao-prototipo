@@ -7,6 +7,7 @@ import type {
   InstitutionLogo,
 } from './bank-gateway.js';
 import { bankNameFromTransferNumber, prettyName } from '../services/bank-names.js';
+import { normalizeDescription } from '../lib/text.js';
 
 const BASE_URL = 'https://api.pluggy.ai';
 const API_KEY_TTL_MS = 110 * 60 * 1000; // a chave vale 2h; renovamos com 10 min de folga
@@ -30,6 +31,12 @@ type PluggyTransaction = {
   type: 'DEBIT' | 'CREDIT';
   currencyCode?: string | null;
   amountInAccountCurrency?: number | null;
+  category?: string | null;
+  merchant?: {
+    name?: string | null;
+    businessName?: string | null;
+    category?: string | null;
+  } | null;
   creditCardMetadata?: { billId?: string | null } | null;
 };
 type Page<T> = { total: number; totalPages: number; page: number; results: T[] };
@@ -265,18 +272,100 @@ export class PluggyBankGateway implements BankGateway {
             ? t.amountInAccountCurrency
             : t.amount;
         const cents = Math.abs(toCents(value));
+        const merchantName = t.merchant?.name?.trim() || null;
+        const rawCat = t.category?.trim() || null;
+        const merchCat = t.merchant?.category?.trim() || null;
+        const providerCategory = rawCat && rawCat.toLowerCase() !== 'services' ? rawCat : (merchCat ?? rawCat);
         all.push({
           externalId: t.id,
-          description: t.description,
+          description: cleanPluggyDescription(t.description, merchantName, providerCategory),
           amountInCents: t.type === 'DEBIT' ? -cents : cents,
           occurredAt: pluggyDate(t.date),
           billId: t.creditCardMetadata?.billId ?? null,
+          merchantName,
+          providerCategory,
         });
       }
       path = res.next ? `/v2/transactions${res.next.startsWith('?') ? res.next : `?${res.next}`}` : null;
     }
     return all;
   }
+}
+
+const KEEP_RAW_DESC =
+  /\b(PIX|TED|DOC|TRANSF|TRANSFERENCIA|PAGAMENTO|FATURA|RENDIMENTO|JUROS|DIVIDENDO|RESGATE|APLICACAO|ESTORNO|REEMBOLSO|SALARIO|BOLETO|IOF)\b/;
+const KEEP_RAW_CATEGORIES = new Set([
+  'same person transfer',
+  'same person transfer - cash',
+  'transfer - pix',
+  'transfers',
+  'transfer - internal',
+  'transfer - bank slip',
+  'credit card payment',
+  'proceeds interests and dividends',
+  'investments',
+  'salary',
+  'non-recurring income',
+  'tax on financial operations',
+  'loans and financing',
+]);
+const INTERMEDIARIES = new Set([
+  'MERCADO PAGO',
+  'MERCADOPAGO',
+  'PAGSEGURO',
+  'PAGBANK',
+  'PICPAY',
+  'STONE',
+  'CIELO',
+  'GETNET',
+  'REDE',
+  'SUMUP',
+  'INFINITEPAY',
+  'ASAAS',
+  'PAYPAL',
+  'GOOGLE',
+  'APPLE',
+]);
+const NOISE_TOKENS = new Set([
+  'TRIP',
+  'PENDING',
+  'HELP',
+  'HELPUB',
+  'UB',
+  'COM',
+  'BR',
+  'BRA',
+  'LTDA',
+  'SA',
+  'PAG',
+  'PG',
+  'DL',
+  'APP',
+  'BILL',
+]);
+
+/** Limpa descrições ruidosas de cartão ("UBER *UBER *TRIP HELP.UB" -> "Uber") sem apagar contexto de loja ou transferência. */
+export function cleanPluggyDescription(
+  description: string,
+  merchantName: string | null | undefined,
+  providerCategory?: string | null,
+): string {
+  const merchant = merchantName?.trim();
+  if (!merchant || merchant.length < 3) return description;
+  if (providerCategory && KEEP_RAW_CATEGORIES.has(providerCategory.trim().toLowerCase())) return description;
+  const normDesc = normalizeDescription(description);
+  const normMerchant = normalizeDescription(merchant);
+  if (!normDesc || !normMerchant || normMerchant.length < 3) return description;
+  if (KEEP_RAW_DESC.test(normDesc) || INTERMEDIARIES.has(normMerchant)) return description;
+  if (!normDesc.includes(normMerchant)) return description;
+
+  const withoutBrand = normDesc.split(normMerchant).join(' ');
+  const remaining = withoutBrand
+    .replace(/[^A-Z0-9 ]+/g, ' ')
+    .split(/\s+/)
+    .filter((tok) => tok && !NOISE_TOKENS.has(tok) && !/\d/.test(tok));
+
+  return remaining.length === 0 ? merchant : description;
 }
 
 /**

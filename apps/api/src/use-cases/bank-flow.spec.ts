@@ -252,4 +252,50 @@ describe('fluxo do banco (conectar → sincronizar → resumo → categorizar)',
       expect(repos.transactions.items).toHaveLength(1);
     });
   });
+
+  it('usa merchantName e categoria do provedor como fallback na sincronização, mas regra do usuário vence', async () => {
+    class EnrichedGateway extends FakeBankGateway {
+      override async fetchAccounts() {
+        return [{ externalId: 'acc-enr', name: 'Nubank', type: 'BANK' as const, balanceInCents: 10000 }];
+      }
+      override async fetchTransactions() {
+        return [
+          {
+            externalId: 'tx-bistro',
+            description: 'BISTRO DA PRACA',
+            amountInCents: -4500,
+            occurredAt: NOW,
+            providerCategory: 'Eating out',
+          },
+          {
+            externalId: 'tx-dl',
+            description: 'DL*VIAGEM',
+            amountInCents: -1990,
+            occurredAt: NOW,
+            merchantName: 'Uber',
+            providerCategory: 'Services',
+          },
+          {
+            externalId: 'tx-override',
+            description: 'UBER *CURSO',
+            amountInCents: -3000,
+            occurredAt: NOW,
+            merchantName: 'Uber',
+            providerCategory: 'Taxi and ride-hailing',
+          },
+        ];
+      }
+    }
+
+    await repos.rules.upsert({ userId: 'u1', pattern: 'UBER *CURSO', categoryId: 'estudo' });
+    const gw = new EnrichedGateway(() => NOW);
+    const s = new SyncBankConnectionUseCase({ ...repos, bank: gw, now: () => NOW });
+    const c = new ConnectBankUseCase(repos.connections, gw, s);
+    await c.execute({ userId: 'u1', itemId: 'item-enr' });
+
+    const byExt = new Map(repos.transactions.items.map((t) => [t.externalId, t.categoryId]));
+    expect(byExt.get('tx-bistro')).toBe('comer-fora');
+    expect(byExt.get('tx-dl')).toBe('transporte');
+    expect(byExt.get('tx-override')).toBe('estudo');
+  });
 });

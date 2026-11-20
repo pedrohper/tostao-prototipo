@@ -29,6 +29,10 @@ export type BankTransactionData = {
   occurredAt: Date;
   /** Cartão: fatura já fechada a que a transação pertence. Sem isso = fatura aberta (ou o banco não informa). */
   billId?: string | null;
+  /** Nome limpo do estabelecimento quando o provedor identifica (ex.: Pluggy merchant.name). */
+  merchantName?: string | null;
+  /** Categoria da transação/estabelecimento no provedor (ex.: Pluggy category). */
+  providerCategory?: string | null;
 };
 
 /** Logo oficial de cada instituição (lista de conectores do provedor). */

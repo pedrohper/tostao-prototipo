@@ -23,6 +23,13 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-20 · Antigravity · branch feat/inicio-mobills-anotacoes (enriquecimento Pluggy: merchant + categoria no sync)
+
+- **`apps/api/src/gateways/bank-gateway.ts` & `pluggy-bank-gateway.ts`:** `fetchTransactions()` agora extrai `merchant.name` (`merchantName`) e a categoria mais específica (`category` / `merchant.category` -> `providerCategory`) do `/v2/transactions` do Pluggy, e aplica `cleanPluggyDescription()` para simplificar ruídos repetidos (`"UBER *UBER *TRIP HELP.UB"` -> `"Uber"`, `"NETFLIX.COM *12345"` -> `"Netflix"`) sem apagar nomes de lojas atrás de intermediários nem descrições de transferência/Pix/rendimento.
+- **`apps/api/src/services/categorize.ts` & `use-cases/sync-bank-connection.ts`:** `categorizeByRules()` também considera `merchantName`, e `categorizeByProviderCategory()` atua como fallback nas categorias inequívocas do Pluggy (sempre após regras do usuário e do sistema, e respeitando sinal de entrada/saída).
+- **Obsidian (`2026-11-14_Backlog-Tostao.md`):** registrada a ideia do pacote enxuto local de logos de marcas para Assinaturas e Extrato.
+- **Validação:** Prettier (`pnpm format:check`), `pnpm typecheck`, `pnpm lint`, `pnpm test` (`34` arquivos) e restart de `tostao-api` via PM2.
+
 ### 2026-11-20 · Antigravity · branch feat/inicio-mobills-anotacoes (fix Next.js chunk mismatch / 401 streaming redirect e menu de filtro mobile)
 
 - **Reinício real do `tostao-web` no PM2:** `pm2 reload tostao-api tostao-web` recarregava apenas o primeiro processo (`tostao-api`), deixando o `next-server` do `tostao-web` com manifesto/chunks do build anterior enquanto o `.next` em disco já havia sido substituído por `pnpm build` (causando falha ao carregar telas e botões client não hidratados no mobile). Passou a usar `pm2 restart tostao-web` dedicado.

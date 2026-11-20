@@ -126,12 +126,20 @@ describe('PluggyBankGateway', () => {
   });
 });
 
-import { pluggyDate } from './pluggy-bank-gateway.js';
-describe('data da Pluggy', () => {
+import { cleanPluggyDescription, pluggyDate } from './pluggy-bank-gateway.js';
+describe('data e descrição da Pluggy', () => {
   it('dia sem hora (meia-noite UTC) fica no mesmo dia em Brasília', () => {
     expect(pluggyDate('2026-11-12T00:00:00.000Z').toISOString()).toBe('2026-11-12T15:00:00.000Z');
   });
   it('com hora de verdade, mantém', () => {
     expect(pluggyDate('2026-11-12T23:40:00.000Z').toISOString()).toBe('2026-11-12T23:40:00.000Z');
+  });
+  it('limpa ruído repetido do merchant sem apagar nome de loja nem transferência', () => {
+    expect(cleanPluggyDescription('UBER *UBER *TRIP HELP.UB', 'Uber', 'Taxi and ride-hailing')).toBe('Uber');
+    expect(cleanPluggyDescription('NETFLIX.COM *12345', 'Netflix', 'Video streaming')).toBe('Netflix');
+    expect(cleanPluggyDescription('UBER *EATS PEDIDO', 'Uber', 'Food delivery')).toBe('UBER *EATS PEDIDO');
+    expect(cleanPluggyDescription('IFD*RESTAURANTE SABOR', 'iFood', 'Food delivery')).toBe('IFD*RESTAURANTE SABOR');
+    expect(cleanPluggyDescription('MP *PADARIA CENTRAL', 'Mercado Pago', 'Eating out')).toBe('MP *PADARIA CENTRAL');
+    expect(cleanPluggyDescription('PIX ENVIADO FULANO', 'Fulano', 'Transfer - PIX')).toBe('PIX ENVIADO FULANO');
   });
 });

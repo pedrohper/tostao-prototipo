@@ -3,7 +3,7 @@ import type { BankAccountData, BankGateway, BankTransactionData } from '../gatew
 import type { Repositories } from '../repositories/types.js';
 import type { BankConnection } from '../domain/entities.js';
 import { ResourceNotFoundError, BankConnectionError } from '../domain/errors.js';
-import { categorizeByRules } from '../services/categorize.js';
+import { categorizeByProviderCategory, categorizeByRules } from '../services/categorize.js';
 import { detectInternalTransfers } from '../services/internal-transfers.js';
 import { isGenericInstitution } from '../services/bank-names.js';
 import { nextDueDate } from './get-month-summary.js';
@@ -93,6 +93,9 @@ export class SyncBankConnectionUseCase {
               await transactions.save({ ...existing, amountInCents: tx.amountInCents });
             continue;
           }
+          const categoryId =
+            categorizeByRules(tx.description, userRules, tx.merchantName) ??
+            categorizeByProviderCategory(tx.providerCategory, tx.amountInCents);
           await transactions.create({
             userId: connection.userId,
             accountId: account.id,
@@ -100,7 +103,7 @@ export class SyncBankConnectionUseCase {
             description: tx.description,
             amountInCents: tx.amountInCents,
             occurredAt: tx.occurredAt,
-            categoryId: categorizeByRules(tx.description, userRules),
+            categoryId,
             isInternalTransfer: false,
           });
           importedCount++;
