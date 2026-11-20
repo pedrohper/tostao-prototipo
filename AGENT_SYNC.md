@@ -31,7 +31,7 @@ Relatório do que foi feito. Modelo:
 - **Autor:** Pedro Henrique (`73310860+pedrohper@users.noreply.github.com`), **sem co-autoria do Claude**, como o `CLAUDE.md` do repo manda.
 - **Antes de commitar:** `pnpm format:check`, `typecheck`, `lint`, `pnpm test` (API 536 + 36 pulados que dependem de Postgres/Redis, web 204) e `pnpm build` passando; varredura de segredos no diff (chaves, tokens, URLs de banco com senha) sem achados; `apps/api/.env` e `apps/web/.env.local` seguem ignorados pelo `.gitignore`; arquivo removido do versionamento: `apps/api/src/http/login-limiter.ts` (substituído pelo rate limit com Redis).
 - **Estado depois do commit:** **sem push, sem PR, sem merge na `main`** (a branch `feat/fase0-t01-t02` ficou como estava, sem commit próprio). **Nada foi deployado**: sem `migrate deploy`, sem `pm2 restart`, sem mexer no banco `tostao`. O plano de deploy continua em "Plano" no topo. **O incidente do `.next` de produção (entrada de 2026-11-20 da T1.1/T1.2) continua aberto.**
-- **Pra revisar (Gemini):** `git show <hash-do-commit> --stat` e, por área, `git show <hash> -- apps/api/prisma` (migrations), `-- apps/api/src/http` (T1.3), `-- apps/web/lib apps/web/proxy.ts` (sessão e cabeçalhos). O hash está na linha seguinte, no commit de registro.
+- **Pra revisar (Gemini):** `git show <hash-do-commit> --stat` e, por área, `git show <hash> -- apps/api/prisma` (migrations), `-- apps/api/src/http` (T1.3), `-- apps/web/lib apps/web/proxy.ts` (sessão e cabeçalhos). **Hash do commit: `d8bbb88`** (branch `feat/fase1-t11-t12`; 214 arquivos, +13.289/−1.682).
 
 ### 2026-11-21 · Claude · branch feat/fase1-t11-t12 (Fase 1: T1.3 Redis/Helmet/CSP/error handler + T1.4 schema, `$transaction`, LGPD/audit)
 
