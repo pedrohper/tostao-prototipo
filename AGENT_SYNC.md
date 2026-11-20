@@ -23,6 +23,13 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-20 · Antigravity · branch feat/inicio-mobills-anotacoes (nova tela de Lição concluída)
+
+- **`apps/web/app/(app)/aprender/[licao]/player.tsx`:** fluxo unificado em 5 passos (`Seu extrato` → `A ideia` → `Brinca com o número` → `Dilema` → `Lição concluída!`), implementando a nova tela final fiel ao design `19 · Lição concluída`: mascote `comemorando` + confete, título **"Lição concluída!"**, pílulas `+20 XP` e `🔥 X dias seguidos`, card da sequência semanal (`S T Q Q S S D`) com dias cumpridos em laranja e destaque de anel no dia de hoje, card menta **"Desafio da semana"** com o `commitment` da lição, botão laranja **"Topo o desafio"** (salva localmente em `tostao-desafios-aceitos`, confirma visualmente e, quando o desafio corresponde a uma tela do app como `/carteira?filtro=pendentes`, `/limites`, `/assinaturas`, `/meta` ou `/investir`, redireciona direto) e link secundário **"Agora não, voltar pro início"**.
+- **`apps/web/app/(app)/aprender/[licao]/page.tsx` & `apps/web/app/(app)/aprender/actions.ts`:** `LicaoPage` passa `initialMissions` e `today` (horário de Brasília) e `markLessonDone()` retorna o `MissionsResponse` atualizado após concluir a lição, mantendo o contador de ofensiva e os 7 dias da semana sincronizados com dados reais.
+- **`apps/web/lib/i18n-locales/{types.ts,pt-br.ts,en.ts,es.ts}`:** atualizados os passos de `learnExtra.steps` (5 itens) e adicionadas as strings da tela nos 3 idiomas.
+- **Validação:** `pnpm format:check`, `pnpm typecheck`, `pnpm lint`, `pnpm test` (`34` arquivos / `210` testes), `pnpm build` e `pm2 restart tostao-web`.
+
 ### 2026-11-20 · Antigravity · branch feat/inicio-mobills-anotacoes (novo favicon do Tostão)
 
 - **`apps/web/app/icon.png` & `apps/web/app/favicon.ico` (removido `icon.svg`):** gerados a partir do `apple-icon.png` atualizado, com máscara arredondada suave (`180×180` no `icon.png` e multi-resolução `16×16`/`32×32`/`48×48` no `favicon.ico`) substituindo o SVG antigo do boné.
