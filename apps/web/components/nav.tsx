@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Icon } from '@/components/icone';
 import { getDictionary, type Locale } from '@/lib/i18n';
 
 export function Nav({
@@ -16,50 +17,11 @@ export function Nav({
   const t = getDictionary(locale);
 
   const navItems = [
-    {
-      href: '/inicio',
-      label: t.nav.home,
-      icon: <path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" />,
-    },
-    {
-      href: '/carteira',
-      label: t.nav.wallet,
-      icon: (
-        <>
-          <rect x="3" y="6" width="18" height="14" rx="3" />
-          <path d="M3 10h18" />
-          <path d="M16 15h2" />
-        </>
-      ),
-    },
-    {
-      href: '/tostao',
-      label: t.nav.chat,
-      badge: pendingCount,
-      icon: <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z" />,
-    },
-    {
-      href: '/aprender',
-      label: t.nav.learn,
-      icon: (
-        <>
-          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z" />
-          <path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5" />
-        </>
-      ),
-    },
-    {
-      href: '/mais',
-      label: t.nav.profile,
-      icon: (
-        <>
-          <rect x="4" y="4" width="6.5" height="6.5" rx="2" />
-          <rect x="13.5" y="4" width="6.5" height="6.5" rx="2" />
-          <rect x="4" y="13.5" width="6.5" height="6.5" rx="2" />
-          <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="2" />
-        </>
-      ),
-    },
+    { href: '/inicio', label: t.nav.home, icon: 'aba/inicio' },
+    { href: '/carteira', label: t.nav.wallet, icon: 'aba/carteira' },
+    { href: '/tostao', label: t.nav.chat, badge: pendingCount, icon: 'aba/tostao' },
+    { href: '/aprender', label: t.nav.learn, icon: 'aba/aprender' },
+    { href: '/mais', label: t.nav.profile, icon: 'aba/perfil' },
   ];
 
   const isRouteActive = (href: string) => {
@@ -164,19 +126,11 @@ export function Nav({
             }`}
           >
             <span className="relative inline-flex">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill={isActive ? 'var(--color-amarelo)' : 'none'}
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                {item.icon}
-              </svg>
+              <Icon
+                src={isActive ? `${item.icon}-ativo` : item.icon}
+                size={24}
+                className={isActive ? '' : 'opacity-75 dark:invert'}
+              />
               {typeof item.badge === 'number' && item.badge > 0 && (
                 <span
                   className="absolute -top-0.5 -right-1 h-2.5 w-2.5 rounded-full bg-laranja ring-2 ring-cartao md:hidden"

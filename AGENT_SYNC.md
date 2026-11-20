@@ -23,6 +23,13 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-20 · Antigravity · branch feat/inicio-mobills-anotacoes (13 ícones finais — 56/56 completos)
+
+- **Ícones (`apps/web/public/icones/{modulo/[1-8],aba/{inicio,carteira,tostao,aprender,perfil}}.webp`):** integrados os 13 ícones restantes (`modulo/1` a `modulo/8` + as 5 versões inativas `aba/*`), normalizados para `256×256` RGBA com recorte ajustado (`230×230` centralizado) e fundo transparente preservado.
+- **Manifesto (`apps/web/lib/icon-overrides.json`):** atualizado via `pnpm assets:sync` com todos os **56 ícones customizados**.
+- **Navegação (`apps/web/components/nav.tsx`):** substituídos os SVGs inline das 5 abas por `<Icon>` usando os pares completos `aba/*` / `aba/*-ativo` (com `opacity-75 dark:invert` nas abas inativas para manter contraste no tema escuro).
+- **Validação:** Prettier, `pnpm typecheck`, `pnpm lint`, `pnpm test` e `pnpm build`, além de reload do `tostao-web` via PM2.
+
 ### 2026-11-20 · Antigravity · branch feat/inicio-mobills-anotacoes (filtro para ocultar transações entre contas)
 
 - **Carteira (`apps/web/app/(app)/carteira/page.tsx`, `transaction-row.tsx`):** adicionada a opção **"Ocultar entre contas"** (`?semEntreContas=1`) na barra de filtros (desktop e mobile) e dentro do dropdown do ícone de funil no cabeçalho (`ExtratoHeaderBar` / `FilterDropdown`), preservada na navegação entre filtros, meses, categorias, contas e busca.
