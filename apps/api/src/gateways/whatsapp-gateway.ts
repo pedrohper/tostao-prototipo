@@ -1,6 +1,22 @@
 // Porta pro WhatsApp. Dois jeitos: Cloud API oficial da Meta, ou o n8n do Pedro (API não oficial).
 // Sem nenhum dos dois configurado, fica desligado (e os testes usam o Fake).
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+
+/** Áudio de WhatsApp tem poucos MB. Acima disso é abuso (ou arquivo errado) e não vai pra memória. */
+export const MAX_MEDIA_BYTES = 10 * 1024 * 1024;
+
+/** A URL de download que a Meta devolve tem que ser da própria Meta, em https: senão mandaríamos o token pra qualquer host. */
+export function isOfficialMetaMediaUrl(raw: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== 'https:' || url.username || url.password || url.port) return false;
+  const host = url.hostname.toLowerCase();
+  return host === 'graph.facebook.com' || (host.endsWith('.fbsbx.com') && host.length > '.fbsbx.com'.length);
+}
 
 export interface WhatsAppMedia {
   bytes: Uint8Array;
@@ -102,25 +118,50 @@ export class CloudApiWhatsAppGateway implements WhatsAppGateway {
       signal: AbortSignal.timeout(15_000),
     });
     if (!metaRes.ok) throw new Error(`WhatsApp media meta respondeu ${metaRes.status}`);
-    const meta = (await metaRes.json()) as { url?: string; mime_type?: string };
+    const meta = (await metaRes.json()) as { url?: string; mime_type?: string; file_size?: number };
     if (!meta.url) return null;
+    if (!isOfficialMetaMediaUrl(meta.url)) throw new Error('URL de mídia fora da Meta: descartada');
+    if (typeof meta.file_size === 'number' && meta.file_size > MAX_MEDIA_BYTES) {
+      throw new Error('Mídia grande demais: descartada');
+    }
     const fileRes = await fetch(meta.url, {
       headers: { authorization: `Bearer ${this.token}` },
       signal: AbortSignal.timeout(20_000),
+      redirect: 'error', // um redirect levaria o token pra outro host
     });
     if (!fileRes.ok) throw new Error(`WhatsApp media download respondeu ${fileRes.status}`);
+    const declared = Number(fileRes.headers.get('content-length') ?? 0);
+    if (declared > MAX_MEDIA_BYTES) throw new Error('Mídia grande demais: descartada');
     return {
-      bytes: new Uint8Array(await fileRes.arrayBuffer()),
+      bytes: await readCapped(fileRes, MAX_MEDIA_BYTES),
       mimeType: meta.mime_type ?? fileRes.headers.get('content-type') ?? 'audio/ogg',
     };
   }
 
   verifySignature(rawBody: string, header: string | undefined) {
     if (!header?.startsWith('sha256=')) return false;
-    const expected = Buffer.from(createHmac('sha256', this.appSecret).update(rawBody).digest('hex'));
-    const got = Buffer.from(header.slice(7));
-    return expected.length === got.length && timingSafeEqual(expected, got);
+    const expected = createHmac('sha256', this.appSecret).update(rawBody).digest('hex');
+    return sameSecret(expected, header.slice(7));
   }
+}
+
+/** Lê o corpo aos pedaços e para no limite (content-length pode mentir ou faltar). */
+async function readCapped(res: Response, maxBytes: number): Promise<Uint8Array> {
+  if (!res.body) return new Uint8Array(0);
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel().catch(() => undefined);
+      throw new Error('Mídia grande demais: descartada');
+    }
+    chunks.push(value);
+  }
+  return new Uint8Array(Buffer.concat(chunks));
 }
 
 /**
@@ -154,12 +195,14 @@ export class N8nWhatsAppGateway implements WhatsAppGateway {
   }
 }
 
-/** Compara o segredo sem vazar tempo. Segredo vazio nunca confere. */
+/**
+ * Compara o segredo sem vazar tempo NEM tamanho: os dois lados viram SHA-256 (sempre 32 bytes) antes do timingSafeEqual.
+ * Segredo vazio nunca confere.
+ */
 export function sameSecret(expected: string, got: string | undefined) {
   if (!expected || !got) return false;
-  const a = Buffer.from(expected);
-  const b = Buffer.from(got);
-  return a.length === b.length && timingSafeEqual(a, b);
+  const hash = (v: string) => createHash('sha256').update(v, 'utf8').digest();
+  return timingSafeEqual(hash(expected), hash(got));
 }
 
 /**

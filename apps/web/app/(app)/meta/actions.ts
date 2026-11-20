@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { goalBody } from '@tostao/contracts';
 import { api, ApiError } from '@/lib/api';
 import { parseMoney, resolveBackHref } from '@/lib/format';
+import { rethrowIfRedirect } from '@/lib/rethrow';
 
 export type GoalState = { error?: string; message?: string };
 
@@ -29,6 +30,7 @@ export async function saveGoal(_: GoalState, form: FormData): Promise<GoalState>
       targetId = res.goal?.id ?? '';
     }
   } catch (e) {
+    rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
   revalidatePath('/', 'layout');
@@ -47,6 +49,7 @@ export async function deposit(_: GoalState, form: FormData): Promise<GoalState> 
   try {
     await api('/goal/deposits', { method: 'POST', body: { goalId, amountInCents: out ? -cents : cents } });
   } catch (e) {
+    rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
   revalidatePath('/', 'layout');
@@ -62,7 +65,8 @@ export async function deleteGoal(form: FormData) {
     } else {
       await api('/goal', { method: 'PUT', body: null });
     }
-  } catch {
+  } catch (caught) {
+    rethrowIfRedirect(caught);
     /* fica como estava */
   }
   revalidatePath('/', 'layout');

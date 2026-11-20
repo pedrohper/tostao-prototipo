@@ -33,13 +33,16 @@ function deriveName(explicitName: string | undefined, providerName: string | nul
  * Login / cadastro com Google ou Apple.
  * 1. Troca o code pelo id_token verificado no provedor.
  * 2. Se (provider, sub) já existe -> entra direto.
- * 3. Se o e-mail verificado já tem conta -> vincula o provedor e entra.
- * 4. Senão -> cria conta sem senha (passwordHash = null), vincula o provedor e aplica convite/amigo opcional.
+ * 3. Se o e-mail já tem conta -> só vincula se o e-mail da conta JÁ era verificado ou se ela é só social.
+ *    Conta de senha com e-mail não verificado NÃO é vinculada: senão quem cadastrasse "vitima@gmail.com" antes
+ *    da vítima continuaria com a senha dele na conta que o Google da vítima acabou de abrir (pre-account takeover).
+ * 4. Senão -> cria conta sem senha (passwordHash = null) já com e-mail verificado, vincula e aplica convite/amigo.
  */
 export class AuthenticateOAuthUseCase {
   constructor(
-    private readonly repos: Pick<Repositories, 'users' | 'oauthAccounts' | 'invites' | 'engagement'>,
+    private readonly repos: Pick<Repositories, 'users' | 'oauthAccounts' | 'invites' | 'engagement' | 'tx'>,
     private readonly oauth: OAuthGateway,
+    private readonly now: () => Date = () => new Date(),
   ) {}
 
   async execute(input: Input) {
@@ -66,11 +69,19 @@ export class AuthenticateOAuthUseCase {
       if (!identity.emailVerified) {
         throw new AppError('Seu e-mail precisa estar verificado no provedor pra entrar nesta conta.', 403);
       }
-      await this.repos.oauthAccounts.create({
-        userId: existingUser.id,
-        provider: identity.provider,
-        providerAccountId: identity.providerAccountId,
-        email,
+      const proven = existingUser.emailVerifiedAt !== null || existingUser.passwordHash === null;
+      if (!proven) {
+        throw new AppError('Esse e-mail já tem uma conta com senha. Entra com e-mail e senha.', 409);
+      }
+      // Conta só social que ainda não tinha a marca: o provedor acabou de confirmar o e-mail. Marca + vínculo juntos.
+      await this.repos.tx(async (r) => {
+        await r.users.markEmailVerified(existingUser.id, this.now());
+        await r.oauthAccounts.create({
+          userId: existingUser.id,
+          provider: identity.provider,
+          providerAccountId: identity.providerAccountId,
+          email,
+        });
       });
       return { user: existingUser, isNewUser: false };
     }
@@ -80,25 +91,28 @@ export class AuthenticateOAuthUseCase {
     }
 
     const name = deriveName(input.name, identity.name, email);
-    const user = await this.repos.users.create({ name, email, passwordHash: null });
-    await this.repos.oauthAccounts.create({
-      userId: user.id,
-      provider: identity.provider,
-      providerAccountId: identity.providerAccountId,
-      email,
-    });
-
     const code = input.inviteCode ? normalizeInviteCode(input.inviteCode) : '';
-    if (code) {
-      const invite = await this.repos.invites.findByCode(code);
-      if (invite && !invite.usedById) {
-        await this.repos.invites.markUsed(code, user.id);
-        await this.repos.engagement.addFriend(invite.createdById, user.id);
-      } else {
-        const friendId = await this.repos.engagement.findUserByFriendCode(code);
-        if (friendId) await this.repos.engagement.addFriend(friendId, user.id);
+    // Conta + vínculo social + convite + amizade: tudo ou nada.
+    const user = await this.repos.tx(async (r) => {
+      const created = await r.users.create({ name, email, passwordHash: null, emailVerifiedAt: this.now() });
+      await r.oauthAccounts.create({
+        userId: created.id,
+        provider: identity.provider,
+        providerAccountId: identity.providerAccountId,
+        email,
+      });
+      if (code) {
+        const invite = await r.invites.findByCode(code);
+        const claimed = invite && !invite.usedAt && !invite.usedById && (await r.invites.markUsed(code, created.id));
+        if (claimed) {
+          if (invite.createdById) await r.engagement.addFriend(invite.createdById, created.id);
+        } else {
+          const friendId = await r.engagement.findUserByFriendCode(code);
+          if (friendId) await r.engagement.addFriend(friendId, created.id);
+        }
       }
-    }
+      return created;
+    });
 
     return { user, isNewUser: true };
   }

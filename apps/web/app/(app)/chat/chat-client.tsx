@@ -1,10 +1,13 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useRef, useState, useTransition } from 'react';
-import type { ChatMessageDTO } from '@tostao/contracts';
+import type { ChatMessageDTO, PendingActionDTO } from '@tostao/contracts';
+import { useRouter } from 'next/navigation';
+import { AiConsentCard } from '@/components/ai-consent-card';
+import { setAiConsentAction } from '@/lib/consent-actions';
 import { getDictionary, type Locale } from '@/lib/i18n';
 import { Mascot } from '@/components/mascote';
-import { ask } from './actions';
+import { ask, resolvePendingAction } from './actions';
 
 /** **negrito** e listas com "-". Sem HTML cru: o texto da IA nunca vira markup. */
 function Rich({ text }: { text: string }) {
@@ -90,6 +93,10 @@ export function ChatClient({
   const [error, setError] = useState<string | null>(null);
   const [showInfo, setShowInfo] = useState(false);
   const [pending, start] = useTransition();
+  const router = useRouter();
+  const [proposal, setProposal] = useState<PendingActionDTO | null>(null);
+  const [needsConsent, setNeedsConsent] = useState(false);
+  const [resolving, startResolve] = useTransition();
   const bottom = useRef<HTMLDivElement>(null);
   const autoSent = useRef(false);
 
@@ -109,16 +116,41 @@ export function ChatClient({
       createdAt: new Date().toISOString(),
     };
     setMessages((m) => [...m, temp]);
+    setProposal(null);
     start(async () => {
       const r = await ask(message);
-      if (r.ok) setMessages((m) => [...m.filter((x) => x.id !== temp.id), r.data.question, r.data.reply]);
-      else {
+      if (r.ok) {
+        setMessages((m) => [...m.filter((x) => x.id !== temp.id), r.data.question, r.data.reply]);
+        setProposal(r.data.pendingAction);
+      } else {
         setMessages((m) => m.filter((x) => x.id !== temp.id));
         setDraft(message);
-        setError(r.error);
+        if (r.needsConsent) setNeedsConsent(true);
+        else setError(r.error);
       }
     });
   };
+
+  const answerProposal = (confirm: boolean) => {
+    if (!proposal || resolving) return;
+    const id = proposal.id;
+    startResolve(async () => {
+      const r = await resolvePendingAction(id, confirm);
+      setProposal(null);
+      if (!r.ok) return setError(r.error);
+      setError(null);
+      setMessages((m) => [
+        ...m,
+        { id: `conf-${id}`, role: 'assistant', content: r.message, createdAt: new Date().toISOString() },
+      ]);
+    });
+  };
+
+  const disableAi = () =>
+    startResolve(async () => {
+      await setAiConsentAction(false);
+      router.refresh();
+    });
 
   const sendRef = useRef(send);
   useEffect(() => {
@@ -164,6 +196,14 @@ export function ChatClient({
             >
               <Mascot pose="avatar" size={32} alt="" still />
               <p className="min-w-0 flex-1 text-xs leading-[17px] text-tinta-suave">{subtitle}</p>
+              <button
+                type="button"
+                onClick={disableAi}
+                disabled={resolving}
+                className="shrink-0 text-xs font-semibold text-laranja-texto underline disabled:opacity-50"
+              >
+                Desativar IA
+              </button>
             </div>
           )}
         </div>
@@ -198,6 +238,36 @@ export function ChatClient({
       </div>
 
       <div className="flex w-full min-w-0 shrink-0 flex-col gap-2 bg-papel pt-1">
+        {needsConsent && <AiConsentCard onAccepted={() => setNeedsConsent(false)} compact />}
+        {proposal && (
+          <div
+            role="group"
+            aria-label="Confirmar lançamento"
+            className="flex flex-col gap-2 rounded-2xl border-[1.5px] border-tinta bg-amarelo-claro p-3.5"
+          >
+            <p className="m-0 text-[14px] leading-[20px] text-tinta">
+              <strong>O Tostão quer anotar:</strong> {proposal.summary}. Só vale se você confirmar.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => answerProposal(true)}
+                disabled={resolving}
+                className="rounded-full bg-tinta px-4 py-2 text-[13px] font-semibold text-papel disabled:opacity-60"
+              >
+                Confirmar
+              </button>
+              <button
+                type="button"
+                onClick={() => answerProposal(false)}
+                disabled={resolving}
+                className="rounded-full border border-linha bg-cartao px-4 py-2 text-[13px] font-semibold text-tinta disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
         {error && (
           <p role="alert" className="text-[13px] text-vermelho-texto">
             {error}

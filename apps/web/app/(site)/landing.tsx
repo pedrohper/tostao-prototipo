@@ -41,7 +41,13 @@ function Check() {
 const cta = `${s.btn} ${s['btn-dark']}`;
 const ghost = `${s.btn} ${s['btn-ghost']}`;
 
-export function Landing({ contaApagada = false }: { contaApagada?: boolean }) {
+export function Landing({
+  contaApagada = false,
+  revogarBancos = false,
+}: {
+  contaApagada?: boolean;
+  revogarBancos?: boolean;
+}) {
   return (
     <div className={s.lp} data-lp>
       <ScrollReveal />
@@ -50,6 +56,12 @@ export function Landing({ contaApagada = false }: { contaApagada?: boolean }) {
         {contaApagada && (
           <p role="status" className={s.aviso}>
             Sua conta foi apagada, junto com todos os seus dados. Valeu por ter testado o Tostão.
+          </p>
+        )}
+        {revogarBancos && (
+          <p role="status" className={s.aviso}>
+            Não conseguimos desligar a conexão com algum banco do nosso lado. Por segurança, revogue o acesso do Tostão
+            no seu Open Finance (no app do banco ou no MeuPluggy).
           </p>
         )}
 

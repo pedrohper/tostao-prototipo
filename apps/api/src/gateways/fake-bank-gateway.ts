@@ -6,6 +6,9 @@ import type { BankAccountData, BankGateway, BankItemData, BankTransactionData } 
  * Qualquer Item ID funciona.
  */
 export class FakeBankGateway implements BankGateway {
+  readonly enforcesItemOwnership: boolean = false;
+  readonly allowsSandbox: boolean = true;
+
   constructor(private readonly now: () => Date = () => new Date()) {}
 
   async listInstitutionLogos() {
@@ -19,7 +22,7 @@ export class FakeBankGateway implements BankGateway {
   async deleteItem(): Promise<void> {}
 
   async fetchItem(): Promise<BankItemData> {
-    return { institution: 'Banco de exemplo' };
+    return { institution: 'Banco de exemplo', clientUserId: null, isSandbox: false };
   }
 
   async fetchAccounts(itemId: string): Promise<BankAccountData[]> {

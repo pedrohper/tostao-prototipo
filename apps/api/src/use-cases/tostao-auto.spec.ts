@@ -242,15 +242,15 @@ describe('funções automáticas do Tostão & Caramelo', () => {
     const r1 = await app.inject({
       method: 'POST',
       url: '/users',
-      payload: { name: 'Ana', email: 'a@x.com', password: '12345678' },
+      payload: { name: 'Ana', email: 'a@x.com', password: '12345678', acceptedTerms: true },
     });
     const r2 = await app.inject({
       method: 'POST',
       url: '/users',
-      payload: { name: 'Bia', email: 'b@x.com', password: '12345678' },
+      payload: { name: 'Bia', email: 'b@x.com', password: '12345678', acceptedTerms: true },
     });
-    const auth1 = { authorization: `Bearer ${r1.json().token}` };
-    const auth2 = { authorization: `Bearer ${r2.json().token}` };
+    const auth1 = { authorization: `Bearer ${r1.json().accessToken}` };
+    const auth2 = { authorization: `Bearer ${r2.json().accessToken}` };
 
     const cfgRes = await app.inject({
       method: 'PUT',

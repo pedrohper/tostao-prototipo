@@ -1,5 +1,6 @@
 // Repositórios em memória: arrays simples. Usados nos testes e pra rodar sem Postgres.
 import { randomUUID } from 'node:crypto';
+import { ConflictError, ForbiddenError } from '../../domain/errors.js';
 import type {
   Account,
   BankConnection,
@@ -11,6 +12,8 @@ import type {
   User,
   Invite,
   PasswordReset,
+  RefreshToken,
+  EmailVerificationToken,
   ChatMessage,
   TribunalVote,
   Battle,
@@ -22,10 +25,14 @@ import type {
   ReconciledNote,
   OAuthAccount,
   OAuthProvider,
+  OutboxJob,
+  UserConsent,
+  AuditLog,
 } from '../../domain/entities.js';
 import type { FinancialPlan, UpdateTostaoAutoConfigBody } from '@tostao/contracts';
 import type {
   AccountData,
+  NewUser,
   AccountsRepository,
   FinancialPlansRepository,
   BankConnectionsRepository,
@@ -40,6 +47,10 @@ import type {
   PushSub,
   LessonProgressRepository,
   PasswordResetsRepository,
+  RefreshTokensRepository,
+  EmailVerificationTokensRepository,
+  NewRefreshToken,
+  RotateRefreshResult,
   PeopleRepository,
   Repositories,
   TransactionsRepository,
@@ -52,6 +63,11 @@ import type {
   UpsertTostaoInsight,
   ReconciledNotesRepository,
   NewReconciledNote,
+  OutboxRepository,
+  AuditLogRepository,
+  UserConsentsRepository,
+  NewOutboxJob,
+  NewAuditLog,
 } from '../types.js';
 import { DEFAULT_CATEGORIES, DEFAULT_RULES } from '../../lib/defaults.js';
 
@@ -72,7 +88,12 @@ export class InMemoryOAuthAccountsRepository implements OAuthAccountsRepository 
 
 export class InMemoryUsersRepository implements UsersRepository {
   items: User[] = [];
-  constructor(private readonly cascade?: { oauthAccounts: InMemoryOAuthAccountsRepository }) {}
+  constructor(
+    private readonly cascade?: {
+      oauthAccounts: InMemoryOAuthAccountsRepository;
+      refreshTokens?: InMemoryRefreshTokensRepository;
+    },
+  ) {}
   async findByEmail(email: string) {
     return this.items.find((u) => u.email === email) ?? null;
   }
@@ -82,8 +103,17 @@ export class InMemoryUsersRepository implements UsersRepository {
   async listAllIds() {
     return this.items.map((u) => u.id);
   }
-  async create(data: Pick<User, 'name' | 'email' | 'passwordHash'>) {
-    const user: User = { id: randomUUID(), createdAt: new Date(), ...data };
+  async create(data: NewUser) {
+    const user: User = {
+      id: randomUUID(),
+      createdAt: new Date(),
+      ...data,
+      emailVerifiedAt: data.emailVerifiedAt ?? null,
+      termsAcceptedAt: data.termsAcceptedAt ?? null,
+      termsVersion: data.termsVersion ?? null,
+      aiConsentAt: null,
+      timezone: 'America/Sao_Paulo',
+    };
     this.items.push(user);
     return user;
   }
@@ -94,10 +124,21 @@ export class InMemoryUsersRepository implements UsersRepository {
     const u = this.items.find((x) => x.id === id);
     if (u) u.passwordHash = passwordHash;
   }
+  async markEmailVerified(id: string, at: Date) {
+    const u = this.items.find((x) => x.id === id);
+    if (u && !u.emailVerifiedAt) u.emailVerifiedAt = at;
+  }
+  async setAiConsent(id: string, at: Date | null) {
+    const u = this.items.find((x) => x.id === id);
+    if (u) u.aiConsentAt = at;
+  }
   async delete(id: string) {
     this.items = this.items.filter((u) => u.id !== id);
     if (this.cascade) {
       this.cascade.oauthAccounts.items = this.cascade.oauthAccounts.items.filter((a) => a.userId !== id);
+      if (this.cascade.refreshTokens) {
+        this.cascade.refreshTokens.items = this.cascade.refreshTokens.items.filter((t) => t.userId !== id);
+      }
     }
   }
 }
@@ -114,6 +155,9 @@ export class InMemoryBankConnectionsRepository implements BankConnectionsReposit
   async findByUserAndItem(userId: string, itemId: string) {
     return this.items.find((c) => c.userId === userId && c.itemId === itemId) ?? null;
   }
+  async findByItemId(itemId: string) {
+    return this.items.find((c) => c.itemId === itemId) ?? null;
+  }
   async listByUser(userId: string) {
     return this.items.filter((c) => c.userId === userId);
   }
@@ -121,6 +165,9 @@ export class InMemoryBankConnectionsRepository implements BankConnectionsReposit
     return this.items.filter((c) => c.status === 'ACTIVE');
   }
   async create(data: Pick<BankConnection, 'userId' | 'itemId' | 'institution'>) {
+    // Imita o índice único parcial do Postgres: Item do Open Finance é de uma pessoa só (import:/manual: são por usuário).
+    if (!/^(import|manual):/.test(data.itemId) && this.items.some((c) => c.itemId === data.itemId))
+      throw new ConflictError('Essa conexão não está disponível.');
     const c: BankConnection = {
       id: randomUUID(),
       status: 'ACTIVE',
@@ -140,9 +187,8 @@ export class InMemoryBankConnectionsRepository implements BankConnectionsReposit
     if (!this.cascade) return;
     const gone = new Set(this.cascade.accounts.items.filter((a) => a.connectionId === id).map((a) => a.id));
     this.cascade.accounts.items = this.cascade.accounts.items.filter((a) => !gone.has(a.id));
-    this.cascade.transactions.items = this.cascade.transactions.items.filter(
-      (t) => !t.accountId || !gone.has(t.accountId),
-    );
+    // Imita transactions.account_id ON DELETE SET NULL: quem apaga o lançamento do banco é o DisconnectBankUseCase.
+    for (const t of this.cascade.transactions.items) if (t.accountId && gone.has(t.accountId)) t.accountId = null;
   }
 }
 
@@ -154,7 +200,7 @@ export class InMemoryAccountsRepository implements AccountsRepository {
   }
   async delete(id: string) {
     this.items = this.items.filter((a) => a.id !== id);
-    if (this.transactions) this.transactions.items = this.transactions.items.filter((t) => t.accountId !== id);
+    if (this.transactions) for (const t of this.transactions.items) if (t.accountId === id) t.accountId = null; // SET NULL
   }
   async setHidden(id: string, hidden: boolean) {
     const a = this.items.find((x) => x.id === id);
@@ -208,13 +254,15 @@ export class InMemoryCategoryRulesRepository implements CategoryRulesRepository 
     this.items.push(r);
     return r;
   }
-  async deleteByCategory(categoryId: string) {
-    this.items = this.items.filter((r) => r.categoryId !== categoryId);
+  async deleteByCategory(userId: string, categoryId: string) {
+    this.items = this.items.filter((r) => !(r.userId === userId && r.categoryId === categoryId));
   }
 }
 
 export class InMemoryTransactionsRepository implements TransactionsRepository {
   items: Transaction[] = [];
+  /** Ligado pelo makeInMemoryRepositories: deleteBankByConnection precisa saber quais contas são da conexão. */
+  accounts?: { items: Account[] };
   async findById(id: string) {
     return this.items.find((t) => t.id === id) ?? null;
   }
@@ -238,8 +286,29 @@ export class InMemoryTransactionsRepository implements TransactionsRepository {
     const i = this.items.findIndex((t) => t.id === transaction.id);
     if (i >= 0) this.items[i] = transaction;
   }
-  async clearCategory(categoryId: string) {
-    for (const t of this.items) if (t.categoryId === categoryId) t.categoryId = null;
+  async createMany(data: (Omit<Transaction, 'id' | 'createdAt'> & { id?: string })[]) {
+    for (const d of data) this.items.push({ id: randomUUID(), createdAt: new Date(), ...d });
+    return data.length;
+  }
+  async clearCategory(userId: string, categoryId: string) {
+    for (const t of this.items) if (t.userId === userId && t.categoryId === categoryId) t.categoryId = null;
+  }
+  async deleteBankByAccount(userId: string, accountId: string) {
+    const before = this.items.length;
+    this.items = this.items.filter((t) => !(t.userId === userId && t.accountId === accountId && t.externalId !== null));
+    return before - this.items.length;
+  }
+  async deleteBankByConnection(userId: string, connectionId: string) {
+    const accountIds = new Set(
+      (this.accounts?.items ?? [])
+        .filter((a) => a.userId === userId && a.connectionId === connectionId)
+        .map((a) => a.id),
+    );
+    const before = this.items.length;
+    this.items = this.items.filter(
+      (t) => !(t.userId === userId && t.externalId !== null && t.accountId && accountIds.has(t.accountId)),
+    );
+    return before - this.items.length;
   }
   async delete(id: string) {
     this.items = this.items.filter((t) => t.id !== id);
@@ -294,8 +363,8 @@ export class InMemoryBudgetsRepository implements BudgetsRepository {
   async delete(userId: string, categoryId: string) {
     this.items = this.items.filter((b) => !(b.userId === userId && b.categoryId === categoryId));
   }
-  async deleteByCategory(categoryId: string) {
-    this.items = this.items.filter((b) => b.categoryId !== categoryId);
+  async deleteByCategory(userId: string, categoryId: string) {
+    this.items = this.items.filter((b) => !(b.userId === userId && b.categoryId === categoryId));
   }
 }
 
@@ -338,6 +407,12 @@ export class InMemoryGamesRepository implements GamesRepository {
   async findBattle(userId: string, kind: BattleKind) {
     return this.battles.find((b) => b.userId === userId && b.kind === kind) ?? null;
   }
+  async mutateBattle(userId: string, kind: BattleKind, fn: (current: Battle | null) => Battle) {
+    const next = fn(this.battles.find((b) => b.userId === userId && b.kind === kind) ?? null);
+    this.battles = this.battles.filter((b) => !(b.userId === userId && b.kind === kind));
+    this.battles.push({ ...next });
+    return next;
+  }
 }
 
 export class InMemoryIgnoredSubscriptionsRepository implements IgnoredSubscriptionsRepository {
@@ -353,7 +428,7 @@ export class InMemoryIgnoredSubscriptionsRepository implements IgnoredSubscripti
 
 export class InMemoryInvitesRepository implements InvitesRepository {
   items: Invite[] = [];
-  async create(data: { code: string; createdById: string }) {
+  async create(data: { code: string; createdById: string | null }) {
     const i: Invite = { ...data, usedById: null, createdAt: new Date(), usedAt: null };
     this.items.push(i);
     return i;
@@ -363,26 +438,112 @@ export class InMemoryInvitesRepository implements InvitesRepository {
   }
   async markUsed(code: string, userId: string) {
     const i = this.items.find((x) => x.code === code);
-    if (i) Object.assign(i, { usedById: userId, usedAt: new Date() });
+    if (!i || i.usedAt) return false; // o que manda é usedAt: convite usado nunca reabre
+    Object.assign(i, { usedById: userId, usedAt: new Date() });
+    return true;
   }
   async listByCreator(userId: string) {
     return this.items.filter((i) => i.createdById === userId).reverse();
   }
 }
 
+// Os métodos abaixo não têm `await` no meio da checagem + gravação: em JS isso já é atômico (um por vez),
+// o equivalente em memória do UPDATE condicional / $transaction do Postgres.
 export class InMemoryPasswordResetsRepository implements PasswordResetsRepository {
   items: PasswordReset[] = [];
-  async create(data: { userId: string; tokenHash: string; expiresAt: Date }) {
+  constructor(
+    private readonly users: InMemoryUsersRepository,
+    private readonly refreshTokens: InMemoryRefreshTokensRepository,
+  ) {}
+  async findByTokenHash(tokenHash: string) {
+    return this.items.find((r) => r.tokenHash === tokenHash) ?? null;
+  }
+  async replacePending(data: { userId: string; tokenHash: string; expiresAt: Date }, now: Date) {
+    for (const r of this.items) if (r.userId === data.userId && !r.usedAt) r.usedAt = now;
     const r: PasswordReset = { id: randomUUID(), usedAt: null, ...data };
     this.items.push(r);
     return r;
   }
-  async findByTokenHash(tokenHash: string) {
-    return this.items.find((r) => r.tokenHash === tokenHash) ?? null;
+  async redeem({ tokenHash, passwordHash, now }: { tokenHash: string; passwordHash: string; now: Date }) {
+    const reset = this.items.find((r) => r.tokenHash === tokenHash);
+    if (!reset || reset.usedAt || reset.expiresAt <= now) return null;
+    reset.usedAt = now;
+    const user = this.users.items.find((u) => u.id === reset.userId);
+    if (user) {
+      user.passwordHash = passwordHash;
+      if (!user.emailVerifiedAt) user.emailVerifiedAt = now;
+    }
+    for (const r of this.items) if (r.userId === reset.userId && !r.usedAt) r.usedAt = now;
+    for (const t of this.refreshTokens.items) if (t.userId === reset.userId && !t.revokedAt) t.revokedAt = now;
+    return { userId: reset.userId };
   }
-  async markUsed(id: string) {
-    const r = this.items.find((x) => x.id === id);
-    if (r) r.usedAt = new Date();
+}
+
+export class InMemoryRefreshTokensRepository implements RefreshTokensRepository {
+  items: RefreshToken[] = [];
+  async create(data: NewRefreshToken) {
+    const t: RefreshToken = { id: randomUUID(), createdAt: new Date(), revokedAt: null, replacedById: null, ...data };
+    this.items.push(t);
+    return t;
+  }
+  async rotate({
+    tokenHash,
+    now,
+    next,
+  }: {
+    tokenHash: string;
+    now: Date;
+    next: Omit<NewRefreshToken, 'userId' | 'familyId'>;
+  }): Promise<RotateRefreshResult> {
+    const current = this.items.find((t) => t.tokenHash === tokenHash);
+    if (!current) return { status: 'invalid' };
+    if (!current.revokedAt && current.expiresAt > now) {
+      current.revokedAt = now;
+      const created: RefreshToken = {
+        id: randomUUID(),
+        createdAt: now,
+        revokedAt: null,
+        replacedById: null,
+        ...next,
+        userId: current.userId,
+        familyId: current.familyId,
+      };
+      this.items.push(created);
+      current.replacedById = created.id;
+      return { status: 'rotated', userId: current.userId, familyId: current.familyId };
+    }
+    if (current.revokedAt) {
+      for (const t of this.items) if (t.familyId === current.familyId && !t.revokedAt) t.revokedAt = now;
+      return { status: 'reused', userId: current.userId, familyId: current.familyId };
+    }
+    return { status: 'invalid' };
+  }
+  async revokeFamilyOf(tokenHash: string, now: Date) {
+    const row = this.items.find((t) => t.tokenHash === tokenHash);
+    if (!row) return;
+    for (const t of this.items) if (t.familyId === row.familyId && !t.revokedAt) t.revokedAt = now;
+  }
+  async revokeAllForUser(userId: string, now: Date) {
+    for (const t of this.items) if (t.userId === userId && !t.revokedAt) t.revokedAt = now;
+  }
+}
+
+export class InMemoryEmailVerificationTokensRepository implements EmailVerificationTokensRepository {
+  items: EmailVerificationToken[] = [];
+  constructor(private readonly users: InMemoryUsersRepository) {}
+  async replacePending(data: { userId: string; tokenHash: string; expiresAt: Date }, now: Date) {
+    for (const r of this.items) if (r.userId === data.userId && !r.usedAt) r.usedAt = now;
+    const t: EmailVerificationToken = { id: randomUUID(), usedAt: null, ...data };
+    this.items.push(t);
+    return t;
+  }
+  async consume({ tokenHash, now }: { tokenHash: string; now: Date }) {
+    const t = this.items.find((x) => x.tokenHash === tokenHash);
+    if (!t || t.usedAt || t.expiresAt <= now) return null;
+    t.usedAt = now;
+    const user = this.users.items.find((u) => u.id === t.userId);
+    if (user && !user.emailVerifiedAt) user.emailVerifiedAt = now;
+    return { userId: t.userId };
   }
 }
 
@@ -409,12 +570,18 @@ export class InMemoryFinancialPlansRepository implements FinancialPlansRepositor
   async save(userId: string, plan: FinancialPlan) {
     this.items.set(userId, plan);
   }
+  async mutate(userId: string, fn: (current: FinancialPlan | null) => FinancialPlan) {
+    // Sem await entre ler e gravar: atômico em JS (o lock por version só faz diferença no Postgres).
+    const next = fn(this.items.get(userId) ?? null);
+    this.items.set(userId, next);
+    return next;
+  }
 }
 
 export class InMemoryWhatsappLinksRepository implements WhatsappLinksRepository {
   items = new Map<string, WhatsappLink>();
   private row(userId: string) {
-    return this.items.get(userId) ?? { userId, phone: null, code: null, codeExpiresAt: null, linkedAt: null };
+    return this.items.get(userId) ?? { userId, phone: null, codeHash: null, codeExpiresAt: null, linkedAt: null };
   }
   async get(userId: string) {
     return this.items.get(userId) ?? null;
@@ -422,16 +589,17 @@ export class InMemoryWhatsappLinksRepository implements WhatsappLinksRepository 
   async findByPhone(phone: string) {
     return [...this.items.values()].find((l) => l.phone === phone) ?? null;
   }
-  async findByCode(code: string) {
-    return [...this.items.values()].find((l) => l.code === code) ?? null;
+  async findByCodeHash(codeHash: string) {
+    return [...this.items.values()].find((l) => l.codeHash === codeHash) ?? null;
   }
-  async setCode(userId: string, code: string, expiresAt: Date) {
-    this.items.set(userId, { ...this.row(userId), code, codeExpiresAt: expiresAt });
+  async setCode(userId: string, codeHash: string, expiresAt: Date) {
+    this.items.set(userId, { ...this.row(userId), codeHash, codeExpiresAt: expiresAt });
   }
   async link(userId: string, phone: string, at: Date) {
-    for (const l of this.items.values())
-      if (l.phone === phone && l.userId !== userId) this.items.set(l.userId, { ...l, phone: null, linkedAt: null });
-    this.items.set(userId, { ...this.row(userId), phone, linkedAt: at, code: null, codeExpiresAt: null });
+    // Igual ao @unique do Postgres: número de outra conta não é roubado.
+    if ([...this.items.values()].some((l) => l.phone === phone && l.userId !== userId))
+      throw new ConflictError('Esse número já está ligado a outra conta.');
+    this.items.set(userId, { ...this.row(userId), phone, linkedAt: at, codeHash: null, codeExpiresAt: null });
   }
   async unlink(userId: string) {
     this.items.delete(userId);
@@ -481,6 +649,8 @@ export class InMemoryEngagementRepository implements EngagementRepository {
     return this.friends.filter((f) => f.userId === userId).map((f) => f.friendId);
   }
   async savePush(sub: PushSub) {
+    const existing = this.push.find((p) => p.endpoint === sub.endpoint);
+    if (existing && existing.userId !== sub.userId) throw new ForbiddenError('Esse aparelho já está em outra conta.');
     this.push = [...this.push.filter((p) => p.endpoint !== sub.endpoint), sub];
   }
   async deletePush(endpoint: string) {
@@ -616,12 +786,105 @@ export class InMemoryTostaoAutoRepository implements TostaoAutoRepository {
   }
 }
 
+export class InMemoryOutboxRepository implements OutboxRepository {
+  items: OutboxJob[] = [];
+  async enqueue(job: NewOutboxJob) {
+    const row: OutboxJob = {
+      id: randomUUID(),
+      type: job.type,
+      payload: job.payload,
+      status: 'PENDING',
+      attempts: 0,
+      maxAttempts: job.maxAttempts ?? 8,
+      runAt: job.runAt ?? new Date(),
+      lockedAt: null,
+      lastError: null,
+      processedAt: null,
+      createdAt: new Date(),
+    };
+    this.items.push(row);
+    return row;
+  }
+  async claimDue(now: Date, limit: number, lockTimeoutMs = 10 * 60_000) {
+    const mine: OutboxJob[] = [];
+    for (const j of this.items) {
+      if (mine.length >= limit) break;
+      const stale = j.lockedAt !== null && now.getTime() - j.lockedAt.getTime() > lockTimeoutMs;
+      if (j.status === 'PENDING' && j.runAt <= now && (j.lockedAt === null || stale)) {
+        j.lockedAt = now;
+        j.attempts += 1;
+        mine.push({ ...j });
+      }
+    }
+    return mine;
+  }
+  async markDone(id: string, now: Date) {
+    const j = this.items.find((x) => x.id === id);
+    if (j) Object.assign(j, { status: 'DONE', processedAt: now, lockedAt: null, lastError: null });
+  }
+  async markAttemptFailed(id: string, error: string, nextRunAt: Date | null) {
+    const j = this.items.find((x) => x.id === id);
+    if (!j) return;
+    j.lastError = error.slice(0, 500);
+    j.lockedAt = null;
+    if (nextRunAt) j.runAt = nextRunAt;
+    else j.status = 'FAILED';
+  }
+}
+
+export class InMemoryAuditLogRepository implements AuditLogRepository {
+  items: AuditLog[] = [];
+  async record(e: NewAuditLog) {
+    this.items.push({
+      id: randomUUID(),
+      userId: e.userId ?? null,
+      action: e.action,
+      entityType: e.entityType ?? null,
+      entityId: e.entityId ?? null,
+      metadata: e.metadata ?? null,
+      ipAddress: e.ipAddress ?? null,
+      createdAt: new Date(),
+    });
+  }
+}
+
+export class InMemoryUserConsentsRepository implements UserConsentsRepository {
+  items: UserConsent[] = [];
+  async grant({ userId, type, version, at }: { userId: string; type: UserConsent['type']; version: string; at: Date }) {
+    for (const c of this.items) if (c.userId === userId && c.type === type && !c.revokedAt) c.revokedAt = at;
+    this.items.push({
+      id: randomUUID(),
+      userId,
+      type,
+      version,
+      grantedAt: at,
+      revokedAt: null,
+      ipAddress: null,
+      userAgent: null,
+    });
+  }
+  async revoke(userId: string, type: UserConsent['type'], at: Date) {
+    for (const c of this.items) if (c.userId === userId && c.type === type && !c.revokedAt) c.revokedAt = at;
+  }
+  async listByUser(userId: string) {
+    return this.items.filter((c) => c.userId === userId);
+  }
+}
+
 export function makeInMemoryRepositories() {
   const oauthAccounts = new InMemoryOAuthAccountsRepository();
   const transactions = new InMemoryTransactionsRepository();
   const accounts = new InMemoryAccountsRepository(transactions);
-  return {
-    users: new InMemoryUsersRepository({ oauthAccounts }),
+  transactions.accounts = accounts;
+  const refreshTokens = new InMemoryRefreshTokensRepository();
+  const users = new InMemoryUsersRepository({ oauthAccounts, refreshTokens });
+  const repos = {
+    // Em memória não há rollback: roda em sequência no mesmo conjunto (os testes de atomicidade real são no Postgres).
+    tx: <T>(fn: (r: Repositories) => Promise<T>): Promise<T> => fn(repos as unknown as Repositories),
+    outbox: new InMemoryOutboxRepository(),
+    audit: new InMemoryAuditLogRepository(),
+    consents: new InMemoryUserConsentsRepository(),
+    users,
     oauthAccounts,
     connections: new InMemoryBankConnectionsRepository({ accounts, transactions }),
     accounts,
@@ -632,7 +895,9 @@ export function makeInMemoryRepositories() {
     lessons: new InMemoryLessonProgressRepository(),
     ignoredSubscriptions: new InMemoryIgnoredSubscriptionsRepository(),
     invites: new InMemoryInvitesRepository(),
-    passwordResets: new InMemoryPasswordResetsRepository(),
+    passwordResets: new InMemoryPasswordResetsRepository(users, refreshTokens),
+    refreshTokens,
+    emailVerifications: new InMemoryEmailVerificationTokensRepository(users),
     chat: new InMemoryChatMessagesRepository(),
     plans: new InMemoryFinancialPlansRepository(),
     whatsapp: new InMemoryWhatsappLinksRepository(),
@@ -642,4 +907,5 @@ export function makeInMemoryRepositories() {
     tostaoAuto: new InMemoryTostaoAutoRepository(),
     reconciledNotes: new InMemoryReconciledNotesRepository(),
   } satisfies Repositories;
+  return repos;
 }

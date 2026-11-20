@@ -1,6 +1,7 @@
 'use server';
 import { revalidatePath } from 'next/cache';
 import { api, ApiError } from '@/lib/api';
+import { rethrowIfRedirect } from '@/lib/rethrow';
 
 export type CodeState = { code?: string; number?: string | null; error?: string };
 
@@ -9,6 +10,7 @@ export async function createCode(_: CodeState): Promise<CodeState> {
     const r = await api<{ code: string; number: string | null }>('/whatsapp/code', { method: 'POST', body: {} });
     return { code: r.code, number: r.number };
   } catch (e) {
+    rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
 }
@@ -16,7 +18,8 @@ export async function createCode(_: CodeState): Promise<CodeState> {
 export async function unlink() {
   try {
     await api('/whatsapp', { method: 'DELETE' });
-  } catch {
+  } catch (caught) {
+    rethrowIfRedirect(caught);
     /* fica como estava */
   }
   revalidatePath('/whatsapp');

@@ -8,6 +8,15 @@ export type User = {
   name: string;
   email: string;
   passwordHash: string | null;
+  /** Quando provamos que a pessoa controla o e-mail. null = não verificado (todo cadastro por senha, por enquanto). */
+  emailVerifiedAt: Date | null;
+  /** Aceite dos Termos/Privacidade no cadastro (null em contas antigas e sociais). */
+  termsAcceptedAt: Date | null;
+  termsVersion: string | null;
+  /** Consentimento LGPD pra usar IA. null = não aceitou (chat e categorização automática bloqueados). */
+  aiConsentAt: Date | null;
+  /** Fuso da pessoa (IANA). Dia civil e fechamento de mês usam isto. */
+  timezone: string;
   createdAt: Date;
 };
 
@@ -45,6 +54,7 @@ export type Account = {
   dueDate: Date | null;
   /** Ocultada pela pessoa: some da tela e do saldo, mas continua sincronizando. */
   hidden: boolean;
+  currency?: string;
 };
 
 /** kind "neutra" = não conta como gasto nem renda (ex.: repasse com a família). userId null = categoria do sistema. */
@@ -83,6 +93,7 @@ export type Transaction = {
   personId?: string | null;
   /** Observação livre da pessoa sobre o lançamento. */
   note?: string | null;
+  currency?: string;
   createdAt: Date;
 };
 
@@ -108,12 +119,34 @@ export type LessonProgress = { userId: string; lessonId: string; completedAt: Da
 
 export type Invite = {
   code: string;
-  createdById: string;
+  /** null: quem criou apagou a conta (o convite e o seu uso continuam valendo como histórico). */
+  createdById: string | null;
   usedById: string | null;
   createdAt: Date;
   usedAt: Date | null;
 };
 export type PasswordReset = { id: string; userId: string; tokenHash: string; expiresAt: Date; usedAt: Date | null };
+
+/** Sessão revogável. `tokenHash` é o SHA-256 do token opaco; o token em si nunca é guardado. */
+export type RefreshToken = {
+  id: string;
+  userId: string;
+  tokenHash: string;
+  familyId: string;
+  expiresAt: Date;
+  revokedAt: Date | null;
+  replacedById: string | null;
+  userAgent: string | null;
+  ipAddress: string | null;
+  createdAt: Date;
+};
+export type EmailVerificationToken = {
+  id: string;
+  userId: string;
+  tokenHash: string;
+  expiresAt: Date;
+  usedAt: Date | null;
+};
 
 export type ChatMessage = {
   id: string;
@@ -167,4 +200,45 @@ export type TostaoAutoConfig = {
   notifyWhatsapp: boolean;
   lastCheckedAt: Date | null;
   updatedAt: Date;
+};
+
+/** Histórico de consentimento (LGPD). users.terms_accepted_at / ai_consent_at seguem sendo o estado atual. */
+export type UserConsent = {
+  id: string;
+  userId: string;
+  type: 'terms' | 'privacy' | 'ai';
+  version: string;
+  grantedAt: Date;
+  revokedAt: Date | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+};
+
+/** Evento de segurança. userId vira null se a conta for apagada. */
+export type AuditAction = 'password_reset' | 'account_deleted' | 'consent_changed' | 'refresh_reuse_detected';
+export type AuditLog = {
+  id: string;
+  userId: string | null;
+  action: AuditAction;
+  entityType: string | null;
+  entityId: string | null;
+  metadata: Record<string, unknown> | null;
+  ipAddress: string | null;
+  createdAt: Date;
+};
+
+/** Tarefa a refazer depois (ex.: desligar o Item do Pluggy quando o provedor estava fora do ar). */
+export type OutboxJobType = 'pluggy.deleteItem';
+export type OutboxJob = {
+  id: string;
+  type: OutboxJobType;
+  payload: Record<string, unknown>;
+  status: 'PENDING' | 'DONE' | 'FAILED';
+  attempts: number;
+  maxAttempts: number;
+  runAt: Date;
+  lockedAt: Date | null;
+  lastError: string | null;
+  processedAt: Date | null;
+  createdAt: Date;
 };

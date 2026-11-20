@@ -1,5 +1,6 @@
 import webpush from 'web-push';
 import type { PushSub } from '../repositories/types.js';
+import { isAllowedPushEndpoint } from '../lib/push-endpoint.js';
 
 export type PushPayload = { title: string; body: string; url: string; tag?: string };
 
@@ -32,17 +33,26 @@ export class WebPushGateway implements PushGateway {
   enabled = true;
   constructor(
     public readonly publicKey: string,
-    privateKey: string,
-    subject: string,
-  ) {
-    webpush.setVapidDetails(subject, publicKey, privateKey);
-  }
+    private readonly privateKey: string,
+    private readonly subject: string,
+  ) {}
   async send(sub: PushSub, payload: PushPayload) {
+    // Defesa em profundidade: inscrição antiga no banco com endpoint fora da allowlist nunca recebe request (SSRF).
+    // 'gone' faz quem chama apagar a inscrição.
+    if (!isAllowedPushEndpoint(sub.endpoint)) {
+      console.warn('[push] endpoint fora da allowlist, descartando inscrição');
+      return 'gone' as const;
+    }
     try {
       await webpush.sendNotification(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
         JSON.stringify(payload),
-        { TTL: 6 * 60 * 60 },
+        {
+          TTL: 3600,
+          timeout: 10_000,
+          // Por envio, em vez do setVapidDetails global (que muda estado do módulo).
+          vapidDetails: { subject: this.subject, publicKey: this.publicKey, privateKey: this.privateKey },
+        },
       );
       return 'ok' as const;
     } catch (err) {

@@ -1,7 +1,15 @@
 // Gateway de login social (Google e Apple) usando apenas node:crypto + fetch (sem dependências extras).
 // Google: OAuth 2.0 Authorization Code + PKCE (S256) + verificação RS256 do id_token via JWKS.
 // Apple:  Sign in with Apple (form_post) + client_secret ES256 assinado com chave .p8 + verificação RS256 do id_token via JWKS.
-import { createPrivateKey, createPublicKey, sign, timingSafeEqual, verify, type JsonWebKey } from 'node:crypto';
+import {
+  createHash,
+  createPrivateKey,
+  createPublicKey,
+  sign,
+  timingSafeEqual,
+  verify,
+  type JsonWebKey,
+} from 'node:crypto';
 import type { OAuthProvider } from '../domain/entities.js';
 import { AppError } from '../domain/errors.js';
 
@@ -69,7 +77,10 @@ const APPLE_JWKS_URL = 'https://appleid.apple.com/auth/keys';
 const APPLE_ISSUERS = new Set(['https://appleid.apple.com']);
 
 const JWKS_TTL_MS = 60 * 60 * 1000;
+// Kid desconhecido não pode virar um download das chaves do provedor a cada requisição: no máximo 1 por minuto.
+const JWKS_MISS_COOLDOWN_MS = 60 * 1000;
 const CLOCK_SKEW_SEC = 60;
+const FETCH_TIMEOUT_MS = 10_000;
 
 function base64UrlEncode(input: string | Buffer): string {
   return Buffer.from(input).toString('base64url');
@@ -80,11 +91,10 @@ function base64UrlDecodeJson<T>(segment: string): T {
   return JSON.parse(raw) as T;
 }
 
-function safeEqualString(a: string, b: string): boolean {
-  const bufA = Buffer.from(a, 'utf8');
-  const bufB = Buffer.from(b, 'utf8');
-  if (bufA.length !== bufB.length) return false;
-  return timingSafeEqual(bufA, bufB);
+/** Compara em tempo constante e sem vazar o tamanho: os dois lados viram SHA-256 (32 bytes) antes. */
+export function safeEqualString(a: string, b: string): boolean {
+  const hash = (v: string) => createHash('sha256').update(v, 'utf8').digest();
+  return timingSafeEqual(hash(a), hash(b));
 }
 
 function isTruthyFlag(v: unknown): boolean {
@@ -174,8 +184,20 @@ export async function verifyOidcIdToken({
     typeof aud === 'string' ? aud === expectedAudience : Array.isArray(aud) && aud.includes(expectedAudience);
   if (!audMatches) throw new AppError('Destinatário do token de login inválido.', 401);
 
+  // Com mais de um destinatário (aud em lista), o OIDC manda o azp: quem pediu o token tem que ser o nosso app.
+  if (Array.isArray(aud) && payload.azp !== expectedAudience) {
+    throw new AppError('Autorizador do token de login inválido.', 401);
+  }
+
   const exp = typeof payload.exp === 'number' ? payload.exp : 0;
   if (exp + CLOCK_SKEW_SEC < nowSec) throw new AppError('Sessão de login expirou. Tenta de novo.', 401);
+  // "Não vale antes de": token emitido pro futuro (ou com relógio muito adiantado) é rejeitado.
+  if (typeof payload.nbf === 'number' && payload.nbf - CLOCK_SKEW_SEC > nowSec) {
+    throw new AppError('Token de login ainda não é válido.', 401);
+  }
+  if (typeof payload.iat === 'number' && payload.iat - CLOCK_SKEW_SEC > nowSec) {
+    throw new AppError('Token de login com data inválida.', 401);
+  }
 
   const nonce = typeof payload.nonce === 'string' ? payload.nonce : '';
   if (!nonce || !safeEqualString(nonce, expectedNonce)) {
@@ -189,7 +211,8 @@ export async function verifyOidcIdToken({
     throw new AppError('O provedor não retornou seu e-mail.', 400);
   }
 
-  const emailVerified = isTruthyFlag(payload.email_verified) || isTruthyFlag(payload.is_private_email);
+  // Só email_verified vale. is_private_email (Apple) diz que o e-mail é um relay privado, não que foi verificado.
+  const emailVerified = isTruthyFlag(payload.email_verified);
   const name = typeof payload.name === 'string' && payload.name.trim().length > 0 ? payload.name.trim() : null;
 
   return { sub, email, emailVerified, name };
@@ -197,6 +220,7 @@ export async function verifyOidcIdToken({
 
 export class OidcOAuthGateway implements OAuthGateway {
   private readonly jwksCache = new Map<string, JwksCacheEntry>();
+  private readonly jwksFailedAt = new Map<string, number>();
   private readonly fetchImpl: typeof fetch;
   private readonly clock: () => number;
 
@@ -231,6 +255,8 @@ export class OidcOAuthGateway implements OAuthGateway {
     }
 
     if (provider === 'google') {
+      // PKCE (S256) é obrigatório: sem o challenge, um code interceptado serviria pra qualquer um.
+      if (!codeChallenge) throw new AppError('Login com Google exige PKCE.', 500);
       const url = new URL(GOOGLE_AUTH_URL);
       url.searchParams.set('client_id', this.config.google!.clientId);
       url.searchParams.set('redirect_uri', redirectUri);
@@ -239,10 +265,8 @@ export class OidcOAuthGateway implements OAuthGateway {
       url.searchParams.set('state', state);
       url.searchParams.set('nonce', nonce);
       url.searchParams.set('prompt', 'select_account');
-      if (codeChallenge) {
-        url.searchParams.set('code_challenge', codeChallenge);
-        url.searchParams.set('code_challenge_method', 'S256');
-      }
+      url.searchParams.set('code_challenge', codeChallenge);
+      url.searchParams.set('code_challenge_method', 'S256');
       return url.toString();
     }
 
@@ -272,6 +296,7 @@ export class OidcOAuthGateway implements OAuthGateway {
     }
 
     if (provider === 'google') {
+      if (!codeVerifier) throw new AppError('Login com Google exige PKCE.', 400);
       const g = this.config.google!;
       const body = new URLSearchParams({
         code,
@@ -280,12 +305,13 @@ export class OidcOAuthGateway implements OAuthGateway {
         redirect_uri: redirectUri,
         grant_type: 'authorization_code',
       });
-      if (codeVerifier) body.set('code_verifier', codeVerifier);
+      body.set('code_verifier', codeVerifier);
 
       const res = await this.fetchImpl(GOOGLE_TOKEN_URL, {
         method: 'POST',
         headers: { 'content-type': 'application/x-www-form-urlencoded' },
         body: body.toString(),
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       }).catch(() => {
         throw new AppError('Não consegui falar com o Google agora. Tenta de novo.', 502);
       });
@@ -326,6 +352,7 @@ export class OidcOAuthGateway implements OAuthGateway {
       method: 'POST',
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
       body: body.toString(),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     }).catch(() => {
       throw new AppError('Não consegui falar com a Apple agora. Tenta de novo.', 502);
     });
@@ -358,12 +385,21 @@ export class OidcOAuthGateway implements OAuthGateway {
     if (cached && now - cached.fetchedAt < JWKS_TTL_MS) {
       const hit = cached.keys.find((k) => k.kid === kid);
       if (hit) return hit;
+      // kid que não está no cache: só baixa de novo se o último download já passou do cooldown
+      // (rotação de chave do provedor é legítima; kid inventado por atacante não pode virar 1 request por tentativa).
+      if (now - cached.fetchedAt < JWKS_MISS_COOLDOWN_MS) return null;
+    }
+    const failedAt = this.jwksFailedAt.get(jwksUrl);
+    if (failedAt !== undefined && now - failedAt < JWKS_MISS_COOLDOWN_MS) {
+      throw new AppError('Não consegui baixar as chaves de segurança do provedor.', 502);
     }
 
-    const res = await this.fetchImpl(jwksUrl).catch(() => {
+    const res = await this.fetchImpl(jwksUrl, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }).catch(() => null);
+    if (!res || !res.ok) {
+      this.jwksFailedAt.set(jwksUrl, now);
       throw new AppError('Não consegui baixar as chaves de segurança do provedor.', 502);
-    });
-    if (!res.ok) throw new AppError('Não consegui baixar as chaves de segurança do provedor.', 502);
+    }
+    this.jwksFailedAt.delete(jwksUrl);
 
     const body = (await res.json().catch(() => ({}))) as { keys?: JwkWithKid[] };
     const keys = Array.isArray(body.keys) ? body.keys : [];

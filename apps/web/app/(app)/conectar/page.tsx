@@ -236,7 +236,7 @@ export default async function ConectarPage({
             <section className="flex flex-col gap-2.5 pt-1">
               <Eyebrow>{p.connectedBanks}</Eyebrow>
               {me.connections.map((c) => {
-                const imported = c.itemId.startsWith('import:');
+                const imported = c.isImport;
                 return (
                   <Card key={c.id} className="flex flex-col gap-2">
                     <div className="flex items-center justify-between gap-2">

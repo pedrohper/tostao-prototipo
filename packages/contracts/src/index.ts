@@ -5,55 +5,89 @@ import { z } from 'zod';
 export * from './juros';
 
 // ---------- Auth ----------
+// bcrypt só lê os 72 primeiros BYTES da senha (o resto seria ignorado em silêncio). Rejeitamos acima disso.
+export const MAX_PASSWORD_BYTES = 72;
+const passwordMax = (schema: z.ZodString) =>
+  schema
+    .max(MAX_PASSWORD_BYTES, 'A senha pode ter no máximo 72 caracteres')
+    .refine((v) => new TextEncoder().encode(v).length <= MAX_PASSWORD_BYTES, 'A senha pode ter no máximo 72 bytes');
+
 export const registerBody = z.object({
   name: z.string().trim().min(2, 'Nome muito curto'),
   email: z.email('E-mail inválido').transform((e) => e.toLowerCase()),
-  password: z.string().min(8, 'A senha precisa de pelo menos 8 caracteres'),
+  password: passwordMax(z.string().min(8, 'A senha precisa de pelo menos 8 caracteres')),
   inviteCode: z.string().trim().max(40).optional(),
+  // Aceite dos Termos e da Privacidade: o checkbox da web não basta, o servidor exige.
+  acceptedTerms: z.literal(true, { error: 'Aceite os Termos e a Política de Privacidade pra criar a conta' }),
 });
 export type RegisterBody = z.infer<typeof registerBody>;
 
 export const loginBody = z.object({
   email: z.email('E-mail inválido').transform((e) => e.toLowerCase()),
-  password: z.string().min(1, 'Digite a senha'),
+  password: passwordMax(z.string().min(1, 'Digite a senha')),
 });
 export type LoginBody = z.infer<typeof loginBody>;
 
-export type AuthResponse = { token: string };
+/** Sessão: access token (JWT, 15 min) + refresh token opaco (30 dias, rotativo e revogável). */
+export const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
+export const REFRESH_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60;
+export type AuthResponse = { accessToken: string; refreshToken: string };
+
+export const refreshBody = z.object({ refreshToken: z.string().min(20).max(256) });
+export type RefreshBody = z.infer<typeof refreshBody>;
 
 export const oauthProviderSchema = z.enum(['google', 'apple']);
 export type OAuthProvider = z.infer<typeof oauthProviderSchema>;
 
 export type OAuthProvidersResponse = { google: boolean; apple: boolean };
 
+// "state" tem 256 bits em base64url (43 chars). Quem gera é a API; a web só repassa.
+export const OAUTH_STATE_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+export const oauthFromSchema = z.enum(['entrar', 'criar-conta']);
+
+// O nonce e o code_verifier (PKCE) nascem e ficam SÓ no servidor, ligados ao state. O navegador nunca os vê.
 export const oauthStartBody = z.object({
   provider: oauthProviderSchema,
-  redirectUri: z.string().url('redirectUri inválida'),
-  state: z.string().min(16).max(128),
-  nonce: z.string().min(16).max(128),
-  codeChallenge: z.string().min(43).max(128).optional(),
+  redirectUri: z.string().url('redirectUri inválida').max(500),
+  inviteCode: z.string().trim().max(32).optional(),
+  from: oauthFromSchema.optional(),
 });
 export type OAuthStartBody = z.infer<typeof oauthStartBody>;
-export type OAuthStartResponse = { url: string };
+/** state: a web guarda num cookie assinado pra amarrar o retorno ao mesmo navegador. */
+export type OAuthStartResponse = { url: string; state: string };
 
 export const oauthCallbackBody = z.object({
   provider: oauthProviderSchema,
-  code: z.string().min(1, 'Código de autorização ausente'),
-  redirectUri: z.string().url('redirectUri inválida'),
-  codeVerifier: z.string().min(43).max(128).optional(),
-  expectedNonce: z.string().min(16).max(128),
+  code: z.string().min(1, 'Código de autorização ausente').max(2048),
+  state: z.string().regex(OAUTH_STATE_PATTERN, 'state inválido'),
+  redirectUri: z.string().url('redirectUri inválida').max(500),
   name: z.string().trim().max(120).optional(),
-  inviteCode: z.string().trim().max(40).optional(),
 });
 export type OAuthCallbackBody = z.infer<typeof oauthCallbackBody>;
-export type OAuthAuthResponse = { token: string; isNewUser: boolean };
+export type OAuthAuthResponse = AuthResponse & { isNewUser: boolean };
 
 export const resetPasswordBody = z.object({
-  token: z.string().min(20),
-  password: z.string().min(8, 'A senha precisa de pelo menos 8 caracteres'),
+  token: z.string().min(20).max(256),
+  password: passwordMax(z.string().min(8, 'A senha precisa de pelo menos 8 caracteres')),
 });
 
+// "Esqueci minha senha": a resposta é sempre a mesma (202), exista a conta ou não.
+export const passwordResetRequestBody = z.object({
+  email: z.email('E-mail inválido').transform((e) => e.toLowerCase()),
+});
+export type PasswordResetRequestBody = z.infer<typeof passwordResetRequestBody>;
+export const PASSWORD_RESET_REQUEST_MESSAGE =
+  'Se esse e-mail tiver conta no Tostão, você vai receber um link pra criar uma senha nova. Vale por 1 hora.';
+export type PasswordResetRequestResponse = { message: string };
+
+// Verificação de e-mail (link do cadastro, 24 h).
+export const verifyEmailBody = z.object({ token: z.string().min(20).max(256) });
+export type VerifyEmailBody = z.infer<typeof verifyEmailBody>;
+
 // Apagar a conta: confirma com a senha (ou com o e-mail, se a conta entrou só com Google/Apple).
+/** providerFailures > 0: não deu pra desligar algum banco no Open Finance; a pessoa deve revogar por lá. */
+export type DeleteAccountResponse = { deleted: true; providerFailures: number };
+
 export const deleteAccountBody = z
   .object({
     password: z.string().optional(),
@@ -73,9 +107,15 @@ export type ProfileResponse = {
   hasPassword: boolean;
   providers: OAuthProvider[];
   createdAt: string;
+  /** Quando aceitou o aviso de uso de IA (LGPD). null = IA bloqueada até aceitar. */
+  aiConsentAt: string | null;
+  /** Quando provou que controla o e-mail. null = ainda não verificou. */
+  emailVerifiedAt: string | null;
   connections: {
     id: string;
-    itemId: string;
+    /** Derivados do itemId no servidor: o ID bruto do provedor nunca sai da API. */
+    isImport: boolean;
+    isManual: boolean;
     institution: string | null;
     /** Nome pra mostrar: o banco de verdade, mesmo quando a conexão vem pelo MeuPluggy. */
     displayName: string;
@@ -94,7 +134,14 @@ export const connectBankBody = z.object({
     .string()
     .trim()
     .transform((v) => v.match(UUID)?.[0].toLowerCase() ?? v)
-    .pipe(z.string().min(8, 'Item ID parece curto demais')),
+    .pipe(
+      z
+        .string()
+        .min(8, 'Item ID parece curto demais')
+        .max(128, 'Item ID longo demais')
+        // Esses prefixos são das conexões internas (extrato importado / conta manual) e o itemId vai pra URL do Pluggy.
+        .refine((v) => !/^(import|manual):/i.test(v) && !/[/\\?#]|\.\./.test(v), 'Item ID inválido'),
+    ),
 });
 export type ConnectBankBody = z.infer<typeof connectBankBody>;
 
@@ -106,9 +153,19 @@ export type DisconnectResponse = { providerDeleted: boolean };
 /** null quando a API roda com o banco de exemplo (sem widget). */
 export type ConnectTokenResponse = { connectToken: string | null };
 
+// ---------- Limites compartilhados ----------
+/** Teto de qualquer valor em centavos que entra pela API: R$ 100 milhões. Cabe com folga em Number.MAX_SAFE_INTEGER (o banco é BIGINT). */
+export const MAX_CENTS = 10_000_000_000;
+/** Mês no formato AAAA-MM com mês de verdade (01..12): "2026-13" e "2026-00" não passam. */
+export const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
+/** Id de recurso nas rotas (`:id`): UUID. Lixo vira 400 na borda, nunca chega no banco. */
+export const idParam = z.object({ id: z.uuid('Id inválido') });
+const centsMoney = z.number().int().min(-MAX_CENTS).max(MAX_CENTS);
+const shortId = z.string().min(1).max(64);
+
 // ---------- Transações ----------
 export const monthQuery = z.object({
-  month: z.string().regex(/^\d{4}-\d{2}$/, 'Use AAAA-MM'),
+  month: z.string().regex(MONTH_PATTERN, 'Use AAAA-MM (mês de 01 a 12)'),
 });
 
 /** Busca na Carteira: texto livre (loja, pessoa, categoria, banco) + filtros. */
@@ -147,13 +204,13 @@ export const NOTE_MAX = 280;
 
 export const manualTransactionBody = z
   .object({
-    description: z.string().trim().min(1, 'Diz o que foi'),
-    amountInCents: z.number().int().positive('Valor precisa ser maior que zero'),
+    description: z.string().trim().min(1, 'Diz o que foi').max(140, 'Descrição longa demais'),
+    amountInCents: z.number().int().positive('Valor precisa ser maior que zero').max(MAX_CENTS, 'Valor alto demais'),
     kind: z.enum(['saida', 'entrada']),
     occurredAt: z.iso.date(),
-    categoryId: z.string().nullable().optional(),
+    categoryId: shortId.nullable().optional(),
     /** "Pago com": null = dinheiro vivo. */
-    accountId: z.string().nullable().optional(),
+    accountId: shortId.nullable().optional(),
     /** nao = só esse; mensal = repete todo mês (12 meses lançados); parcelado = o valor é o total, dividido em `times` meses. */
     repeat: z.enum(['nao', 'mensal', 'parcelado']).default('nao'),
     times: z.number().int().min(2, 'Parcela em pelo menos 2x').max(48, 'No máximo 48x').optional(),
@@ -163,7 +220,7 @@ export const manualTransactionBody = z
 export type ManualTransactionBody = z.infer<typeof manualTransactionBody>;
 
 export const categorizeBody = z.object({
-  categoryId: z.string().min(1),
+  categoryId: shortId,
   // Se true, cria uma regra: próximas transações com a mesma descrição caem nessa categoria
   remember: z.boolean().default(false),
 });
@@ -171,12 +228,8 @@ export type CategorizeBody = z.infer<typeof categorizeBody>;
 
 export const updateTransactionBody = z.object({
   isInternalTransfer: z.boolean().optional(),
-  description: z.string().trim().min(1, 'Diz o que foi').optional(),
-  amountInCents: z
-    .number()
-    .int()
-    .refine((n) => n !== 0, 'Valor precisa ser diferente de zero')
-    .optional(),
+  description: z.string().trim().min(1, 'Diz o que foi').max(140, 'Descrição longa demais').optional(),
+  amountInCents: centsMoney.refine((n) => n !== 0, 'Valor precisa ser diferente de zero').optional(),
   occurredAt: z.iso.date().optional(),
   /** Texto vazio ou null apaga a anotação. Pode ser editada também em transação do banco. */
   note: z.string().trim().max(NOTE_MAX, `Anotação até ${NOTE_MAX} caracteres`).nullable().optional(),
@@ -186,7 +239,7 @@ export type UpdateTransactionBody = z.infer<typeof updateTransactionBody>;
 export const createManualAccountBody = z.object({
   name: z.string().trim().min(2, 'Nome muito curto').max(40, 'Nome muito longo'),
   type: z.enum(['BANK', 'CREDIT']),
-  balanceInCents: z.number().int().default(0),
+  balanceInCents: centsMoney.default(0),
 });
 export type CreateManualAccountBody = z.infer<typeof createManualAccountBody>;
 
@@ -379,7 +432,8 @@ export const lessonIdParam = z.object({ lessonId: z.string().regex(/^m\d+-l\d+$/
 export type LessonProgressResponse = { done: string[]; streakDays: number; doneToday: number; bonusXp: number };
 
 // Jogos: Tribunal do Tostão e Batalhas
-export const tribunalVoteBody = z.object({ caseId: z.string().min(1), choice: z.number().int().min(0).max(3) });
+// Todo caso do Tribunal tem exatamente 2 opções: 0 ou 1.
+export const tribunalVoteBody = z.object({ caseId: shortId, choice: z.number().int().min(0).max(1) });
 export type TribunalResponse = {
   case: { id: string; title: string; story: string; question: string; options: string[] };
   endsAt: string;
@@ -407,7 +461,33 @@ export const chatBody = z.object({
 });
 export type ChatMessageDTO = { id: string; role: 'user' | 'assistant'; content: string; createdAt: string };
 export type ChatHistoryResponse = { messages: ChatMessageDTO[] };
-export type ChatReplyResponse = { question: ChatMessageDTO; reply: ChatMessageDTO; remainingToday: number };
+/**
+ * Ação que a IA PROPÔS e que só vale depois do "confirmar" da pessoa (nada é gravado antes disso).
+ * Vive 5 minutos no servidor; confirmar ou cancelar é de uso único.
+ */
+export type PendingActionDTO = {
+  id: string;
+  kind: 'registrar_transacao';
+  summary: string;
+  description: string;
+  amountInCents: number;
+  type: 'saida' | 'entrada';
+  categoryName: string | null;
+  date: string; // YYYY-MM-DD
+  expiresAt: string;
+};
+export type ChatReplyResponse = {
+  question: ChatMessageDTO;
+  reply: ChatMessageDTO;
+  remainingToday: number;
+  pendingAction: PendingActionDTO | null;
+};
+export const pendingActionBody = z.object({ actionId: z.string().min(8).max(64) });
+export type ConfirmPendingActionResponse = { ok: true; message: string; transactionId?: string };
+
+// Consentimentos (LGPD). Hoje só o uso de IA; vira tabela UserConsent na Fase 1.
+export const consentsBody = z.object({ aiConsent: z.boolean() });
+export type ConsentsResponse = { aiConsentAt: string | null };
 
 // Importar extrato (OFX/CSV)
 export const importStatementBody = z.object({
@@ -435,11 +515,7 @@ export const goalBody = z.object({
   kind: z.enum(['reserva', 'viagem', 'sair-do-vermelho', 'outro']),
   label: z.string().trim().max(60).nullable().default(null),
   amountInCents: cents.nullable().default(null),
-  deadline: z
-    .string()
-    .regex(/^\d{4}-\d{2}$/)
-    .nullable()
-    .default(null),
+  deadline: z.string().regex(MONTH_PATTERN, 'Use AAAA-MM (mês de 01 a 12)').nullable().default(null),
   savedInCents: cents.optional(),
 });
 export type Goal = z.infer<typeof goalBody>;
@@ -465,6 +541,11 @@ export const financialPlanBody = z.object({
       advance: z.object({ day, amountInCents: cents }).nullable().default(null),
       /** Padrão da descrição no extrato (ex.: "TRANSF SALDO C/SAL P/CC"). */
       pattern: z.string().trim().max(120).nullable().default(null),
+    })
+    // O adiantamento é parte do salário: não pode passar do total.
+    .refine((s) => !s.advance || s.advance.amountInCents <= s.amountInCents, {
+      message: 'O adiantamento não pode ser maior que o salário',
+      path: ['advance'],
     })
     .nullable(),
   otherIncomes: z
@@ -597,7 +678,7 @@ export type ForecastResponse = {
   base?: SpendingBase | null;
 };
 /** Quantas pendentes a IA categorizou (das que ela olhou). */
-export type AutoCategorizeResponse = { categorized: number; asked: number };
+export type AutoCategorizeResponse = { categorized: number; asked: number; skipped?: 'consent' | 'quota' };
 
 // ---------- Missões, ofensiva, amigos, avisos e resumo da semana ----------
 /** O que conta como missão feita. "visita:*" vem das telas que a missão do dia manda abrir. */
@@ -653,9 +734,24 @@ export type WeeklyResponse = {
   streakDays: number;
 };
 
+// A allowlist de hosts do Web Push fica na API (apps/api/src/lib/push-endpoint.ts). Aqui só o formato.
+const httpsNoCredentials = (raw: string) => {
+  try {
+    const u = new URL(raw);
+    return u.protocol === 'https:' && !u.username && !u.password && !u.port;
+  } catch {
+    return false;
+  }
+};
+const base64url = /^[A-Za-z0-9_-]+={0,2}$/;
+
 export const pushSubscriptionBody = z.object({
-  endpoint: z.string().url().max(1000),
-  keys: z.object({ p256dh: z.string().min(1).max(200), auth: z.string().min(1).max(100) }),
+  endpoint: z.string().url().max(1000).refine(httpsNoCredentials, 'Endpoint de push inválido'),
+  keys: z.object({
+    // p256dh = ponto P-256 sem compressão (65 bytes ≈ 87 chars); auth = 16 bytes ≈ 22 chars.
+    p256dh: z.string().min(80).max(100).regex(base64url, 'Chave inválida'),
+    auth: z.string().min(16).max(32).regex(base64url, 'Chave inválida'),
+  }),
 });
 export const pushUnsubscribeBody = z.object({ endpoint: z.string().url().max(1000) });
 export type PushKeyResponse = { publicKey: string | null; subscribed: number };

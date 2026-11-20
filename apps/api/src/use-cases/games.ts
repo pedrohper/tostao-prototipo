@@ -130,23 +130,21 @@ export class GamesUseCase {
     const state = await this.battles(userId);
     if (state.urubu.status === 'bloqueada') throw new AppError('Primeiro vence o Tigrinho.', 400);
     if (!URUBU_STEPS.some((s) => s.id === stepId)) throw new AppError('Passo inválido.', 400);
-    const b = (await this.repos.games.findBattle(userId, 'urubu')) ?? {
-      userId,
-      kind: 'urubu' as const,
-      status: 'ativa' as const,
-      startedAt: this.now(),
-      endedAt: null,
-      steps: [],
-    };
-    const steps = new Set(b.steps);
-    if (done) steps.add(stepId);
-    else steps.delete(stepId);
-    const all = URUBU_STEPS.every((s) => steps.has(s.id));
-    await this.repos.games.saveBattle({
-      ...b,
-      steps: [...steps],
-      status: all ? 'vencida' : 'ativa',
-      endedAt: all ? this.now() : null,
+    // Lock otimista: dois toques seguidos em passos diferentes não apagam um ao outro.
+    await this.repos.games.mutateBattle(userId, 'urubu', (current) => {
+      const b = current ?? {
+        userId,
+        kind: 'urubu' as const,
+        status: 'ativa' as const,
+        startedAt: this.now(),
+        endedAt: null,
+        steps: [],
+      };
+      const steps = new Set(b.steps);
+      if (done) steps.add(stepId);
+      else steps.delete(stepId);
+      const all = URUBU_STEPS.every((s) => steps.has(s.id));
+      return { ...b, steps: [...steps], status: all ? 'vencida' : 'ativa', endedAt: all ? this.now() : null };
     });
     return this.battles(userId);
   }

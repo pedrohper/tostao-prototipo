@@ -1,40 +1,45 @@
-import { createHash, randomBytes } from 'node:crypto';
 import { NextResponse, type NextRequest } from 'next/server';
+import { clientIpFromHeaders, forwardedForHeader } from '@/lib/client-ip';
 import type { OAuthStartResponse } from '@tostao/contracts';
 import {
   API_URL,
-  OAUTH_COOKIE,
+  misconfigured,
   parseProvider,
   redirectWithOAuthError,
   resolvePublicOrigin,
   sanitizeFrom,
-  type OAuthCookiePayload,
+  sanitizeInviteCode,
+  setOAuthCookie,
+  signOAuthCookie,
 } from '@/lib/oauth';
 
 export async function GET(request: NextRequest, context: { params: Promise<{ provider: string }> }) {
   const { provider: rawProvider } = await context.params;
   const provider = parseProvider(rawProvider);
-  const { origin, isHttps } = resolvePublicOrigin(request);
+  const resolved = resolvePublicOrigin(request);
+  if (!resolved) return misconfigured();
+  const { origin, isHttps } = resolved;
   const from = sanitizeFrom(request.nextUrl.searchParams.get('from'));
-  const inviteCode = request.nextUrl.searchParams.get('convite')?.trim() || undefined;
+  const inviteCode = sanitizeInviteCode(request.nextUrl.searchParams.get('convite'));
 
   if (!provider) {
     return redirectWithOAuthError(origin, from, 'oauth_failed', inviteCode, 302);
   }
 
-  const state = randomBytes(32).toString('base64url');
-  const nonce = randomBytes(32).toString('base64url');
-  const codeVerifier = provider === 'google' ? randomBytes(32).toString('base64url') : undefined;
-  const codeChallenge = codeVerifier ? createHash('sha256').update(codeVerifier).digest('base64url') : undefined;
   const redirectUri = `${origin}/api/auth/${provider}/callback`;
 
+  // state, nonce e PKCE são gerados e guardados pela API (uso único, 5 min). Aqui só vem o state de volta.
   let apiRes: Response;
   try {
     apiRes = await fetch(`${API_URL}/auth/oauth/start`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ provider, redirectUri, state, nonce, codeChallenge }),
+      headers: {
+        'content-type': 'application/json',
+        ...forwardedForHeader(clientIpFromHeaders((n) => request.headers.get(n))),
+      },
+      body: JSON.stringify({ provider, redirectUri, inviteCode, from }),
       cache: 'no-store',
+      signal: AbortSignal.timeout(10_000),
     });
   } catch {
     return redirectWithOAuthError(origin, from, 'oauth_failed', inviteCode, 302);
@@ -47,24 +52,11 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pro
     return redirectWithOAuthError(origin, from, 'oauth_failed', inviteCode, 302);
   }
 
-  const { url } = (await apiRes.json()) as OAuthStartResponse;
-  const payload: OAuthCookiePayload = {
-    provider,
-    state,
-    nonce,
-    codeVerifier,
-    from,
-    inviteCode,
-  };
+  const { url, state } = (await apiRes.json()) as OAuthStartResponse;
+  const signed = signOAuthCookie({ provider, state, from, inviteCode });
+  if (!signed) return misconfigured();
 
   const response = NextResponse.redirect(url, 302);
-  // Apple usa response_mode=form_post (POST cross-site): precisa de SameSite=None + Secure em HTTPS.
-  response.cookies.set(OAUTH_COOKIE, JSON.stringify(payload), {
-    httpOnly: true,
-    sameSite: provider === 'apple' && isHttps ? 'none' : 'lax',
-    secure: isHttps,
-    path: '/api/auth',
-    maxAge: 60 * 10,
-  });
+  setOAuthCookie(response, signed, provider, isHttps);
   return response;
 }

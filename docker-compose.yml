@@ -9,5 +9,11 @@ services:
       - '127.0.0.1:${DB_PORT:-5432}:5432' # só acessível de dentro da máquina; DB_PORT=5433 se a 5432 estiver ocupada
     volumes:
       - tostao-db:/var/lib/postgresql/data
+  # State do login social e limite de tentativas. Efêmero de propósito (tudo expira sozinho).
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--save', '', '--appendonly', 'no']
+    ports:
+      - '127.0.0.1:${REDIS_PORT:-6379}:6379' # só acessível de dentro da máquina
 volumes:
   tostao-db:

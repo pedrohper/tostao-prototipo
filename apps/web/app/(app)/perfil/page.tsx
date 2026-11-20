@@ -5,6 +5,7 @@ import { BackLink, Eyebrow, PageFrame } from '@/components/ui';
 import { api } from '@/lib/api';
 import { resolveBackHref } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
+import { logout } from '@/lib/session-actions';
 import { modules } from '@/lib/lessons';
 import { NO_PROGRESS, xpFrom } from '@/lib/xp';
 
@@ -90,6 +91,17 @@ export default async function PerfilPage({ searchParams }: { searchParams?: Prom
 
       {/* Gestão da conta */}
       <section className="flex flex-col divide-y divide-linha rounded-[22px] border border-linha bg-cartao px-[18px] py-1">
+        {!profile.emailVerifiedAt && (
+          <Link
+            href="/verificar-email"
+            className="flex min-h-12 items-center justify-between gap-3 text-[15px] font-semibold text-laranja-texto no-underline hover:opacity-80"
+          >
+            <span>{t.profile.verifyEmailLink}</span>
+            <span className="shrink-0" aria-hidden="true">
+              ›
+            </span>
+          </Link>
+        )}
         <Link
           href="/aprender?voltar=/perfil"
           className="flex min-h-12 items-center justify-between gap-3 text-[15px] font-semibold text-tinta no-underline hover:opacity-80"
@@ -117,12 +129,14 @@ export default async function PerfilPage({ searchParams }: { searchParams?: Prom
             ›
           </span>
         </Link>
-        <a
-          href="/sair"
-          className="flex min-h-12 items-center text-[15px] font-semibold text-tinta-suave no-underline hover:text-tinta"
-        >
-          {t.profile.signOut}
-        </a>
+        <form action={logout}>
+          <button
+            type="submit"
+            className="flex min-h-12 w-full cursor-pointer items-center text-left text-[15px] font-semibold text-tinta-suave hover:text-tinta"
+          >
+            {t.profile.signOut}
+          </button>
+        </form>
       </section>
     </PageFrame>
   );

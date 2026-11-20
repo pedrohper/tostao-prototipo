@@ -2,6 +2,7 @@
 import { revalidatePath } from 'next/cache';
 import { urubuStepBody } from '@tostao/contracts';
 import { api } from '@/lib/api';
+import { orFallback } from '@/lib/rethrow';
 
 export async function startTigrinho() {
   await api('/battles/tigrinho/start', { method: 'POST', body: {} });
@@ -13,7 +14,9 @@ export async function toggleUrubuStep(form: FormData) {
   const id = String(form.get('stepId') ?? '');
   const body = urubuStepBody.safeParse({ done: form.get('done') === 'true' });
   if (!id || !body.success) return;
-  await api(`/battles/urubu/steps/${encodeURIComponent(id)}`, { method: 'PUT', body: body.data }).catch(() => null);
+  await api(`/battles/urubu/steps/${encodeURIComponent(id)}`, { method: 'PUT', body: body.data }).catch(
+    orFallback(null),
+  );
   revalidatePath('/batalha');
   revalidatePath('/aprender');
 }

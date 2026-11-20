@@ -7,13 +7,14 @@ import { api } from '@/lib/api';
 import { NO_PROGRESS, xpFrom } from '@/lib/xp';
 import type { LessonProgressResponse, MissionsResponse, TostaoAutoResponse } from '@tostao/contracts';
 import { getLocale } from '@/lib/i18n-server';
+import { orFallback } from '@/lib/rethrow';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   if (!(await getToken())) redirect('/entrar');
   const [progress, auto, missions, locale] = await Promise.all([
-    api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
-    api<TostaoAutoResponse>('/tostao/auto').catch(() => null),
-    api<MissionsResponse>('/missions').catch(() => null),
+    api<LessonProgressResponse>('/progress').catch(orFallback(NO_PROGRESS)),
+    api<TostaoAutoResponse>('/tostao/auto').catch(orFallback(null)),
+    api<MissionsResponse>('/missions').catch(orFallback(null)),
     getLocale(),
   ]);
   const { xp, level } = xpFrom(progress.done.length, progress.bonusXp ?? 0);

@@ -17,9 +17,9 @@ describe('Apagar minha conta', () => {
     const reg = await app.inject({
       method: 'POST',
       url: '/users',
-      payload: { name: 'Pedro', email: 'p@x.com', password: '12345678' },
+      payload: { name: 'Pedro', email: 'p@x.com', password: '12345678', acceptedTerms: true },
     });
-    const auth = { authorization: `Bearer ${reg.json().token}` };
+    const auth = { authorization: `Bearer ${reg.json().accessToken}` };
     await app.inject({ method: 'POST', url: '/connections', headers: auth, payload: { itemId: 'item-de-exemplo' } });
 
     const wrong = await app.inject({
@@ -37,7 +37,8 @@ describe('Apagar minha conta', () => {
       headers: auth,
       payload: { password: '12345678' },
     });
-    expect(ok.statusCode).toBe(204);
+    expect(ok.statusCode).toBe(200);
+    expect(ok.json()).toEqual({ deleted: true, providerFailures: 0 });
     expect(deleted).toEqual(['item-de-exemplo']);
     expect(await repos.users.count()).toBe(0);
 
@@ -45,8 +46,34 @@ describe('Apagar minha conta', () => {
     const again = await app.inject({
       method: 'POST',
       url: '/users',
-      payload: { name: 'Pedro', email: 'p@x.com', password: '12345678' },
+      payload: { name: 'Pedro', email: 'p@x.com', password: '12345678', acceptedTerms: true },
     });
     expect(again.statusCode).toBe(201);
+  });
+
+  it('avisa quando o provedor falha ao desligar o banco, mas apaga a conta mesmo assim', async () => {
+    const repos = makeInMemoryRepositories();
+    const bank: BankGateway = new FakeBankGateway();
+    bank.deleteItem = async () => {
+      throw new Error('Pluggy fora do ar');
+    };
+    const app = await buildApp({ repos, bank, jwtSecret: 'segredo-de-teste-123', webOrigin: '*' });
+    const reg = await app.inject({
+      method: 'POST',
+      url: '/users',
+      payload: { name: 'Pedro', email: 'f@x.com', password: '12345678', acceptedTerms: true },
+    });
+    const auth = { authorization: `Bearer ${reg.json().accessToken}` };
+    await app.inject({ method: 'POST', url: '/connections', headers: auth, payload: { itemId: 'item-de-exemplo' } });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/me/delete',
+      headers: auth,
+      payload: { password: '12345678' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ deleted: true, providerFailures: 1 });
+    expect(await repos.users.count()).toBe(0);
   });
 });

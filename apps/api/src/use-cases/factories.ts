@@ -12,7 +12,10 @@ import { GamesUseCase } from './games.js';
 import { EngagementUseCase } from './engagement.js';
 import { ImportStatementUseCase } from './import-statement.js';
 import { CreateInviteUseCase, ListInvitesUseCase } from './invites.js';
-import { ResetPasswordUseCase } from './password-reset.js';
+import { RequestPasswordResetUseCase, ResetPasswordUseCase } from './password-reset.js';
+import { SessionsUseCase } from './sessions.js';
+import { BackgroundTasks, SendEmailVerificationUseCase, VerifyEmailUseCase } from './email-verification.js';
+import { FakeEmailGateway, type EmailGateway } from '../gateways/email-gateway.js';
 import { ResourceNotFoundError } from '../domain/errors.js';
 import { CreateCategoryUseCase, DeleteCategoryUseCase } from './categories.js';
 // Monta os use cases com as dependências certas. É a única parte que "sabe" de tudo.
@@ -23,7 +26,11 @@ import { FakeAiGateway, type AiGateway } from '../gateways/ai-gateway.js';
 import { FakeWhatsAppGateway, type WhatsAppGateway } from '../gateways/whatsapp-gateway.js';
 import { DisabledOAuthGateway, type OAuthGateway } from '../gateways/oauth-gateway.js';
 import { HandleWhatsAppMessageUseCase, WhatsAppLinkUseCase } from './whatsapp.js';
+import { testOnlyKeyValueStore, type KeyValueStore } from '../lib/redis.js';
 import { AskTostaoUseCase } from './ask-tostao.js';
+import { SetAiConsentUseCase } from './ai-consent.js';
+import { PendingActionUseCase } from './pending-actions.js';
+import { PendingActionStore } from '../services/pending-actions.js';
 import { RegisterUserUseCase } from './register-user.js';
 import { AuthenticateUseCase } from './authenticate.js';
 import { AuthenticateOAuthUseCase } from './authenticate-oauth.js';
@@ -68,7 +75,13 @@ export type Deps = {
   ai?: AiGateway;
   whatsapp?: WhatsAppGateway;
   oauth?: OAuthGateway;
+  /** Estado de curta duração e limites de tentativa (Redis). Memória só em NODE_ENV=test. */
+  kv?: KeyValueStore;
   chatDailyLimit?: number;
+  /** E-mail transacional (Resend em produção, Fake em dev/teste). */
+  email?: EmailGateway;
+  /** Origem pública do site (WEB_ORIGIN): base dos links enviados por e-mail. */
+  appUrl?: string;
 };
 
 export function makeUseCases({
@@ -77,18 +90,31 @@ export function makeUseCases({
   ai = new FakeAiGateway(),
   whatsapp = new FakeWhatsAppGateway(),
   oauth = new DisabledOAuthGateway(),
+  kv = testOnlyKeyValueStore(),
   chatDailyLimit = 40,
+  email = new FakeEmailGateway(),
+  appUrl = '',
 }: Deps) {
+  const emailTasks = new BackgroundTasks();
+  const sendEmailVerification = new SendEmailVerificationUseCase(repos, email, appUrl, emailTasks);
   const sync = new SyncBankConnectionUseCase({ ...repos, bank });
-  const autoCategorize = new AutoCategorizeUseCase(repos, ai);
-  const askTostao = new AskTostaoUseCase(repos, ai, chatDailyLimit);
+  const autoCategorize = new AutoCategorizeUseCase(repos, ai, kv);
+  const pendingStore = new PendingActionStore(kv);
+  const askTostao = new AskTostaoUseCase(repos, ai, chatDailyLimit, () => new Date(), kv, pendingStore);
+  const pendingActions = new PendingActionUseCase(pendingStore, repos);
   const createManualTransaction = new CreateManualTransactionUseCase(repos);
   const runTostaoChecks = new RunTostaoChecksUseCase(repos);
   return {
-    registerUser: new RegisterUserUseCase(repos),
+    registerUser: new RegisterUserUseCase(repos, sendEmailVerification),
+    sessions: new SessionsUseCase(repos),
+    sendEmailVerification,
+    verifyEmail: new VerifyEmailUseCase(repos),
+    requestPasswordReset: new RequestPasswordResetUseCase(repos, email, appUrl, emailTasks),
+    /** Espera os e-mails em andamento (testes, scripts, desligamento). */
+    drainEmails: () => emailTasks.drain(),
     createInvite: new CreateInviteUseCase(repos),
     listInvites: new ListInvitesUseCase(repos),
-    resetPassword: new ResetPasswordUseCase(repos),
+    resetPassword: new ResetPasswordUseCase(repos, email, emailTasks),
     authenticate: new AuthenticateUseCase(repos.users),
     authenticateOAuth: new AuthenticateOAuthUseCase(repos, oauth),
     getProfile: new GetProfileUseCase(repos.users, repos.connections, repos.accounts, repos.oauthAccounts),
@@ -96,7 +122,7 @@ export function makeUseCases({
     connectBank: new ConnectBankUseCase(repos.connections, bank, sync),
     institutionLogos: new InstitutionLogosUseCase(bank),
     deleteTransaction: new DeleteTransactionUseCase(repos),
-    disconnectBank: new DisconnectBankUseCase(repos.connections, bank),
+    disconnectBank: new DisconnectBankUseCase(repos, bank),
     deleteAccount: new DeleteAccountUseCase(repos, bank),
     createConnectToken: {
       execute: async ({ userId }: { userId: string }) => ({ connectToken: await bank.createConnectToken(userId) }),
@@ -144,12 +170,22 @@ export function makeUseCases({
     importStatement: new ImportStatementUseCase(repos),
     autoCategorize,
     askTostao,
+    pendingActions,
+    setAiConsent: new SetAiConsentUseCase(repos),
     whatsappLink: new WhatsAppLinkUseCase(repos, whatsapp),
-    whatsappMessage: new HandleWhatsAppMessageUseCase(repos, whatsapp, askTostao, undefined, {
-      create: createManualTransaction,
-      categorize: autoCategorize,
+    whatsappMessage: new HandleWhatsAppMessageUseCase(
       repos,
-    }),
+      whatsapp,
+      askTostao,
+      undefined,
+      {
+        create: createManualTransaction,
+        categorize: autoCategorize,
+        repos,
+      },
+      kv,
+      pendingActions,
+    ),
     chatHistory: {
       execute: async ({ userId }: { userId: string }) => ({ messages: await repos.chat.listRecent(userId, 60) }),
     },

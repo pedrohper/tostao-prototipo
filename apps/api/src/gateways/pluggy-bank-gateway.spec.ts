@@ -126,6 +126,92 @@ describe('PluggyBankGateway', () => {
   });
 });
 
+describe('PluggyBankGateway: Item e connect token (segurança)', () => {
+  const ITEM = '3f1c2a9e-1b2c-4d5e-8f90-123456789abc';
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it('fetchItem usa encodeURIComponent e devolve clientUserId e isSandbox', async () => {
+    const calls: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        calls.push(url);
+        if (url.endsWith('/auth')) return json({ apiKey: 'chave' });
+        return json({ id: ITEM, clientUserId: 'user-42', connector: { name: 'Nubank', isSandbox: true } });
+      }),
+    );
+    const item = await new PluggyBankGateway('id', 'secret').fetchItem(ITEM);
+    expect(item).toEqual({ institution: 'Nubank', clientUserId: 'user-42', isSandbox: true });
+    expect(calls[1]).toBe(`https://api.pluggy.ai/items/${encodeURIComponent(ITEM)}`);
+  });
+
+  it('fetchItem sem clientUserId no Item devolve null (e sandbox falso por padrão)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url.endsWith('/auth') ? json({ apiKey: 'chave' }) : json({ id: ITEM, connector: { name: 'Nubank' } }),
+      ),
+    );
+    expect(await new PluggyBankGateway('id', 'secret').fetchItem(ITEM)).toEqual({
+      institution: 'Nubank',
+      clientUserId: null,
+      isSandbox: false,
+    });
+  });
+
+  it('path injection: itemId fora de UUID v4 nem chega no Pluggy (a X-API-KEY não sai)', async () => {
+    const fetchMock = vi.fn(async () => json({}));
+    vi.stubGlobal('fetch', fetchMock);
+    const gw = new PluggyBankGateway('id', 'secret');
+    for (const bad of ['../me', `${ITEM}/../x`, `${ITEM}?x=1`, 'abc12345', 'item-de-exemplo', '..%2fconnectors']) {
+      await expect(gw.fetchItem(bad), bad).rejects.toThrow('Item ID inválido');
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  const connectBody = async (gw: PluggyBankGateway) => {
+    let sent: { options: Record<string, unknown> } | null = null;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: { body?: string }) => {
+        if (url.endsWith('/auth')) return json({ apiKey: 'chave' });
+        sent = JSON.parse(init!.body!);
+        return json({ accessToken: 'tok' });
+      }),
+    );
+    await gw.createConnectToken('user-42');
+    return sent!.options;
+  };
+
+  it('em produção o connect token vai com includeSandbox: false', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    const options = await connectBody(new PluggyBankGateway('id', 'secret'));
+    expect(options).toMatchObject({ clientUserId: 'user-42', includeSandbox: false });
+  });
+
+  it('fora de produção libera sandbox; a opção explícita vence o NODE_ENV', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    expect((await connectBody(new PluggyBankGateway('id', 'secret'))).includeSandbox).toBe(true);
+    vi.stubEnv('NODE_ENV', 'production');
+    const forced = new PluggyBankGateway('id', 'secret', { includeSandbox: true });
+    expect((await connectBody(forced)).includeSandbox).toBe(true);
+    expect(forced.allowsSandbox).toBe(true);
+    expect(new PluggyBankGateway('id', 'secret').allowsSandbox).toBe(false);
+  });
+
+  it('falha do widget não menciona o trial do dashboard', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => (url.endsWith('/auth') ? json({ apiKey: 'chave' }) : json({}, 403))),
+    );
+    const err = await new PluggyBankGateway('id', 'secret').createConnectToken('u').catch((e) => e);
+    expect(err.message).not.toMatch(/trial|dashboard/i);
+  });
+});
+
 import { cleanPluggyDescription, pluggyDate } from './pluggy-bank-gateway.js';
 describe('data e descrição da Pluggy', () => {
   it('dia sem hora (meia-noite UTC) fica no mesmo dia em Brasília', () => {

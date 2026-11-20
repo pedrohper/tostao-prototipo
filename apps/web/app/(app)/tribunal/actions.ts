@@ -2,6 +2,7 @@
 import { revalidatePath } from 'next/cache';
 import { tribunalVoteBody, type TribunalResponse } from '@tostao/contracts';
 import { api, ApiError } from '@/lib/api';
+import { rethrowIfRedirect } from '@/lib/rethrow';
 
 export async function voteTribunal(
   caseId: string,
@@ -14,6 +15,7 @@ export async function voteTribunal(
     revalidatePath('/aprender');
     return { result };
   } catch (e) {
+    rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
 }

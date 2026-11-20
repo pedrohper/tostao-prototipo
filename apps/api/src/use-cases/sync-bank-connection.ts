@@ -15,7 +15,7 @@ const OVERLAP_DAYS = 3; // depois: volta 3 dias, porque o banco às vezes lança
 const FUTURE_DAYS = 400; // cartão: parcelas futuras vêm com data lá na frente
 const CARD_BACK_DAYS = 45;
 
-type Deps = Pick<Repositories, 'connections' | 'accounts' | 'transactions' | 'rules' | 'reconciledNotes'> & {
+type Deps = Pick<Repositories, 'connections' | 'accounts' | 'transactions' | 'rules' | 'reconciledNotes' | 'tx'> & {
   bank: BankGateway;
   now?: () => Date;
 };
@@ -62,7 +62,13 @@ export class SyncBankConnectionUseCase {
         if (fingerprint && (await this.belongsToOlderConnection(connection, fingerprint))) {
           // Mesmo cartão já vem de uma conexão mais antiga: ignora este e apaga a cópia, se ficou de um sync anterior.
           const copy = (await accounts.listByUser(connection.userId)).find((a) => a.externalId === remote.externalId);
-          if (copy) await accounts.delete(copy.id);
+          if (copy) {
+            // A FK é SET NULL: sem apagar os lançamentos do banco dessa cópia antes, eles ficariam soltos (duplicados).
+            await this.deps.tx(async (r) => {
+              await r.transactions.deleteBankByAccount(connection.userId, copy.id);
+              await r.accounts.delete(copy.id);
+            });
+          }
           continue;
         }
         keptAccounts++;

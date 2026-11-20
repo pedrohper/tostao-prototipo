@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { financialPlanBody } from '@tostao/contracts';
 import { api, ApiError } from '@/lib/api';
+import { rethrowIfRedirect } from '@/lib/rethrow';
 
 export type PlanState = { error?: string };
 
@@ -10,7 +11,8 @@ export async function savePlan(_: PlanState, form: FormData): Promise<PlanState>
   let raw: unknown;
   try {
     raw = JSON.parse(String(form.get('plan') ?? '{}'));
-  } catch {
+  } catch (caught) {
+    rethrowIfRedirect(caught);
     return { error: 'Algo deu errado.' };
   }
   const parsed = financialPlanBody.safeParse(raw);
@@ -18,6 +20,7 @@ export async function savePlan(_: PlanState, form: FormData): Promise<PlanState>
   try {
     await api('/plan', { method: 'PUT', body: parsed.data });
   } catch (e) {
+    rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
   revalidatePath('/', 'layout');

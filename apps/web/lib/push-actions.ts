@@ -1,6 +1,7 @@
 'use server';
 import { pushSubscriptionBody } from '@tostao/contracts';
 import { api } from './api';
+import { orFallback } from './rethrow';
 
 export async function savePushSubscription(sub: unknown) {
   const parsed = pushSubscriptionBody.safeParse(sub);
@@ -10,5 +11,5 @@ export async function savePushSubscription(sub: unknown) {
 }
 
 export async function deletePushSubscription(endpoint: string) {
-  await api('/push/unsubscribe', { method: 'POST', body: { endpoint } }).catch(() => {});
+  await api('/push/unsubscribe', { method: 'POST', body: { endpoint } }).catch(orFallback(undefined));
 }

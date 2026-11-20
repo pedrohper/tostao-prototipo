@@ -14,12 +14,14 @@ import {
   type SubscriptionsResponse,
   ignoreSubscriptionBody,
   createCategoryBody,
+  idParam,
 } from '@tostao/contracts';
 import type { UseCases } from '../../use-cases/factories.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
 import { presentTransaction } from '../presenters.js';
+import type { Limiters } from '../rate-limits.js';
 
-export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
+export function transactionRoutes(app: FastifyInstance, uc: UseCases, limits: Limiters) {
   const checkLater = (userId: string) => {
     void uc.runTostaoChecks.execute({ userId }).catch((err) => app.log.warn({ err }, 'rotina automática falhou'));
   };
@@ -53,7 +55,7 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
   });
 
   app.delete('/categories/:id', { onRequest: verifyJwt }, async (request, reply) => {
-    const { id } = z.object({ id: z.string().min(1) }).parse(request.params);
+    const { id } = idParam.parse(request.params);
     await uc.deleteCategory.execute({ userId: request.user.sub, categoryId: id });
     return reply.status(204).send();
   });
@@ -103,7 +105,7 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
   });
 
   app.get('/transactions/:id', { onRequest: verifyJwt }, async (request) => {
-    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const { id } = idParam.parse(request.params);
     const { transaction, rulePattern } = await uc.getTransaction.execute({
       userId: request.user.sub,
       transactionId: id,
@@ -124,13 +126,13 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
 
   // Apaga um lançamento anotado (com ?serie=1, também os próximos do "todo mês"/parcelado)
   app.delete('/transactions/:id', { onRequest: verifyJwt }, async (request) => {
-    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const { id } = idParam.parse(request.params);
     const { serie } = z.object({ serie: z.enum(['0', '1']).optional() }).parse(request.query);
     return uc.deleteTransaction.execute({ userId: request.user.sub, transactionId: id, series: serie === '1' });
   });
 
   app.patch('/transactions/:id', { onRequest: verifyJwt }, async (request) => {
-    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const { id } = idParam.parse(request.params);
     const body = updateTransactionBody.parse(request.body);
     const { transaction } = await uc.updateTransaction.execute({
       ...body,
@@ -142,7 +144,7 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
   });
 
   app.patch('/transactions/:id/category', { onRequest: verifyJwt }, async (request) => {
-    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const { id } = idParam.parse(request.params);
     const body = categorizeBody.parse(request.body);
     const r = await uc.categorizeTransaction.execute({ ...body, userId: request.user.sub, transactionId: id });
     checkLater(request.user.sub);
@@ -150,9 +152,17 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
   });
 
   // "Deixa o Tostão categorizar": a IA tenta as pendentes agora (as que ela não souber continuam pendentes)
-  app.post('/transactions/auto-categorize', { onRequest: verifyJwt }, async (request) => {
-    const r = (await uc.autoCategorize.execute({ userId: request.user.sub })) satisfies AutoCategorizeResponse;
-    checkLater(request.user.sub);
-    return r;
-  });
+  app.post(
+    '/transactions/auto-categorize',
+    { onRequest: verifyJwt, preHandler: limits.autoCategorizeByUser },
+    async (request) => {
+      const r = (await uc.autoCategorize.execute({
+        userId: request.user.sub,
+        source: 'user',
+        requireConsent: true,
+      })) satisfies AutoCategorizeResponse;
+      checkLater(request.user.sub);
+      return r;
+    },
+  );
 }

@@ -1,4 +1,5 @@
 import { getDictionary, type Locale } from './i18n';
+import { safeInternalPath } from './safe-redirect';
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -7,14 +8,65 @@ export function money(cents: number) {
   return brl.format(cents / 100).replace(/ /g, ' ');
 }
 
-/** "R$ 1.234,56" | "1234,56" | "12" -> cents. Returns null if unparseable. */
+/**
+ * Texto digitado pela pessoa -> centavos (Int). Devolve null se não der pra entender com segurança.
+ * Aceita BR ("R$ 1.234,56", "12,50") e US ("1,234.56", "12.50"). Regras:
+ * - com "," e ".": o ÚLTIMO separador é o decimal, o outro é milhar ("1.234,56" e "1,234.56" = 1234,56);
+ * - só ",": decimal com 1 ou 2 dígitos ("12,50"); "1,234,567" (grupos de 3) é milhar;
+ * - só ".": "12.50" é decimal (1 ou 2 dígitos no fim); "1.500" e "1.234.567" são milhar (grupos de exatamente 3);
+ * - ambíguo ou fora do padrão (ex.: "1,500", "12.345,678", "1.5000", "0.500") -> null: melhor pedir de novo que errar 100x.
+ */
 export function parseMoney(text: string): number | null {
-  const clean = text
-    .replace(/[^\d,.-]/g, '')
-    .replace(/\./g, '')
-    .replace(',', '.');
-  const n = Number(clean);
-  return Number.isFinite(n) && clean !== '' ? Math.round(n * 100) : null;
+  const raw = text.replace(/R\$/gi, '').replace(/\s/g, '');
+  const negative = raw.startsWith('-');
+  const body = negative ? raw.slice(1) : raw;
+  if (!/^[\d.,]+$/.test(body) || !/\d/.test(body)) return null;
+
+  const group = (int: string, sep: string) => {
+    const parts = int.split(sep);
+    const ok =
+      parts.length === 1 || (/^[1-9]\d{0,2}$/.test(parts[0]!) && parts.slice(1).every((p) => /^\d{3}$/.test(p)));
+    return ok ? parts.join('') : null;
+  };
+
+  let int: string | null;
+  let frac = '';
+  const lastComma = body.lastIndexOf(',');
+  const lastDot = body.lastIndexOf('.');
+  if (lastComma >= 0 && lastDot >= 0) {
+    const dec = lastComma > lastDot ? ',' : '.';
+    const thousands = dec === ',' ? '.' : ',';
+    const at = body.lastIndexOf(dec);
+    if (body.indexOf(dec) !== at) return null; // dois decimais
+    frac = body.slice(at + 1);
+    int = group(body.slice(0, at), thousands);
+    if (int === null || !/^\d{1,2}$/.test(frac) || body.slice(0, at).includes(dec)) return null;
+  } else if (lastComma >= 0) {
+    if (body.indexOf(',') === lastComma) {
+      const [i = '', f = ''] = body.split(',');
+      if (!/^\d*$/.test(i) || !/^\d{1,2}$/.test(f)) return null; // "1,500" é ambíguo
+      int = i === '' ? '0' : i;
+      frac = f;
+    } else {
+      int = /^\d{1,3}(,\d{3})+$/.test(body) ? group(body, ',') : null; // "1,234,567"
+    }
+  } else if (lastDot >= 0) {
+    if (/^[1-9]\d{0,2}(\.\d{3})+$/.test(body)) {
+      int = group(body, '.'); // "1.500", "1.234.567"
+    } else if (/^\d*\.\d{1,2}$/.test(body)) {
+      [int = '0', frac = ''] = body.split('.');
+      if (int === '') int = '0';
+    } else {
+      return null;
+    }
+  } else {
+    int = body;
+  }
+  if (int === null) return null;
+
+  const cents = Number(int) * 100 + Number(frac.padEnd(2, '0'));
+  if (!Number.isSafeInteger(cents)) return null;
+  return negative ? -cents : cents;
 }
 
 export function currentMonth(now = new Date()) {
@@ -98,9 +150,5 @@ export function updatedTimeLabel(iso: string, locale: Locale = 'pt-BR') {
 
 /** Valida ?voltar= para evitar redirecionamento externo e padronizar a volta das sub-rotas. */
 export function resolveBackHref(raw: string | string[] | undefined | null, fallback: string): string {
-  const val = Array.isArray(raw) ? raw[0] : raw;
-  if (typeof val === 'string' && val.startsWith('/') && !val.startsWith('//')) {
-    return val;
-  }
-  return fallback;
+  return safeInternalPath(Array.isArray(raw) ? raw[0] : raw, fallback);
 }

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { PeopleResponse } from '@tostao/contracts';
 import { api } from '@/lib/api';
+import { erroDe } from '@/lib/erros';
 import { money, resolveBackHref, shortDate } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
 import { BackLink, Eyebrow, PageFrame } from '@/components/ui';
@@ -91,9 +92,9 @@ export default async function AcertosPage({
 
         <section className="flex min-w-0 flex-col gap-2.5 rounded-2xl border border-linha bg-cartao p-4">
           <Eyebrow>{p.formTitle}</Eyebrow>
-          {erro && (
+          {erroDe(erro) && (
             <p role="alert" className="rounded-xl bg-rosa px-3 py-2 text-sm font-medium">
-              {erro}
+              {erroDe(erro)}
             </p>
           )}
           <EntryForm people={r.people.map((x) => x.name)} t={p.entryForm} />

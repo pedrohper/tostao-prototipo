@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { setBudgetBody } from '@tostao/contracts';
 import { api, ApiError } from '@/lib/api';
 import { parseMoney } from '@/lib/format';
+import { rethrowIfRedirect } from '@/lib/rethrow';
 
 export type BudgetState = { error?: string; ok?: string };
 
@@ -16,6 +17,7 @@ export async function saveBudget(_: BudgetState, form: FormData): Promise<Budget
   try {
     await api(`/budgets/${encodeURIComponent(categoryId)}`, { method: 'PUT', body: parsed.data });
   } catch (e) {
+    rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
   revalidatePath('/', 'layout');

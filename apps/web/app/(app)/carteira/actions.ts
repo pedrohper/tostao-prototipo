@@ -10,11 +10,13 @@ import {
 } from '@tostao/contracts';
 import { api, ApiError } from '@/lib/api';
 import { parseMoney } from '@/lib/format';
+import { isSafePathSegment, safeInternalPath, safePathSegment } from '@/lib/safe-redirect';
+import { rethrowIfRedirect } from '@/lib/rethrow';
 
 export type ActionState = { error?: string };
 
 export async function categorize(_: ActionState, form: FormData): Promise<ActionState> {
-  const id = String(form.get('id'));
+  const id = safePathSegment(form.get('id'));
   const parsed = categorizeBody.safeParse({
     categoryId: form.get('categoryId') ?? '',
     remember: form.get('remember') === 'on',
@@ -23,10 +25,11 @@ export async function categorize(_: ActionState, form: FormData): Promise<Action
   try {
     await api(`/transactions/${id}/category`, { method: 'PATCH', body: parsed.data });
   } catch (e) {
+    rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
   revalidatePath('/', 'layout');
-  redirect(String(form.get('back') || '/carteira'));
+  redirect(safeInternalPath(form.get('back'), '/carteira'));
 }
 
 export async function createManual(_: ActionState, form: FormData): Promise<ActionState> {
@@ -46,31 +49,33 @@ export async function createManual(_: ActionState, form: FormData): Promise<Acti
   try {
     await api('/transactions', { method: 'POST', body: parsed.data });
   } catch (e) {
+    rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
   revalidatePath('/', 'layout');
   // Veio de outra tela (ex.: Anotações)? Volta pra ela. Senão, mostra o mês na Carteira.
-  const back = String(form.get('back') ?? '');
-  if (back.startsWith('/') && !back.startsWith('//') && back !== '/carteira') redirect(back);
+  const back = safeInternalPath(form.get('back'), '/carteira');
+  if (back !== '/carteira') redirect(back);
   redirect(`/carteira?mes=${parsed.data.occurredAt.slice(0, 7)}`);
 }
 
 /** Ocultar (ou mostrar de novo) uma conta, ex.: a poupança parada. Continua sincronizando, só some da tela e do saldo. */
 export async function setAccountHidden(form: FormData) {
-  const id = String(form.get('accountId') ?? '');
-  if (!id) return;
+  const id = form.get('accountId');
+  if (!isSafePathSegment(id)) return;
   try {
-    await api(`/accounts/${encodeURIComponent(id)}`, {
+    await api(`/accounts/${safePathSegment(id)}`, {
       method: 'PATCH',
       body: { hidden: form.get('hidden') === 'true' },
     });
-  } catch {
+  } catch (caught) {
+    rethrowIfRedirect(caught);
     /* se falhar, a conta só continua onde estava */
   }
   revalidatePath('/', 'layout');
 }
 
-export type AutoState = { message?: string };
+export type AutoState = { message?: string; needsConsent?: boolean };
 
 /** "Deixa o Tostão categorizar": a IA tenta as pendentes. Nome de pessoa e o que ela não souber continua pendente. */
 export async function autoCategorize(_: AutoState): Promise<AutoState> {
@@ -84,45 +89,52 @@ export async function autoCategorize(_: AutoState): Promise<AutoState> {
     return {
       message: `Categorizei ${r.categorized}. ${rest > 0 ? `${rest === 1 ? 'Sobrou 1' : `Sobraram ${rest}`} que só você sabe (Pix pra pessoa e afins).` : 'Confere se ficou certo.'}`,
     };
-  } catch {
+  } catch (e) {
+    rethrowIfRedirect(e);
+    // LGPD: sem o aceite do aviso de IA a API responde 403; o botão mostra o aviso em vez de um erro seco.
+    if (e instanceof ApiError && e.code === 'AI_CONSENT_REQUIRED') return { needsConsent: true };
+    if (e instanceof ApiError && e.status === 429) return { message: e.message };
     return { message: 'Não consegui agora. Tenta de novo daqui a pouco.' };
   }
 }
 
 /** Apaga um lançamento anotado à mão (com serie=1, também os próximos do "todo mês"/parcelado). */
 export async function apagarLancamento(form: FormData) {
-  const id = String(form.get('id') ?? '');
+  const id = form.get('id');
   const serie = form.get('serie') === '1';
-  const back = String(form.get('back') || '/carteira');
-  if (id) {
+  const back = safeInternalPath(form.get('back'), '/carteira');
+  if (isSafePathSegment(id)) {
     try {
-      await api(`/transactions/${encodeURIComponent(id)}${serie ? '?serie=1' : ''}`, { method: 'DELETE' });
-    } catch {
+      await api(`/transactions/${safePathSegment(id)}${serie ? '?serie=1' : ''}`, { method: 'DELETE' });
+    } catch (caught) {
+      rethrowIfRedirect(caught);
       /* se falhar, o lançamento continua lá */
     }
   }
   revalidatePath('/', 'layout');
-  redirect(back.startsWith('/') ? back : '/carteira');
+  redirect(back);
 }
 
 export async function toggleInternalTransfer(form: FormData) {
-  const id = String(form.get('id') ?? '');
+  const id = form.get('id');
   const isInternalTransfer = form.get('isInternalTransfer') === 'true';
-  const back = String(form.get('back') || '/carteira');
-  if (id) {
+  const back = safeInternalPath(form.get('back'), '/carteira');
+  if (isSafePathSegment(id)) {
     try {
-      await api(`/transactions/${encodeURIComponent(id)}`, { method: 'PATCH', body: { isInternalTransfer } });
-    } catch {
+      await api(`/transactions/${safePathSegment(id)}`, { method: 'PATCH', body: { isInternalTransfer } });
+    } catch (caught) {
+      rethrowIfRedirect(caught);
       /* se falhar, mantém o estado atual */
     }
   }
   revalidatePath('/', 'layout');
-  redirect(back.startsWith('/') ? back : '/carteira');
+  redirect(back);
 }
 
 export async function updateManualTransaction(_: ActionState, form: FormData): Promise<ActionState> {
-  const id = String(form.get('id') ?? '');
-  const back = String(form.get('back') || '/carteira');
+  const id = form.get('id');
+  const back = safeInternalPath(form.get('back'), '/carteira');
+  if (!isSafePathSegment(id)) return { error: 'Não encontrei esse lançamento.' };
   const cents = parseMoney(String(form.get('amount') ?? ''));
   const kind = String(form.get('kind') || 'saida');
   if (!cents || cents <= 0) return { error: 'Valor precisa ser maior que zero.' };
@@ -133,31 +145,33 @@ export async function updateManualTransaction(_: ActionState, form: FormData): P
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
   try {
-    await api(`/transactions/${encodeURIComponent(id)}`, { method: 'PATCH', body: parsed.data });
+    await api(`/transactions/${safePathSegment(id)}`, { method: 'PATCH', body: parsed.data });
   } catch (e) {
+    rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
   revalidatePath('/', 'layout');
-  redirect(back.startsWith('/') ? back : '/carteira');
+  redirect(back);
 }
 
 /** Salva (ou apaga, se vier vazia) a anotação de qualquer lançamento, inclusive os que vieram do banco. */
 export async function saveTransactionNote(form: FormData) {
-  const id = String(form.get('id') ?? '');
-  const back = String(form.get('back') || '/carteira');
-  const safeBack = back.startsWith('/') ? back : '/carteira';
+  const id = form.get('id');
+  const safeBack = safeInternalPath(form.get('back'), '/carteira');
   const parsed = updateTransactionBody.safeParse({ note: String(form.get('note') ?? '') });
   let failed = !parsed.success;
-  if (id && parsed.success) {
+  if (isSafePathSegment(id) && parsed.success) {
     try {
-      await api(`/transactions/${encodeURIComponent(id)}`, { method: 'PATCH', body: parsed.data });
-    } catch {
+      await api(`/transactions/${safePathSegment(id)}`, { method: 'PATCH', body: parsed.data });
+    } catch (caught) {
+      rethrowIfRedirect(caught);
       failed = true;
     }
   }
   revalidatePath('/', 'layout');
   // Se não salvou, volta pra mesma tela com o aviso em vez de fingir que deu certo.
-  if (failed && id) redirect(`/carteira/${encodeURIComponent(id)}?voltar=${encodeURIComponent(safeBack)}&erro=nota`);
+  if (failed && isSafePathSegment(id))
+    redirect(`/carteira/${safePathSegment(id)}?voltar=${encodeURIComponent(safeBack)}&erro=nota`);
   redirect(safeBack);
 }
 
@@ -172,6 +186,7 @@ export async function createManualAccount(_: ActionState, form: FormData): Promi
   try {
     await api('/accounts', { method: 'POST', body: parsed.data });
   } catch (e) {
+    rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
   revalidatePath('/', 'layout');

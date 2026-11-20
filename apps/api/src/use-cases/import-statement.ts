@@ -31,7 +31,7 @@ export class ImportStatementUseCase {
   constructor(
     private readonly repos: Pick<
       Repositories,
-      'connections' | 'accounts' | 'transactions' | 'rules' | 'reconciledNotes'
+      'connections' | 'accounts' | 'transactions' | 'rules' | 'reconciledNotes' | 'tx'
     >,
   ) {}
 

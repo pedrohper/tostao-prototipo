@@ -35,7 +35,7 @@ export default async function EditarCarteiraPage({ searchParams }: { searchParam
     { displayName: string; lastSyncedAt: string | null; status: string; isImported: boolean; type: 'BANK' | 'CREDIT' }
   >();
   for (const conn of profile?.connections ?? []) {
-    const isImported = conn.itemId.startsWith('import:');
+    const isImported = conn.isImport;
     for (const acc of conn.accounts) {
       connByAccountId.set(acc.id, {
         displayName: conn.displayName,

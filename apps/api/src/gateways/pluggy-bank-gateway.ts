@@ -42,6 +42,8 @@ type PluggyTransaction = {
 type Page<T> = { total: number; totalPages: number; page: number; results: T[] };
 type CursorPage<T> = { results: T[]; next: string | null };
 
+const ITEM_ID_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 const toCents = (value: number) => Math.round(value * 100);
 
 /**
@@ -150,10 +152,18 @@ export class PluggyBankGateway implements BankGateway {
   private apiKey: string | null = null;
   private apiKeyExpiresAt = 0;
 
+  readonly enforcesItemOwnership = true;
+  readonly allowsSandbox: boolean;
+
+  /** includeSandbox: libera conectores de teste no widget. Padrão: só fora de produção. */
   constructor(
     private readonly clientId: string,
     private readonly clientSecret: string,
-  ) {}
+    private readonly options: { includeSandbox?: boolean } = {},
+  ) {
+    this.options = { includeSandbox: options.includeSandbox ?? process.env.NODE_ENV !== 'production' };
+    this.allowsSandbox = this.options.includeSandbox === true;
+  }
 
   // /auth tem limite de chamadas: guardamos a chave em memória e reaproveitamos.
   private async getApiKey(): Promise<string> {
@@ -207,19 +217,26 @@ export class PluggyBankGateway implements BankGateway {
     const res = await fetch(`${BASE_URL}/connect_token`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'X-API-KEY': await this.getApiKey() },
-      body: JSON.stringify({ options: { clientUserId, avoidDuplicates: true } }),
+      body: JSON.stringify({
+        options: { clientUserId, avoidDuplicates: true, includeSandbox: this.options.includeSandbox === true },
+      }),
     });
-    if (!res.ok)
-      throw new BankConnectionError(
-        `Pluggy não liberou o widget (${res.status}). O trial do dashboard ainda tá ativo?`,
-      );
+    if (!res.ok) throw new BankConnectionError(`Não consegui abrir a conexão com o banco agora (${res.status}).`);
     const { accessToken } = (await res.json()) as { accessToken: string };
     return accessToken;
   }
 
   async fetchItem(itemId: string): Promise<BankItemData> {
-    const item = await this.get<{ connector?: { name?: string } }>(`/items/${itemId}`);
-    return { institution: item.connector?.name ?? null };
+    // O Item ID vira parte do caminho: só UUID passa, e ainda assim vai codificado (nada de "../" com a nossa X-API-KEY).
+    if (!ITEM_ID_UUID.test(itemId)) throw new BankConnectionError('Item ID inválido.');
+    const item = await this.get<{ clientUserId?: string | null; connector?: { name?: string; isSandbox?: boolean } }>(
+      `/items/${encodeURIComponent(itemId)}`,
+    );
+    return {
+      institution: item.connector?.name ?? null,
+      clientUserId: item.clientUserId ?? null,
+      isSandbox: item.connector?.isSandbox === true,
+    };
   }
 
   // Apaga só o Item da nossa Application. A conexão no meu.pluggy.ai continua lá.

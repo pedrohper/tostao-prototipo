@@ -84,7 +84,7 @@ describe('fluxo do banco (conectar → sincronizar → resumo → categorizar)',
       categoryId: null,
       isInternalTransfer: false,
     });
-    const disconnect = new DisconnectBankUseCase(repos.connections, new FakeBankGateway(() => NOW));
+    const disconnect = new DisconnectBankUseCase(repos, new FakeBankGateway(() => NOW));
 
     await expect(disconnect.execute({ userId: 'intruso', connectionId: connection.id })).rejects.toBeInstanceOf(
       ResourceNotFoundError,
@@ -104,7 +104,7 @@ describe('fluxo do banco (conectar → sincronizar → resumo → categorizar)',
       },
     });
     expect(
-      await new DisconnectBankUseCase(repos.connections, broken).execute({ userId: 'u1', connectionId: connection.id }),
+      await new DisconnectBankUseCase(repos, broken).execute({ userId: 'u1', connectionId: connection.id }),
     ).toEqual({ providerDeleted: false });
     expect(repos.connections.items).toHaveLength(0);
   });

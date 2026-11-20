@@ -166,20 +166,23 @@ export class AddPersonEntryUseCase {
 
 /** Apaga a pessoa: anotados à mão com ela somem; os do banco voltam a contar como gasto/renda. */
 export class DeletePersonUseCase {
-  constructor(private readonly repos: Pick<Repositories, 'people' | 'transactions'>) {}
+  constructor(private readonly repos: Pick<Repositories, 'people' | 'transactions' | 'tx'>) {}
 
   async execute({ userId, personId }: { userId: string; personId: string }) {
     const p = await this.repos.people.findById(personId);
     if (!p || p.userId !== userId) throw new ResourceNotFoundError('Pessoa');
-    for (const t of await this.repos.transactions.findByPerson(userId, p.id)) {
-      if (!t.externalId && !t.accountId) await this.repos.transactions.delete(t.id);
-      else
-        await this.repos.transactions.save({
-          ...t,
-          personId: null,
-          isInternalTransfer: t.categoryId === NEUTRAL_CATEGORY_ID,
-        });
-    }
-    await this.repos.people.delete(p.id);
+    const linked = await this.repos.transactions.findByPerson(userId, p.id);
+    await this.repos.tx(async (r) => {
+      for (const t of linked) {
+        if (!t.externalId && !t.accountId) await r.transactions.delete(t.id);
+        else
+          await r.transactions.save({
+            ...t,
+            personId: null,
+            isInternalTransfer: t.categoryId === NEUTRAL_CATEGORY_ID,
+          });
+      }
+      await r.people.delete(p.id);
+    });
   }
 }

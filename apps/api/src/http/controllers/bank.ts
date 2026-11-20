@@ -11,13 +11,15 @@ import {
   type ConnectTokenResponse,
   type DisconnectResponse,
   type SyncResponse,
+  idParam,
 } from '@tostao/contracts';
 import type { UseCases } from '../../use-cases/factories.js';
 import type { Repositories } from '../../repositories/types.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
 import { ResourceNotFoundError } from '../../domain/errors.js';
+import type { Limiters } from '../rate-limits.js';
 
-export function bankRoutes(app: FastifyInstance, uc: UseCases, repos: Repositories) {
+export function bankRoutes(app: FastifyInstance, uc: UseCases, repos: Repositories, limits: Limiters) {
   // Depois de puxar transação nova, a IA tenta categorizar e depois o Tostão/Caramelo atualizam os achados. Roda em segundo plano.
   const categorizeLater = (userId: string) => {
     void uc.autoCategorize
@@ -41,7 +43,7 @@ export function bankRoutes(app: FastifyInstance, uc: UseCases, repos: Repositori
   });
 
   app.delete('/connections/:id', { onRequest: verifyJwt }, async (request) => {
-    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const { id } = idParam.parse(request.params);
     return (await uc.disconnectBank.execute({
       userId: request.user.sub,
       connectionId: id,
@@ -57,7 +59,7 @@ export function bankRoutes(app: FastifyInstance, uc: UseCases, repos: Repositori
 
   // Detalhe de uma conta ou cartão no mês
   app.get('/accounts/:id', { onRequest: verifyJwt }, async (request) => {
-    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const { id } = idParam.parse(request.params);
     const { month } = monthQuery.parse(request.query);
     return (await uc.accountDetail.execute({
       userId: request.user.sub,
@@ -74,24 +76,28 @@ export function bankRoutes(app: FastifyInstance, uc: UseCases, repos: Repositori
 
   // Ocultar (ou mostrar de novo) uma conta, ex.: poupança que você não usa
   app.patch('/accounts/:id', { onRequest: verifyJwt }, async (request, reply) => {
-    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const { id } = idParam.parse(request.params);
     const { hidden } = z.object({ hidden: z.boolean() }).parse(request.body);
     await uc.setAccountHidden.execute({ userId: request.user.sub, accountId: id, hidden });
     return reply.status(204).send();
   });
 
   // Importar extrato (OFX/CSV) sem Pluggy
-  app.post('/imports', { onRequest: verifyJwt, bodyLimit: 5 * 1024 * 1024 }, async (request, reply) => {
-    const body = importStatementBody.parse(request.body);
-    const r = await uc.importStatement.execute({ ...body, userId: request.user.sub });
-    categorizeLater(request.user.sub);
-    return reply
-      .status(201)
-      .send({ ...r, from: r.from.toISOString(), to: r.to.toISOString() } satisfies ImportResponse);
-  });
+  app.post(
+    '/imports',
+    { onRequest: verifyJwt, preHandler: limits.importsByUser, bodyLimit: 5 * 1024 * 1024 },
+    async (request, reply) => {
+      const body = importStatementBody.parse(request.body);
+      const r = await uc.importStatement.execute({ ...body, userId: request.user.sub });
+      categorizeLater(request.user.sub);
+      return reply
+        .status(201)
+        .send({ ...r, from: r.from.toISOString(), to: r.to.toISOString() } satisfies ImportResponse);
+    },
+  );
 
-  app.post('/connections/:id/sync', { onRequest: verifyJwt }, async (request) => {
-    const { id } = z.object({ id: z.string() }).parse(request.params);
+  app.post('/connections/:id/sync', { onRequest: verifyJwt, preHandler: limits.syncByUser }, async (request) => {
+    const { id } = idParam.parse(request.params);
     const connection = await repos.connections.findById(id);
     if (!connection || connection.userId !== request.user.sub) throw new ResourceNotFoundError('Conexão');
     const r = await uc.syncBankConnection.execute({ connectionId: id });

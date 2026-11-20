@@ -1,5 +1,6 @@
 // Modelo de dados do Tostão.
-// Dinheiro SEMPRE em centavos (Int): nada de float pra grana.
+// Dinheiro SEMPRE em centavos (BigInt no banco: cabe além dos R$ 21 milhões do Int de 32 bits): nada de float pra grana.
+// Os repositórios convertem pra number (seguro até Number.MAX_SAFE_INTEGER) na borda; o resto do app só vê number.
 // Negativo = saiu da conta, positivo = entrou.
 
 generator client {
@@ -12,51 +13,65 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  name         String
-  email        String   @unique
-  passwordHash String?  @map("password_hash")
-  createdAt    DateTime @default(now()) @map("created_at")
+  id              String    @id @default(uuid())
+  name            String
+  email           String    @unique
+  passwordHash    String?   @map("password_hash")
+  // Fuso da pessoa (IANA). Dia civil, fechamento de mês e lembretes usam isto (default: Brasília).
+  timezone        String    @default("America/Sao_Paulo")
+  // Quando provamos que a pessoa controla o e-mail (hoje: cadastro por Google/Apple com e-mail verificado).
+  // Cadastro por senha NÃO preenche: sem isso, um login social nunca é vinculado a uma conta de senha (pre-takeover).
+  emailVerifiedAt DateTime? @map("email_verified_at") @db.Timestamptz(3)
+  // Aceite dos Termos/Privacidade no cadastro por senha (versão do texto aceito). Expande pra UserConsent na Fase 1.
+  termsAcceptedAt DateTime? @map("terms_accepted_at") @db.Timestamptz(3)
+  termsVersion    String?   @map("terms_version")
+  // Consentimento explícito pra mandar dados (mascarados) pra IA (LGPD). null = não aceitou: IA bloqueada.
+  aiConsentAt     DateTime? @map("ai_consent_at") @db.Timestamptz(3)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  oauthAccounts OAuthAccount[]
-  connections  BankConnection[]
-  accounts     Account[]
-  transactions Transaction[]
-  people       Person[]
-  reconciledNotes ReconciledNote[]
-  rules        CategoryRule[]
-  budgets      CategoryBudget[]
-  lessons      LessonProgress[]
-  invitesSent  Invite[]        @relation("InvitesSent")
-  inviteUsed   Invite?         @relation("InviteUsed")
-  tribunalVotes TribunalVote[]
-  battles      Battle[]
-  passwordResets PasswordReset[]
-  chatMessages   ChatMessage[]
-  ignoredSubscriptions IgnoredSubscription[]
-  categories   Category[]
-  plan         FinancialPlan?
-  whatsapp     WhatsappLink?
-  activities   UserActivity[]
-  friendCode   FriendCode?
-  friendships  Friendship[]    @relation("FriendOf")
-  friendOf     Friendship[]    @relation("FriendIs")
-  pushSubscriptions PushSubscription[]
-  sentNotifications SentNotification[]
-  tostaoInsights    TostaoInsight[]
-  tostaoAutoConfig  TostaoAutoConfig?
+  oauthAccounts           OAuthAccount[]
+  connections             BankConnection[]
+  accounts                Account[]
+  transactions            Transaction[]
+  people                  Person[]
+  reconciledNotes         ReconciledNote[]
+  rules                   CategoryRule[]
+  budgets                 CategoryBudget[]
+  lessons                 LessonProgress[]
+  invitesSent             Invite[]                 @relation("InvitesSent")
+  inviteUsed              Invite?                  @relation("InviteUsed")
+  tribunalVotes           TribunalVote[]
+  battles                 Battle[]
+  passwordResets          PasswordReset[]
+  refreshTokens           RefreshToken[]
+  emailVerificationTokens EmailVerificationToken[]
+  consents                UserConsent[]
+  auditLogs               AuditLog[]
+  chatMessages            ChatMessage[]
+  ignoredSubscriptions    IgnoredSubscription[]
+  categories              Category[]
+  plan                    FinancialPlan?
+  whatsapp                WhatsappLink?
+  activities              UserActivity[]
+  friendCode              FriendCode?
+  friendships             Friendship[]             @relation("FriendOf")
+  friendOf                Friendship[]             @relation("FriendIs")
+  pushSubscriptions       PushSubscription[]
+  sentNotifications       SentNotification[]
+  tostaoInsights          TostaoInsight[]
+  tostaoAutoConfig        TostaoAutoConfig?
 
   @@map("users")
 }
 
 // Conta social ligada ao usuário (Google ou Apple). Uma pessoa pode ter mais de um provedor.
 model OAuthAccount {
-  id                String   @id @default(uuid())
-  userId            String   @map("user_id")
-  provider          String   // "google" | "apple"
-  providerAccountId String   @map("provider_account_id")
+  id                String        @id @default(uuid())
+  userId            String        @map("user_id")
+  provider          OAuthProvider
+  providerAccountId String        @map("provider_account_id")
   email             String?
-  createdAt         DateTime @default(now()) @map("created_at")
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -67,33 +82,36 @@ model OAuthAccount {
 
 // Uma conexão = um "Item" do Pluggy (um banco autorizado no Meu Pluggy)
 model BankConnection {
-  id           String    @id @default(uuid())
-  userId       String    @map("user_id")
-  itemId       String    @map("item_id")
+  id           String           @id @default(uuid())
+  userId       String           @map("user_id")
+  itemId       String           @map("item_id")
   institution  String?
-  status       String    @default("ACTIVE") // ACTIVE | ERROR
-  lastSyncedAt DateTime? @map("last_synced_at")
-  createdAt    DateTime  @default(now()) @map("created_at")
+  status       ConnectionStatus @default(ACTIVE)
+  lastSyncedAt DateTime?        @map("last_synced_at") @db.Timestamptz(3)
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   accounts Account[]
 
   @@unique([userId, itemId])
+  // + índice único parcial em item_id (Open Finance, fora import:/manual:) criado por SQL na migration
+  // 20261120120000_bank_connections_item_unique: o Prisma não modela índice parcial.
   @@map("bank_connections")
 }
 
 model Account {
-  id             String  @id @default(uuid())
-  userId         String  @map("user_id")
-  connectionId   String  @map("connection_id")
-  externalId     String  @map("external_id")
-  name           String
-  type           String  // BANK | CREDIT
-  balanceInCents Int     @map("balance_in_cents")
-  fingerprint    String? // cartão: "CREDIT:BANDEIRA:final", pra achar o mesmo cartão em duas conexões
-  hidden         Boolean @default(false) // a pessoa ocultou (ex.: poupança que não usa). O sync nunca mexe nisso.
-  creditLimitInCents Int?      @map("credit_limit_in_cents") // cartão: limite total
-  dueDate            DateTime? @map("due_date") // cartão: vencimento da fatura atual
+  id                 String      @id @default(uuid())
+  userId             String      @map("user_id")
+  connectionId       String      @map("connection_id")
+  externalId         String      @map("external_id")
+  name               String
+  type               AccountType
+  balanceInCents     BigInt      @map("balance_in_cents")
+  fingerprint        String? // cartão: "CREDIT:BANDEIRA:final", pra achar o mesmo cartão em duas conexões
+  currency           String      @default("BRL")
+  hidden             Boolean     @default(false) // a pessoa ocultou (ex.: poupança que não usa). O sync nunca mexe nisso.
+  creditLimitInCents BigInt?     @map("credit_limit_in_cents") // cartão: limite total
+  dueDate            DateTime?   @map("due_date") @db.Timestamptz(3) // cartão: vencimento da fatura atual
 
   user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   connection   BankConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
@@ -106,14 +124,14 @@ model Account {
 
 // Categorias são globais (seed). Usuário escolhe entre elas.
 model Category {
-  id    String @id // slug: "delivery", "mercado"...
-  name  String
-  emoji String
-  color String
-  kind   String  @default("saida") // saida | entrada | neutra (não conta)
-  userId String? @map("user_id") // null = do sistema; preenchido = categoria criada pela pessoa
+  id     String       @id // slug: "delivery", "mercado"...
+  name   String
+  emoji  String
+  color  String
+  kind   CategoryKind @default(saida) // saida | entrada | neutra (não conta)
+  userId String?      @map("user_id") // null = do sistema; preenchido = categoria criada pela pessoa
 
-  user         User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]
   rules        CategoryRule[]
   budgets      CategoryBudget[]
@@ -126,11 +144,11 @@ model Category {
 model CategoryRule {
   id         String  @id @default(uuid())
   userId     String? @map("user_id")
-  pattern    String  // trecho em MAIÚSCULAS procurado na descrição
+  pattern    String // trecho em MAIÚSCULAS procurado na descrição
   categoryId String  @map("category_id")
 
   user     User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@unique([userId, pattern])
   @@map("category_rules")
@@ -142,8 +160,9 @@ model Transaction {
   accountId          String?  @map("account_id") // null = anotado na mão
   externalId         String?  @map("external_id") // id do Pluggy, pra não importar duas vezes
   description        String
-  amountInCents      Int      @map("amount_in_cents")
-  occurredAt         DateTime @map("occurred_at")
+  amountInCents      BigInt   @map("amount_in_cents")
+  currency           String   @default("BRL")
+  occurredAt         DateTime @map("occurred_at") @db.Timestamptz(3)
   categoryId         String?  @map("category_id")
   isInternalTransfer Boolean  @default(false) @map("is_internal_transfer")
   // Anotado com "todo mês" ou "parcelado": as próximas já ficam lançadas nos meses seguintes, com o mesmo seriesId.
@@ -152,10 +171,11 @@ model Transaction {
   personId           String?  @map("person_id")
   // Anotação livre da pessoa ("pago pro João, devolve dia 10"). Pode existir mesmo em transação do banco.
   note               String?
-  createdAt          DateTime @default(now()) @map("created_at")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  account  Account?  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  // SetNull: desconectar o banco apaga só os lançamentos do banco (DisconnectBankUseCase); os manuais ficam com accountId nulo.
+  account  Account?  @relation(fields: [accountId], references: [id], onDelete: SetNull)
   category Category? @relation(fields: [categoryId], references: [id])
   person   Person?   @relation(fields: [personId], references: [id], onDelete: SetNull)
 
@@ -171,7 +191,7 @@ model Person {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
   name      String
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]
@@ -185,10 +205,10 @@ model CategoryBudget {
   id           String @id @default(uuid())
   userId       String @map("user_id")
   categoryId   String @map("category_id")
-  limitInCents Int    @map("limit_in_cents")
+  limitInCents BigInt @map("limit_in_cents")
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@unique([userId, categoryId])
   @@map("category_budgets")
@@ -198,7 +218,7 @@ model CategoryBudget {
 model LessonProgress {
   userId      String   @map("user_id")
   lessonId    String   @map("lesson_id")
-  completedAt DateTime @default(now()) @map("completed_at")
+  completedAt DateTime @default(now()) @map("completed_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -220,12 +240,12 @@ model IgnoredSubscription {
 // Convite: cadastro só entra com código (menos a primeira conta do servidor).
 model Invite {
   code        String    @id
-  createdById String    @map("created_by_id")
+  createdById String?   @map("created_by_id")
   usedById    String?   @unique @map("used_by_id")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  usedAt      DateTime? @map("used_at")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  usedAt      DateTime? @map("used_at") @db.Timestamptz(3)
 
-  createdBy User  @relation("InvitesSent", fields: [createdById], references: [id], onDelete: Cascade)
+  createdBy User? @relation("InvitesSent", fields: [createdById], references: [id], onDelete: SetNull)
   usedBy    User? @relation("InviteUsed", fields: [usedById], references: [id], onDelete: SetNull)
 
   @@index([createdById])
@@ -237,23 +257,116 @@ model PasswordReset {
   id        String    @id @default(uuid())
   userId    String    @map("user_id")
   tokenHash String    @unique @map("token_hash")
-  expiresAt DateTime  @map("expires_at")
-  usedAt    DateTime? @map("used_at")
-  createdAt DateTime  @default(now()) @map("created_at")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("password_resets")
 }
 
+// Sessão revogável: o access token (JWT) dura 15 min; este token opaco (30 dias) só serve pra trocar por um par novo.
+// Guardamos só o SHA-256. Cada troca (rotação) revoga o anterior e herda o familyId; reapresentar um token já
+// revogado indica roubo/replay e revoga a família inteira.
+model RefreshToken {
+  id           String    @id @default(uuid())
+  userId       String    @map("user_id")
+  tokenHash    String    @unique @map("token_hash")
+  familyId     String    @map("family_id")
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamptz(3)
+  replacedById String?   @map("replaced_by_id")
+  userAgent    String?   @map("user_agent")
+  ipAddress    String?   @map("ip_address")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+// Prova de que a pessoa controla o e-mail do cadastro. Só o hash do token (256 bits, 24 h, uso único).
+model EmailVerificationToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("email_verification_tokens")
+}
+
+// Histórico de consentimentos (LGPD): cada aceite/revogação vira uma linha. users.terms_accepted_at e
+// users.ai_consent_at seguem como o "estado atual" que o app consulta; esta tabela é o registro com versão e data.
+model UserConsent {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  type      String // terms | privacy | ai
+  version   String
+  grantedAt DateTime  @map("granted_at") @db.Timestamptz(3)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(3)
+  ipAddress String?   @map("ip_address")
+  userAgent String?   @map("user_agent")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@map("user_consents")
+}
+
+// Trilha de auditoria de eventos de segurança. userId vira NULL (SetNull) se a conta for apagada: o evento fica, a pessoa não.
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  action     String // password_reset | account_deleted | consent_changed | refresh_reuse_detected
+  entityType String?  @map("entity_type")
+  entityId   String?  @map("entity_id")
+  metadata   Json?
+  ipAddress  String?  @map("ip_address")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
+
+// Tarefa a refazer fora do pedido do usuário (ex.: desligar o Item no Pluggy depois de apagar a conta, quando o
+// provedor estava fora do ar). Não tem FK pra users: precisa sobreviver à exclusão da pessoa.
+model OutboxJob {
+  id          String       @id @default(uuid())
+  type        String // pluggy.deleteItem
+  payload     Json
+  status      OutboxStatus @default(PENDING)
+  attempts    Int          @default(0)
+  maxAttempts Int          @default(8) @map("max_attempts")
+  runAt       DateTime     @default(now()) @map("run_at") @db.Timestamptz(3)
+  lockedAt    DateTime?    @map("locked_at") @db.Timestamptz(3)
+  lastError   String?      @map("last_error")
+  processedAt DateTime?    @map("processed_at") @db.Timestamptz(3)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([status, runAt])
+  @@map("outbox_jobs")
+}
+
 // Conversa com o Tostão (app e, depois, WhatsApp).
 model ChatMessage {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  role      String   // user | assistant
+  id        String      @id @default(uuid())
+  userId    String      @map("user_id")
+  role      ChatRole
   content   String
-  channel   String   @default("app") // app | whatsapp
-  createdAt DateTime @default(now()) @map("created_at")
+  channel   ChatChannel @default(app)
+  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -265,7 +378,9 @@ model ChatMessage {
 model FinancialPlan {
   userId    String   @id @map("user_id")
   data      Json
-  updatedAt DateTime @updatedAt @map("updated_at")
+  // Lock otimista: cada gravação confere e incrementa. Duas escritas simultâneas não perdem uma a outra.
+  version   Int      @default(1)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -276,9 +391,10 @@ model FinancialPlan {
 model WhatsappLink {
   userId        String    @id @map("user_id")
   phone         String?   @unique
-  code          String?   @unique
-  codeExpiresAt DateTime? @map("code_expires_at")
-  linkedAt      DateTime? @map("linked_at")
+  // SHA-256 do código "TOST-XXXXXXXXXXXX". O código em si nunca fica no banco.
+  codeHash      String?   @unique @map("code_hash")
+  codeExpiresAt DateTime? @map("code_expires_at") @db.Timestamptz(3)
+  linkedAt      DateTime? @map("linked_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -290,7 +406,7 @@ model TribunalVote {
   userId  String   @map("user_id")
   caseId  String   @map("case_id")
   choice  Int
-  votedAt DateTime @default(now()) @map("voted_at")
+  votedAt DateTime @default(now()) @map("voted_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -301,12 +417,14 @@ model TribunalVote {
 
 // Batalha contra um vilão: Tigrinho (30 dias sem bet, conferido no extrato) e Urubu do Pix (checklist)
 model Battle {
-  userId    String    @map("user_id")
-  kind      String
-  status    String
-  startedAt DateTime  @map("started_at")
-  endedAt   DateTime? @map("ended_at")
-  steps     String[]  @default([])
+  userId    String       @map("user_id")
+  kind      BattleKind
+  status    BattleStatus
+  startedAt DateTime     @map("started_at") @db.Timestamptz(3)
+  endedAt   DateTime?    @map("ended_at") @db.Timestamptz(3)
+  steps     String[]     @default([])
+  // Lock otimista (ver FinancialPlan.version).
+  version   Int          @default(1)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -317,9 +435,9 @@ model Battle {
 /// Missão feita num dia (Brasília). Uma linha por tipo por dia: a ofensiva conta dias com pelo menos uma.
 model UserActivity {
   userId String   @map("user_id")
-  day    String
+  day    DateTime @db.Date
   kind   String
-  at     DateTime @default(now())
+  at     DateTime @default(now()) @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -341,7 +459,7 @@ model FriendCode {
 model Friendship {
   userId    String   @map("user_id")
   friendId  String   @map("friend_id")
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user   User @relation("FriendOf", fields: [userId], references: [id], onDelete: Cascade)
   friend User @relation("FriendIs", fields: [friendId], references: [id], onDelete: Cascade)
@@ -355,7 +473,7 @@ model PushSubscription {
   userId    String   @map("user_id")
   p256dh    String
   auth      String
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -367,7 +485,7 @@ model PushSubscription {
 model SentNotification {
   userId String   @map("user_id")
   key    String
-  sentAt DateTime @default(now()) @map("sent_at")
+  sentAt DateTime @default(now()) @map("sent_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -377,19 +495,19 @@ model SentNotification {
 
 /// Achados automáticos do Tostão e do Caramelo pro usuário agir em 1 toque.
 model TostaoInsight {
-  id        String    @id @default(uuid())
-  userId    String    @map("user_id")
+  id        String          @id @default(uuid())
+  userId    String          @map("user_id")
   routine   String
   kind      String
-  severity  String    @default("info") // info | warning | urgent
+  severity  InsightSeverity @default(info)
   title     String
   body      String
   payload   Json
-  dedupeKey String    @map("dedupe_key")
-  status    String    @default("PENDING") // PENDING | APPLIED | DISMISSED
-  expiresAt DateTime? @map("expires_at")
-  createdAt DateTime  @default(now()) @map("created_at")
-  actedAt   DateTime? @map("acted_at")
+  dedupeKey String          @map("dedupe_key")
+  status    InsightStatus   @default(PENDING)
+  expiresAt DateTime?       @map("expires_at") @db.Timestamptz(3)
+  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  actedAt   DateTime?       @map("acted_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -407,8 +525,8 @@ model TostaoAutoConfig {
   olheiroAcertos  Boolean   @default(true) @map("olheiro_acertos")
   notifyPush      Boolean   @default(true) @map("notify_push")
   notifyWhatsapp  Boolean   @default(false) @map("notify_whatsapp")
-  lastCheckedAt   DateTime? @map("last_checked_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  lastCheckedAt   DateTime? @map("last_checked_at") @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -420,17 +538,78 @@ model ReconciledNote {
   id                String   @id @default(uuid())
   userId            String   @map("user_id")
   description       String
-  amountInCents     Int      @map("amount_in_cents")
-  occurredAt        DateTime @map("occurred_at")
+  amountInCents     BigInt   @map("amount_in_cents")
+  occurredAt        DateTime @map("occurred_at") @db.Timestamptz(3)
   categoryId        String?  @map("category_id")
   note              String?
   // Cobrança do banco que a substituiu (sem FK: ela pode ser apagada depois).
   bankTransactionId String?  @map("bank_transaction_id")
   bankDescription   String   @map("bank_description")
-  reconciledAt      DateTime @default(now()) @map("reconciled_at")
+  reconciledAt      DateTime @default(now()) @map("reconciled_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, reconciledAt])
   @@map("reconciled_notes")
+}
+
+// ---------- enums (PostgreSQL) ----------
+enum OAuthProvider {
+  google
+  apple
+}
+
+enum ConnectionStatus {
+  ACTIVE
+  ERROR
+}
+
+enum AccountType {
+  BANK
+  CREDIT
+}
+
+enum CategoryKind {
+  saida
+  entrada
+  neutra
+}
+
+enum ChatRole {
+  user
+  assistant
+}
+
+enum ChatChannel {
+  app
+  whatsapp
+}
+
+enum BattleKind {
+  tigrinho
+  urubu
+}
+
+enum BattleStatus {
+  ativa
+  vencida
+  perdida
+}
+
+enum InsightSeverity {
+  info
+  warning
+  urgent
+}
+
+enum InsightStatus {
+  PENDING
+  APPLIED
+  DISMISSED
+}
+
+enum OutboxStatus {
+  PENDING
+  DONE
+  FAILED
 }

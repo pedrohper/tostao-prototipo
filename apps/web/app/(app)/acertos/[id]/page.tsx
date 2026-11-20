@@ -1,6 +1,9 @@
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import type { PersonDetailResponse } from '@tostao/contracts';
 import { api } from '@/lib/api';
+import { erroDe } from '@/lib/erros';
+import { isSafePathSegment, safePathSegment } from '@/lib/safe-redirect';
 import { money, monthName, resolveBackHref, shortDate } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
 import { BackLink, Eyebrow, PageFrame } from '@/components/ui';
@@ -15,9 +18,10 @@ export default async function PessoaPage({
   searchParams: Promise<{ erro?: string; voltar?: string }>;
 }) {
   const [{ id }, { erro, voltar }, { locale, t: dict }] = await Promise.all([params, searchParams, getI18n()]);
+  if (!isSafePathSegment(id)) notFound();
   const ac = dict.pages.acertos;
   const pr = ac.person;
-  const { person: p, transactions } = await api<PersonDetailResponse>(`/people/${encodeURIComponent(id)}`);
+  const { person: p, transactions } = await api<PersonDetailResponse>(`/people/${safePathSegment(id)}`);
   const deve = p.balanceInCents > 0;
   const voce = p.balanceInCents < 0;
   const backHref = resolveBackHref(voltar, '/acertos');
@@ -38,9 +42,9 @@ export default async function PessoaPage({
   return (
     <PageFrame size="analytics" className="pb-24 md:pb-0">
       <BackLink href={backHref} label={pr.backLabel} />
-      {erro && (
+      {erroDe(erro) && (
         <p role="alert" className="rounded-xl bg-rosa px-3 py-2 text-sm font-medium">
-          {erro}
+          {erroDe(erro)}
         </p>
       )}
 

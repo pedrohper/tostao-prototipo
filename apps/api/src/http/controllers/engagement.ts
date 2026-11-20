@@ -1,5 +1,4 @@
 import type { FastifyInstance } from 'fastify';
-import { z } from 'zod';
 import {
   activityBody,
   addFriendBody,
@@ -10,11 +9,14 @@ import {
   type PushKeyResponse,
   type RemindersResponse,
   type WeeklyResponse,
+  idParam,
 } from '@tostao/contracts';
 import type { UseCases } from '../../use-cases/factories.js';
 import type { Repositories } from '../../repositories/types.js';
 import type { PushGateway } from '../../gateways/push-gateway.js';
+import { isAllowedPushEndpoint } from '../../lib/push-endpoint.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
+import type { Limiters } from '../rate-limits.js';
 
 /** Rotas que contam como missão quando dão certo. */
 const TRACKED: Record<string, string> = {
@@ -33,7 +35,13 @@ const TRACKED: Record<string, string> = {
 };
 
 // Missões do dia, ofensiva, amigos, avisos no celular e resumo da semana
-export function engagementRoutes(app: FastifyInstance, uc: UseCases, repos: Repositories, push: PushGateway) {
+export function engagementRoutes(
+  app: FastifyInstance,
+  uc: UseCases,
+  repos: Repositories,
+  push: PushGateway,
+  limits: Limiters,
+) {
   app.addHook('onResponse', async (request, reply) => {
     if (reply.statusCode >= 300) return;
     const kind = TRACKED[`${request.method} ${request.routeOptions.url}`];
@@ -58,12 +66,12 @@ export function engagementRoutes(app: FastifyInstance, uc: UseCases, repos: Repo
     { onRequest: verifyJwt },
     async (request) => (await uc.engagement.friends(request.user.sub)) satisfies FriendsResponse,
   );
-  app.post('/friends', { onRequest: verifyJwt }, async (request) => {
+  app.post('/friends', { onRequest: verifyJwt, preHandler: limits.friendsByUser }, async (request) => {
     const { code } = addFriendBody.parse(request.body);
     return (await uc.engagement.addFriend(request.user.sub, code)) satisfies FriendsResponse;
   });
   app.delete('/friends/:id', { onRequest: verifyJwt }, async (request) => {
-    const { id } = z.object({ id: z.string().min(1) }).parse(request.params);
+    const { id } = idParam.parse(request.params);
     return (await uc.engagement.removeFriend(request.user.sub, id)) satisfies FriendsResponse;
   });
 
@@ -89,6 +97,7 @@ export function engagementRoutes(app: FastifyInstance, uc: UseCases, repos: Repo
   );
   app.post('/push/subscriptions', { onRequest: verifyJwt }, async (request, reply) => {
     const { endpoint, keys } = pushSubscriptionBody.parse(request.body);
+    if (!isAllowedPushEndpoint(endpoint)) return reply.status(400).send({ message: 'Endpoint de push não permitido.' });
     await repos.engagement.savePush({ endpoint, userId: request.user.sub, p256dh: keys.p256dh, auth: keys.auth });
     return reply.status(204).send();
   });

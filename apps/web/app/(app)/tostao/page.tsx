@@ -8,6 +8,7 @@ import type {
 } from '@tostao/contracts';
 import { ChatClient } from '@/app/(app)/chat/chat-client';
 import { DesktopSplitShell } from '@/components/lateral';
+import { AiConsentCard } from '@/components/ai-consent-card';
 import { Mascot } from '@/components/mascote';
 import { TostaoFindingsBoard } from '@/components/tostao-auto-card';
 import { api } from '@/lib/api';
@@ -209,6 +210,10 @@ export default async function TostaoPage({ searchParams }: { searchParams?: Prom
               <path d="M9 18l6-6-6-6" />
             </svg>
           </Link>
+        </div>
+      ) : !me.aiConsentAt ? (
+        <div className="flex flex-col gap-3">
+          <AiConsentCard />
         </div>
       ) : (
         <ChatClient

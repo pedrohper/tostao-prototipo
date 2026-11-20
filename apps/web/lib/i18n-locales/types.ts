@@ -155,6 +155,7 @@ export interface Dictionary {
   };
   profile: {
     title: string;
+    verifyEmailLink: string;
     levelSummary: (level: number, xp: number, streakDays: number) => string;
     connectedAccounts: string;
     hiddenAccountHint: string;
@@ -310,7 +311,6 @@ export interface Dictionary {
       show: string;
       hide: string;
       forgotPassword: string;
-      forgotHelp: string;
       acceptTermsPrefix: string;
       termsLink: string;
       andWord: string;
@@ -332,6 +332,7 @@ export interface Dictionary {
         unconfiguredApple: string;
         cancelled: string;
         unverifiedEmail: string;
+        emailInUsePassword: string;
         failed: string;
       };
     };
@@ -340,6 +341,32 @@ export interface Dictionary {
       confirmPassword: string;
       submitPending: string;
       submitIdle: string;
+    };
+    forgotPage: {
+      title: string;
+      subtitle: string;
+      mascotAlt: string;
+      emailLabel: string;
+      emailPlaceholder: string;
+      submitIdle: string;
+      submitPending: string;
+      sentMessage: string;
+      backToLogin: string;
+    };
+    verifyPage: {
+      title: string;
+      subtitle: string;
+      mascotAlt: string;
+      confirmCta: string;
+      confirmPending: string;
+      doneMessage: string;
+      goToApp: string;
+      noTokenHint: string;
+      resendCta: string;
+      resendPending: string;
+      resendSent: string;
+      invalidHint: string;
+      backToLogin: string;
     };
   };
   legal: {
@@ -1155,6 +1182,8 @@ export interface Dictionary {
         prompt: string;
         expiresIn: string;
         openWhatsapp: string;
+        copy: string;
+        copied: string;
         generating: string;
         generate: string;
       };

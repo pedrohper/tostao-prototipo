@@ -81,7 +81,7 @@ export function planningRoutes(app: FastifyInstance, uc: UseCases) {
   });
 
   app.put('/goals/:id', { onRequest: verifyJwt }, async (request) => {
-    const { id } = z.object({ id: z.string().min(1) }).parse(request.params);
+    const { id } = z.object({ id: z.string().min(1).max(64) }).parse(request.params); // meta legada tem id 'default'
     const goal = goalBody.parse(request.body);
     const r = await uc.setGoal.update({ userId: request.user.sub, id, goal });
     checkLater(request.user.sub);
@@ -89,7 +89,7 @@ export function planningRoutes(app: FastifyInstance, uc: UseCases) {
   });
 
   app.delete('/goals/:id', { onRequest: verifyJwt }, async (request) => {
-    const { id } = z.object({ id: z.string().min(1) }).parse(request.params);
+    const { id } = z.object({ id: z.string().min(1).max(64) }).parse(request.params);
     const r = await uc.setGoal.remove({ userId: request.user.sub, id });
     checkLater(request.user.sub);
     return r;

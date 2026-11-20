@@ -2,6 +2,7 @@
 import { revalidatePath } from 'next/cache';
 import { importStatementBody, type ImportResponse } from '@tostao/contracts';
 import { api, ApiError } from '@/lib/api';
+import { rethrowIfRedirect } from '@/lib/rethrow';
 
 export type ImportState = { error?: string; result?: ImportResponse; failed?: string[] };
 
@@ -9,7 +10,8 @@ export type ImportState = { error?: string; result?: ImportResponse; failed?: st
 function decode(buf: ArrayBuffer) {
   try {
     return new TextDecoder('utf-8', { fatal: true }).decode(buf);
-  } catch {
+  } catch (caught) {
+    rethrowIfRedirect(caught);
     return new TextDecoder('windows-1252').decode(buf);
   }
 }
@@ -17,6 +19,9 @@ function decode(buf: ArrayBuffer) {
 export async function importStatement(_: ImportState, form: FormData): Promise<ImportState> {
   const files = form.getAll('file').filter((f): f is File => f instanceof File && f.size > 0);
   if (!files.length) return { error: 'Escolhe o arquivo do extrato.' };
+  // Teto do envio inteiro = bodySizeLimit do next.config.ts (10 MB). Acima disso o Next nem chega aqui (413).
+  if (files.reduce((sum, f) => sum + f.size, 0) > 10_000_000)
+    return { error: 'Os arquivos somam mais de 10 MB. Envia menos arquivos por vez.' };
   const tipo = String(form.get('tipo') ?? 'auto');
   let total: ImportResponse | undefined;
   const failed: string[] = [];
@@ -49,6 +54,7 @@ export async function importStatement(_: ImportState, form: FormData): Promise<I
             to: total.to > r.to ? total.to : r.to,
           };
     } catch (e) {
+      rethrowIfRedirect(e);
       failed.push(`${file.name} (${e instanceof ApiError ? e.message : 'algo deu errado'})`);
     }
   }

@@ -2,12 +2,15 @@
 import { Icon } from '@/components/icone';
 import { useActionState } from 'react';
 import { getDictionary, type Dictionary } from '@/lib/i18n';
+import { AiConsentCard } from '@/components/ai-consent-card';
 import { autoCategorize, type AutoState } from './actions';
 
 /** Botão na aba "sem categoria": a IA tenta categorizar o que as regras não pegaram. */
 export function AutoCategorizeButton({ t }: { t?: Dictionary['walletExtra']['autoCategorize'] }) {
   const labels = t ?? getDictionary('pt-BR').walletExtra.autoCategorize;
   const [state, action, pending] = useActionState<AutoState>(autoCategorize, {});
+  // Sem aceite LGPD: mostra o aviso. Depois do aceite, a página recarrega e o botão volta ao normal.
+  if (state.needsConsent) return <AiConsentCard compact />;
   return (
     <form action={action} className="flex flex-col gap-1.5 rounded-2xl bg-amarelo-claro p-3.5">
       <p className="text-[14px] leading-snug text-tinta">

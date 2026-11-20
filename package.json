@@ -4,7 +4,7 @@
   "packageManager": "pnpm@10.28.0",
   "scripts": {
     "dev": "pnpm --parallel --filter @tostao/api --filter @tostao/web dev",
-    "test": "pnpm --filter @tostao/api test",
+    "test": "pnpm --filter @tostao/api test && pnpm --filter @tostao/web test",
     "db:up": "docker compose up -d db",
     "db:migrate": "pnpm --filter @tostao/api db:migrate",
     "db:seed": "pnpm --filter @tostao/api db:seed",

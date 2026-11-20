@@ -23,7 +23,7 @@ export default async function AnotarPage({ searchParams }: { searchParams: Promi
         name: acc.name,
         type: acc.type,
         institution: c.institution,
-        auto: !c.itemId.startsWith('import:'),
+        auto: !c.isImport,
       })),
   );
   return (

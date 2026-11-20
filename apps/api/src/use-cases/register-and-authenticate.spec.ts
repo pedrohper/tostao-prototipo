@@ -3,9 +3,9 @@ import { makeInMemoryRepositories } from '../repositories/in-memory/index.js';
 import { RegisterUserUseCase } from './register-user.js';
 import { AuthenticateUseCase } from './authenticate.js';
 import { CreateInviteUseCase } from './invites.js';
-import { CreatePasswordResetUseCase, InvalidResetTokenError, ResetPasswordUseCase } from './password-reset.js';
+import { InvalidResetTokenError, RequestPasswordResetUseCase, ResetPasswordUseCase } from './password-reset.js';
+import { FakeEmailGateway } from '../gateways/email-gateway.js';
 import { EmailAlreadyInUseError, InvalidCredentialsError } from '../domain/errors.js';
-import { LoginLimiter } from '../http/login-limiter.js';
 
 describe('cadastro e login', () => {
   let repos: ReturnType<typeof makeInMemoryRepositories>;
@@ -66,28 +66,27 @@ describe('cadastro e login', () => {
     await dono();
     let now = new Date('2026-11-12T12:00:00Z');
     const clock = () => now;
-    const { token } = await new CreatePasswordResetUseCase(repos, clock).execute({ email: 'P@x.com' });
+    const email = new FakeEmailGateway();
+    const request = new RequestPasswordResetUseCase(repos, email, 'https://tostao.test', undefined, clock);
+    const tokenOf = async () => {
+      await request.execute({ email: 'P@x.com' });
+      await request.tasks.drain();
+      return new URL(
+        email.sent.at(-1)!.kind === 'password-reset' ? (email.sent.at(-1) as { url: string }).url : '',
+      ).searchParams.get('token')!;
+    };
+    const token = await tokenOf();
     expect(repos.passwordResets.items[0]!.tokenHash).not.toBe(token);
 
-    const reset = new ResetPasswordUseCase(repos, clock);
+    const reset = new ResetPasswordUseCase(repos, undefined, undefined, clock);
     await reset.execute({ token, password: 'novasenha1' });
     await expect(
       new AuthenticateUseCase(repos.users).execute({ email: 'p@x.com', password: 'novasenha1' }),
     ).resolves.toHaveProperty('user');
     await expect(reset.execute({ token, password: 'outra1234' })).rejects.toBeInstanceOf(InvalidResetTokenError);
 
-    const { token: late } = await new CreatePasswordResetUseCase(repos, clock).execute({ email: 'p@x.com' });
+    const late = await tokenOf();
     now = new Date('2026-11-12T13:00:01Z');
     await expect(reset.execute({ token: late, password: 'outra1234' })).rejects.toBeInstanceOf(InvalidResetTokenError);
-  });
-
-  it('trava o e-mail depois de 5 erros e libera em 15 min', () => {
-    let now = 0;
-    const limiter = new LoginLimiter(() => now);
-    for (let i = 0; i < 5; i++) limiter.fail('p@x.com');
-    expect(limiter.blockedFor('p@x.com')).toBe(15);
-    expect(limiter.blockedFor('outra@x.com')).toBe(0);
-    now = 15 * 60 * 1000 + 1;
-    expect(limiter.blockedFor('p@x.com')).toBe(0);
   });
 });

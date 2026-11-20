@@ -1,8 +1,9 @@
 'use server';
 import { redirect } from 'next/navigation';
-import { deleteAccountBody } from '@tostao/contracts';
+import { deleteAccountBody, type DeleteAccountResponse } from '@tostao/contracts';
 import { api, ApiError } from '@/lib/api';
-import { clearToken } from '@/lib/session';
+import { clearSession } from '@/lib/session';
+import { rethrowIfRedirect } from '@/lib/rethrow';
 
 export type DeleteAccountState = { error?: string };
 
@@ -15,11 +16,14 @@ export async function deleteAccount(_: DeleteAccountState, form: FormData): Prom
     ...(confirmEmail !== undefined ? { confirmEmail } : {}),
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
+  let providerFailures: number;
   try {
-    await api('/me/delete', { method: 'POST', body: parsed.data });
+    ({ providerFailures } = await api<DeleteAccountResponse>('/me/delete', { method: 'POST', body: parsed.data }));
   } catch (e) {
+    rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
-  await clearToken();
-  redirect('/?conta=apagada');
+  await clearSession();
+  // Se o provedor falhou em desligar algum banco, a landing avisa pra revogar o acesso no Open Finance.
+  redirect(providerFailures > 0 ? '/?conta=apagada&bancos=revogar' : '/?conta=apagada');
 }

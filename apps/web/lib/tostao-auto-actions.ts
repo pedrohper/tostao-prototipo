@@ -8,6 +8,7 @@ import type {
   UpdateTostaoAutoConfigBody,
 } from '@tostao/contracts';
 import { api } from './api';
+import { safePathSegment } from './safe-redirect';
 
 export async function runTostaoCheckAction(): Promise<RunTostaoCheckResponse> {
   const res = await api<RunTostaoCheckResponse>('/tostao/auto/check', { method: 'POST' });
@@ -18,7 +19,9 @@ export async function runTostaoCheckAction(): Promise<RunTostaoCheckResponse> {
 }
 
 export async function applyTostaoInsightAction(id: string): Promise<ApplyTostaoInsightResponse> {
-  const res = await api<ApplyTostaoInsightResponse>(`/tostao/insights/${id}/apply`, { method: 'POST' });
+  const res = await api<ApplyTostaoInsightResponse>(`/tostao/insights/${safePathSegment(id)}/apply`, {
+    method: 'POST',
+  });
   revalidatePath('/inicio');
   revalidatePath('/tostao');
   revalidatePath('/carteira');
@@ -27,7 +30,7 @@ export async function applyTostaoInsightAction(id: string): Promise<ApplyTostaoI
 }
 
 export async function dismissTostaoInsightAction(id: string): Promise<TostaoInsightDTO> {
-  const res = await api<TostaoInsightDTO>(`/tostao/insights/${id}/dismiss`, { method: 'POST' });
+  const res = await api<TostaoInsightDTO>(`/tostao/insights/${safePathSegment(id)}/dismiss`, { method: 'POST' });
   revalidatePath('/inicio');
   revalidatePath('/tostao');
   return res;

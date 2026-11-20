@@ -1,6 +1,8 @@
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { isYieldTransaction, type AccountDetailResponse, type TransactionDTO } from '@tostao/contracts';
 import { api } from '@/lib/api';
+import { isSafePathSegment, safePathSegment } from '@/lib/safe-redirect';
 import { ago, currentMonth, dayLabel, money, monthName, nowMs, shiftMonth, shortDate } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
 import { BackLink, Eyebrow } from '@/components/ui';
@@ -19,12 +21,16 @@ export default async function ContaPage({
   searchParams: Promise<{ mes?: string; semEntreContas?: string; semRendimentos?: string }>;
 }) {
   const [{ id }, sp, { locale, t }] = await Promise.all([params, searchParams, getI18n()]);
+  if (!isSafePathSegment(id)) notFound();
   const dLabels = t.walletExtra.accountDetail;
   const hoje = currentMonth();
   const month = /^\d{4}-\d{2}$/.test(sp.mes ?? '') && sp.mes! <= hoje ? sp.mes! : hoje;
   const hideTransfers = sp.semEntreContas === '1';
   const hideYields = sp.semRendimentos === '1';
-  const [d, logos] = await Promise.all([api<AccountDetailResponse>(`/accounts/${id}?month=${month}`), getBankLogos()]);
+  const [d, logos] = await Promise.all([
+    api<AccountDetailResponse>(`/accounts/${safePathSegment(id)}?month=${month}`),
+    getBankLogos(),
+  ]);
   const a = d.account;
   const card = a.type === 'CREDIT';
   const fatura = Math.max(0, -a.balanceInCents);

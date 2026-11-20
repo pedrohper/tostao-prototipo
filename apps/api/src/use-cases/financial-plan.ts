@@ -67,30 +67,36 @@ export class SaveFinancialPlanUseCase {
       otherIncomes: plan.otherIncomes.map((i) => ({ ...i, pattern: i.pattern ? clean(i.pattern) : null })),
     };
     // A meta guarda quanto já foi guardado: o formulário da renda não manda isso, então mantém o que tinha.
-    const before = await this.repos.plans.get(userId);
-    const prevGoals = before ? resolveGoals(before) : [];
-    if (normalized.goals !== undefined) {
-      // Meta com id casa só pelo id. Meta sem id (cliente antigo) herda a da mesma posição, se ninguém reivindicou aquele id.
-      const claimed = new Set(normalized.goals.map((g) => g.id).filter(Boolean));
-      normalized.goals = normalized.goals.map((g, idx) => {
-        const byPosition = prevGoals[idx] && !claimed.has(prevGoals[idx].id) ? prevGoals[idx] : undefined;
-        const prev = g.id ? prevGoals.find((p) => p.id === g.id) : byPosition;
-        return { ...g, id: g.id ?? prev?.id ?? randomUUID(), savedInCents: g.savedInCents ?? prev?.savedInCents ?? 0 };
-      });
-      normalized.goal = normalized.goals[0] ?? null;
-    } else if (normalized.goal) {
-      const primaryId = normalized.goal.id ?? prevGoals[0]?.id ?? 'default';
-      const primarySaved =
-        normalized.goal.savedInCents ?? prevGoals[0]?.savedInCents ?? before?.goal?.savedInCents ?? 0;
-      const updatedPrimary = { ...normalized.goal, id: primaryId, savedInCents: primarySaved };
-      normalized.goal = updatedPrimary;
-      normalized.goals = [updatedPrimary, ...prevGoals.slice(1)];
-    } else if (prevGoals.length > 0) {
-      // O formulário da renda só conhece a meta principal: sem meta nem lista no corpo, as metas ficam como estavam.
-      normalized.goals = prevGoals;
-      normalized.goal = prevGoals[0] ?? null;
-    }
-    await this.repos.plans.save(userId, normalized);
+    // mutate: lê, aplica e grava com lock otimista (não atropela um "guardei R$ 50" que chegou no meio).
+    await this.repos.plans.mutate(userId, (before) => {
+      const draft: FinancialPlan = { ...normalized };
+      const prevGoals = before ? resolveGoals(before) : [];
+      if (draft.goals !== undefined) {
+        // Meta com id casa só pelo id. Meta sem id (cliente antigo) herda a da mesma posição, se ninguém reivindicou aquele id.
+        const claimed = new Set(draft.goals.map((g) => g.id).filter(Boolean));
+        draft.goals = draft.goals.map((g, idx) => {
+          const byPosition = prevGoals[idx] && !claimed.has(prevGoals[idx].id) ? prevGoals[idx] : undefined;
+          const prev = g.id ? prevGoals.find((p) => p.id === g.id) : byPosition;
+          return {
+            ...g,
+            id: g.id ?? prev?.id ?? randomUUID(),
+            savedInCents: g.savedInCents ?? prev?.savedInCents ?? 0,
+          };
+        });
+        draft.goal = draft.goals[0] ?? null;
+      } else if (draft.goal) {
+        const primaryId = draft.goal.id ?? prevGoals[0]?.id ?? 'default';
+        const primarySaved = draft.goal.savedInCents ?? prevGoals[0]?.savedInCents ?? before?.goal?.savedInCents ?? 0;
+        const updatedPrimary = { ...draft.goal, id: primaryId, savedInCents: primarySaved };
+        draft.goal = updatedPrimary;
+        draft.goals = [updatedPrimary, ...prevGoals.slice(1)];
+      } else if (prevGoals.length > 0) {
+        // O formulário da renda só conhece a meta principal: sem meta nem lista no corpo, as metas ficam como estavam.
+        draft.goals = prevGoals;
+        draft.goal = prevGoals[0] ?? null;
+      }
+      return draft;
+    });
 
     let updated = 0;
     const rules = marks.map((m) => ({ ...m, pattern: clean(m.pattern) })).filter((m) => m.pattern.length >= 3);
@@ -242,71 +248,80 @@ export function goalStatus(goal: Goal, cur: string, nextLeftInCents: number | nu
 }
 
 /** Criar, editar ou apagar metas sem passar pelo formulário da renda. */
+const EMPTY_PLAN: FinancialPlan = { salary: null, otherIncomes: [], fixedExpenses: [], benefits: [], goal: null };
+
+/** Metas: cada operação lê o plano, altera e grava com lock otimista (plans.mutate), sem perder escrita concorrente. */
 export class SetGoalUseCase {
   constructor(private readonly repos: Pick<Repositories, 'plans'>) {}
 
   async execute({ userId, goal }: { userId: string; goal: Goal | null }) {
-    const plan = await this.repos.plans.get(userId);
-    const base: FinancialPlan = plan ?? { salary: null, otherIncomes: [], fixedExpenses: [], benefits: [], goal: null };
-    const existing = resolveGoals(base);
-    if (!goal) {
-      const rest = existing.slice(1);
-      await this.repos.plans.save(userId, syncPlanGoals(base, rest));
-      return { goal: rest[0] ?? null, goals: rest };
-    }
-    const primary = existing[0];
-    const nextPrimary: Goal = {
-      ...goal,
-      id: goal.id ?? primary?.id ?? 'default',
-      savedInCents: goal.savedInCents ?? primary?.savedInCents ?? 0,
-    };
-    const nextGoals = [nextPrimary, ...existing.slice(1)];
-    await this.repos.plans.save(userId, syncPlanGoals(base, nextGoals));
-    return { goal: nextPrimary, goals: nextGoals };
+    let result!: { goal: Goal | null; goals: Goal[] };
+    await this.repos.plans.mutate(userId, (plan) => {
+      const base = plan ?? EMPTY_PLAN;
+      const existing = resolveGoals(base);
+      if (!goal) {
+        const rest = existing.slice(1);
+        result = { goal: rest[0] ?? null, goals: rest };
+        return syncPlanGoals(base, rest);
+      }
+      const primary = existing[0];
+      const nextPrimary: Goal = {
+        ...goal,
+        id: goal.id ?? primary?.id ?? 'default',
+        savedInCents: goal.savedInCents ?? primary?.savedInCents ?? 0,
+      };
+      const nextGoals = [nextPrimary, ...existing.slice(1)];
+      result = { goal: nextPrimary, goals: nextGoals };
+      return syncPlanGoals(base, nextGoals);
+    });
+    return result;
   }
 
   async add({ userId, goal }: { userId: string; goal: Goal }) {
-    const plan = await this.repos.plans.get(userId);
-    const base: FinancialPlan = plan ?? { salary: null, otherIncomes: [], fixedExpenses: [], benefits: [], goal: null };
-    const existing = resolveGoals(base);
-    if (existing.length >= 10) {
-      throw new AppError('Limite de 10 metas atingido.', 400);
-    }
-    const created: Goal = {
-      ...goal,
-      id: goal.id ?? randomUUID(),
-      savedInCents: goal.savedInCents ?? 0,
-    };
-    const nextGoals = [...existing, created];
-    await this.repos.plans.save(userId, syncPlanGoals(base, nextGoals));
-    return { goal: created, goals: nextGoals };
+    let result!: { goal: Goal; goals: Goal[] };
+    await this.repos.plans.mutate(userId, (plan) => {
+      const base = plan ?? EMPTY_PLAN;
+      const existing = resolveGoals(base);
+      if (existing.length >= 10) throw new AppError('Limite de 10 metas atingido.', 400);
+      const created: Goal = { ...goal, id: goal.id ?? randomUUID(), savedInCents: goal.savedInCents ?? 0 };
+      const nextGoals = [...existing, created];
+      result = { goal: created, goals: nextGoals };
+      return syncPlanGoals(base, nextGoals);
+    });
+    return result;
   }
 
   async update({ userId, id, goal }: { userId: string; id: string; goal: Goal }) {
-    const plan = await this.repos.plans.get(userId);
-    if (!plan) throw new ResourceNotFoundError('Meta');
-    const existing = resolveGoals(plan);
-    const idx = existing.findIndex((g) => g.id === id);
-    if (idx === -1) throw new ResourceNotFoundError('Meta');
-    const prev = existing[idx]!;
-    const updated: Goal = {
-      ...goal,
-      id: prev.id ?? id,
-      savedInCents: goal.savedInCents ?? prev.savedInCents ?? 0,
-    };
-    const nextGoals = existing.map((g, i) => (i === idx ? updated : g));
-    await this.repos.plans.save(userId, syncPlanGoals(plan, nextGoals));
-    return { goal: updated, goals: nextGoals };
+    let result!: { goal: Goal; goals: Goal[] };
+    await this.repos.plans.mutate(userId, (plan) => {
+      if (!plan) throw new ResourceNotFoundError('Meta');
+      const existing = resolveGoals(plan);
+      const idx = existing.findIndex((g) => g.id === id);
+      if (idx === -1) throw new ResourceNotFoundError('Meta');
+      const prev = existing[idx]!;
+      const updated: Goal = {
+        ...goal,
+        id: prev.id ?? id,
+        savedInCents: goal.savedInCents ?? prev.savedInCents ?? 0,
+      };
+      const nextGoals = existing.map((g, i) => (i === idx ? updated : g));
+      result = { goal: updated, goals: nextGoals };
+      return syncPlanGoals(plan, nextGoals);
+    });
+    return result;
   }
 
   async remove({ userId, id }: { userId: string; id: string }) {
-    const plan = await this.repos.plans.get(userId);
-    if (!plan) throw new ResourceNotFoundError('Meta');
-    const existing = resolveGoals(plan);
-    const nextGoals = existing.filter((g) => g.id !== id);
-    if (nextGoals.length === existing.length) throw new ResourceNotFoundError('Meta');
-    await this.repos.plans.save(userId, syncPlanGoals(plan, nextGoals));
-    return { goals: nextGoals };
+    let result!: { goals: Goal[] };
+    await this.repos.plans.mutate(userId, (plan) => {
+      if (!plan) throw new ResourceNotFoundError('Meta');
+      const existing = resolveGoals(plan);
+      const nextGoals = existing.filter((g) => g.id !== id);
+      if (nextGoals.length === existing.length) throw new ResourceNotFoundError('Meta');
+      result = { goals: nextGoals };
+      return syncPlanGoals(plan, nextGoals);
+    });
+    return result;
   }
 }
 
@@ -315,17 +330,20 @@ export class GoalDepositUseCase {
   constructor(private readonly repos: Pick<Repositories, 'plans'>) {}
 
   async execute({ userId, amountInCents, goalId }: { userId: string; amountInCents: number; goalId?: string }) {
-    const plan = await this.repos.plans.get(userId);
-    if (!plan) throw new ResourceNotFoundError('Meta');
-    const existing = resolveGoals(plan);
-    if (!existing.length) throw new ResourceNotFoundError('Meta');
-    const idx = goalId ? existing.findIndex((g) => g.id === goalId) : 0;
-    if (idx === -1) throw new ResourceNotFoundError('Meta');
-    const target = existing[idx]!;
-    const savedInCents = Math.max(0, (target.savedInCents ?? 0) + amountInCents);
-    const nextGoals = existing.map((g, i) => (i === idx ? { ...g, savedInCents } : g));
-    await this.repos.plans.save(userId, syncPlanGoals(plan, nextGoals));
-    return { savedInCents, goalId: target.id };
+    let result!: { savedInCents: number; goalId: string | undefined };
+    await this.repos.plans.mutate(userId, (plan) => {
+      if (!plan) throw new ResourceNotFoundError('Meta');
+      const existing = resolveGoals(plan);
+      if (!existing.length) throw new ResourceNotFoundError('Meta');
+      const idx = goalId ? existing.findIndex((g) => g.id === goalId) : 0;
+      if (idx === -1) throw new ResourceNotFoundError('Meta');
+      const target = existing[idx]!;
+      const savedInCents = Math.max(0, (target.savedInCents ?? 0) + amountInCents);
+      const nextGoals = existing.map((g, i) => (i === idx ? { ...g, savedInCents } : g));
+      result = { savedInCents, goalId: target.id };
+      return syncPlanGoals(plan, nextGoals);
+    });
+    return result;
   }
 }
 

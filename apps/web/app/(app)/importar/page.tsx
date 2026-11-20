@@ -18,7 +18,7 @@ export default async function ImportarPage({
   ]);
   const p = t.pages.importar;
   const contas = (me?.connections ?? [])
-    .filter((c) => c.itemId.startsWith('import:'))
+    .filter((c) => c.isImport)
     .map((c) => c.institution ?? '')
     .filter(Boolean);
   const backHref = resolveBackHref(voltar, '/mais');

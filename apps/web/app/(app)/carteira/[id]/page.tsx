@@ -1,6 +1,9 @@
 import type { CategoryDTO, PeopleResponse, TransactionDetailResponse } from '@tostao/contracts';
 import { Acerto } from './acerto';
+import { notFound } from 'next/navigation';
 import { api } from '@/lib/api';
+import { erroDe } from '@/lib/erros';
+import { isSafePathSegment, safeInternalPath, safePathSegment } from '@/lib/safe-redirect';
 import { dayLabel, money } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
 import { Sheet } from '@/components/sheet';
@@ -18,10 +21,11 @@ export default async function CategorizarPage({
   searchParams: Promise<{ voltar?: string; erro?: string }>;
 }) {
   const [{ id }, { voltar, erro }, { locale, t: dict }] = await Promise.all([params, searchParams, getI18n()]);
+  if (!isSafePathSegment(id)) notFound();
   const d = dict.walletExtra.txDetail;
-  const back = voltar?.startsWith('/') ? voltar : '/carteira';
+  const back = safeInternalPath(voltar, '/carteira');
   const [{ transaction: t, rulePattern }, { categories }, { people }] = await Promise.all([
-    api<TransactionDetailResponse>(`/transactions/${id}`),
+    api<TransactionDetailResponse>(`/transactions/${safePathSegment(id)}`),
     api<{ categories: CategoryDTO[] }>('/categories'),
     api<PeopleResponse>('/people').catch((): PeopleResponse => ({ people: [], owedToYouInCents: 0, youOweInCents: 0 })),
   ]);
@@ -47,7 +51,7 @@ export default async function CategorizarPage({
         </div>
       </div>
       {acerto ? (
-        <Acerto t={t} people={people} back={back} erro={erro === 'nota' ? undefined : erro} labels={d.split} />
+        <Acerto t={t} people={people} back={back} erro={erro === 'nota' ? undefined : erroDe(erro)} labels={d.split} />
       ) : t.isInternalTransfer && !neutral ? (
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2.5 rounded-[14px] bg-azul px-3 py-2.5 text-tinta">
@@ -107,7 +111,13 @@ export default async function CategorizarPage({
               {d.markInternalTransfer}
             </button>
           </form>
-          <Acerto t={t} people={people} back={back} erro={erro === 'nota' ? undefined : erro} labels={d.split} />
+          <Acerto
+            t={t}
+            people={people}
+            back={back}
+            erro={erro === 'nota' ? undefined : erroDe(erro)}
+            labels={d.split}
+          />
         </>
       )}
       <form action={saveTransactionNote} className="flex flex-col gap-2">

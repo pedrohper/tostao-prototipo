@@ -102,17 +102,17 @@ export function AuthForm({
         />
         {criar && (f.inviteCode ?? invite) && <input type="hidden" name="inviteCode" value={f.inviteCode ?? invite} />}
         {!criar && (
-          <details className="self-end text-right">
-            <summary className="flex h-10 cursor-pointer list-none items-center text-sm font-semibold text-laranja-texto">
-              {t.forgotPassword}
-            </summary>
-            <p className="max-w-[280px] text-[13px] text-tinta-suave">{t.forgotHelp}</p>
-          </details>
+          <Link
+            href="/esqueci-senha"
+            className="flex h-10 items-center self-end text-sm font-semibold text-laranja-texto no-underline hover:underline"
+          >
+            {t.forgotPassword}
+          </Link>
         )}
       </div>
       {criar && (
         <label className="flex cursor-pointer items-start gap-2.5 text-[13px] leading-[19px]">
-          <input type="checkbox" required className="mt-0 h-5 w-5 shrink-0 accent-tinta" />
+          <input type="checkbox" name="acceptedTerms" required className="mt-0 h-5 w-5 shrink-0 accent-tinta" />
           <span>
             {t.acceptTermsPrefix}
             <Link href="/termos" className="font-semibold underline">

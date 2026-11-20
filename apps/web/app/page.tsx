@@ -17,8 +17,8 @@ export const metadata: Metadata = {
 };
 
 // Quem já tem sessão vai direto pro app; quem não tem vê a landing.
-export default async function Root({ searchParams }: { searchParams: Promise<{ conta?: string }> }) {
+export default async function Root({ searchParams }: { searchParams: Promise<{ conta?: string; bancos?: string }> }) {
   if (await getToken()) redirect('/inicio');
-  const { conta } = await searchParams;
-  return <Landing contaApagada={conta === 'apagada'} />;
+  const { conta, bancos } = await searchParams;
+  return <Landing contaApagada={conta === 'apagada'} revogarBancos={conta === 'apagada' && bancos === 'revogar'} />;
 }

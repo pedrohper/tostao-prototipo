@@ -161,9 +161,9 @@ describe('rotas', () => {
     const reg = await app.inject({
       method: 'POST',
       url: '/users',
-      payload: { name: 'Pedro', email: 'm@x.com', password: '12345678' },
+      payload: { name: 'Pedro', email: 'm@x.com', password: '12345678', acceptedTerms: true },
     });
-    const auth = { authorization: `Bearer ${reg.json().token}` };
+    const auth = { authorization: `Bearer ${reg.json().accessToken}` };
     await app.inject({ method: 'POST', url: '/progress/m1-l1', headers: auth });
     expect(
       (await app.inject({ method: 'POST', url: '/activity', headers: auth, payload: { kind: 'visita:previsao' } }))
@@ -179,5 +179,81 @@ describe('rotas', () => {
       publicKey: null,
       subscribed: 0,
     });
+  });
+});
+
+describe('POST /push/subscriptions (SSRF e sequestro de inscrição)', () => {
+  const keys = { p256dh: 'A'.repeat(87), auth: 'a'.repeat(22) };
+  const endpoint = 'https://fcm.googleapis.com/fcm/send/aparelho-da-ana';
+
+  async function setup() {
+    const repos = makeInMemoryRepositories();
+    const app = await buildApp({
+      repos,
+      bank: new FakeBankGateway(),
+      jwtSecret: 'segredo-de-teste-123',
+      webOrigin: '*',
+    });
+    const login = async (email: string) => {
+      const reg = await app.inject({
+        method: 'POST',
+        url: '/users',
+        payload: { name: 'Fulano', email, password: '12345678', acceptedTerms: true },
+      });
+      return {
+        auth: { authorization: `Bearer ${reg.json().accessToken}` },
+        id: reg.json().user?.id as string | undefined,
+      };
+    };
+    const subscribe = (auth: { authorization: string }, body: unknown) =>
+      app.inject({ method: 'POST', url: '/push/subscriptions', headers: auth, payload: body as object });
+    return { repos, app, login, subscribe };
+  }
+
+  it('bloqueia endpoint interno ou fora da allowlist e aceita os serviços oficiais', async () => {
+    const { login, subscribe, repos } = await setup();
+    const { auth } = await login('a@x.com');
+    for (const bad of [
+      'http://127.0.0.1:3334/push',
+      'http://169.254.169.254/latest/meta-data',
+      'https://evil.com/push',
+      'https://127.0.0.1/push',
+      'https://fcm.googleapis.com:8443/x',
+    ]) {
+      expect((await subscribe(auth, { endpoint: bad, keys })).statusCode, bad).toBe(400);
+    }
+    for (const good of [
+      'https://fcm.googleapis.com/fcm/send/1',
+      'https://updates.push.services.mozilla.com/wpush/v2/1',
+      'https://web.push.apple.com/1',
+      'https://wns2-par02p.notify.windows.com/w/?token=1',
+    ]) {
+      expect((await subscribe(auth, { endpoint: good, keys })).statusCode, good).toBe(204);
+    }
+    expect(repos.engagement.push).toHaveLength(4);
+  });
+
+  it('usuário B não sobrescreve o endpoint registrado pelo usuário A', async () => {
+    const { login, subscribe, repos } = await setup();
+    const a = await login('ana@x.com');
+    const b = await login('bia@x.com');
+    expect((await subscribe(a.auth, { endpoint, keys })).statusCode).toBe(204);
+    const donoOriginal = repos.engagement.push[0]!.userId;
+
+    const roubo = await subscribe(b.auth, { endpoint, keys: { p256dh: 'B'.repeat(87), auth: 'b'.repeat(22) } });
+    expect(roubo.statusCode).toBe(403);
+    // nada mudou: mesmo dono, mesmas chaves
+    expect(repos.engagement.push).toHaveLength(1);
+    expect(repos.engagement.push[0]).toMatchObject({ userId: donoOriginal, p256dh: keys.p256dh, auth: keys.auth });
+  });
+
+  it('o dono pode reenviar a própria inscrição (renovar as chaves)', async () => {
+    const { login, subscribe, repos } = await setup();
+    const a = await login('ana@x.com');
+    await subscribe(a.auth, { endpoint, keys });
+    const novas = { p256dh: 'C'.repeat(87), auth: 'c'.repeat(22) };
+    expect((await subscribe(a.auth, { endpoint, keys: novas })).statusCode).toBe(204);
+    expect(repos.engagement.push).toHaveLength(1);
+    expect(repos.engagement.push[0]).toMatchObject(novas);
   });
 });

@@ -47,6 +47,8 @@ export function resolveOAuthError(
       return errors.cancelled;
     case 'unverified_email':
       return errors.unverifiedEmail;
+    case 'email_in_use_password':
+      return errors.emailInUsePassword;
     default:
       return errors.failed;
   }

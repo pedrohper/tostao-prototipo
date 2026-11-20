@@ -443,11 +443,13 @@ export class ApplyTostaoInsightUseCase {
     let appliedSummary = 'Concluído.';
 
     if (found.kind === 'uncategorized_batch') {
-      const r = await this.autoCategorize.execute({ userId });
+      const r = await this.autoCategorize.execute({ userId, source: 'user' });
       appliedSummary =
-        r.categorized > 0
-          ? `Caramelo categorizou ${r.categorized} ${r.categorized === 1 ? 'gasto' : 'gastos'}.`
-          : 'Nenhuma pendente pôde ser categorizada automaticamente agora — revise na Carteira.';
+        r.skipped === 'consent'
+          ? 'Pra eu categorizar com IA, aceite o aviso de uso de IA na aba Tostão. Enquanto isso, dá pra categorizar na mão na Carteira.'
+          : r.categorized > 0
+            ? `Caramelo categorizou ${r.categorized} ${r.categorized === 1 ? 'gasto' : 'gastos'}.`
+            : 'Nenhuma pendente pôde ser categorizada automaticamente agora — revise na Carteira.';
       redirectTo = r.categorized > 0 ? '/carteira' : '/carteira?filtro=pendentes';
     } else if (found.kind === 'duplicate_subscription') {
       const key = typeof found.payload.subscriptionKey === 'string' ? found.payload.subscriptionKey : null;

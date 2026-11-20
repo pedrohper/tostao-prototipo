@@ -1,6 +1,6 @@
 import { createPublicKey, generateKeyPairSync, sign, verify, type JsonWebKey } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { createAppleClientSecret, OidcOAuthGateway, verifyOidcIdToken } from './oauth-gateway.js';
+import { createAppleClientSecret, OidcOAuthGateway, safeEqualString, verifyOidcIdToken } from './oauth-gateway.js';
 
 function makeRsaPair(kid: string) {
   const { publicKey, privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
@@ -252,6 +252,7 @@ describe('OAuthGateway (Google e Apple)', () => {
       return new Response('not found', { status: 404 });
     };
 
+    let clockOffsetMs = 0;
     const gw = new OidcOAuthGateway({
       google: { clientId: 'g-client', clientSecret: 'g-secret' },
       apple: {
@@ -261,7 +262,7 @@ describe('OAuthGateway (Google e Apple)', () => {
         privateKey: ec.privateKey.export({ format: 'pem', type: 'pkcs8' }).toString(),
       },
       fetchImpl: fakeFetch,
-      clock: () => nowMs,
+      clock: () => nowMs + clockOffsetMs,
     });
 
     const g1 = await gw.exchangeCode({
@@ -279,11 +280,13 @@ describe('OAuthGateway (Google e Apple)', () => {
       name: 'Pedro',
     });
 
-    // Rotação de chave: kid gk2 não está no cache -> baixa JWKS de novo
+    // Rotação de chave: kid gk2 não está no cache -> baixa JWKS de novo (depois do cooldown de 60 s)
+    clockOffsetMs = 61_000;
     const g2 = await gw.exchangeCode({
       provider: 'google',
       code: 'code-rotated',
       redirectUri: 'https://app.tostao.test/api/auth/google/callback',
+      codeVerifier: 'v'.repeat(43),
       expectedNonce: 'nonce-1234567890123456',
     });
     expect(g2.providerAccountId).toBe('g-123');
@@ -302,5 +305,213 @@ describe('OAuthGateway (Google e Apple)', () => {
       emailVerified: true,
       name: null,
     });
+  });
+});
+
+const ISS = 'https://accounts.google.com';
+const NOW_MS = Date.parse('2026-11-19T18:00:00Z');
+const NOW_SEC = Math.floor(NOW_MS / 1000);
+
+describe('verifyOidcIdToken: claims', () => {
+  const key = makeRsaPair('k1');
+  const verifyWith = (claims: Record<string, unknown>) =>
+    verifyOidcIdToken({
+      idToken: key.signJwt({
+        iss: ISS,
+        aud: 'client-1',
+        sub: 'sub-1',
+        email: 'ana@exemplo.com',
+        email_verified: true,
+        nonce: 'nonce-ok-1234567890',
+        exp: NOW_SEC + 600,
+        ...claims,
+      }),
+      expectedIssuers: new Set([ISS]),
+      expectedAudience: 'client-1',
+      expectedNonce: 'nonce-ok-1234567890',
+      getKey: async () => key.jwk,
+      nowMs: NOW_MS,
+    });
+
+  it('só email_verified conta: is_private_email: true com email_verified: false NÃO é e-mail verificado', async () => {
+    const r1 = await verifyWith({ email_verified: false, is_private_email: true });
+    expect(r1.emailVerified).toBe(false);
+    const r2 = await verifyWith({ email_verified: false, is_private_email: 'true' });
+    expect(r2.emailVerified).toBe(false);
+    const r3 = await verifyWith({ email_verified: undefined, is_private_email: 'true' }); // ausente
+    expect(r3.emailVerified).toBe(false);
+    // Apple manda "true" como string
+    expect((await verifyWith({ email_verified: 'true' })).emailVerified).toBe(true);
+  });
+
+  it('nbf: token que só vale no futuro é rejeitado; dentro dos 60 s de tolerância passa', async () => {
+    await expect(verifyWith({ nbf: NOW_SEC + 3600 })).rejects.toThrow(/ainda não é válido/);
+    await expect(verifyWith({ nbf: NOW_SEC + 61 })).rejects.toThrow(/ainda não é válido/);
+    await expect(verifyWith({ nbf: NOW_SEC + 30 })).resolves.toBeTruthy();
+    await expect(verifyWith({ nbf: NOW_SEC - 10 })).resolves.toBeTruthy();
+  });
+
+  it('iat no futuro é rejeitado', async () => {
+    await expect(verifyWith({ iat: NOW_SEC + 3600 })).rejects.toThrow(/data inválida/);
+    await expect(verifyWith({ iat: NOW_SEC - 5 })).resolves.toBeTruthy();
+  });
+
+  it('aud em lista exige azp igual ao nosso client_id', async () => {
+    await expect(verifyWith({ aud: ['client-1', 'outro-app'] })).rejects.toThrow(/Autorizador/); // sem azp
+    await expect(verifyWith({ aud: ['client-1', 'outro-app'], azp: 'outro-app' })).rejects.toThrow(/Autorizador/);
+    await expect(verifyWith({ aud: ['client-1', 'outro-app'], azp: 'client-1' })).resolves.toBeTruthy();
+    // aud em string não precisa de azp
+    await expect(verifyWith({ aud: 'client-1' })).resolves.toBeTruthy();
+  });
+});
+
+describe('safeEqualString', () => {
+  it('compara sem depender do tamanho', () => {
+    expect(safeEqualString('abc', 'abc')).toBe(true);
+    expect(safeEqualString('abc', 'abd')).toBe(false);
+    expect(safeEqualString('abc', 'abcd')).toBe(false);
+    expect(safeEqualString('', 'a')).toBe(false);
+  });
+});
+
+describe('OidcOAuthGateway: PKCE, timeout e JWKS', () => {
+  const google = { clientId: 'g-client', clientSecret: 'g-secret' };
+  const CB = 'https://app.tostao.test/api/auth/google/callback';
+
+  it('Google exige PKCE: sem code_challenge na ida ou sem code_verifier na volta, falha', async () => {
+    const gw = new OidcOAuthGateway({ google });
+    expect(() => gw.buildAuthorizeUrl({ provider: 'google', redirectUri: CB, state: 's', nonce: 'n' })).toThrow(/PKCE/);
+    await expect(
+      gw.exchangeCode({ provider: 'google', code: 'c', redirectUri: CB, expectedNonce: 'n' }),
+    ).rejects.toThrow(/PKCE/);
+  });
+
+  it('todo fetch sai com timeout (AbortSignal)', async () => {
+    const key = makeRsaPair('k1');
+    const signals: (AbortSignal | undefined)[] = [];
+    const fetchImpl = (async (url: string | URL | Request, init?: RequestInit) => {
+      signals.push(init?.signal ?? undefined);
+      if (String(url).includes('token')) {
+        return new Response(
+          JSON.stringify({
+            id_token: key.signJwt({
+              iss: ISS,
+              aud: 'g-client',
+              sub: 's',
+              email: 'a@b.com',
+              email_verified: true,
+              nonce: 'nonce-1234567890123456',
+              exp: NOW_SEC + 600,
+            }),
+          }),
+          { status: 200 },
+        );
+      }
+      return new Response(JSON.stringify({ keys: [key.jwk] }), { status: 200 });
+    }) as typeof fetch;
+    const gw = new OidcOAuthGateway({ google, fetchImpl, clock: () => NOW_MS });
+    await gw.exchangeCode({
+      provider: 'google',
+      code: 'c',
+      redirectUri: CB,
+      codeVerifier: 'v'.repeat(43),
+      expectedNonce: 'nonce-1234567890123456',
+    });
+    expect(signals).toHaveLength(2); // token + JWKS
+    for (const signal of signals) expect(signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('timeout do provedor vira erro 502 amigável, não trava', async () => {
+    const fetchImpl = (async () => {
+      throw new DOMException('timeout', 'TimeoutError');
+    }) as unknown as typeof fetch;
+    const gw = new OidcOAuthGateway({ google, fetchImpl });
+    await expect(
+      gw.exchangeCode({
+        provider: 'google',
+        code: 'c',
+        redirectUri: CB,
+        codeVerifier: 'v'.repeat(43),
+        expectedNonce: 'n',
+      }),
+    ).rejects.toMatchObject({ statusCode: 502 });
+  });
+
+  it('kid desconhecido não vira um download do JWKS por requisição: 1 por minuto', async () => {
+    const key = makeRsaPair('k1');
+    let jwksCalls = 0;
+    let offset = 0;
+    const fetchImpl = (async (url: string | URL | Request) => {
+      if (String(url).includes('token')) {
+        const bad = makeRsaPair('kid-inventado');
+        return new Response(
+          JSON.stringify({
+            id_token: bad.signJwt({
+              iss: ISS,
+              aud: 'g-client',
+              sub: 's',
+              email: 'a@b.com',
+              email_verified: true,
+              nonce: 'nonce-1234567890123456',
+              exp: NOW_SEC + 3600,
+            }),
+          }),
+          { status: 200 },
+        );
+      }
+      jwksCalls++;
+      return new Response(JSON.stringify({ keys: [key.jwk] }), { status: 200 });
+    }) as typeof fetch;
+    const gw = new OidcOAuthGateway({ google, fetchImpl, clock: () => NOW_MS + offset });
+    const attempt = () =>
+      gw.exchangeCode({
+        provider: 'google',
+        code: 'c',
+        redirectUri: CB,
+        codeVerifier: 'v'.repeat(43),
+        expectedNonce: 'nonce-1234567890123456',
+      });
+
+    for (let i = 0; i < 10; i++) await expect(attempt()).rejects.toMatchObject({ statusCode: 401 });
+    expect(jwksCalls).toBe(1); // 10 tentativas, 1 download
+    offset = 61_000; // passou o cooldown: pode olhar de novo (rotação legítima)
+    await expect(attempt()).rejects.toMatchObject({ statusCode: 401 });
+    expect(jwksCalls).toBe(2);
+  });
+
+  it('falha ao baixar o JWKS também respeita o cooldown', async () => {
+    let jwksCalls = 0;
+    const fetchImpl = (async (url: string | URL | Request) => {
+      if (String(url).includes('token')) {
+        const k = makeRsaPair('k1');
+        return new Response(
+          JSON.stringify({
+            id_token: k.signJwt({
+              iss: ISS,
+              aud: 'g-client',
+              sub: 's',
+              email: 'a@b.com',
+              email_verified: true,
+              nonce: 'nonce-1234567890123456',
+              exp: NOW_SEC + 3600,
+            }),
+          }),
+          { status: 200 },
+        );
+      }
+      jwksCalls++;
+      return new Response('boom', { status: 500 });
+    }) as typeof fetch;
+    const gw = new OidcOAuthGateway({ google, fetchImpl, clock: () => NOW_MS });
+    const attempt = () =>
+      gw.exchangeCode({
+        provider: 'google',
+        code: 'c',
+        redirectUri: CB,
+        codeVerifier: 'v'.repeat(43),
+        expectedNonce: 'nonce-1234567890123456',
+      });
+    for (let i = 0; i < 5; i++) await expect(attempt()).rejects.toMatchObject({ statusCode: 502 });
+    expect(jwksCalls).toBe(1);
   });
 });

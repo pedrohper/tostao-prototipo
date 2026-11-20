@@ -2,12 +2,13 @@
 import type { MissionsResponse } from '@tostao/contracts';
 import { revalidatePath } from 'next/cache';
 import { api } from '@/lib/api';
+import { orFallback, rethrowIfRedirect } from '@/lib/rethrow';
 
 /** Marca a lição como feita no servidor e retorna ofensiva + semana atualizadas. */
 export async function markLessonDone(lessonId: string): Promise<MissionsResponse | null> {
   try {
     await api(`/progress/${encodeURIComponent(lessonId)}`, { method: 'POST' });
-    const missions = await api<MissionsResponse>('/missions').catch(() => null);
+    const missions = await api<MissionsResponse>('/missions').catch(orFallback(null));
     revalidatePath('/aprender');
     revalidatePath('/aprender/trilha');
     revalidatePath('/mais');
@@ -16,7 +17,8 @@ export async function markLessonDone(lessonId: string): Promise<MissionsResponse
     revalidatePath('/inicio');
     revalidatePath('/ofensiva');
     return missions;
-  } catch {
+  } catch (caught) {
+    rethrowIfRedirect(caught);
     return null;
   }
 }

@@ -51,9 +51,9 @@ describe('importar extrato', () => {
     await expect(
       new SyncBankConnectionUseCase({ ...repos, bank }).execute({ connectionId: connection.id }),
     ).resolves.toMatchObject({ importedCount: 0 });
-    expect(
-      await new DisconnectBankUseCase(repos.connections, bank).execute({ userId: 'u1', connectionId: connection.id }),
-    ).toEqual({ providerDeleted: true });
+    expect(await new DisconnectBankUseCase(repos, bank).execute({ userId: 'u1', connectionId: connection.id })).toEqual(
+      { providerDeleted: true },
+    );
     expect(repos.transactions.items).toHaveLength(0);
   });
 });

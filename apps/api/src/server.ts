@@ -16,10 +16,25 @@ import { AutoCategorizeUseCase } from './use-cases/auto-categorize.js';
 import { isSyncStale, scheduleDailySync, syncAllConnections } from './jobs/daily-sync.js';
 import { DisabledPushGateway, WebPushGateway } from './gateways/push-gateway.js';
 import { scheduleNotifications } from './jobs/notifications.js';
+import { scheduleOutbox } from './jobs/outbox.js';
 import { scheduleTostaoChecks, runPeriodicTostaoChecks } from './jobs/tostao-checks.js';
 import { BcbRatesGateway } from './gateways/rates-gateway.js';
 import { OidcOAuthGateway } from './gateways/oauth-gateway.js';
+import { makeEmailGateway } from './gateways/make-email-gateway.js';
+import { createKeyValueStore } from './lib/redis.js';
 import { buildN8nBridge, listenN8nBridge } from './http/n8n-bridge.js';
+
+/** "true"/"false" viram boolean; "a,b,c" vira lista (IPs/CIDRs/palavras-chave do proxy-addr); o resto passa direto. */
+function parseTrustProxy(raw: string): boolean | string | string[] {
+  if (raw === 'true') return true;
+  if (raw === 'false') return false;
+  return raw.includes(',')
+    ? raw
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : raw;
+}
 
 const repos = makePrismaRepositories(prisma);
 const bank = makeBankGateway(env);
@@ -41,6 +56,8 @@ const push =
   env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY
     ? new WebPushGateway(env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY, env.VAPID_SUBJECT)
     : new DisabledPushGateway();
+const email = makeEmailGateway(env);
+const kv = createKeyValueStore({ redisUrl: env.REDIS_URL, nodeEnv: process.env.NODE_ENV });
 const oauth = new OidcOAuthGateway({
   google:
     env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
@@ -62,6 +79,8 @@ const app = await buildApp({
   ai,
   whatsapp,
   oauth,
+  email,
+  kv,
   audioTranscriber,
   push,
   rates: new BcbRatesGateway(),
@@ -70,11 +89,12 @@ const app = await buildApp({
   chatDailyLimit: env.CHAT_DAILY_LIMIT,
   jwtSecret: env.JWT_SECRET,
   webOrigin: env.WEB_ORIGIN,
+  trustProxy: parseTrustProxy(env.TRUST_PROXY),
   logger: true,
 });
 
 const sync = new SyncBankConnectionUseCase({ ...repos, bank });
-const autoCategorize = new AutoCategorizeUseCase(repos, ai);
+const autoCategorize = new AutoCategorizeUseCase(repos, ai, kv);
 const syncEverything = async () => {
   await syncAllConnections(repos, sync);
   const users = new Set((await repos.connections.listActive()).map((c) => c.userId));
@@ -98,6 +118,7 @@ if (await isSyncStale(repos, 6 * 3600_000).catch(() => false)) {
 }
 
 scheduleNotifications(repos, push, whatsapp);
+scheduleOutbox(repos, bank);
 scheduleTostaoChecks(repos, { push, whatsapp });
 
 await app.listen({ port: env.PORT, host: env.HOST });

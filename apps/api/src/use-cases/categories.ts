@@ -50,14 +50,17 @@ export class CreateCategoryUseCase {
 
 /** Apaga uma categoria criada pela pessoa. As transações dela voltam pra "pendente". */
 export class DeleteCategoryUseCase {
-  constructor(private readonly repos: Pick<Repositories, 'categories' | 'transactions' | 'rules' | 'budgets'>) {}
+  constructor(private readonly repos: Pick<Repositories, 'categories' | 'transactions' | 'rules' | 'budgets' | 'tx'>) {}
 
   async execute({ userId, categoryId }: { userId: string; categoryId: string }) {
     const category = await this.repos.categories.findById(categoryId);
     if (!category || category.userId !== userId) throw new ResourceNotFoundError('Categoria');
-    await this.repos.transactions.clearCategory(categoryId);
-    await this.repos.rules.deleteByCategory(categoryId);
-    await this.repos.budgets.deleteByCategory(categoryId);
-    await this.repos.categories.delete(categoryId);
+    // Tudo ou nada, e sempre escopado ao dono: nada de uma pessoa mexe em dado de outra.
+    await this.repos.tx(async (r) => {
+      await r.transactions.clearCategory(userId, categoryId);
+      await r.rules.deleteByCategory(userId, categoryId);
+      await r.budgets.deleteByCategory(userId, categoryId);
+      await r.categories.delete(categoryId);
+    });
   }
 }

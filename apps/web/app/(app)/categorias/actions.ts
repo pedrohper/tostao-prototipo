@@ -2,6 +2,7 @@
 import { revalidatePath } from 'next/cache';
 import { createCategoryBody } from '@tostao/contracts';
 import { api, ApiError } from '@/lib/api';
+import { rethrowIfRedirect } from '@/lib/rethrow';
 
 export type CategoryState = { error?: string; ok?: string };
 
@@ -15,6 +16,7 @@ export async function createCategory(_: CategoryState, form: FormData): Promise<
   try {
     await api('/categories', { method: 'POST', body: parsed.data });
   } catch (e) {
+    rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
   revalidatePath('/', 'layout');
@@ -26,7 +28,8 @@ export async function deleteCategory(form: FormData) {
   if (!id) return;
   try {
     await api(`/categories/${encodeURIComponent(id)}`, { method: 'DELETE' });
-  } catch {
+  } catch (caught) {
+    rethrowIfRedirect(caught);
     /* se falhar, ela só continua na lista */
   }
   revalidatePath('/', 'layout');

@@ -124,7 +124,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
 
   const previousMonth = shiftMonth(month, -1);
   const shouldShowMonthlyClosing = currentDayOfMonth() <= 10;
-  const brokenConnections = profile.connections.filter((c) => c.status === 'ERROR' && !c.itemId.startsWith('import:'));
+  const brokenConnections = profile.connections.filter((c) => c.status === 'ERROR' && !c.isImport);
   const lastSyncIso = profile.connections
     .map((c) => c.lastSyncedAt)
     .filter((iso): iso is string => Boolean(iso))
