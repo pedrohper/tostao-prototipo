@@ -605,6 +605,11 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
 
   const visibleSections = resolveSectionOrder(prefs).filter(isSectionVisible);
 
+  const isPastMonth = month < hoje;
+  const rawBalanceLabel = isPastMonth
+    ? t.home.balanceAtEndOfMonth(currentMonthLabel)
+    : t.home.balanceInAccounts(bankAccounts.length);
+
   const balanceProps: BalanceCardProps = {
     month,
     balanceInCents: summary.balanceInCents,
@@ -612,8 +617,8 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     outcomeInCents: summary.outcomeInCents,
     outcomePct,
     walletLabel: t.nav.wallet,
-    balanceLabel: t.home.balanceInAccounts(bankAccounts.length),
-    balanceLabelDesktop: stripChevron(t.home.balanceInAccounts(bankAccounts.length)),
+    balanceLabel: rawBalanceLabel,
+    balanceLabelDesktop: stripChevron(rawBalanceLabel),
     noConnectedBankHint: t.home.noConnectedBankHint,
     incomeLabel: t.home.incomeLabel,
     incomeLabelDesktop: t.home.incomeLabel,

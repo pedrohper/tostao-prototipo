@@ -298,4 +298,89 @@ describe('fluxo do banco (conectar → sincronizar → resumo → categorizar)',
     expect(byExt.get('tx-dl')).toBe('transporte');
     expect(byExt.get('tx-override')).toBe('estudo');
   });
+
+  it('reconstrói o saldo final dos meses anteriores desfazendo movimentações da conta BANK até hoje', async () => {
+    const conn = await repos.connections.create({ userId: 'u1', itemId: 'item-hist', institution: 'Nubank' });
+    const bankAcc = await repos.accounts.upsertByExternalId({
+      userId: 'u1',
+      connectionId: conn.id,
+      externalId: 'acc-bank',
+      name: 'Conta Nubank',
+      type: 'BANK',
+      balanceInCents: 100000, // R$ 1.000,00 hoje (20/11)
+      fingerprint: null,
+    });
+    const cardAcc = await repos.accounts.upsertByExternalId({
+      userId: 'u1',
+      connectionId: conn.id,
+      externalId: 'acc-card',
+      name: 'Cartão Nubank',
+      type: 'CREDIT',
+      balanceInCents: -20000,
+      fingerprint: null,
+    });
+
+    // Movimentos de novembro (após fechamento de outubro)
+    await repos.transactions.create({
+      userId: 'u1',
+      accountId: bankAcc.id,
+      externalId: 'nov-in',
+      description: 'Salário novembro',
+      amountInCents: 50000, // +500
+      occurredAt: new Date('2026-11-05T12:00:00Z'),
+      categoryId: 'salario',
+      isInternalTransfer: false,
+    });
+    await repos.transactions.create({
+      userId: 'u1',
+      accountId: bankAcc.id,
+      externalId: 'nov-bill',
+      description: 'Pagamento fatura cartão',
+      amountInCents: -20000, // -200 (saiu da conta mesmo sendo transferência interna)
+      occurredAt: new Date('2026-11-10T12:00:00Z'),
+      categoryId: null,
+      isInternalTransfer: true,
+    });
+    // Compra no cartão em novembro: não altera saldo da conta corrente
+    await repos.transactions.create({
+      userId: 'u1',
+      accountId: cardAcc.id,
+      externalId: 'nov-card',
+      description: 'Mercado no cartão',
+      amountInCents: -15000,
+      occurredAt: new Date('2026-11-12T12:00:00Z'),
+      categoryId: 'mercado',
+      isInternalTransfer: false,
+    });
+    // Anotação manual em dinheiro (sem accountId) e lançamento futuro: não alteram saldo do banco
+    await repos.transactions.create({
+      userId: 'u1',
+      accountId: null,
+      externalId: null,
+      description: 'Café dinheiro',
+      amountInCents: -1200,
+      occurredAt: new Date('2026-11-14T12:00:00Z'),
+      categoryId: null,
+      isInternalTransfer: false,
+    });
+    await repos.transactions.create({
+      userId: 'u1',
+      accountId: bankAcc.id,
+      externalId: null,
+      description: 'Agendamento futuro',
+      amountInCents: -30000,
+      occurredAt: new Date('2026-12-05T12:00:00Z'),
+      categoryId: null,
+      isInternalTransfer: false,
+    });
+
+    const summaryUseCase = new GetMonthSummaryUseCase(repos, () => NOW);
+    const nov = await summaryUseCase.execute({ userId: 'u1', month: '2026-11' });
+    expect(nov.balanceInCents).toBe(100000);
+
+    // Fim de outubro = 1000 - (500 - 200) = 700,00 (70000 centavos)
+    const oct = await summaryUseCase.execute({ userId: 'u1', month: '2026-10' });
+    expect(oct.balanceInCents).toBe(70000);
+    expect(oct.accounts.find((a) => a.id === bankAcc.id)?.balanceInCents).toBe(70000);
+  });
 });

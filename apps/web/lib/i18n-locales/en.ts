@@ -51,6 +51,7 @@ export const en: Dictionary = {
     connectExpensesCta: 'Connect my accounts',
     logManualExpenseCta: 'Log an expense',
     balanceInAccounts: (count) => `Balance across ${count} ${count === 1 ? 'account' : 'accounts'} ›`,
+    balanceAtEndOfMonth: (month) => `Balance at end of ${month} ›`,
     hideBalanceAria: 'Hide balance and amounts',
     showBalanceAria: 'Show balance and amounts',
     noConnectedBankHint: 'No connected bank — counting manual entries only',

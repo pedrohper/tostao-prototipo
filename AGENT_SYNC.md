@@ -23,6 +23,13 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-20 · Antigravity · branch feat/inicio-mobills-anotacoes (saldo histórico mensal, avatar no Tostão e remoção de XP no Aprender)
+
+- **`apps/api/src/use-cases/get-month-summary.ts` & `bank-flow.spec.ts`:** quando `month < currentMonth()`, `GetMonthSummaryUseCase` agora reconstrói o saldo final das contas `BANK` desfazendo as movimentações em conta corrente ocorridas entre o fim do mês e `now` (ignorando compras de cartão `CREDIT`, anotações sem conta e lançamentos futuros).
+- **`apps/web/app/(app)/inicio/page.tsx` & `i18n-locales/{types,pt-br,en,es}.ts`:** em meses anteriores, o card de saldo exibe **"Saldo no fim de [mês]"**.
+- **`apps/web/app/(app)/tostao/page.tsx`:** substituído o wordmark SVG pela foto de avatar do Tostão (`Mascot pose="avatar"`) + título `Tostão` ao lado do botão **Análises**.
+- **`apps/web/app/(app)/aprender/page.tsx`:** removida a pílula `{xp} XP` do cabeçalho de **Aprender**.
+
 ### 2026-11-20 · Antigravity · branch feat/inicio-mobills-anotacoes (separação de Lição/Desafio, seletor de mês no Início e header limpo no Tostão)
 
 - **`apps/web/app/(app)/aprender/[licao]/player.tsx` & `i18n-locales/{types,pt-br,en,es}.ts`:** separado o fim da lição em 2 passos (`5/6 Lição concluída!` sem scroll vertical no mobile + botão **"Ver desafio da semana"**, e `6/6 Desafio da semana` focado no card menta + **"Topo o desafio"** / **"Agora não, voltar pro início"**).

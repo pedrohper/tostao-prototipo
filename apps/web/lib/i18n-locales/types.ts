@@ -39,6 +39,7 @@ export interface Dictionary {
     connectExpensesCta: string;
     logManualExpenseCta: string;
     balanceInAccounts: (count: number) => string;
+    balanceAtEndOfMonth: (month: string) => string;
     hideBalanceAria: string;
     showBalanceAria: string;
     noConnectedBankHint: string;

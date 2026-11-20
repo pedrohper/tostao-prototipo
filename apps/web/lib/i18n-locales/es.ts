@@ -52,6 +52,7 @@ export const es: Dictionary = {
     connectExpensesCta: 'Traer mis gastos',
     logManualExpenseCta: 'Anotar un gasto',
     balanceInAccounts: (count) => `Saldo en ${count} ${count === 1 ? 'cuenta' : 'cuentas'} ›`,
+    balanceAtEndOfMonth: (month) => `Saldo al final de ${month} ›`,
     hideBalanceAria: 'Ocultar saldo e importes',
     showBalanceAria: 'Mostrar saldo e importes',
     noConnectedBankHint: 'Sin banco conectado, contando solo lo que anotaste',

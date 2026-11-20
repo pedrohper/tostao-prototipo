@@ -51,6 +51,7 @@ export const ptBR: Dictionary = {
     connectExpensesCta: 'Trazer meus gastos',
     logManualExpenseCta: 'Anotar um gasto',
     balanceInAccounts: (count) => `Saldo em ${count} ${count === 1 ? 'conta' : 'contas'} ›`,
+    balanceAtEndOfMonth: (month) => `Saldo no fim de ${month} ›`,
     hideBalanceAria: 'Ocultar saldo e valores',
     showBalanceAria: 'Mostrar saldo e valores',
     noConnectedBankHint: 'Sem banco conectado, contando só o que você anotou',

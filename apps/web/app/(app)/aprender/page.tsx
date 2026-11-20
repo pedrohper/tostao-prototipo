@@ -13,7 +13,7 @@ import type {
 } from '@tostao/contracts';
 import { api } from '@/lib/api';
 import { currentMonth, todayIso } from '@/lib/format';
-import { NO_PROGRESS, xpFrom } from '@/lib/xp';
+import { NO_PROGRESS } from '@/lib/xp';
 import { DesktopSplitShell } from '@/components/lateral';
 import { StreakModalButton } from '@/components/streak-modal';
 import { getI18n } from '@/lib/i18n-server';
@@ -22,17 +22,16 @@ import { BookCarousel } from './book-carousel';
 import { getBookPageAssets } from '@/lib/art-assets';
 
 export default async function AprenderPage({ searchParams }: { searchParams: Promise<{ livro?: string }> }) {
-  const [{ livro }, { locale, t }, { done, streakDays, bonusXp = 0 }, , tribunal, battles, missions, friends] =
-    await Promise.all([
-      searchParams,
-      getI18n(),
-      api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
-      api<MonthSummaryResponse>(`/summary?month=${currentMonth()}`).catch(() => null),
-      api<TribunalResponse>('/tribunal').catch(() => null),
-      api<BattlesResponse>('/battles').catch(() => null),
-      api<MissionsResponse>('/missions').catch(() => null),
-      api<FriendsResponse>('/friends').catch(() => null),
-    ]);
+  const [{ livro }, { locale, t }, { done, streakDays }, , tribunal, battles, missions, friends] = await Promise.all([
+    searchParams,
+    getI18n(),
+    api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
+    api<MonthSummaryResponse>(`/summary?month=${currentMonth()}`).catch(() => null),
+    api<TribunalResponse>('/tribunal').catch(() => null),
+    api<BattlesResponse>('/battles').catch(() => null),
+    api<MissionsResponse>('/missions').catch(() => null),
+    api<FriendsResponse>('/friends').catch(() => null),
+  ]);
   const th = t.pages.learnExtra.hub;
   const tig = battles?.tigrinho;
   const batalhaLinha = !tig
@@ -46,7 +45,6 @@ export default async function AprenderPage({ searchParams }: { searchParams: Pro
         : th.battleTryAgain;
   const battlePct =
     tig && tig.totalDays > 0 ? Math.min(100, Math.max(0, Math.round((tig.day / tig.totalDays) * 100))) : 0;
-  const { xp } = xpFrom(done.length, bonusXp);
   // Módulo atual = o primeiro que ainda tem lição por fazer
   const atual = modules.find((m) => m.lessons.some((l) => !done.includes(l.id))) ?? null;
   const requestedBook = livro ? modules.find((m) => m.id === livro) : null;
@@ -121,10 +119,6 @@ export default async function AprenderPage({ searchParams }: { searchParams: Pro
             label={t.nav.streakDays(missions?.streakDays ?? streakDays)}
             backHref="/aprender"
           />
-          <span className="flex items-center gap-1 rounded-full bg-amarelo px-2.5 py-1.5 text-sm font-bold text-tinta-fixa lg:hidden">
-            <Icon src="ui/xp" size={18} />
-            {xp} XP
-          </span>
         </div>
       </div>
 
