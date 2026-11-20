@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { LessonProgressResponse, ProfileResponse, TostaoAutoResponse } from '@tostao/contracts';
-import { BankIcon, Eyebrow } from '@/components/ui';
+import { Eyebrow } from '@/components/ui';
 import { Icon } from '@/components/icone';
 import { DesktopSplitShell } from '@/components/lateral';
 import { Mascot } from '@/components/mascote';
@@ -158,7 +158,7 @@ export default async function MaisPage() {
           className="flex min-h-[68px] items-center gap-3.5 py-3 text-tinta no-underline transition-opacity hover:opacity-80"
         >
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-papel-2 text-tinta">
-            <BankIcon />
+            <Icon src="ui/banco" size={20} />
           </span>
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="text-[15px] font-bold">{myWalletTitle}</span>

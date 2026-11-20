@@ -23,6 +23,12 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-20 · Antigravity · branch feat/inicio-mobills-anotacoes (ícone ui/banco na tela /mais)
+
+- **`/mais` (`apps/web/app/(app)/mais/page.tsx`):** substituído `<BankIcon />` em **Minha carteira** pelo sticker já existente `<Icon src="ui/banco" size={20} />`.
+- **Pendentes nesta tela:** ainda faltam gerar os 2 ícones novos `ui/preferencias` (Preferências) e `ui/sobre` (Sobre & Legal).
+- **Validação:** Prettier, `pnpm typecheck`, `pnpm lint`, `pnpm --filter @tostao/web build` e reload do `tostao-web` via PM2.
+
 ### 2026-11-20 · Antigravity · branch feat/inicio-mobills-anotacoes (13 ícones finais — 56/56 completos)
 
 - **Ícones (`apps/web/public/icones/{modulo/[1-8],aba/{inicio,carteira,tostao,aprender,perfil}}.webp`):** integrados os 13 ícones restantes (`modulo/1` a `modulo/8` + as 5 versões inativas `aba/*`), normalizados para `256×256` RGBA com recorte ajustado (`230×230` centralizado) e fundo transparente preservado.
