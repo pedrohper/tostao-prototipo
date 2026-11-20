@@ -124,6 +124,7 @@ function FlowArrow({ direction }: { direction: 'up' | 'down' }) {
 const MASKED = '•••••';
 
 export interface BalanceCardProps {
+  month?: string;
   balanceInCents: number | null;
   incomeInCents: number;
   outcomeInCents: number;
@@ -142,7 +143,17 @@ export interface BalanceCardProps {
   accountsPreview: { name: string; balanceInCents: number }[];
 }
 
+function buildWalletHref(month: string | undefined, filtro?: 'entradas' | 'saidas') {
+  const params = new URLSearchParams();
+  if (month) params.set('mes', month);
+  if (filtro) params.set('filtro', filtro);
+  const qs = params.toString();
+  const base = qs ? `/carteira?${qs}` : '/carteira';
+  return filtro ? `${base}#lista` : base;
+}
+
 export function MobileBalanceCard({
+  month,
   balanceInCents,
   incomeInCents,
   outcomeInCents,
@@ -155,10 +166,13 @@ export function MobileBalanceCard({
   showBalanceAria,
 }: BalanceCardProps) {
   const hidden = useHiddenBalance();
+  const walletHref = buildWalletHref(month);
+  const incomeHref = buildWalletHref(month, 'entradas');
+  const outcomeHref = buildWalletHref(month, 'saidas');
 
   return (
     <div className="relative flex flex-col gap-3.5 rounded-[22px] border border-linha bg-cartao p-[18px]">
-      <Link href="/carteira" aria-label={walletLabel} className="absolute inset-0 rounded-[22px]" />
+      <Link href={walletHref} aria-label={walletLabel} className="absolute inset-0 rounded-[22px]" />
       <div className="flex items-start justify-between gap-2">
         {balanceInCents !== null ? (
           <div className="flex min-w-0 flex-col gap-0.5">
@@ -180,10 +194,7 @@ export function MobileBalanceCard({
       </div>
 
       <div className="relative z-[1] grid grid-cols-2 gap-2.5 border-t border-linha pt-3.5">
-        <Link
-          href="/carteira?filtro=entradas#lista"
-          className="flex min-w-0 items-center gap-2.5 text-tinta no-underline"
-        >
+        <Link href={incomeHref} className="flex min-w-0 items-center gap-2.5 text-tinta no-underline">
           <span
             aria-hidden
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-menta-clara text-verde-texto"
@@ -197,10 +208,7 @@ export function MobileBalanceCard({
             </span>
           </span>
         </Link>
-        <Link
-          href="/carteira?filtro=saidas#lista"
-          className="flex min-w-0 items-center gap-2.5 text-tinta no-underline"
-        >
+        <Link href={outcomeHref} className="flex min-w-0 items-center gap-2.5 text-tinta no-underline">
           <span
             aria-hidden
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rosa text-vermelho-texto"
@@ -220,6 +228,7 @@ export function MobileBalanceCard({
 }
 
 export function DesktopBalanceRow({
+  month,
   balanceInCents,
   incomeInCents,
   outcomeInCents,
@@ -234,11 +243,14 @@ export function DesktopBalanceRow({
   accountsPreview,
 }: BalanceCardProps) {
   const hidden = useHiddenBalance();
+  const walletHref = buildWalletHref(month);
+  const incomeHref = buildWalletHref(month, 'entradas');
+  const outcomeHref = buildWalletHref(month, 'saidas');
 
   return (
     <div className="grid grid-cols-2 gap-4 xl:grid-cols-[1.25fr_1fr_1fr] xl:gap-5">
       <div className="relative col-span-2 flex min-w-0 flex-col gap-1 rounded-[22px] border border-linha bg-cartao p-[22px] text-tinta xl:col-span-1">
-        <Link href="/carteira" aria-label={walletLabel} className="absolute inset-0 rounded-[22px]" />
+        <Link href={walletHref} aria-label={walletLabel} className="absolute inset-0 rounded-[22px]" />
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm font-semibold text-tinta-suave">{balanceLabelDesktop}</span>
           <EyeButton
@@ -262,7 +274,7 @@ export function DesktopBalanceRow({
       </div>
 
       <Link
-        href="/carteira?filtro=entradas#lista"
+        href={incomeHref}
         className="flex min-w-0 flex-col gap-1 rounded-[22px] border border-linha bg-cartao p-[22px] text-tinta no-underline"
       >
         <span className="text-sm font-semibold text-tinta-suave">{incomeLabelDesktop}</span>
@@ -272,7 +284,7 @@ export function DesktopBalanceRow({
       </Link>
 
       <Link
-        href="/carteira?filtro=saidas#lista"
+        href={outcomeHref}
         className="flex min-w-0 flex-col gap-1 rounded-[22px] border border-linha bg-cartao p-[22px] text-tinta no-underline"
       >
         <span className="text-sm font-semibold text-tinta-suave">{outcomeLabelDesktop}</span>

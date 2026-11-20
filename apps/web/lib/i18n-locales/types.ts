@@ -46,6 +46,8 @@ export interface Dictionary {
     shortcutAnnotate: string;
     incomeInMonth: (month: string) => string;
     outcomeInMonth: (month: string) => string;
+    incomeLabel: string;
+    outcomeLabel: string;
     tellIncomePromptTitle: string;
     tellIncomePromptBody: string;
     upcomingMonthsLabel: string;
@@ -1230,7 +1232,7 @@ export interface Dictionary {
       exitLessonAria: string;
       stepAria: (step: number, total: number) => string;
       modulePrefix: (n: number, title: string) => string;
-      steps: readonly [string, string, string, string, string];
+      steps: readonly [string, string, string, string, string, string];
       simulatorWip: string;
       optionLabel: (side: 'A' | 'B') => string;
       sideAFor: string;
@@ -1238,6 +1240,7 @@ export interface Dictionary {
       dilemmaNote: string;
       lessonDoneTitle: string;
       lessonDoneStreakDays: (days: number) => string;
+      seeWeeklyChallenge: string;
       weeklyChallengeEyebrow: string;
       weeklyChallengeHint: string;
       challengeAcceptedBadge: string;

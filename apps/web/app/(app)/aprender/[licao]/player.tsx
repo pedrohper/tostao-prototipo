@@ -33,6 +33,7 @@ const STEP_META: { pose: MascotPose; bg: string }[] = [
   { pose: 'pensando', bg: 'bg-azul' },
   { pose: 'pensando', bg: 'bg-rosa' },
   { pose: 'comemorando', bg: 'bg-papel' },
+  { pose: 'orgulhoso', bg: 'bg-papel' },
 ];
 
 const CHALLENGE_ROUTES: Record<string, string> = {
@@ -87,7 +88,9 @@ export function LessonPlayer({
   const headerPose: MascotPose = step <= 1 ? storyMeta.poses[0] : s.pose;
   const stepLabel = t.steps[step] ?? '';
   const Sim = SIMULATORS[lesson.id];
-  const last = step === STEP_META.length - 1;
+  const isCompletion = step === 4;
+  const isChallenge = step === 5;
+  const isEndFlow = isCompletion || isChallenge;
   const cleanCommitment = lesson.commitment.replace(/\s*---\s*$/, '').trim();
   const challengeRoute = CHALLENGE_ROUTES[lesson.id];
 
@@ -97,7 +100,7 @@ export function LessonPlayer({
   const weekDays = buildWeekDays(today, missions?.week);
 
   const advance = () => {
-    if (step === STEP_META.length - 2) {
+    if (step === 3) {
       playSound('festa');
       void markLessonDone(lesson.id).then((updated) => {
         if (updated) setMissions(updated);
@@ -125,7 +128,7 @@ export function LessonPlayer({
   return (
     <div className="mx-auto w-full max-w-[680px] md:my-6 md:min-h-0 md:rounded-[28px] md:border md:border-linha md:bg-cartao md:p-6 md:pb-8">
       <div
-        className={`-mx-5 -mt-6 -mb-28 flex min-h-dvh flex-col gap-4 px-5 pt-6 pb-28 md:mx-0 md:mt-0 md:mb-0 md:min-h-0 md:rounded-[20px] md:p-5 ${last ? 'md:p-7' : ''} ${s.bg}`}
+        className={`-mx-5 -mt-6 -mb-28 flex min-h-dvh flex-col gap-4 px-5 pt-6 pb-28 md:mx-0 md:mt-0 md:mb-0 md:min-h-0 md:rounded-[20px] md:p-5 ${isEndFlow ? 'md:p-7' : ''} ${s.bg}`}
       >
         <div className="flex items-center gap-3">
           <Link href="/aprender" aria-label={t.exitLessonAria} className="text-2xl leading-none">
@@ -138,7 +141,7 @@ export function LessonPlayer({
           </div>
         </div>
 
-        {!last && (
+        {!isEndFlow && (
           <>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs font-bold tracking-wider text-laranja-texto uppercase">
@@ -243,11 +246,11 @@ export function LessonPlayer({
               )}
             </div>
           )}
-          {step === 4 && (
-            <div className="flex flex-1 flex-col gap-[18px] pt-2">
+          {isCompletion && (
+            <div className="flex flex-1 flex-col justify-center gap-5 py-2">
               <Confetti />
               <div className="flex justify-center">
-                <Mascot pose="comemorando" size={210} alt="Tostão comemorando" />
+                <Mascot pose="comemorando" size={196} alt="Tostão comemorando" />
               </div>
               <div className="flex flex-col items-center gap-2.5 text-center">
                 <h1 className="font-display text-[32px] leading-[36px] font-extrabold text-tinta">
@@ -294,8 +297,14 @@ export function LessonPlayer({
                   );
                 })}
               </div>
-
-              <div className="flex flex-col gap-1.5 rounded-[18px] bg-menta-clara p-4 text-left">
+            </div>
+          )}
+          {isChallenge && (
+            <div className="flex flex-1 flex-col justify-center gap-5 py-2">
+              <div className="flex justify-center">
+                <Mascot pose="orgulhoso" size={144} alt="Tostão" />
+              </div>
+              <div className="flex flex-col gap-2 rounded-[22px] bg-menta-clara p-5 text-left">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-xs font-semibold tracking-[0.08em] text-tinta uppercase">
                     {t.weeklyChallengeEyebrow}
@@ -306,18 +315,29 @@ export function LessonPlayer({
                     </span>
                   )}
                 </div>
-                <p className="font-display text-[20px] leading-[26px] font-bold text-tinta">{cleanCommitment}</p>
+                <p className="font-display text-[22px] leading-[28px] font-bold text-tinta">{cleanCommitment}</p>
                 <p className="text-sm leading-5 text-tinta/85">
                   {challengeAccepted ? t.challengeAcceptedHint : t.weeklyChallengeHint}
                 </p>
               </div>
-              <div className="flex-1" />
             </div>
           )}
         </div>
 
-        {last ? (
-          <div className="flex flex-col gap-2.5 pt-1">
+        {isCompletion ? (
+          <div className="flex flex-col gap-2 pt-1">
+            <Button variant="laranja" onClick={() => setStep(5)}>
+              {t.seeWeeklyChallenge}
+            </Button>
+            <Link
+              href="/inicio"
+              className="flex h-10 items-center justify-center text-sm font-semibold text-tinta-suave no-underline transition-colors hover:text-tinta"
+            >
+              {t.backToHome}
+            </Link>
+          </div>
+        ) : isChallenge ? (
+          <div className="flex flex-col gap-2 pt-1">
             {!challengeAccepted ? (
               <>
                 <Button variant="laranja" onClick={handleAcceptChallenge}>

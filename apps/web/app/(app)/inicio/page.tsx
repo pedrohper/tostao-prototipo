@@ -30,14 +30,12 @@ import {
   ago,
   currentDayOfMonth,
   currentMonth,
-  fullDateLabel,
   money,
   monthName,
   nowMs,
   shiftMonth,
   shortDate,
   todayIso,
-  updatedTimeLabel,
 } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
 import { restoreDismissedAlerts } from '@/lib/inicio-actions';
@@ -54,8 +52,29 @@ const DESKTOP_LEFT_EXTRAS = new Set<HomeSectionId>(['sobra', 'cartoes', 'limites
 const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
 const stripChevron = (str: string) => str.replace(/\s*›$/, '');
 
-export default async function HomePage() {
-  const month = currentMonth();
+function MonthChevron({ d }: { d: string }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={d} />
+    </svg>
+  );
+}
+
+export default async function HomePage({ searchParams }: { searchParams?: Promise<{ mes?: string }> }) {
+  const sp = await (searchParams ?? Promise.resolve<{ mes?: string }>({}));
+  const hoje = currentMonth();
+  const rawMes = sp.mes;
+  const month = /^\d{4}-\d{2}$/.test(rawMes ?? '') && rawMes! <= hoje ? rawMes! : hoje;
   const [prefs, { locale, t }] = await Promise.all([readHomePrefs(), getI18n()]);
   const isSectionVisible = (id: HomeSectionId) => !prefs.ocultos.includes(id);
   const isAlertOpen = (key: string) => !prefs.fechados.includes(key);
@@ -334,7 +353,10 @@ export default async function HomePage() {
       <section className="flex flex-col gap-3">
         <div className="flex items-baseline justify-between">
           <h2 className="font-display text-xl leading-[26px] font-extrabold">{t.home.whereItWentTitle}</h2>
-          <Link href="/carteira?filtro=saidas#lista" className="text-[13px] font-semibold text-laranja-texto">
+          <Link
+            href={`/carteira?mes=${month}&filtro=saidas#lista`}
+            className="text-[13px] font-semibold text-laranja-texto"
+          >
             {t.home.viewAll}
           </Link>
         </div>
@@ -584,6 +606,7 @@ export default async function HomePage() {
   const visibleSections = resolveSectionOrder(prefs).filter(isSectionVisible);
 
   const balanceProps: BalanceCardProps = {
+    month,
     balanceInCents: summary.balanceInCents,
     incomeInCents: summary.incomeInCents,
     outcomeInCents: summary.outcomeInCents,
@@ -592,10 +615,10 @@ export default async function HomePage() {
     balanceLabel: t.home.balanceInAccounts(bankAccounts.length),
     balanceLabelDesktop: stripChevron(t.home.balanceInAccounts(bankAccounts.length)),
     noConnectedBankHint: t.home.noConnectedBankHint,
-    incomeLabel: stripChevron(t.home.incomeInMonth(currentMonthLabel)),
-    incomeLabelDesktop: stripChevron(t.home.incomeInMonth(currentMonthLabel)),
-    outcomeLabel: stripChevron(t.home.outcomeInMonth(currentMonthLabel)),
-    outcomeLabelDesktop: stripChevron(t.home.outcomeInMonth(currentMonthLabel)),
+    incomeLabel: t.home.incomeLabel,
+    incomeLabelDesktop: t.home.incomeLabel,
+    outcomeLabel: t.home.outcomeLabel,
+    outcomeLabelDesktop: t.home.outcomeLabel,
     percentOfIncomeLabel: outcomePct !== null ? t.home.percentOfIncome(outcomePct) : null,
     hideBalanceAria: t.home.hideBalanceAria,
     showBalanceAria: t.home.showBalanceAria,
@@ -677,7 +700,7 @@ export default async function HomePage() {
     <section className="flex flex-col gap-4 rounded-[22px] border border-linha bg-cartao p-[22px]">
       <div className="flex items-baseline justify-between gap-2">
         <h2 className="font-display text-[22px] leading-7 font-extrabold text-tinta">{t.home.whereItWentTitle}</h2>
-        <Link href="/carteira" className="text-sm font-semibold text-laranja-texto no-underline">
+        <Link href={`/carteira?mes=${month}`} className="text-sm font-semibold text-laranja-texto no-underline">
           {t.home.viewWallet}
         </Link>
       </div>
@@ -897,6 +920,50 @@ export default async function HomePage() {
     </>
   );
 
+  const monthSelectorLabel =
+    month.slice(0, 4) === hoje.slice(0, 4)
+      ? capitalize(currentMonthLabel)
+      : `${capitalize(currentMonthLabel)} ${month.slice(0, 4)}`;
+  const prevMes = shiftMonth(month, -1);
+  const nextMes = shiftMonth(month, 1);
+  const canGoNext = month < hoje;
+
+  const renderMonthSelector = (variant: 'mobile' | 'desktop') => (
+    <div
+      className={`inline-flex h-10 items-center rounded-full text-sm ${
+        variant === 'desktop'
+          ? 'gap-1 bg-tinta px-1.5 font-semibold text-papel'
+          : 'gap-0.5 bg-papel-2 px-1 font-bold text-tinta'
+      }`}
+    >
+      <Link
+        href={`/inicio?mes=${prevMes}`}
+        aria-label={t.walletExtra.main.prevMonth}
+        className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+          variant === 'desktop' ? 'hover:bg-papel/15' : 'hover:bg-linha/60'
+        }`}
+      >
+        <MonthChevron d="M15 18l-6-6 6-6" />
+      </Link>
+      <span className="px-2 whitespace-nowrap">{monthSelectorLabel}</span>
+      {canGoNext ? (
+        <Link
+          href={nextMes === hoje ? '/inicio' : `/inicio?mes=${nextMes}`}
+          aria-label={t.walletExtra.main.nextMonth}
+          className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+            variant === 'desktop' ? 'hover:bg-papel/15' : 'hover:bg-linha/60'
+          }`}
+        >
+          <MonthChevron d="M9 18l6-6-6-6" />
+        </Link>
+      ) : (
+        <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full opacity-25">
+          <MonthChevron d="M9 18l6-6-6-6" />
+        </span>
+      )}
+    </div>
+  );
+
   return (
     <DesktopSplitShell rightWidth={320} right={rightRail}>
       {missions && (
@@ -910,11 +977,8 @@ export default async function HomePage() {
 
       {/* Mobile & Tablet (< lg) */}
       <div className="flex flex-col gap-6 lg:hidden">
-        <header className="flex items-center justify-between gap-3">
-          <div className="flex min-w-0 flex-col">
-            <h1 className="font-display text-[24px] leading-[30px] font-extrabold text-tinta">{t.nav.home}</h1>
-            <span className="truncate text-xs font-medium text-tinta-suave">{fullDateLabel(new Date(), locale)}</span>
-          </div>
+        <header className="flex items-center justify-between gap-2">
+          {renderMonthSelector('mobile')}
           <div className="shrink-0">
             <StreakModalButton
               days={missions?.streakDays ?? progress.streakDays}
@@ -948,13 +1012,7 @@ export default async function HomePage() {
       {/* Desktop (lg+) */}
       <div className="hidden lg:flex lg:flex-col lg:gap-7">
         <header className="flex items-center justify-between gap-4">
-          <div className="flex flex-col gap-0.5">
-            <h1 className="font-display text-[28px] leading-[34px] font-extrabold text-tinta">{t.nav.home}</h1>
-            <span className="text-xs text-tinta-suave">
-              {fullDateLabel(new Date(), locale)}
-              {lastSyncIso ? ` · ${updatedTimeLabel(lastSyncIso, locale)}` : ''}
-            </span>
-          </div>
+          {renderMonthSelector('desktop')}
           <div className="flex shrink-0 items-center gap-2">
             <StreakModalButton
               days={missions?.streakDays ?? progress.streakDays}
@@ -962,9 +1020,6 @@ export default async function HomePage() {
               locale={locale}
               label={t.nav.streakDays(missions?.streakDays ?? progress.streakDays)}
             />
-            <span className="flex h-10 items-center rounded-full bg-papel-2 px-4 text-sm font-semibold text-tinta">
-              {capitalize(currentMonthLabel)}
-            </span>
             <span
               className={`flex h-10 items-center rounded-full px-4 text-sm font-bold ${
                 isMonthInGreen ? 'bg-menta-clara text-verde-texto' : 'bg-rosa text-vermelho-texto'

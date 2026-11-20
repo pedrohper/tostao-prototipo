@@ -133,7 +133,7 @@ export function ChatClient({
   }, [initialQuery]);
 
   return (
-    <div className="-mb-10 flex h-[calc(100dvh-14.5rem)] min-h-[360px] w-full min-w-0 flex-col gap-3 overflow-hidden md:mb-0 md:h-[calc(100dvh-11rem)] lg:h-[calc(100dvh-10rem)]">
+    <div className="-mb-10 flex h-[calc(100dvh-12.5rem)] min-h-[360px] w-full min-w-0 flex-col gap-3 overflow-hidden md:mb-0 md:h-[calc(100dvh-11rem)] lg:h-[calc(100dvh-10rem)]">
       {askIncome && (
         <Link
           href="/renda?voltar=/tostao"

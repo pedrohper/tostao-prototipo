@@ -23,6 +23,12 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-20 · Antigravity · branch feat/inicio-mobills-anotacoes (separação de Lição/Desafio, seletor de mês no Início e header limpo no Tostão)
+
+- **`apps/web/app/(app)/aprender/[licao]/player.tsx` & `i18n-locales/{types,pt-br,en,es}.ts`:** separado o fim da lição em 2 passos (`5/6 Lição concluída!` sem scroll vertical no mobile + botão **"Ver desafio da semana"**, e `6/6 Desafio da semana` focado no card menta + **"Topo o desafio"** / **"Agora não, voltar pro início"**).
+- **`apps/web/app/(app)/inicio/{page.tsx,balance-card.tsx}`:** removidos o título **"Início"**, a data por extenso e o `"em [mês]"` dos cards de **Receitas** e **Despesas**; substituído o cabeçalho (mobile e desktop) pelo seletor de mês estilo Mobills (`‹ Novembro ›`, via `?mes=YYYY-MM`), que atualiza `/summary`, `/budgets` e preserva `mes` nos links para `/carteira`.
+- **`apps/web/app/(app)/tostao/page.tsx` & `chat/chat-client.tsx`:** substituído o título `Tostão` e a barra de 2 abas pelo wordmark SVG do `tostão` à esquerda e o botão pill **Análises** (com badge de pendências) à direita, ganhando área útil de chat no mobile.
+
 ### 2026-11-20 · Antigravity · branch feat/inicio-mobills-anotacoes (nova tela de Lição concluída)
 
 - **`apps/web/app/(app)/aprender/[licao]/player.tsx`:** fluxo unificado em 5 passos (`Seu extrato` → `A ideia` → `Brinca com o número` → `Dilema` → `Lição concluída!`), implementando a nova tela final fiel ao design `19 · Lição concluída`: mascote `comemorando` + confete, título **"Lição concluída!"**, pílulas `+20 XP` e `🔥 X dias seguidos`, card da sequência semanal (`S T Q Q S S D`) com dias cumpridos em laranja e destaque de anel no dia de hoje, card menta **"Desafio da semana"** com o `commitment` da lição, botão laranja **"Topo o desafio"** (salva localmente em `tostao-desafios-aceitos`, confirma visualmente e, quando o desafio corresponde a uma tela do app como `/carteira?filtro=pendentes`, `/limites`, `/assinaturas`, `/meta` ou `/investir`, redireciona direto) e link secundário **"Agora não, voltar pro início"**.
