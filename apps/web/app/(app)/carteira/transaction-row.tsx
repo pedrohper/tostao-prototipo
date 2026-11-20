@@ -181,7 +181,7 @@ export function FilterDropdown({
       {open && (
         <div
           role="menu"
-          className="absolute top-full right-0 z-30 mt-2 max-h-[320px] min-w-[220px] overflow-y-auto rounded-2xl border border-linha bg-cartao p-1.5 shadow-xl"
+          className="absolute top-full right-0 z-30 mt-2 max-h-[320px] w-max min-w-[220px] max-w-[min(280px,calc(100vw-2.5rem))] overflow-y-auto rounded-2xl border border-linha bg-cartao p-1.5 shadow-xl"
         >
           {options.map((opt) => (
             <Fragment key={`${opt.href}-${opt.label}`}>

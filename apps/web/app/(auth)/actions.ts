@@ -12,7 +12,11 @@ export async function login(_: FormState, form: FormData): Promise<FormState> {
   const parsed = loginBody.safeParse(raw);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message, fields: raw };
   try {
-    const { token } = await api<AuthResponse>('/sessions', { method: 'POST', body: parsed.data });
+    const { token } = await api<AuthResponse>('/sessions', {
+      method: 'POST',
+      body: parsed.data,
+      skipAuthRedirect: true,
+    });
     await setToken(token);
   } catch (e) {
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.', fields: raw };

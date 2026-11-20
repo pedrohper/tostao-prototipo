@@ -23,6 +23,13 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-20 · Antigravity · branch feat/inicio-mobills-anotacoes (fix Next.js chunk mismatch / 401 streaming redirect e menu de filtro mobile)
+
+- **Reinício real do `tostao-web` no PM2:** `pm2 reload tostao-api tostao-web` recarregava apenas o primeiro processo (`tostao-api`), deixando o `next-server` do `tostao-web` com manifesto/chunks do build anterior enquanto o `.next` em disco já havia sido substituído por `pnpm build` (causando falha ao carregar telas e botões client não hidratados no mobile). Passou a usar `pm2 restart tostao-web` dedicado.
+- **`apps/web/lib/api.ts` & `apps/web/app/(auth)/actions.ts`:** requisições SSR concorrentes em `(app)/*/page.tsx` sem cookie de sessão antes lançavam `ApiError` 401 em paralelo ao `redirect('/entrar')` do layout; agora `api()` redireciona para `/entrar` no 401 sem token, exceto quando `skipAuthRedirect: true` é passado no login (`/sessions`).
+- **`apps/web/app/(app)/carteira/transaction-row.tsx`:** ajustado o menu do `FilterDropdown` (`w-max min-w-[220px] max-w-[min(280px,calc(100vw-2.5rem))]`) para não truncar itens nem vazar da viewport mobile.
+- **Validação:** `pnpm format`, `pnpm typecheck`, `pnpm lint`, `pnpm test` (`34` arquivos / `205` testes), `pnpm build`, `pm2 restart tostao-web`, e verificação HTTP ao vivo via `https://optiplex-server.tail7bfcfe.ts.net` em `15` rotas (`200 OK`) e `20` assets `/_next/static/*` (`200 OK`), além de `0` erros no log após requisição sem cookie a `/carteira`.
+
 ### 2026-11-20 · Antigravity · branch feat/inicio-mobills-anotacoes (4 ícones restantes, logos reais do Pluggy e filtro Ocultar rendimentos)
 
 - **Novos ícones (`apps/web/public/icones/{aba/{mais,mais-ativo},ui/{preferencias,sobre}}.webp`, `icon-overrides.json`, `icone.tsx`, `nav.tsx`, `mais/page.tsx`):**

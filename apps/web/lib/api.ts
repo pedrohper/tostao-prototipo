@@ -14,7 +14,10 @@ export class ApiError extends Error {
   }
 }
 
-export async function api<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+export async function api<T>(
+  path: string,
+  init: { method?: string; body?: unknown; skipAuthRedirect?: boolean } = {},
+): Promise<T> {
   const token = await getToken();
   const headers: Record<string, string> = {};
   if (init.body !== undefined) headers['content-type'] = 'application/json';
@@ -32,7 +35,10 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
     throw new ApiError('A API tá fora do ar. Ela tá rodando? (pnpm dev na raiz)', 503);
   }
 
-  if (res.status === 401 && token) redirect('/sair');
+  if (res.status === 401) {
+    if (token) redirect('/sair');
+    if (!init.skipAuthRedirect) redirect('/entrar');
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new ApiError((data as { message?: string }).message ?? 'Algo deu errado.', res.status);
   return data as T;
