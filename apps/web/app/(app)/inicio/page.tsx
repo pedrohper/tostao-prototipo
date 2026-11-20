@@ -98,6 +98,10 @@ export default async function HomePage() {
   const deliveryCategory = summary.byCategory.find((c) => c.categoryId === 'delivery');
   const bankAccounts = summary.accounts.filter((a) => a.type === 'BANK');
   const creditCards = summary.accounts.filter((a) => a.type === 'CREDIT');
+  const institutionByAccountId = new Map<string, string>();
+  for (const conn of profile.connections) {
+    for (const acc of conn.accounts) institutionByAccountId.set(acc.id, conn.displayName);
+  }
 
   const previousMonth = shiftMonth(month, -1);
   const shouldShowMonthlyClosing = currentDayOfMonth() <= 10;
@@ -520,7 +524,13 @@ export default async function HomePage() {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="flex min-w-0 items-center gap-2 text-[14px] font-semibold text-tinta">
-                        <BankBadge nome={card.name} size={24} quadrado logos={bankLogos} />
+                        <BankBadge
+                          nome={card.name}
+                          instituicao={institutionByAccountId.get(card.id)}
+                          size={24}
+                          quadrado
+                          logos={bankLogos}
+                        />
                         <span className="truncate">{card.name}</span>
                       </span>
                       <CardNetworkBadge brand={card.brand} last4={card.last4} className="shrink-0" />

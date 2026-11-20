@@ -57,6 +57,84 @@ export function cardFingerprint(a: Pick<PluggyAccount, 'type' | 'number' | 'cred
   return `CREDIT:${(a.creditData?.brand ?? '').trim().toUpperCase()}:${last4}`;
 }
 
+type PluggyConnectorItem = {
+  id?: number;
+  name: string;
+  imageUrl?: string | null;
+  primaryColor?: string | null;
+  isSandbox?: boolean;
+};
+
+// No plano MeuPluggy, GET /connectors?countries=BR devolve só o conector 200 (MeuPluggy),
+// mas GET /connectors/{id} continua público pra cada banco brasileiro com o imageUrl oficial.
+const BR_CONNECTOR_IDS = [
+  601, // Itaú
+  602, // XP Banking
+  603, // Bradesco
+  605, // Rico Investimentos
+  606, // Mercado Pago
+  608, // Santander
+  611, // Banco do Brasil
+  612, // Nubank
+  613, // Banco Genial
+  214, // BTGPactual
+  615, // Banco Inter
+  619, // Caixa Econômica Federal
+  623, // Clear Corretora
+  624, // Ailos
+  626, // C6 Bank
+  650, // Cora
+  651, // PicPay
+  652, // Banco Bmg
+  653, // Banco Digio
+  656, // Next
+  657, // Banco PAN
+  658, // Sicoob
+  659, // Banrisul
+  661, // Sicredi
+  663, // Unicred
+  671, // Banco do Nordeste do Brasil
+  674, // Uber Conta by Digio
+  678, // Agi
+  681, // Banestes
+  682, // BRB
+  684, // Cresol
+  685, // Daycoval
+  686, // Efí
+  689, // Neon
+  692, // PagBank
+  698, // Superdigital
+  714, // Banco Sofisa
+  716, // BV
+  720, // Méliuz
+  723, // Banco BS2
+  730, // Ame Digital
+  742, // Banco Mercantil
+  743, // Banco Original
+  750, // Crefisa
+  769, // Rendimento
+  777, // InfinitePay
+  783, // Caixa Tem
+  787, // Stone Pagamentos
+  796, // Toro Investimentos
+  800, // Porto Bank
+  804, // 99Pay
+  807, // Modalmais
+  826, // Mercado Bitcoin
+  830, // banQi
+  831, // Will Bank
+  230, // Avenue
+] as const;
+
+const toLogo = (c: PluggyConnectorItem): InstitutionLogo | null => {
+  if (!c.imageUrl || c.isSandbox || /pluggy/i.test(c.name)) return null;
+  return {
+    name: c.name,
+    imageUrl: c.imageUrl,
+    color: c.primaryColor ? `#${c.primaryColor.replace(/^#/, '')}` : null,
+  };
+};
+
 /**
  * Fala com a API do Pluggy usando as credenciais do Meu Pluggy.
  * Docs: https://docs.pluggy.ai
@@ -93,18 +171,27 @@ export class PluggyBankGateway implements BankGateway {
     return (await res.json()) as T;
   }
 
-  // Lista pública de conectores: cada banco tem o logo oficial (imageUrl) e a cor. Não depende do MeuPluggy.
+  // Lista pública de conectores: cada banco tem o logo oficial (imageUrl) e a cor.
   async listInstitutionLogos(): Promise<InstitutionLogo[]> {
-    const page = await this.get<{
-      results: { name: string; imageUrl?: string | null; primaryColor?: string | null; isSandbox?: boolean }[];
-    }>('/connectors?countries=BR');
-    return page.results
-      .filter((c) => c.imageUrl && !c.isSandbox && !/pluggy/i.test(c.name))
-      .map((c) => ({
-        name: c.name,
-        imageUrl: c.imageUrl!,
-        color: c.primaryColor ? `#${c.primaryColor.replace(/^#/, '')}` : null,
-      }));
+    const page = await this.get<{ results: PluggyConnectorItem[] }>('/connectors?countries=BR');
+    const fromList = page.results.map(toLogo).filter((l): l is InstitutionLogo => l !== null);
+    if (fromList.length >= 5) return fromList;
+
+    const settled = await Promise.allSettled(
+      BR_CONNECTOR_IDS.map((id) => this.get<PluggyConnectorItem>(`/connectors/${id}`)),
+    );
+    const seen = new Set(fromList.map((l) => l.name.toLowerCase()));
+    const combined = [...fromList];
+    for (const res of settled) {
+      if (res.status !== 'fulfilled') continue;
+      const logo = toLogo(res.value);
+      if (!logo) continue;
+      const key = logo.name.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      combined.push(logo);
+    }
+    return combined;
   }
 
   // O connect token é o que o navegador recebe: ele só abre o widget, não dá acesso à API.

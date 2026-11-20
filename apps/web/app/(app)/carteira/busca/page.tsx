@@ -13,7 +13,14 @@ type Kind = 'todas' | 'saida' | 'entrada';
 export default async function BuscaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; period?: string; kind?: string; semEntreContas?: string; voltar?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    period?: string;
+    kind?: string;
+    semEntreContas?: string;
+    semRendimentos?: string;
+    voltar?: string;
+  }>;
 }) {
   const [sp, { locale, t }] = await Promise.all([searchParams, getI18n()]);
   const s = t.walletExtra.search;
@@ -21,9 +28,11 @@ export default async function BuscaPage({
   const period: Period = sp.period && sp.period in s.periods ? (sp.period as Period) : '12m';
   const kind: Kind = sp.kind && sp.kind in s.kinds ? (sp.kind as Kind) : 'todas';
   const hideTransfers = sp.semEntreContas === '1';
+  const hideYields = sp.semRendimentos === '1';
   const backHref = resolveBackHref(sp.voltar, '/carteira');
   const searchApiParams = new URLSearchParams({ q, period, kind });
   if (hideTransfers) searchApiParams.set('excludeTransfers', '1');
+  if (hideYields) searchApiParams.set('excludeYields', '1');
   const r = q ? await api<SearchResponse>(`/transactions/search?${searchApiParams}`) : null;
 
   const extra: Record<string, string> = sp.voltar ? { voltar: backHref } : {};
@@ -33,6 +42,7 @@ export default async function BuscaPage({
       period,
       kind,
       ...(hideTransfers ? { semEntreContas: '1' } : {}),
+      ...(hideYields ? { semRendimentos: '1' } : {}),
       ...extra,
     };
     for (const [k, v] of Object.entries(p)) {
@@ -58,7 +68,13 @@ export default async function BuscaPage({
       <SearchBar
         q={q}
         autoFocus={!q}
-        hidden={{ period, kind, ...(hideTransfers ? { semEntreContas: '1' } : {}), ...extra }}
+        hidden={{
+          period,
+          kind,
+          ...(hideTransfers ? { semEntreContas: '1' } : {}),
+          ...(hideYields ? { semRendimentos: '1' } : {}),
+          ...extra,
+        }}
         placeholder={s.placeholder}
         ariaLabel={s.ariaLabel}
       />
@@ -93,6 +109,16 @@ export default async function BuscaPage({
         >
           <span>{t.walletExtra.main.hideTransfers}</span>
           {hideTransfers && <span aria-hidden="true">✓</span>}
+        </Link>
+        <Link
+          href={link({ semRendimentos: hideYields ? null : '1' })}
+          aria-pressed={hideYields}
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold no-underline transition-colors ${
+            hideYields ? 'bg-tinta text-papel' : 'border border-linha bg-cartao text-tinta hover:bg-papel-2'
+          }`}
+        >
+          <span>{t.walletExtra.main.hideYields}</span>
+          {hideYields && <span aria-hidden="true">✓</span>}
         </Link>
       </div>
 

@@ -121,8 +121,26 @@ export const searchQuery = z.object({
     .union([z.boolean(), z.enum(['true', 'false', '1', '0'])])
     .transform((v) => v === true || v === 'true' || v === '1')
     .optional(),
+  excludeYields: z
+    .union([z.boolean(), z.enum(['true', 'false', '1', '0'])])
+    .transform((v) => v === true || v === 'true' || v === '1')
+    .optional(),
 });
 export type SearchQuery = z.infer<typeof searchQuery>;
+
+/** Identifica rendimentos automáticos de conta/CDB/dividendos (sem confundir com Banco Rendimento). */
+export function isYieldTransaction(tx: { description: string; amountInCents: number }): boolean {
+  if (tx.amountInCents <= 0) return false;
+  const text = tx.description
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!text || /\bbanco rendimento\b/.test(text)) return false;
+  return /\brendimentos?\b|\bdividendos?\b|\bjuros sobre capital\b|\bjcp\b|\bremuneracao\b/.test(text);
+}
 
 /** Tamanho máximo da anotação de uma transação. */
 export const NOTE_MAX = 280;

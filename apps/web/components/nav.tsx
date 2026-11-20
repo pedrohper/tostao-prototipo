@@ -21,7 +21,7 @@ export function Nav({
     { href: '/carteira', label: t.nav.wallet, icon: 'aba/carteira' },
     { href: '/tostao', label: t.nav.chat, badge: pendingCount, icon: 'aba/tostao' },
     { href: '/aprender', label: t.nav.learn, icon: 'aba/aprender' },
-    { href: '/mais', label: t.nav.profile, icon: 'aba/perfil' },
+    { href: '/mais', label: t.nav.profile, icon: 'aba/mais' },
   ];
 
   const isRouteActive = (href: string) => {

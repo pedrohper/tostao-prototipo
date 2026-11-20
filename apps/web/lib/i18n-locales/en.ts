@@ -600,6 +600,7 @@ export const en: Dictionary = {
     main: {
       filters: { tudo: 'All', saidas: 'Expenses', entradas: 'Income', pendentes: 'Uncategorized' },
       hideTransfers: 'Hide internal transfers',
+      hideYields: 'Hide yields',
       pendingChip: (count) => `${count} uncategorized`,
       uncategorizedLabel: 'Uncategorized',
       categoryLabel: 'Category',

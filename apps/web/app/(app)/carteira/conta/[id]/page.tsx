@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { AccountDetailResponse, TransactionDTO } from '@tostao/contracts';
+import { isYieldTransaction, type AccountDetailResponse, type TransactionDTO } from '@tostao/contracts';
 import { api } from '@/lib/api';
 import { ago, currentMonth, dayLabel, money, monthName, nowMs, shiftMonth, shortDate } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
@@ -16,23 +16,36 @@ export default async function ContaPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ mes?: string; semEntreContas?: string }>;
+  searchParams: Promise<{ mes?: string; semEntreContas?: string; semRendimentos?: string }>;
 }) {
   const [{ id }, sp, { locale, t }] = await Promise.all([params, searchParams, getI18n()]);
   const dLabels = t.walletExtra.accountDetail;
   const hoje = currentMonth();
   const month = /^\d{4}-\d{2}$/.test(sp.mes ?? '') && sp.mes! <= hoje ? sp.mes! : hoje;
   const hideTransfers = sp.semEntreContas === '1';
+  const hideYields = sp.semRendimentos === '1';
   const [d, logos] = await Promise.all([api<AccountDetailResponse>(`/accounts/${id}?month=${month}`), getBankLogos()]);
   const a = d.account;
   const card = a.type === 'CREDIT';
   const fatura = Math.max(0, -a.balanceInCents);
   const parcelasFuturas = d.installments.reduce((s, i) => s + i.amountInCents * i.left, 0);
-  const self = (m: string, hide = hideTransfers) =>
-    `/carteira/conta/${id}?${new URLSearchParams({ mes: m, ...(hide ? { semEntreContas: '1' } : {}) })}`;
+  const self = (m: string, overrides?: { hideTransfers?: boolean; hideYields?: boolean }) => {
+    const nextTransfers = overrides?.hideTransfers ?? hideTransfers;
+    const nextYields = overrides?.hideYields ?? hideYields;
+    return `/carteira/conta/${id}?${new URLSearchParams({
+      mes: m,
+      ...(nextTransfers ? { semEntreContas: '1' } : {}),
+      ...(nextYields ? { semRendimentos: '1' } : {}),
+    })}`;
+  };
   const back = self(month);
   const hasTransfers = d.transactions.some((tx) => tx.isInternalTransfer);
-  const visibleTxs = hideTransfers ? d.transactions.filter((tx) => !tx.isInternalTransfer) : d.transactions;
+  const hasYields = d.transactions.some((tx) => isYieldTransaction(tx));
+  const visibleTxs = d.transactions.filter((tx) => {
+    if (hideTransfers && tx.isInternalTransfer) return false;
+    if (hideYields && isYieldTransaction(tx)) return false;
+    return true;
+  });
   const groups = new Map<string, TransactionDTO[]>();
   for (const tx of visibleTxs) {
     const k = dayLabel(tx.occurredAt, locale);
@@ -199,17 +212,35 @@ export default async function ContaPage({
               <h2 className="font-display text-xl leading-[26px] font-extrabold">
                 {card ? dLabels.purchasesTitle : dLabels.movementsTitle}
               </h2>
-              {(hasTransfers || hideTransfers) && (
-                <Link
-                  href={self(month, !hideTransfers)}
-                  aria-pressed={hideTransfers}
-                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold no-underline transition-colors ${
-                    hideTransfers ? 'bg-tinta text-papel' : 'border border-linha bg-cartao text-tinta hover:bg-papel-2'
-                  }`}
-                >
-                  <span>{t.walletExtra.main.hideTransfers}</span>
-                  {hideTransfers && <span aria-hidden="true">✓</span>}
-                </Link>
+              {(hasTransfers || hideTransfers || hasYields || hideYields) && (
+                <div className="flex flex-wrap items-center gap-2">
+                  {(hasTransfers || hideTransfers) && (
+                    <Link
+                      href={self(month, { hideTransfers: !hideTransfers })}
+                      aria-pressed={hideTransfers}
+                      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold no-underline transition-colors ${
+                        hideTransfers
+                          ? 'bg-tinta text-papel'
+                          : 'border border-linha bg-cartao text-tinta hover:bg-papel-2'
+                      }`}
+                    >
+                      <span>{t.walletExtra.main.hideTransfers}</span>
+                      {hideTransfers && <span aria-hidden="true">✓</span>}
+                    </Link>
+                  )}
+                  {(hasYields || hideYields) && (
+                    <Link
+                      href={self(month, { hideYields: !hideYields })}
+                      aria-pressed={hideYields}
+                      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold no-underline transition-colors ${
+                        hideYields ? 'bg-tinta text-papel' : 'border border-linha bg-cartao text-tinta hover:bg-papel-2'
+                      }`}
+                    >
+                      <span>{t.walletExtra.main.hideYields}</span>
+                      {hideYields && <span aria-hidden="true">✓</span>}
+                    </Link>
+                  )}
+                </div>
               )}
             </div>
             {visibleTxs.length === 0 ? (

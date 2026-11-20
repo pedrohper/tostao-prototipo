@@ -65,4 +65,41 @@ describe('Busca de transações', () => {
     expect(hidden.count).toBe(0);
     expect(hidden.transactions).toHaveLength(0);
   });
+
+  it('oculta rendimentos quando excludeYields=true sem esconder Banco Rendimento', async () => {
+    const { repos, uc } = await setup();
+    await repos.transactions.create({
+      userId: 'u1',
+      accountId: null,
+      externalId: null,
+      description: 'Rendimentos',
+      amountInCents: 17,
+      occurredAt: new Date('2026-11-10T12:00:00Z'),
+      categoryId: null,
+      isInternalTransfer: false,
+    });
+    await repos.transactions.create({
+      userId: 'u1',
+      accountId: null,
+      externalId: null,
+      description: 'PIX RECEBIDO BANCO RENDIMENTO',
+      amountInCents: 5000,
+      occurredAt: new Date('2026-11-10T12:00:00Z'),
+      categoryId: null,
+      isInternalTransfer: false,
+    });
+
+    const visible = await uc.execute({ userId: 'u1', q: 'rendimento', period: '12m', kind: 'todas' });
+    expect(visible.count).toBe(2);
+
+    const hidden = await uc.execute({
+      userId: 'u1',
+      q: 'rendimento',
+      period: '12m',
+      kind: 'todas',
+      excludeYields: true,
+    });
+    expect(hidden.count).toBe(1);
+    expect(hidden.transactions[0]!.description).toBe('PIX RECEBIDO BANCO RENDIMENTO');
+  });
 });

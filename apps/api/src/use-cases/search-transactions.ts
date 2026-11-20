@@ -1,4 +1,4 @@
-import type { SearchQuery } from '@tostao/contracts';
+import { isYieldTransaction, type SearchQuery } from '@tostao/contracts';
 import type { Repositories } from '../repositories/types.js';
 import { normalizeDescription } from '../lib/text.js';
 
@@ -17,7 +17,15 @@ export class SearchTransactionsUseCase {
     private readonly now: () => Date = () => new Date(),
   ) {}
 
-  async execute({ userId, q, period, kind, categoryId, excludeTransfers }: SearchQuery & { userId: string }) {
+  async execute({
+    userId,
+    q,
+    period,
+    kind,
+    categoryId,
+    excludeTransfers,
+    excludeYields,
+  }: SearchQuery & { userId: string }) {
     const now = this.now();
     const days = SINCE[period];
     const from = days === null ? new Date(0) : new Date(now.getTime() - days * DAY);
@@ -34,6 +42,7 @@ export class SearchTransactionsUseCase {
     const found = txs
       .filter((t) => !(t.accountId && hidden.has(t.accountId)))
       .filter((t) => !excludeTransfers || !t.isInternalTransfer)
+      .filter((t) => !excludeYields || !isYieldTransaction(t))
       .filter((t) => (kind === 'saida' ? t.amountInCents < 0 : kind === 'entrada' ? t.amountInCents > 0 : true))
       .filter((t) => !categoryId || (categoryId === 'sem' ? !t.categoryId : t.categoryId === categoryId))
       .filter((t) => {

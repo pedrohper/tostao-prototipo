@@ -199,27 +199,7 @@ export default async function MaisPage() {
           className="flex min-h-[68px] items-center gap-3.5 py-3 text-tinta no-underline transition-opacity hover:opacity-80"
         >
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amarelo-claro text-tinta">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <line x1="4" y1="21" x2="4" y2="14" />
-              <line x1="4" y1="10" x2="4" y2="3" />
-              <line x1="12" y1="21" x2="12" y2="12" />
-              <line x1="12" y1="8" x2="12" y2="3" />
-              <line x1="20" y1="21" x2="20" y2="16" />
-              <line x1="20" y1="12" x2="20" y2="3" />
-              <line x1="1" y1="14" x2="7" y2="14" />
-              <line x1="9" y1="8" x2="15" y2="8" />
-              <line x1="17" y1="16" x2="23" y2="16" />
-            </svg>
+            <Icon src="ui/preferencias" size={20} />
           </span>
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="text-[15px] font-bold">{prefsTitle}</span>
@@ -235,21 +215,7 @@ export default async function MaisPage() {
           className="flex min-h-[68px] items-center gap-3.5 py-3 text-tinta no-underline transition-opacity hover:opacity-80"
         >
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-papel-2 text-tinta-suave">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 16v-4" />
-              <path d="M12 8h.01" />
-            </svg>
+            <Icon src="ui/sobre" size={20} />
           </span>
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="text-[15px] font-bold">{aboutTitle}</span>

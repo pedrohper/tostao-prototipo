@@ -1,14 +1,15 @@
 import { CardNetworkBadge, getBankLogos, BankBadge } from '@/components/banco';
 import Link from 'next/link';
-import type {
-  BudgetsResponse,
-  FinancialPlanResponse,
-  ForecastResponse,
-  MonthSummaryResponse,
-  PeopleResponse,
-  ProfileResponse,
-  SubscriptionsResponse,
-  TransactionDTO,
+import {
+  isYieldTransaction,
+  type BudgetsResponse,
+  type FinancialPlanResponse,
+  type ForecastResponse,
+  type MonthSummaryResponse,
+  type PeopleResponse,
+  type ProfileResponse,
+  type SubscriptionsResponse,
+  type TransactionDTO,
 } from '@tostao/contracts';
 import { api } from '@/lib/api';
 import { currentMonth, dayLabel, money, monthName, shiftMonth, shortDate, updatedTimeLabel } from '@/lib/format';
@@ -37,6 +38,7 @@ export default async function CarteiraPage({
     categoria?: string;
     conta?: string;
     semEntreContas?: string;
+    semRendimentos?: string;
   }>;
 }) {
   const [{ locale, t }, sp] = await Promise.all([getI18n(), searchParams]);
@@ -78,9 +80,11 @@ export default async function CarteiraPage({
   const cat = rawCat && /^[\w-]{1,60}$/.test(rawCat) ? rawCat : null;
   const conta = sp.conta?.trim() ? sp.conta.trim().slice(0, 80) : null;
   const hideTransfers = sp.semEntreContas === '1';
+  const hideYields = sp.semRendimentos === '1';
   const catInfo = cat ? (summary.byCategory.find((c) => (c.categoryId ?? 'sem') === cat) ?? null) : null;
   const shown = transactions.filter((tx) => {
     if (hideTransfers && tx.isInternalTransfer) return false;
+    if (hideYields && isYieldTransaction(tx)) return false;
     if (conta && tx.accountName !== conta) return false;
     if (cat)
       return !tx.isInternalTransfer && (tx.categoryId ?? 'sem') === cat && (cat !== 'sem' || tx.amountInCents < 0);
@@ -104,6 +108,7 @@ export default async function CarteiraPage({
       ...(cat ? { cat } : {}),
       ...(conta ? { conta } : {}),
       ...(hideTransfers ? { semEntreContas: '1' } : {}),
+      ...(hideYields ? { semRendimentos: '1' } : {}),
     };
     for (const [k, v] of Object.entries(overrides)) {
       if (v === null || v === undefined || v === '') delete next[k];
@@ -119,6 +124,7 @@ export default async function CarteiraPage({
   const semCat = buildHref({ aba: null, cat: null });
   const semConta = buildHref({ aba: null, conta: null });
   const toggleHideTransfersHref = buildHref({ aba: null, semEntreContas: hideTransfers ? null : '1' });
+  const toggleHideYieldsHref = buildHref({ aba: null, semRendimentos: hideYields ? null : '1' });
   const porCat = (id: string | null) => `${buildHref({ aba: null, cat: id ?? 'sem' })}#lista`;
   const back = buildHref({ aba: null });
 
@@ -232,10 +238,27 @@ export default async function CarteiraPage({
           title={t.wallet.title}
           searchPlaceholder={t.walletExtra.search.placeholder}
           searchAriaLabel={t.walletExtra.search.ariaLabel}
-          searchHidden={hideTransfers ? { semEntreContas: '1' } : undefined}
+          searchHidden={
+            hideTransfers || hideYields
+              ? {
+                  ...(hideTransfers ? { semEntreContas: '1' } : {}),
+                  ...(hideYields ? { semRendimentos: '1' } : {}),
+                }
+              : undefined
+          }
           closeLabel={t.common.close}
-          filterLabel={cat ? activeCategoryLabel : hideTransfers ? tw.hideTransfers : t.wallet.allCategories}
-          filterActive={Boolean(cat) || hideTransfers}
+          filterLabel={
+            cat
+              ? activeCategoryLabel
+              : hideTransfers && hideYields
+                ? `${tw.hideTransfers} · ${tw.hideYields}`
+                : hideTransfers
+                  ? tw.hideTransfers
+                  : hideYields
+                    ? tw.hideYields
+                    : t.wallet.allCategories
+          }
+          filterActive={Boolean(cat) || hideTransfers || hideYields}
           filterOptions={[
             { label: t.wallet.allCategories, href: semCat, active: !cat },
             ...summary.byCategory.map((c) => ({
@@ -249,6 +272,11 @@ export default async function CarteiraPage({
               href: toggleHideTransfersHref,
               active: hideTransfers,
               dividerBefore: true,
+            },
+            {
+              label: tw.hideYields,
+              href: toggleHideYieldsHref,
+              active: hideYields,
             },
           ]}
           desktopControls={
@@ -371,6 +399,16 @@ export default async function CarteiraPage({
               >
                 <span>{tw.hideTransfers}</span>
                 {hideTransfers && <span aria-hidden="true">✓</span>}
+              </Link>
+              <Link
+                href={toggleHideYieldsHref}
+                aria-pressed={hideYields}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-semibold no-underline transition-colors ${
+                  hideYields ? 'bg-tinta text-papel' : 'border border-linha bg-cartao text-tinta hover:bg-papel-2'
+                }`}
+              >
+                <span>{tw.hideYields}</span>
+                {hideYields && <span aria-hidden="true">✓</span>}
               </Link>
             </div>
             {(cat || conta) && (
@@ -512,6 +550,16 @@ export default async function CarteiraPage({
                 >
                   <span>{tw.hideTransfers}</span>
                   {hideTransfers && <span aria-hidden="true">✓</span>}
+                </Link>
+                <Link
+                  href={toggleHideYieldsHref}
+                  aria-pressed={hideYields}
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-semibold no-underline ${
+                    hideYields ? 'bg-tinta text-papel' : 'border border-linha bg-cartao text-tinta'
+                  }`}
+                >
+                  <span>{tw.hideYields}</span>
+                  {hideYields && <span aria-hidden="true">✓</span>}
                 </Link>
               </div>
             )}

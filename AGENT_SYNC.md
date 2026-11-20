@@ -23,6 +23,19 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-20 · Antigravity · branch feat/inicio-mobills-anotacoes (4 ícones restantes, logos reais do Pluggy e filtro Ocultar rendimentos)
+
+- **Novos ícones (`apps/web/public/icones/{aba/{mais,mais-ativo},ui/{preferencias,sobre}}.webp`, `icon-overrides.json`, `icone.tsx`, `nav.tsx`, `mais/page.tsx`):**
+  - Processados os 4 ícones para `256×256` RGBA `.webp` transparentes (`60` overrides sincronizados via `pnpm assets:sync`), com fallbacks em `ICON_SVGS`.
+  - Aba **Mais** em `nav.tsx` agora usa `aba/mais` / `aba/mais-ativo`; linhas **Preferências** e **Sobre & Legal** em `/mais` agora usam `ui/preferencias` e `ui/sobre`.
+- **Logos reais dos bancos via Pluggy (`apps/api/src/gateways/pluggy-bank-gateway.ts`, `pluggy-bank-gateway.spec.ts`, `apps/web/components/banco.tsx`, `apps/web/app/(app)/inicio/page.tsx`):**
+  - Corrigido `PluggyBankGateway.listInstitutionLogos()`: como `GET /connectors?countries=BR` no plano MeuPluggy retorna apenas o conector `MeuPluggy`, passou a buscar individualmente os `56` conectores brasileiros em `/connectors/{id}` quando a lista vier vazia/só Pluggy, retornando as SVGs oficiais (`cdn.pluggy.ai/assets/connector-icons/*.svg`).
+  - Melhorado `findBankLogo()` em `banco.tsx` (siglas `xp`, `c6`, `bb`, `btg`, `nu`, match compacto sem espaços e `object-contain`), e passado `instituicao` no `BankBadge` da seção de cartões em `/inicio`.
+- **Ocultar rendimentos na Carteira (`packages/contracts/src/index.ts`, `apps/api/src/use-cases/search-transactions.ts`, `search-transactions.spec.ts`, `carteira/page.tsx`, `carteira/busca/page.tsx`, `carteira/conta/[id]/page.tsx`, i18n `pt-br`/`en`/`es`):**
+  - Criado helper compartilhado `isYieldTransaction` em `@tostao/contracts` (identifica rendimentos/dividendos/JCP positivos sem confundir com `Banco Rendimento`) e adicionado `excludeYields` em `searchQuery` / `SearchTransactionsUseCase`.
+  - Adicionado toggle **"Ocultar rendimentos"** (`?semRendimentos=1`) na barra de filtros (desktop e mobile) e no dropdown de filtro de `/carteira`, em `/carteira/busca` e em `/carteira/conta/[id]`.
+- **Validação:** Prettier (`pnpm format:check`), `pnpm typecheck`, `pnpm lint`, `pnpm test` (34 arquivos, 205 testes), `pnpm build`, verificação ao vivo de `PluggyBankGateway.listInstitutionLogos()` (`56` logos SVG retornados) e reload de `tostao-api` e `tostao-web` via PM2.
+
 ### 2026-11-20 · Antigravity · branch feat/inicio-mobills-anotacoes (ícone ui/banco na tela /mais)
 
 - **`/mais` (`apps/web/app/(app)/mais/page.tsx`):** substituído `<BankIcon />` em **Minha carteira** pelo sticker já existente `<Icon src="ui/banco" size={20} />`.

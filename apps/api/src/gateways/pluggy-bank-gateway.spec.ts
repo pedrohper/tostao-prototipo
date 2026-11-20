@@ -85,6 +85,45 @@ describe('PluggyBankGateway', () => {
       balanceInCents: -1000,
     });
   });
+
+  it('busca logos individuais dos bancos quando /connectors?countries=BR devolve só MeuPluggy', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.endsWith('/auth')) return json({ apiKey: 'chave' });
+        if (url.endsWith('/connectors?countries=BR')) {
+          return json({
+            results: [{ id: 200, name: 'MeuPluggy', imageUrl: 'https://cdn.pluggy.ai/200.svg', isSandbox: false }],
+          });
+        }
+        if (url.endsWith('/connectors/612')) {
+          return json({
+            id: 612,
+            name: 'Nubank',
+            imageUrl: 'https://cdn.pluggy.ai/assets/connector-icons/212.svg',
+            primaryColor: '8a0fbe',
+            isSandbox: false,
+          });
+        }
+        if (url.endsWith('/connectors/606')) {
+          return json({
+            id: 606,
+            name: 'Mercado Pago',
+            imageUrl: 'https://cdn.pluggy.ai/assets/connector-icons/206.svg',
+            primaryColor: '009ee3',
+            isSandbox: false,
+          });
+        }
+        return json({ message: 'not found' }, 404);
+      }),
+    );
+
+    const logos = await new PluggyBankGateway('id', 'secret').listInstitutionLogos();
+    expect(logos).toEqual([
+      { name: 'Mercado Pago', imageUrl: 'https://cdn.pluggy.ai/assets/connector-icons/206.svg', color: '#009ee3' },
+      { name: 'Nubank', imageUrl: 'https://cdn.pluggy.ai/assets/connector-icons/212.svg', color: '#8a0fbe' },
+    ]);
+  });
 });
 
 import { pluggyDate } from './pluggy-bank-gateway.js';

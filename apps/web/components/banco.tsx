@@ -49,22 +49,35 @@ const norm = (s: string) =>
     .replace(/\s+/g, ' ')
     .trim();
 const temPalavra = (texto: string, termo: string) => ` ${texto} `.includes(` ${termo} `);
-const GENERICAS = new Set(['banco', 'conta', 'cartao', 'credito', 'bank', 'pay', 'digital']);
+const GENERICAS = new Set(['banco', 'conta', 'cartao', 'credito', 'bank', 'pay', 'digital', 'empresas', 'previdencia']);
+const ALIASES: [RegExp, RegExp][] = [
+  [/\bxp\b/, /\bxp\b/],
+  [/\bc6\b/, /\bc6\b/],
+  [/\bbb\b/, /^banco do brasil$/],
+  [/\bbtg\b/, /^btg\s*pactual$/],
+  [/\bnu\b/, /^nubank$/],
+];
 
-/** Acha o logo pelo nome da conta: primeiro o nome inteiro do banco, depois a primeira palavra forte (ex.: "Caixa"). */
+/** Acha o logo pelo nome da conta: primeiro o nome inteiro do banco, depois a primeira palavra forte (ex.: "Caixa") e siglas comuns. */
 export function findBankLogo(logos: BankLogo[], ...nomes: (string | null | undefined)[]): BankLogo | null {
   const texto = norm(nomes.filter(Boolean).join(' '));
   if (!texto || logos.length === 0) return null;
+  const textoCompacto = texto.replace(/\s+/g, '');
   let melhor: BankLogo | null = null;
   let tam = 0;
   for (const l of logos) {
     const n = norm(l.name);
-    if (n.length > tam && temPalavra(texto, n)) {
+    if (n.length > tam && (temPalavra(texto, n) || (n.length >= 4 && textoCompacto.includes(n.replace(/\s+/g, ''))))) {
       melhor = l;
       tam = n.length;
     }
   }
   if (melhor) return melhor;
+  for (const [textRe, logoRe] of ALIASES) {
+    if (!textRe.test(texto)) continue;
+    const hit = logos.find((l) => logoRe.test(norm(l.name)));
+    if (hit) return hit;
+  }
   const porPalavra = logos
     .map((l) => ({ l, palavras: norm(l.name).split(' ') }))
     .filter(
@@ -290,7 +303,7 @@ export function BankBadge({
         width={size}
         height={size}
         loading="lazy"
-        className={`shrink-0 bg-white object-cover ring-1 ring-black/5 dark:ring-white/10 ${quadrado ? 'rounded-[30%]' : 'rounded-full'}`}
+        className={`shrink-0 bg-white object-contain ring-1 ring-black/5 dark:ring-white/10 ${quadrado ? 'rounded-[30%]' : 'rounded-full'}`}
         style={{ width: size, height: size }}
       />
     );
