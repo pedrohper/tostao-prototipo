@@ -603,6 +603,7 @@ export const ptBR: Dictionary = {
     },
     main: {
       filters: { tudo: 'Tudo', saidas: 'Saídas', entradas: 'Entradas', pendentes: 'Sem categoria' },
+      hideTransfers: 'Ocultar entre contas',
       pendingChip: (count) => `${count} sem categoria`,
       uncategorizedLabel: 'Sem categoria',
       categoryLabel: 'Categoria',

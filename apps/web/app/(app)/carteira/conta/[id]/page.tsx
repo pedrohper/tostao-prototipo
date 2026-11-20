@@ -16,21 +16,25 @@ export default async function ContaPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ mes?: string }>;
+  searchParams: Promise<{ mes?: string; semEntreContas?: string }>;
 }) {
   const [{ id }, sp, { locale, t }] = await Promise.all([params, searchParams, getI18n()]);
   const dLabels = t.walletExtra.accountDetail;
   const hoje = currentMonth();
   const month = /^\d{4}-\d{2}$/.test(sp.mes ?? '') && sp.mes! <= hoje ? sp.mes! : hoje;
+  const hideTransfers = sp.semEntreContas === '1';
   const [d, logos] = await Promise.all([api<AccountDetailResponse>(`/accounts/${id}?month=${month}`), getBankLogos()]);
   const a = d.account;
   const card = a.type === 'CREDIT';
   const fatura = Math.max(0, -a.balanceInCents);
   const parcelasFuturas = d.installments.reduce((s, i) => s + i.amountInCents * i.left, 0);
-  const self = (m: string) => `/carteira/conta/${id}?mes=${m}`;
+  const self = (m: string, hide = hideTransfers) =>
+    `/carteira/conta/${id}?${new URLSearchParams({ mes: m, ...(hide ? { semEntreContas: '1' } : {}) })}`;
   const back = self(month);
+  const hasTransfers = d.transactions.some((tx) => tx.isInternalTransfer);
+  const visibleTxs = hideTransfers ? d.transactions.filter((tx) => !tx.isInternalTransfer) : d.transactions;
   const groups = new Map<string, TransactionDTO[]>();
-  for (const tx of d.transactions) {
+  for (const tx of visibleTxs) {
     const k = dayLabel(tx.occurredAt, locale);
     groups.set(k, [...(groups.get(k) ?? []), tx]);
   }
@@ -191,10 +195,24 @@ export default async function ContaPage({
           {monthSelector('hidden lg:flex')}
 
           <section className="flex flex-col gap-4 lg:rounded-[22px] lg:border lg:border-linha lg:bg-cartao lg:p-6">
-            <h2 className="font-display text-xl leading-[26px] font-extrabold">
-              {card ? dLabels.purchasesTitle : dLabels.movementsTitle}
-            </h2>
-            {d.transactions.length === 0 ? (
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-display text-xl leading-[26px] font-extrabold">
+                {card ? dLabels.purchasesTitle : dLabels.movementsTitle}
+              </h2>
+              {(hasTransfers || hideTransfers) && (
+                <Link
+                  href={self(month, !hideTransfers)}
+                  aria-pressed={hideTransfers}
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold no-underline transition-colors ${
+                    hideTransfers ? 'bg-tinta text-papel' : 'border border-linha bg-cartao text-tinta hover:bg-papel-2'
+                  }`}
+                >
+                  <span>{t.walletExtra.main.hideTransfers}</span>
+                  {hideTransfers && <span aria-hidden="true">✓</span>}
+                </Link>
+              )}
+            </div>
+            {visibleTxs.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-8 text-center">
                 <Mascot pose="dormindo" size={120} alt="" />
                 <p className="text-[15px] text-tinta-suave">{dLabels.emptyMonth(card, monthName(month, locale))}</p>

@@ -117,6 +117,10 @@ export const searchQuery = z.object({
   period: z.enum(['30d', '3m', '12m', 'tudo']).default('12m'),
   kind: z.enum(['todas', 'saida', 'entrada']).default('todas'),
   categoryId: z.string().optional(),
+  excludeTransfers: z
+    .union([z.boolean(), z.enum(['true', 'false', '1', '0'])])
+    .transform((v) => v === true || v === 'true' || v === '1')
+    .optional(),
 });
 export type SearchQuery = z.infer<typeof searchQuery>;
 

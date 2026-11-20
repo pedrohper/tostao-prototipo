@@ -13,19 +13,34 @@ type Kind = 'todas' | 'saida' | 'entrada';
 export default async function BuscaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; period?: string; kind?: string; voltar?: string }>;
+  searchParams: Promise<{ q?: string; period?: string; kind?: string; semEntreContas?: string; voltar?: string }>;
 }) {
   const [sp, { locale, t }] = await Promise.all([searchParams, getI18n()]);
   const s = t.walletExtra.search;
   const q = (sp.q ?? '').trim().slice(0, 80);
   const period: Period = sp.period && sp.period in s.periods ? (sp.period as Period) : '12m';
   const kind: Kind = sp.kind && sp.kind in s.kinds ? (sp.kind as Kind) : 'todas';
+  const hideTransfers = sp.semEntreContas === '1';
   const backHref = resolveBackHref(sp.voltar, '/carteira');
-  const r = q ? await api<SearchResponse>(`/transactions/search?${new URLSearchParams({ q, period, kind })}`) : null;
+  const searchApiParams = new URLSearchParams({ q, period, kind });
+  if (hideTransfers) searchApiParams.set('excludeTransfers', '1');
+  const r = q ? await api<SearchResponse>(`/transactions/search?${searchApiParams}`) : null;
 
   const extra: Record<string, string> = sp.voltar ? { voltar: backHref } : {};
-  const link = (p: Record<string, string>) =>
-    `/carteira/busca?${new URLSearchParams({ q, period, kind, ...extra, ...p })}`;
+  const link = (p: Record<string, string | null | undefined>) => {
+    const next: Record<string, string> = {
+      q,
+      period,
+      kind,
+      ...(hideTransfers ? { semEntreContas: '1' } : {}),
+      ...extra,
+    };
+    for (const [k, v] of Object.entries(p)) {
+      if (v === null || v === undefined || v === '') delete next[k];
+      else next[k] = v;
+    }
+    return `/carteira/busca?${new URLSearchParams(next)}`;
+  };
   const back = link({});
   const groups = new Map<string, TransactionDTO[]>();
   for (const tx of r?.transactions ?? []) {
@@ -43,7 +58,7 @@ export default async function BuscaPage({
       <SearchBar
         q={q}
         autoFocus={!q}
-        hidden={{ period, kind, ...extra }}
+        hidden={{ period, kind, ...(hideTransfers ? { semEntreContas: '1' } : {}), ...extra }}
         placeholder={s.placeholder}
         ariaLabel={s.ariaLabel}
       />
@@ -69,6 +84,16 @@ export default async function BuscaPage({
             {s.kinds[k]}
           </Link>
         ))}
+        <Link
+          href={link({ semEntreContas: hideTransfers ? null : '1' })}
+          aria-pressed={hideTransfers}
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold no-underline transition-colors ${
+            hideTransfers ? 'bg-tinta text-papel' : 'border border-linha bg-cartao text-tinta hover:bg-papel-2'
+          }`}
+        >
+          <span>{t.walletExtra.main.hideTransfers}</span>
+          {hideTransfers && <span aria-hidden="true">✓</span>}
+        </Link>
       </div>
 
       {!r ? (

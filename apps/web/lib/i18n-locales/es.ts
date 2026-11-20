@@ -606,6 +606,7 @@ export const es: Dictionary = {
     },
     main: {
       filters: { tudo: 'Todo', saidas: 'Gastos', entradas: 'Ingresos', pendentes: 'Sin categoría' },
+      hideTransfers: 'Ocultar entre cuentas',
       pendingChip: (count) => `${count} sin categoría`,
       uncategorizedLabel: 'Sin categoría',
       categoryLabel: 'Categoría',

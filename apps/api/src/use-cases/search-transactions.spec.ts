@@ -54,5 +54,15 @@ describe('Busca de transações', () => {
     const r = await uc.execute({ userId: 'u1', q: 'fatura', period: '12m', kind: 'todas' });
     expect(r.count).toBe(1);
     expect(r.outInCents).toBe(0);
+
+    const hidden = await uc.execute({
+      userId: 'u1',
+      q: 'fatura',
+      period: '12m',
+      kind: 'todas',
+      excludeTransfers: true,
+    });
+    expect(hidden.count).toBe(0);
+    expect(hidden.transactions).toHaveLength(0);
   });
 });

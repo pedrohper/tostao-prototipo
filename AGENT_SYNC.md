@@ -23,6 +23,13 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-20 · Antigravity · branch feat/inicio-mobills-anotacoes (filtro para ocultar transações entre contas)
+
+- **Carteira (`apps/web/app/(app)/carteira/page.tsx`, `transaction-row.tsx`):** adicionada a opção **"Ocultar entre contas"** (`?semEntreContas=1`) na barra de filtros (desktop e mobile) e dentro do dropdown do ícone de funil no cabeçalho (`ExtratoHeaderBar` / `FilterDropdown`), preservada na navegação entre filtros, meses, categorias, contas e busca.
+- **Busca & Detalhe de conta (`packages/contracts/src/index.ts`, `apps/api/src/use-cases/search-transactions.ts`, `apps/web/app/(app)/carteira/busca/page.tsx`, `conta/[id]/page.tsx`):** `searchQuery` ganhou `excludeTransfers`, `SearchTransactionsUseCase` passa a omitir `isInternalTransfer` quando marcado, `/carteira/busca` ganhou o chip toggle e `/carteira/conta/[id]` exibe o toggle quando há transferências no mês.
+- **i18n (`types.ts`, `pt-br.ts`, `en.ts`, `es.ts`):** adicionada `walletExtra.main.hideTransfers` nos 3 idiomas.
+- **Validação:** Prettier, `pnpm --filter @tostao/contracts build`, `pnpm typecheck`, `pnpm lint`, `pnpm test` (34 arquivos, 203 testes incluindo `excludeTransfers` em `search-transactions.spec.ts`), `pnpm build` e reload de `tostao-api` e `tostao-web` via PM2.
+
 ### 2026-11-19 · Antigravity · branch feat/inicio-mobills-anotacoes (login social com Google e Apple)
 
 - **Banco & Domínio (`apps/api/prisma/schema.prisma`, migration `20261119173000_oauth_accounts`, `entities.ts`, `repositories/`):** `users.password_hash` passou a ser opcional (`String?`) e foi criada a tabela `oauth_accounts` (`[provider, provider_account_id]` único, `onDelete: Cascade`) com `PrismaOAuthAccountsRepository` e `InMemoryOAuthAccountsRepository`.

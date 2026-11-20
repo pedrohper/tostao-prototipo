@@ -17,7 +17,7 @@ export class SearchTransactionsUseCase {
     private readonly now: () => Date = () => new Date(),
   ) {}
 
-  async execute({ userId, q, period, kind, categoryId }: SearchQuery & { userId: string }) {
+  async execute({ userId, q, period, kind, categoryId, excludeTransfers }: SearchQuery & { userId: string }) {
     const now = this.now();
     const days = SINCE[period];
     const from = days === null ? new Date(0) : new Date(now.getTime() - days * DAY);
@@ -33,6 +33,7 @@ export class SearchTransactionsUseCase {
 
     const found = txs
       .filter((t) => !(t.accountId && hidden.has(t.accountId)))
+      .filter((t) => !excludeTransfers || !t.isInternalTransfer)
       .filter((t) => (kind === 'saida' ? t.amountInCents < 0 : kind === 'entrada' ? t.amountInCents > 0 : true))
       .filter((t) => !categoryId || (categoryId === 'sem' ? !t.categoryId : t.categoryId === categoryId))
       .filter((t) => {

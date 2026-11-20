@@ -554,6 +554,7 @@ export interface Dictionary {
     };
     main: {
       filters: { tudo: string; saidas: string; entradas: string; pendentes: string };
+      hideTransfers: string;
       pendingChip: (count: number) => string;
       uncategorizedLabel: string;
       categoryLabel: string;

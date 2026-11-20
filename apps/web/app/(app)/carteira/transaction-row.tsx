@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { CatIcon, Icon } from '@/components/icone';
 import Link from 'next/link';
 import type { TransactionDTO } from '@tostao/contracts';
@@ -83,6 +83,7 @@ export type FilterDropdownOption = {
   href: string;
   active?: boolean;
   dotColor?: string | null;
+  dividerBefore?: boolean;
 };
 
 /** Pill dropdown para filtros da Carteira, mantendo links reais de navegação. */
@@ -183,40 +184,42 @@ export function FilterDropdown({
           className="absolute top-full right-0 z-30 mt-2 max-h-[320px] min-w-[220px] overflow-y-auto rounded-2xl border border-linha bg-cartao p-1.5 shadow-xl"
         >
           {options.map((opt) => (
-            <Link
-              key={`${opt.href}-${opt.label}`}
-              href={opt.href}
-              role="menuitem"
-              onClick={() => setOpen(false)}
-              className={`flex min-h-10 items-center gap-2 rounded-xl px-3 py-1.5 text-sm no-underline transition-colors ${
-                opt.active ? 'bg-papel-2 font-bold text-tinta' : 'font-medium text-tinta hover:bg-papel-2/70'
-              }`}
-            >
-              {opt.dotColor !== undefined && (
-                <i
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ background: opt.dotColor ?? 'var(--color-rosa-forte)' }}
-                  aria-hidden="true"
-                />
-              )}
-              <span className="min-w-0 flex-1 truncate">{opt.label}</span>
-              {opt.active && (
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                  className="shrink-0 text-laranja-texto"
-                >
-                  <path d="M20 6L9 17l-5-5" />
-                </svg>
-              )}
-            </Link>
+            <Fragment key={`${opt.href}-${opt.label}`}>
+              {opt.dividerBefore && <div className="my-1 border-t border-linha" role="separator" />}
+              <Link
+                href={opt.href}
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                className={`flex min-h-10 items-center gap-2 rounded-xl px-3 py-1.5 text-sm no-underline transition-colors ${
+                  opt.active ? 'bg-papel-2 font-bold text-tinta' : 'font-medium text-tinta hover:bg-papel-2/70'
+                }`}
+              >
+                {opt.dotColor !== undefined && (
+                  <i
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ background: opt.dotColor ?? 'var(--color-rosa-forte)' }}
+                    aria-hidden="true"
+                  />
+                )}
+                <span className="min-w-0 flex-1 truncate">{opt.label}</span>
+                {opt.active && (
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                    className="shrink-0 text-laranja-texto"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                )}
+              </Link>
+            </Fragment>
           ))}
         </div>
       )}
@@ -229,6 +232,7 @@ export function ExtratoHeaderBar({
   title,
   searchPlaceholder,
   searchAriaLabel,
+  searchHidden,
   closeLabel,
   filterLabel,
   filterActive,
@@ -238,6 +242,7 @@ export function ExtratoHeaderBar({
   title: string;
   searchPlaceholder: string;
   searchAriaLabel: string;
+  searchHidden?: Record<string, string>;
   closeLabel: string;
   filterLabel: string;
   filterActive: boolean;
@@ -284,7 +289,13 @@ export function ExtratoHeaderBar({
 
       {searchOpen && (
         <div className="flex items-center gap-2">
-          <SearchBar autoFocus placeholder={searchPlaceholder} ariaLabel={searchAriaLabel} className="min-w-0 flex-1" />
+          <SearchBar
+            autoFocus
+            hidden={searchHidden}
+            placeholder={searchPlaceholder}
+            ariaLabel={searchAriaLabel}
+            className="min-w-0 flex-1"
+          />
           <button
             type="button"
             onClick={() => setSearchOpen(false)}

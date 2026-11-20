@@ -36,6 +36,7 @@ export default async function CarteiraPage({
     cat?: string;
     categoria?: string;
     conta?: string;
+    semEntreContas?: string;
   }>;
 }) {
   const [{ locale, t }, sp] = await Promise.all([getI18n(), searchParams]);
@@ -76,8 +77,10 @@ export default async function CarteiraPage({
   const rawCat = sp.cat ?? sp.categoria;
   const cat = rawCat && /^[\w-]{1,60}$/.test(rawCat) ? rawCat : null;
   const conta = sp.conta?.trim() ? sp.conta.trim().slice(0, 80) : null;
+  const hideTransfers = sp.semEntreContas === '1';
   const catInfo = cat ? (summary.byCategory.find((c) => (c.categoryId ?? 'sem') === cat) ?? null) : null;
   const shown = transactions.filter((tx) => {
+    if (hideTransfers && tx.isInternalTransfer) return false;
     if (conta && tx.accountName !== conta) return false;
     if (cat)
       return !tx.isInternalTransfer && (tx.categoryId ?? 'sem') === cat && (cat !== 'sem' || tx.amountInCents < 0);
@@ -100,6 +103,7 @@ export default async function CarteiraPage({
       filtro: filter,
       ...(cat ? { cat } : {}),
       ...(conta ? { conta } : {}),
+      ...(hideTransfers ? { semEntreContas: '1' } : {}),
     };
     for (const [k, v] of Object.entries(overrides)) {
       if (v === null || v === undefined || v === '') delete next[k];
@@ -114,6 +118,7 @@ export default async function CarteiraPage({
   const q = (p: Record<string, string | null | undefined>) => buildHref(p);
   const semCat = buildHref({ aba: null, cat: null });
   const semConta = buildHref({ aba: null, conta: null });
+  const toggleHideTransfersHref = buildHref({ aba: null, semEntreContas: hideTransfers ? null : '1' });
   const porCat = (id: string | null) => `${buildHref({ aba: null, cat: id ?? 'sem' })}#lista`;
   const back = buildHref({ aba: null });
 
@@ -227,9 +232,10 @@ export default async function CarteiraPage({
           title={t.wallet.title}
           searchPlaceholder={t.walletExtra.search.placeholder}
           searchAriaLabel={t.walletExtra.search.ariaLabel}
+          searchHidden={hideTransfers ? { semEntreContas: '1' } : undefined}
           closeLabel={t.common.close}
-          filterLabel={activeCategoryLabel}
-          filterActive={Boolean(cat)}
+          filterLabel={cat ? activeCategoryLabel : hideTransfers ? tw.hideTransfers : t.wallet.allCategories}
+          filterActive={Boolean(cat) || hideTransfers}
           filterOptions={[
             { label: t.wallet.allCategories, href: semCat, active: !cat },
             ...summary.byCategory.map((c) => ({
@@ -238,6 +244,12 @@ export default async function CarteiraPage({
               active: cat === (c.categoryId ?? 'sem'),
               dotColor: c.categoryId ? c.color : 'var(--color-rosa-forte)',
             })),
+            {
+              label: tw.hideTransfers,
+              href: toggleHideTransfersHref,
+              active: hideTransfers,
+              dividerBefore: true,
+            },
           ]}
           desktopControls={
             <div className="hidden items-center gap-2 lg:flex">
@@ -350,6 +362,16 @@ export default async function CarteiraPage({
                   </Link>
                 );
               })}
+              <Link
+                href={toggleHideTransfersHref}
+                aria-pressed={hideTransfers}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-semibold no-underline transition-colors ${
+                  hideTransfers ? 'bg-tinta text-papel' : 'border border-linha bg-cartao text-tinta hover:bg-papel-2'
+                }`}
+              >
+                <span>{tw.hideTransfers}</span>
+                {hideTransfers && <span aria-hidden="true">✓</span>}
+              </Link>
             </div>
             {(cat || conta) && (
               <div className="flex flex-wrap items-center gap-2">
@@ -481,6 +503,16 @@ export default async function CarteiraPage({
                     {f === 'pendentes' ? tw.pendingChip(summary.uncategorizedCount) : tw.filters[f]}
                   </Link>
                 ))}
+                <Link
+                  href={toggleHideTransfersHref}
+                  aria-pressed={hideTransfers}
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-semibold no-underline ${
+                    hideTransfers ? 'bg-tinta text-papel' : 'border border-linha bg-cartao text-tinta'
+                  }`}
+                >
+                  <span>{tw.hideTransfers}</span>
+                  {hideTransfers && <span aria-hidden="true">✓</span>}
+                </Link>
               </div>
             )}
 
