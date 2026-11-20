@@ -23,6 +23,12 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-20 · Antigravity · branch feat/inicio-mobills-anotacoes (novo favicon do Tostão)
+
+- **`apps/web/app/icon.png` & `apps/web/app/favicon.ico` (removido `icon.svg`):** gerados a partir do `apple-icon.png` atualizado, com máscara arredondada suave (`180×180` no `icon.png` e multi-resolução `16×16`/`32×32`/`48×48` no `favicon.ico`) substituindo o SVG antigo do boné.
+- **Obsidian (`2026-11-14_Backlog-Tostao.md`):** marcados como concluídos **Criar múltiplas metas** e **Trocar o favicon**.
+- **Validação:** `pnpm format:check`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pm2 restart tostao-web` e verificação ao vivo em `/entrar` + `/favicon.ico` (`200 OK`).
+
 ### 2026-11-20 · Antigravity · branch feat/inicio-mobills-anotacoes (enriquecimento Pluggy: merchant + categoria no sync)
 
 - **`apps/api/src/gateways/bank-gateway.ts` & `pluggy-bank-gateway.ts`:** `fetchTransactions()` agora extrai `merchant.name` (`merchantName`) e a categoria mais específica (`category` / `merchant.category` -> `providerCategory`) do `/v2/transactions` do Pluggy, e aplica `cleanPluggyDescription()` para simplificar ruídos repetidos (`"UBER *UBER *TRIP HELP.UB"` -> `"Uber"`, `"NETFLIX.COM *12345"` -> `"Netflix"`) sem apagar nomes de lojas atrás de intermediários nem descrições de transferência/Pix/rendimento.
