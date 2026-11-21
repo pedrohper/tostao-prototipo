@@ -1,15 +1,12 @@
-import { existsSync } from 'node:fs';
-import path from 'node:path';
+// Artes de livros e slides. A lista vem de `art-manifest.json`, gerado NO BUILD por scripts/sync-art-manifest.mjs
+// (`pnpm assets:sync`): em runtime não toca o disco (antes eram ~150 chamadas síncronas ao disco por visita ao /aprender,
+// bloqueando o event loop do Node). Arte nova: rode `pnpm assets:sync` (o `prebuild` do web já roda).
+import manifest from './art-manifest.json';
 
-const PUBLIC_ROOT = path.join(process.cwd(), 'public');
-const EXTS = ['webp', 'png', 'jpg', 'jpeg'] as const;
+type Folder = keyof typeof manifest;
 
-function findPublicAsset(folder: string, name: string): string | null {
-  for (const ext of EXTS) {
-    const rel = `/${folder}/${name}.${ext}`;
-    if (existsSync(path.join(PUBLIC_ROOT, rel))) return rel;
-  }
-  return null;
+function findPublicAsset(folder: Folder, name: string): string | null {
+  return (manifest[folder] as Record<string, string>)[name] ?? null;
 }
 
 export function getBookPageAssets(lessonIds: string[]): Record<string, string> {

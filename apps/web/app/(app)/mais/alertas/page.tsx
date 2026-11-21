@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { PushKeyResponse, TostaoAutoConfigDTO, TostaoAutoResponse } from '@tostao/contracts';
+import type { PushKeyResponse, TostaoAutoConfigDTO } from '@tostao/contracts';
 import { PushNotificationCard } from '@/components/avisos';
 import { Icon } from '@/components/icone';
 import { TostaoAutoConfigPanel } from '@/components/tostao-auto-card';
@@ -7,6 +7,7 @@ import { BackLink, PageFrame } from '@/components/ui';
 import { api } from '@/lib/api';
 import { resolveBackHref } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
+import { getTostaoAuto } from '@/lib/api-queries';
 
 type WhatsAppStatus = {
   enabled: boolean;
@@ -28,7 +29,7 @@ export default async function MaisAlertasPage({ searchParams }: { searchParams?:
   const [sp, wa, auto, pushKeyData, { locale, t }] = await Promise.all([
     searchParams ?? Promise.resolve<{ voltar?: string }>({}),
     api<WhatsAppStatus>('/whatsapp').catch(() => null),
-    api<TostaoAutoResponse>('/tostao/auto').catch(() => null),
+    getTostaoAuto().catch(() => null),
     api<PushKeyResponse>('/push/key').catch(() => null),
     getI18n(),
   ]);

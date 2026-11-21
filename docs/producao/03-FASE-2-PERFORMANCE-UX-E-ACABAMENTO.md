@@ -7,7 +7,7 @@
 
 ## T2.1 — Índices PostgreSQL e Eliminação de N+1 / Explosão de Queries
 
-- [ ] Concluída
+- [x] Concluída
 
 ### Problema atual
 
@@ -54,7 +54,7 @@
 
 ## T2.2 — Paginação Real no Banco e Busca SQL (`SearchTransactionsUseCase` e Repositórios)
 
-- [ ] Concluída
+- [x] Concluída
 
 ### Problema atual
 
@@ -77,7 +77,7 @@
 
 ## T2.3 — Otimização Next.js: Bundle Client, Fanout SSR, I/O Síncrono e Assets
 
-- [ ] Concluída
+- [x] Concluída
 
 ### Problema atual
 

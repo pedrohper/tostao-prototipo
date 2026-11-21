@@ -1,6 +1,6 @@
 'use server';
+import { revalidateFinance } from '@/lib/revalidate';
 import { redirect } from 'next/navigation';
-import { revalidatePath } from 'next/cache';
 import {
   categorizeBody,
   createManualAccountBody,
@@ -28,7 +28,7 @@ export async function categorize(_: ActionState, form: FormData): Promise<Action
     rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
-  revalidatePath('/', 'layout');
+  revalidateFinance();
   redirect(safeInternalPath(form.get('back'), '/carteira'));
 }
 
@@ -52,7 +52,7 @@ export async function createManual(_: ActionState, form: FormData): Promise<Acti
     rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
-  revalidatePath('/', 'layout');
+  revalidateFinance();
   // Veio de outra tela (ex.: Anotações)? Volta pra ela. Senão, mostra o mês na Carteira.
   const back = safeInternalPath(form.get('back'), '/carteira');
   if (back !== '/carteira') redirect(back);
@@ -72,7 +72,7 @@ export async function setAccountHidden(form: FormData) {
     rethrowIfRedirect(caught);
     /* se falhar, a conta só continua onde estava */
   }
-  revalidatePath('/', 'layout');
+  revalidateFinance();
 }
 
 export type AutoState = { message?: string; needsConsent?: boolean };
@@ -81,7 +81,7 @@ export type AutoState = { message?: string; needsConsent?: boolean };
 export async function autoCategorize(_: AutoState): Promise<AutoState> {
   try {
     const r = await api<AutoCategorizeResponse>('/transactions/auto-categorize', { method: 'POST', body: {} });
-    revalidatePath('/', 'layout');
+    revalidateFinance();
     if (r.asked === 0) return { message: 'Meu cérebro de IA tá desligado agora. Bora no manual.' };
     if (r.categorized === 0)
       return { message: 'Não reconheci nenhuma dessas. Deve ser Pix pra pessoa, essas só você sabe.' };
@@ -111,7 +111,7 @@ export async function apagarLancamento(form: FormData) {
       /* se falhar, o lançamento continua lá */
     }
   }
-  revalidatePath('/', 'layout');
+  revalidateFinance();
   redirect(back);
 }
 
@@ -127,7 +127,7 @@ export async function toggleInternalTransfer(form: FormData) {
       /* se falhar, mantém o estado atual */
     }
   }
-  revalidatePath('/', 'layout');
+  revalidateFinance();
   redirect(back);
 }
 
@@ -150,7 +150,7 @@ export async function updateManualTransaction(_: ActionState, form: FormData): P
     rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
-  revalidatePath('/', 'layout');
+  revalidateFinance();
   redirect(back);
 }
 
@@ -168,7 +168,7 @@ export async function saveTransactionNote(form: FormData) {
       failed = true;
     }
   }
-  revalidatePath('/', 'layout');
+  revalidateFinance();
   // Se não salvou, volta pra mesma tela com o aviso em vez de fingir que deu certo.
   if (failed && isSafePathSegment(id))
     redirect(`/carteira/${safePathSegment(id)}?voltar=${encodeURIComponent(safeBack)}&erro=nota`);
@@ -189,6 +189,6 @@ export async function createManualAccount(_: ActionState, form: FormData): Promi
     rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
-  revalidatePath('/', 'layout');
+  revalidateFinance();
   return {};
 }

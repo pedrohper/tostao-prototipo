@@ -1,6 +1,6 @@
 'use server';
+import { revalidateFinance } from '@/lib/revalidate';
 import { redirect } from 'next/navigation';
-import { revalidatePath } from 'next/cache';
 import { goalBody } from '@tostao/contracts';
 import { api, ApiError } from '@/lib/api';
 import { parseMoney, resolveBackHref } from '@/lib/format';
@@ -33,7 +33,7 @@ export async function saveGoal(_: GoalState, form: FormData): Promise<GoalState>
     rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
-  revalidatePath('/', 'layout');
+  revalidateFinance();
   const qs = new URLSearchParams();
   if (targetId) qs.set('id', targetId);
   if (voltarRaw) qs.set('voltar', resolveBackHref(voltarRaw, '/carteira?aba=planejar'));
@@ -52,7 +52,7 @@ export async function deposit(_: GoalState, form: FormData): Promise<GoalState> 
     rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
-  revalidatePath('/', 'layout');
+  revalidateFinance();
   return { message: out ? 'Anotado. Acontece, o importante é voltar a guardar.' : 'Boa! Mais um tostão na meta.' };
 }
 
@@ -69,7 +69,7 @@ export async function deleteGoal(form: FormData) {
     rethrowIfRedirect(caught);
     /* fica como estava */
   }
-  revalidatePath('/', 'layout');
+  revalidateFinance();
   const qs = new URLSearchParams();
   if (voltarRaw) qs.set('voltar', resolveBackHref(voltarRaw, '/carteira?aba=planejar'));
   const query = qs.toString();

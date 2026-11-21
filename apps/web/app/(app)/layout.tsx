@@ -3,18 +3,19 @@ import { redirect } from 'next/navigation';
 import { getToken } from '@/lib/session';
 import { Nav } from '@/components/nav';
 import { SidebarFooter } from '@/components/lateral';
-import { api } from '@/lib/api';
+
 import { NO_PROGRESS, xpFrom } from '@/lib/xp';
-import type { LessonProgressResponse, MissionsResponse, TostaoAutoResponse } from '@tostao/contracts';
+
 import { getLocale } from '@/lib/i18n-server';
 import { orFallback } from '@/lib/rethrow';
+import { getMissions, getProgress, getTostaoAuto } from '@/lib/api-queries';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   if (!(await getToken())) redirect('/entrar');
   const [progress, auto, missions, locale] = await Promise.all([
-    api<LessonProgressResponse>('/progress').catch(orFallback(NO_PROGRESS)),
-    api<TostaoAutoResponse>('/tostao/auto').catch(orFallback(null)),
-    api<MissionsResponse>('/missions').catch(orFallback(null)),
+    getProgress().catch(orFallback(NO_PROGRESS)),
+    getTostaoAuto().catch(orFallback(null)),
+    getMissions().catch(orFallback(null)),
     getLocale(),
   ]);
   const { xp, level } = xpFrom(progress.done.length, progress.bonusXp ?? 0);

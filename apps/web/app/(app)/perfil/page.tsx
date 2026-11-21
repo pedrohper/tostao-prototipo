@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { BattlesResponse, LessonProgressResponse, ProfileResponse } from '@tostao/contracts';
+import type { BattlesResponse } from '@tostao/contracts';
 import { Mascot } from '@/components/mascote';
 import { BackLink, Eyebrow, PageFrame } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -8,14 +8,15 @@ import { getI18n } from '@/lib/i18n-server';
 import { logout } from '@/lib/session-actions';
 import { modules } from '@/lib/lessons';
 import { NO_PROGRESS, xpFrom } from '@/lib/xp';
+import { getMe, getProgress } from '@/lib/api-queries';
 
 export default async function PerfilPage({ searchParams }: { searchParams?: Promise<{ voltar?: string }> }) {
   const sp = (await searchParams) ?? {};
   const backHref = resolveBackHref(sp.voltar, '/mais');
 
   const [profile, { done, streakDays, bonusXp = 0 }, battles, { t }] = await Promise.all([
-    api<ProfileResponse>('/me'),
-    api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
+    getMe(),
+    getProgress().catch(() => NO_PROGRESS),
     api<BattlesResponse>('/battles').catch(() => null),
     getI18n(),
   ]);

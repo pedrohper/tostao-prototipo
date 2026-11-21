@@ -35,12 +35,15 @@ export function Mascot({
   alt = '',
   className = '',
   still = false,
+  eager = false,
 }: {
   pose: MascotPose;
   size?: number;
   alt?: string;
   className?: string;
   still?: boolean;
+  /** Acima da dobra (ex.: herói): carrega já. O padrão é preguiçoso, pra não competir com o conteúdo principal. */
+  eager?: boolean;
 }) {
   const motionClass = still || size < 48 ? '' : CELEBRATION_POSES.includes(pose) ? 'mascote-pula' : 'mascote';
   return (
@@ -49,6 +52,8 @@ export function Mascot({
       alt={alt}
       width={size}
       height={size}
+      loading={eager ? 'eager' : 'lazy'}
+      decoding="async"
       className={`shrink-0 select-none ${motionClass} ${className}`}
       draggable={false}
     />

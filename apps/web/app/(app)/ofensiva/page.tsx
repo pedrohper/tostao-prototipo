@@ -1,18 +1,19 @@
 import Link from 'next/link';
-import type { LessonProgressResponse, MissionsResponse } from '@tostao/contracts';
+
 import { Icon } from '@/components/icone';
 import { BackLink, PageFrame } from '@/components/ui';
-import { api } from '@/lib/api';
+
 import { resolveBackHref } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
 import { NO_PROGRESS, xpFrom } from '@/lib/xp';
+import { getMissions, getProgress } from '@/lib/api-queries';
 
 export default async function OfensivaPage({ searchParams }: { searchParams?: Promise<{ voltar?: string }> }) {
   const [{ locale, t }, sp, progress, missions] = await Promise.all([
     getI18n(),
     searchParams ?? Promise.resolve<{ voltar?: string }>({}),
-    api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
-    api<MissionsResponse>('/missions').catch(() => null),
+    getProgress().catch(() => NO_PROGRESS),
+    getMissions().catch(() => null),
   ]);
 
   const backHref = resolveBackHref(sp.voltar, '/inicio');

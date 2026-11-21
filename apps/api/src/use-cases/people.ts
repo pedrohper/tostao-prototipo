@@ -28,10 +28,22 @@ export class ListPeopleUseCase {
   constructor(private readonly repos: Repos) {}
 
   async execute({ userId }: { userId: string }) {
-    const people = await this.repos.people.listByUser(userId);
-    const dtos = await Promise.all(
-      people.map(async (p) => toDto(p, await this.repos.transactions.findByPerson(userId, p.id))),
-    );
+    // 2 queries (antes 1 + uma por pessoa): as pessoas e o saldo/contagem/último acerto de todas, agregados no banco.
+    const [people, balances] = await Promise.all([
+      this.repos.people.listByUser(userId),
+      this.repos.transactions.summarizeByPerson(userId),
+    ]);
+    const byPerson = new Map(balances.map((b) => [b.personId, b]));
+    const dtos: PersonDTO[] = people.map((p) => {
+      const b = byPerson.get(p.id);
+      return {
+        id: p.id,
+        name: p.name,
+        balanceInCents: b?.balanceInCents ?? 0,
+        count: b?.count ?? 0,
+        lastAt: b?.lastAt?.toISOString() ?? null,
+      };
+    });
     // Quem tem saldo aberto primeiro (maior valor), quitados por último.
     dtos.sort(
       (a, b) =>

@@ -1,5 +1,6 @@
 import { NEUTRAL_CATEGORY_ID, type Transaction } from '../domain/entities.js';
 import { normalizeDescription } from '../lib/text.js';
+import type { TransactionsRepository } from '../repositories/types.js';
 
 // Palavras que indicam dinheiro mudando de bolso, não saindo de você.
 const KEYWORDS = [
@@ -122,4 +123,21 @@ export function internalTransferUpdates(
     out.push({ transaction: t, isInternalTransfer: shouldBe });
   }
   return out;
+}
+
+/**
+ * Grava o resultado de `internalTransferUpdates` em até 2 UPDATEs (um pra quem virou transferência, outro pra quem
+ * deixou de ser), no lugar de um `save` por lançamento. Só mexe em `is_internal_transfer`: a decisão manual fica como está.
+ */
+export async function applyInternalTransferUpdates(
+  transactions: Pick<TransactionsRepository, 'setInternalTransfer'>,
+  userId: string,
+  updates: { transaction: Transaction; isInternalTransfer: boolean }[],
+) {
+  const idsWhere = (value: boolean) =>
+    updates.filter((u) => u.isInternalTransfer === value).map((u) => u.transaction.id);
+  const on = idsWhere(true);
+  const off = idsWhere(false);
+  if (on.length) await transactions.setInternalTransfer(userId, on, true);
+  if (off.length) await transactions.setInternalTransfer(userId, off, false);
 }

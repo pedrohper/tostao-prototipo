@@ -1,11 +1,12 @@
 import Link from 'next/link';
-import type { SearchResponse, TransactionDTO } from '@tostao/contracts';
+import type { SearchResponse } from '@tostao/contracts';
 import { api } from '@/lib/api';
-import { money, monthName, resolveBackHref } from '@/lib/format';
+import { money, resolveBackHref } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
 import { BackLink, PageFrame } from '@/components/ui';
 import { Mascot } from '@/components/mascote';
-import { Row, SearchBar } from '../transaction-row';
+import { SearchBar } from '../transaction-row';
+import { SearchResults } from './results';
 
 type Period = '30d' | '3m' | '12m' | 'tudo';
 type Kind = 'todas' | 'saida' | 'entrada';
@@ -52,13 +53,6 @@ export default async function BuscaPage({
     return `/carteira/busca?${new URLSearchParams(next)}`;
   };
   const back = link({});
-  const groups = new Map<string, TransactionDTO[]>();
-  for (const tx of r?.transactions ?? []) {
-    const m = tx.occurredAt.slice(0, 7);
-    const k = `${monthName(m, locale)} ${m.slice(0, 4)}`;
-    groups.set(k, [...(groups.get(k) ?? []), tx]);
-  }
-
   return (
     <PageFrame size="focused">
       <BackLink href={backHref} label={backHref === '/carteira' ? t.wallet.title : t.common.back} />
@@ -150,22 +144,17 @@ export default async function BuscaPage({
                 </span>
               )}
             </div>
-            {r.count > r.transactions.length && (
-              <span className="text-xs text-tinta-suave">{s.truncatedNote(r.transactions.length)}</span>
-            )}
           </div>
-          <div className="flex flex-col gap-6">
-            {[...groups.entries()].map(([label, list]) => (
-              <section key={label} className="flex flex-col gap-1">
-                <h2 className="pb-1 text-[15px] leading-5 font-bold text-tinta">{label}</h2>
-                <div className="flex flex-col">
-                  {list.map((tx) => (
-                    <Row key={tx.id} t={tx} back={back} showDate locale={locale} />
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
+          <SearchResults
+            // `key` zera a lista (e o cursor) quando a busca ou um filtro muda: sem herdar páginas da busca anterior.
+            key={back}
+            initial={r.transactions}
+            initialCursor={r.nextCursor}
+            total={r.count}
+            filters={{ q, period, kind, excludeTransfers: hideTransfers, excludeYields: hideYields }}
+            back={back}
+            locale={locale}
+          />
         </>
       )}
     </PageFrame>

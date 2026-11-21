@@ -2,34 +2,29 @@ import { MissionCompletionToast } from '@/components/sons';
 import { Icon } from '@/components/icone';
 import Link from 'next/link';
 import { modules } from '@/lib/lessons';
-import type { FriendsResponse, MissionsResponse } from '@tostao/contracts';
+import type { FriendsResponse } from '@tostao/contracts';
 import { Mascot } from '@/components/mascote';
 import { Eyebrow } from '@/components/ui';
-import type {
-  BattlesResponse,
-  LessonProgressResponse,
-  MonthSummaryResponse,
-  TribunalResponse,
-} from '@tostao/contracts';
+import type { BattlesResponse, TribunalResponse } from '@tostao/contracts';
 import { api } from '@/lib/api';
-import { currentMonth, todayIso } from '@/lib/format';
+import { todayIso } from '@/lib/format';
 import { NO_PROGRESS } from '@/lib/xp';
 import { DesktopSplitShell } from '@/components/lateral';
 import { StreakModalButton } from '@/components/streak-modal';
 import { getI18n } from '@/lib/i18n-server';
 import { LegacyProgress } from './legacy-progress';
-import { BookCarousel } from './book-carousel';
+import { BookCarousel, type BookModule } from './book-carousel';
 import { getBookPageAssets } from '@/lib/art-assets';
+import { getMissions, getProgress } from '@/lib/api-queries';
 
 export default async function AprenderPage({ searchParams }: { searchParams: Promise<{ livro?: string }> }) {
-  const [{ livro }, { locale, t }, { done, streakDays }, , tribunal, battles, missions, friends] = await Promise.all([
+  const [{ livro }, { locale, t }, { done, streakDays }, tribunal, battles, missions, friends] = await Promise.all([
     searchParams,
     getI18n(),
-    api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
-    api<MonthSummaryResponse>(`/summary?month=${currentMonth()}`).catch(() => null),
+    getProgress().catch(() => NO_PROGRESS),
     api<TribunalResponse>('/tribunal').catch(() => null),
     api<BattlesResponse>('/battles').catch(() => null),
-    api<MissionsResponse>('/missions').catch(() => null),
+    getMissions().catch(() => null),
     api<FriendsResponse>('/friends').catch(() => null),
   ]);
   const th = t.pages.learnExtra.hub;
@@ -49,6 +44,14 @@ export default async function AprenderPage({ searchParams }: { searchParams: Pro
   const atual = modules.find((m) => m.lessons.some((l) => !done.includes(l.id))) ?? null;
   const requestedBook = livro ? modules.find((m) => m.id === livro) : null;
   const initialBookId = requestedBook?.id ?? atual?.id ?? modules[modules.length - 1]?.id ?? 'm1';
+  // Resumo enxuto pro Client Component (ver BookModule): sem os 80 KB de conteúdo das lições no payload RSC.
+  const bookModules: BookModule[] = modules.map((m) => ({
+    id: m.id,
+    number: m.number,
+    title: m.title,
+    optional: m.optional,
+    lessons: m.lessons.map((l) => ({ id: l.id, number: l.number, title: l.title, hook: l.hook })),
+  }));
   const pageAssets = getBookPageAssets(modules.flatMap((m) => m.lessons.map((l) => l.id)));
 
   const myRankIdx = friends ? friends.ranking.findIndex((p) => p.me) : -1;
@@ -132,7 +135,7 @@ export default async function AprenderPage({ searchParams }: { searchParams: Pro
       )}
 
       <BookCarousel
-        modules={modules}
+        modules={bookModules}
         initialBookId={initialBookId}
         currentBookId={atual?.id ?? null}
         done={done}

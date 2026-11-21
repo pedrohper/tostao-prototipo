@@ -94,7 +94,15 @@ export function Landing({
             </div>
           </div>
           <div className={s['hero-art']} aria-hidden="true">
-            <img className={s.pig} src="/elenco/acenando.webp" alt="" />
+            <img
+              width={480}
+              height={480}
+              fetchPriority="high"
+              decoding="async"
+              className={s.pig}
+              src="/elenco/acenando.webp"
+              alt=""
+            />
             <div className={`${s.card} ${s.saldo}`}>
               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--lp-muted)' }}>Saldo em 3 contas</span>
               <span className={s.disp} style={{ fontSize: 34, lineHeight: '38px', fontVariantNumeric: 'tabular-nums' }}>
@@ -123,19 +131,40 @@ export function Landing({
           </h2>
           <div className={s.steps}>
             <div className={`${s.card} ${s.step}`} data-reveal style={delay(0)}>
-              <img src="/elenco/conectando.webp" alt="Tostão conectando o banco" />
+              <img
+                width={480}
+                height={480}
+                loading="lazy"
+                decoding="async"
+                src="/elenco/conectando.webp"
+                alt="Tostão conectando o banco"
+              />
               <span className={s.num}>1</span>
               <h3 className={s.disp}>Conecte seus bancos</h3>
               <p>Nubank, Mercado Pago, Bradesco e outros, todos num lugar só, pelo Open Finance.</p>
             </div>
             <div className={`${s.card} ${s.step}`} data-reveal style={delay(120)}>
-              <img src="/elenco/investigando.webp" alt="Tostão investigando com uma lupa" />
+              <img
+                width={480}
+                height={480}
+                loading="lazy"
+                decoding="async"
+                src="/elenco/investigando.webp"
+                alt="Tostão investigando com uma lupa"
+              />
               <span className={s.num}>2</span>
               <h3 className={s.disp}>Veja pra onde foi</h3>
               <p>O Tostão organiza seus gastos e te avisa quando alguma coisa sai do normal.</p>
             </div>
             <div className={`${s.card} ${s.step}`} data-reveal style={delay(240)}>
-              <img src="/elenco/professor.webp" alt="Tostão professor" />
+              <img
+                width={480}
+                height={480}
+                loading="lazy"
+                decoding="async"
+                src="/elenco/professor.webp"
+                alt="Tostão professor"
+              />
               <span className={s.num}>3</span>
               <h3 className={s.disp}>Aprenda com o seu extrato</h3>
               <p>Lições curtas que usam os seus gastos de verdade e terminam numa decisão sua.</p>
@@ -197,6 +226,10 @@ export function Landing({
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
               <img
+                width={480}
+                height={480}
+                loading="lazy"
+                decoding="async"
                 src="/elenco/preocupado.webp"
                 alt="Tostão preocupado"
                 style={{ width: 84, height: 84, flex: 'none' }}
@@ -228,25 +261,53 @@ export function Landing({
           </h2>
           <div className={s.vils}>
             <div className={s.vil} data-reveal style={{ background: 'var(--lp-pink)', ...delay(0) }}>
-              <img src="/elenco/orgulhoso.webp" alt="Tostão orgulhoso de braços cruzados" />
+              <img
+                width={480}
+                height={480}
+                loading="lazy"
+                decoding="async"
+                src="/elenco/orgulhoso.webp"
+                alt="Tostão orgulhoso de braços cruzados"
+              />
               <span className={s.tag}>Herói</span>
               <h3 className={s.disp}>Tostão</h3>
               <p>Cofrinho que já quebrou e se remendou. Fala a real sobre dinheiro, sem sermão.</p>
             </div>
             <div className={s.vil} data-reveal style={{ background: 'var(--lp-mint)', ...delay(100) }}>
-              <img src="/elenco/caramelo.webp" alt="Caramelo sentado, sorrindo" />
+              <img
+                width={480}
+                height={480}
+                loading="lazy"
+                decoding="async"
+                src="/elenco/caramelo.webp"
+                alt="Caramelo sentado, sorrindo"
+              />
               <span className={s.tag}>Herói</span>
               <h3 className={s.disp}>Caramelo</h3>
               <p>Vira-lata de rua que fareja pechincha, chorinho no Pix e desperdício no mercado.</p>
             </div>
             <div className={s.vil} data-reveal style={{ background: 'var(--lp-yellow)', ...delay(200) }}>
-              <img src="/elenco/tigrinho.webp" alt="Tigrinho de óculos escuros e correntes de ouro" />
+              <img
+                width={480}
+                height={480}
+                loading="lazy"
+                decoding="async"
+                src="/elenco/tigrinho.webp"
+                alt="Tigrinho de óculos escuros e correntes de ouro"
+              />
               <span className={s.tag}>Vilão</span>
               <h3 className={s.disp}>Tigrinho</h3>
               <p>Ostenta, canta e jura que hoje a cartinha solta. É a bet que nunca devolve.</p>
             </div>
             <div className={s.vil} data-reveal style={{ background: 'var(--lp-blue)', ...delay(300) }}>
-              <img src="/elenco/urubu-pix.webp" alt="Urubu do Pix mostrando o celular" />
+              <img
+                width={480}
+                height={480}
+                loading="lazy"
+                decoding="async"
+                src="/elenco/urubu-pix.webp"
+                alt="Urubu do Pix mostrando o celular"
+              />
               <span className={s.tag}>Vilão</span>
               <h3 className={s.disp}>Urubu do Pix</h3>
               <p>Robô que rende 10% ao dia, falsa central, pirâmide do amigo. Some quando você precisa.</p>
@@ -296,7 +357,14 @@ export function Landing({
               Começar grátis
             </Link>
           </div>
-          <img src="/elenco/dupla.webp" alt="Tostão e Caramelo lado a lado" />
+          <img
+            width={600}
+            height={600}
+            loading="lazy"
+            decoding="async"
+            src="/elenco/dupla.webp"
+            alt="Tostão e Caramelo lado a lado"
+          />
         </section>
         <SiteFooter />
       </div>

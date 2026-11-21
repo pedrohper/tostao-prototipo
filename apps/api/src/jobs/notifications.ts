@@ -5,6 +5,8 @@ import { brDay, EngagementUseCase } from '../use-cases/engagement.js';
 
 const money = (c: number) => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const BR = 3 * 60 * 60 * 1000;
+/** Quantos usuários elegíveis a cada página da varredura de WhatsApp. */
+const NOTIFY_PAGE = 500;
 
 /**
  * Roda a cada 15 min. Cada aviso tem uma chave e sai uma vez só:
@@ -51,7 +53,13 @@ export async function runNotifications(
 
   const userIds = new Set<string>(push.enabled ? await repos.engagement.listPushUserIds() : []);
   if (whatsapp?.enabled) {
-    for (const id of await repos.users.listAllIds()) userIds.add(id);
+    // Só quem ligou o aviso por WhatsApp e tem número vinculado, em páginas (antes: TODOS os usuários, a cada 15 min).
+    for (let after: string | null = null; ;) {
+      const page: string[] = await repos.tostaoAuto.listWhatsappNotifiableUserIds({ after, limit: NOTIFY_PAGE });
+      for (const id of page) userIds.add(id);
+      if (page.length < NOTIFY_PAGE) break;
+      after = page[page.length - 1]!;
+    }
   }
 
   for (const userId of userIds) {

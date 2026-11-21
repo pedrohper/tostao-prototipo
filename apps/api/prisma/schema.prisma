@@ -101,6 +101,7 @@ model BankConnection {
   @@unique([userId, itemId])
   // + índice único parcial em item_id (Open Finance, fora import:/manual:) criado por SQL na migration
   // 20261120120000_bank_connections_item_unique: o Prisma não modela índice parcial.
+  @@index([status])
   @@map("bank_connections")
 }
 
@@ -124,6 +125,7 @@ model Account {
 
   @@unique([userId, externalId])
   @@index([userId, fingerprint])
+  @@index([connectionId])
   @@map("accounts")
 }
 
@@ -141,6 +143,7 @@ model Category {
   rules        CategoryRule[]
   budgets      CategoryBudget[]
 
+  @@index([userId])
   @@map("categories")
 }
 
@@ -156,6 +159,7 @@ model CategoryRule {
   category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@unique([userId, pattern])
+  @@index([categoryId])
   @@map("category_rules")
 }
 
@@ -191,6 +195,14 @@ model Transaction {
   @@index([userId, occurredAt])
   @@index([seriesId])
   @@index([personId])
+  @@index([accountId])
+  @@index([categoryId])
+  @@index([userId, accountId, occurredAt])
+  @@index([userId, personId, occurredAt])
+  @@index([userId, seriesId, occurredAt])
+  // Busca por trecho da descrição (ILIKE): GIN com pg_trgm. A extensão e os índices parciais (sem categoria / manual)
+  // são criados por SQL na migration 20261123100000_t21_indexes: o Prisma não modela índice parcial.
+  @@index([description(ops: raw("gin_trgm_ops"))], type: Gin, map: "transactions_description_trgm_idx")
   @@map("transactions")
 }
 
@@ -219,6 +231,7 @@ model CategoryBudget {
   category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@unique([userId, categoryId])
+  @@index([categoryId])
   @@map("category_budgets")
 }
 
@@ -271,6 +284,8 @@ model PasswordReset {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([expiresAt])
   @@map("password_resets")
 }
 
@@ -379,6 +394,7 @@ model ChatMessage {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+  @@index([userId, role, createdAt])
   @@map("chat_messages")
 }
 
@@ -475,6 +491,7 @@ model Friendship {
   friend User @relation("FriendIs", fields: [friendId], references: [id], onDelete: Cascade)
 
   @@id([userId, friendId])
+  @@index([friendId])
   @@map("friendships")
 }
 
@@ -517,6 +534,7 @@ model SentNotification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, key])
+  @@index([sentAt])
   @@map("sent_notifications")
 }
 
@@ -540,6 +558,7 @@ model TostaoInsight {
 
   @@unique([userId, dedupeKey])
   @@index([userId, status, createdAt])
+  @@index([expiresAt])
   @@map("tostao_insights")
 }
 

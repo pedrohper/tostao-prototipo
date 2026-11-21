@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { LessonProgressResponse, ProfileResponse, TostaoAutoResponse } from '@tostao/contracts';
+
 import { Eyebrow } from '@/components/ui';
 import { Icon } from '@/components/icone';
 import { DesktopSplitShell } from '@/components/lateral';
@@ -7,6 +7,7 @@ import { Mascot } from '@/components/mascote';
 import { api } from '@/lib/api';
 import { getI18n } from '@/lib/i18n-server';
 import { NO_PROGRESS, xpFrom } from '@/lib/xp';
+import { getMe, getProgress, getTostaoAuto } from '@/lib/api-queries';
 
 type WhatsAppStatus = {
   enabled: boolean;
@@ -16,10 +17,10 @@ type WhatsAppStatus = {
 
 export default async function MaisPage() {
   const [profile, { done, streakDays, bonusXp = 0 }, wa, auto, { locale, t }] = await Promise.all([
-    api<ProfileResponse>('/me'),
-    api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
+    getMe(),
+    getProgress().catch(() => NO_PROGRESS),
     api<WhatsAppStatus>('/whatsapp').catch(() => null),
-    api<TostaoAutoResponse>('/tostao/auto').catch(() => null),
+    getTostaoAuto().catch(() => null),
     getI18n(),
   ]);
 

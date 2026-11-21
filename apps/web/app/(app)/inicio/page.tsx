@@ -1,23 +1,22 @@
-import { Fragment } from 'react';
+import { Fragment, Suspense } from 'react';
 import Link from 'next/link';
 import type {
   BudgetsResponse,
   ForecastResponse,
   FriendsResponse,
-  LessonProgressResponse,
-  MissionsResponse,
   MonthSummaryResponse,
   PeopleResponse,
-  ProfileResponse,
   RemindersResponse,
   SubscriptionsResponse,
-  TostaoAutoResponse,
   WeeklyResponse,
 } from '@tostao/contracts';
-import { CardNetworkBadge, getBankLogos, BankBadge } from '@/components/banco';
+import { CardNetworkBadge, BankBadge } from '@/components/banco';
+import { getBankLogos } from '@/lib/api-queries';
 import { BudgetBar } from '@/components/budget-bar';
 import { MonthLeftoverCard, UpcomingReminders, WeeklySummaryCard } from '@/components/engajamento';
 import { DismissibleCard } from '@/components/fechavel';
+import { Await, SectionSkeleton, startEarly } from '@/components/suspense';
+import { orFallback } from '@/lib/rethrow';
 import { CatIcon, Icon } from '@/components/icone';
 import { DesktopSplitShell } from '@/components/lateral';
 import { Mascot } from '@/components/mascote';
@@ -45,6 +44,7 @@ import { NO_PROGRESS } from '@/lib/xp';
 import { AskTostaoCard } from './ask-card';
 import { DesktopBalanceRow, MobileBalanceCard, type BalanceCardProps } from './balance-card';
 import { PlanejarAtalhos } from './planejar-atalhos';
+import { getMe, getMissions, getProgress, getTostaoAuto } from '@/lib/api-queries';
 
 const BAR_SEGMENT_CLASSES = ['bg-laranja', 'bg-tinta', 'bg-menta', 'bg-amarelo', 'bg-tinta-suave'] as const;
 const DESKTOP_LEFT_EXTRAS = new Set<HomeSectionId>(['sobra', 'cartoes', 'limites', 'acertos', 'vence']);
@@ -79,35 +79,25 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   const isSectionVisible = (id: HomeSectionId) => !prefs.ocultos.includes(id);
   const isAlertOpen = (key: string) => !prefs.fechados.includes(key);
 
-  const [
-    profile,
-    summary,
-    subscriptions,
-    budgetsData,
-    progress,
-    forecast,
-    missions,
-    remindersData,
-    weekly,
-    bankLogos,
-    splits,
-    auto,
-    friends,
-  ] = await Promise.all([
-    api<ProfileResponse>('/me'),
-    api<MonthSummaryResponse>(`/summary?month=${month}`),
-    api<SubscriptionsResponse>('/subscriptions').catch(() => null),
-    api<BudgetsResponse>(`/budgets?month=${month}`).catch(() => ({ budgets: [] })),
-    api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
-    api<ForecastResponse>('/forecast').catch(() => null),
-    api<MissionsResponse>('/missions').catch(() => null),
-    api<RemindersResponse>('/reminders').catch(() => ({ reminders: [] })),
-    api<WeeklyResponse>('/weekly').catch(() => null),
-    getBankLogos(),
-    api<PeopleResponse>('/people').catch(() => null),
-    api<TostaoAutoResponse>('/tostao/auto').catch(() => null),
-    api<FriendsResponse>('/friends').catch(() => null),
-  ]);
+  // Seções abaixo da dobra que só dependem do próprio endpoint: a requisição começa já, mas a página NÃO espera por ela
+  // (cada uma tem seu <Suspense> mais abaixo e chega por streaming). O que o topo precisa continua no Promise.all.
+  const remindersP = startEarly(api<RemindersResponse>('/reminders').catch(orFallback({ reminders: [] })));
+  const weeklyP = startEarly(api<WeeklyResponse>('/weekly').catch(orFallback(null)));
+  const splitsP = startEarly(api<PeopleResponse>('/people').catch(orFallback(null)));
+
+  const [profile, summary, subscriptions, budgetsData, progress, forecast, missions, bankLogos, auto, friends] =
+    await Promise.all([
+      getMe(),
+      api<MonthSummaryResponse>(`/summary?month=${month}`),
+      api<SubscriptionsResponse>('/subscriptions').catch(() => null),
+      api<BudgetsResponse>(`/budgets?month=${month}`).catch(() => ({ budgets: [] })),
+      getProgress().catch(() => NO_PROGRESS),
+      api<ForecastResponse>('/forecast').catch(() => null),
+      getMissions().catch(() => null),
+      getBankLogos(),
+      getTostaoAuto().catch(() => null),
+      api<FriendsResponse>('/friends').catch(() => null),
+    ]);
 
   const overBudgetCategory = budgetsData.budgets.find((b) => b.spentInCents > b.limitInCents);
   const activeSubscriptionCount = subscriptions?.subscriptions.filter((sub) => sub.active).length ?? 0;
@@ -294,7 +284,13 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       </>
     ),
     vence: (
-      <>{<UpcomingReminders reminders={remindersData.reminders.filter((r) => isAlertOpen(r.key))} locale={locale} />}</>
+      <Suspense fallback={<SectionSkeleton height="h-20" />}>
+        <Await promise={remindersP}>
+          {(remindersData) => (
+            <UpcomingReminders reminders={remindersData.reminders.filter((r) => isAlertOpen(r.key))} locale={locale} />
+          )}
+        </Await>
+      </Suspense>
     ),
     avisos: (
       <>
@@ -391,13 +387,17 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       </section>
     ),
     semana: (
-      <>
-        {weekly && isAlertOpen(`semana:${weekly.from}`) && (
-          <DismissibleCard id={`semana:${weekly.from}`} label={t.home.dismissAlertLabel}>
-            <WeeklySummaryCard w={weekly} locale={locale} />
-          </DismissibleCard>
-        )}
-      </>
+      <Suspense fallback={<SectionSkeleton />}>
+        <Await promise={weeklyP}>
+          {(weekly) =>
+            weekly && isAlertOpen(`semana:${weekly.from}`) ? (
+              <DismissibleCard id={`semana:${weekly.from}`} label={t.home.dismissAlertLabel}>
+                <WeeklySummaryCard w={weekly} locale={locale} />
+              </DismissibleCard>
+            ) : null
+          }
+        </Await>
+      </Suspense>
     ),
     meta: (
       <>
@@ -479,43 +479,50 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       </>
     ),
     acertos: (
-      <>
-        {splits &&
-          (splits.owedToYouInCents > 0 || splits.youOweInCents > 0) &&
-          (() => {
-            const owedToMe = splits.people.filter((p) => p.balanceInCents > 0);
-            const iOwe = splits.people.filter((p) => p.balanceInCents < 0);
-            return (
-              <Link
-                href="/acertos?voltar=/inicio"
-                className="flex flex-col gap-1.5 rounded-2xl border border-linha bg-cartao p-3.5 text-tinta no-underline"
-              >
-                <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">
-                  {t.home.splitsLabel}
-                </span>
-                <div className="flex items-baseline justify-between gap-3">
-                  {splits.owedToYouInCents > 0 && (
-                    <span className="text-[15px]">
-                      {t.home.owedToYou}{' '}
-                      <b className="text-verde-texto tabular-nums">{money(splits.owedToYouInCents)}</b>
-                    </span>
-                  )}
-                  {splits.youOweInCents > 0 && (
-                    <span className="text-[15px]">
-                      {t.home.youOwe} <b className="text-vermelho-texto tabular-nums">{money(splits.youOweInCents)}</b>
-                    </span>
-                  )}
-                </div>
-                <span className="truncate text-[13px] text-tinta-suave">
-                  {[...owedToMe, ...iOwe]
-                    .slice(0, 3)
-                    .map((p) => `${p.name} ${money(Math.abs(p.balanceInCents))}`)
-                    .join(' · ')}
-                </span>
-              </Link>
-            );
-          })()}
-      </>
+      <Suspense fallback={<SectionSkeleton />}>
+        <Await promise={splitsP}>
+          {(splits) => (
+            <>
+              {splits &&
+                (splits.owedToYouInCents > 0 || splits.youOweInCents > 0) &&
+                (() => {
+                  const owedToMe = splits.people.filter((p) => p.balanceInCents > 0);
+                  const iOwe = splits.people.filter((p) => p.balanceInCents < 0);
+                  return (
+                    <Link
+                      href="/acertos?voltar=/inicio"
+                      className="flex flex-col gap-1.5 rounded-2xl border border-linha bg-cartao p-3.5 text-tinta no-underline"
+                    >
+                      <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">
+                        {t.home.splitsLabel}
+                      </span>
+                      <div className="flex items-baseline justify-between gap-3">
+                        {splits.owedToYouInCents > 0 && (
+                          <span className="text-[15px]">
+                            {t.home.owedToYou}{' '}
+                            <b className="text-verde-texto tabular-nums">{money(splits.owedToYouInCents)}</b>
+                          </span>
+                        )}
+                        {splits.youOweInCents > 0 && (
+                          <span className="text-[15px]">
+                            {t.home.youOwe}{' '}
+                            <b className="text-vermelho-texto tabular-nums">{money(splits.youOweInCents)}</b>
+                          </span>
+                        )}
+                      </div>
+                      <span className="truncate text-[13px] text-tinta-suave">
+                        {[...owedToMe, ...iOwe]
+                          .slice(0, 3)
+                          .map((p) => `${p.name} ${money(Math.abs(p.balanceInCents))}`)
+                          .join(' · ')}
+                      </span>
+                    </Link>
+                  );
+                })()}
+            </>
+          )}
+        </Await>
+      </Suspense>
     ),
     cartoes: (
       <>
@@ -933,21 +940,12 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   const nextMes = shiftMonth(month, 1);
   const canGoNext = month < hoje;
 
-  const renderMonthSelector = (variant: 'mobile' | 'desktop') => (
-    <div
-      className={`inline-flex h-10 items-center rounded-full text-sm ${
-        variant === 'desktop'
-          ? 'gap-1 bg-tinta px-1.5 font-semibold text-papel'
-          : 'gap-0.5 bg-papel-2 px-1 font-bold text-tinta'
-      }`}
-    >
-      <Link
-        href={`/inicio?mes=${prevMes}`}
-        aria-label={t.walletExtra.main.prevMonth}
-        className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
-          variant === 'desktop' ? 'hover:bg-papel/15' : 'hover:bg-linha/60'
-        }`}
-      >
+  // Um seletor só: no mobile fica claro (bg-papel-2), no desktop escuro (bg-tinta), por classes `lg:`.
+  const chevronLink =
+    'flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-linha/60 lg:hover:bg-papel/15';
+  const monthSelector = (
+    <div className="inline-flex h-10 items-center gap-0.5 rounded-full bg-papel-2 px-1 text-sm font-bold text-tinta lg:gap-1 lg:bg-tinta lg:px-1.5 lg:font-semibold lg:text-papel">
+      <Link href={`/inicio?mes=${prevMes}`} aria-label={t.walletExtra.main.prevMonth} className={chevronLink}>
         <MonthChevron d="M15 18l-6-6 6-6" />
       </Link>
       <span className="px-2 whitespace-nowrap">{monthSelectorLabel}</span>
@@ -955,9 +953,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         <Link
           href={nextMes === hoje ? '/inicio' : `/inicio?mes=${nextMes}`}
           aria-label={t.walletExtra.main.nextMonth}
-          className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
-            variant === 'desktop' ? 'hover:bg-papel/15' : 'hover:bg-linha/60'
-          }`}
+          className={chevronLink}
         >
           <MonthChevron d="M9 18l6-6-6-6" />
         </Link>
@@ -980,44 +976,14 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         />
       )}
 
-      {/* Mobile & Tablet (< lg) */}
-      <div className="flex flex-col gap-6 lg:hidden">
-        <header className="flex items-center justify-between gap-2">
-          {renderMonthSelector('mobile')}
-          <div className="shrink-0">
-            <StreakModalButton
-              days={missions?.streakDays ?? progress.streakDays}
-              missions={missions}
-              locale={locale}
-              label={t.nav.streakDays(missions?.streakDays ?? progress.streakDays)}
-            />
-          </div>
-        </header>
-
-        {brokenConnectionsAlert}
-
-        {isEmptyState && emptyStateCard}
-
-        {!isEmptyState && (
-          <>
-            {balanceCard}
-            {auto && auto.insights.length > 0 && (
-              <TostaoFindingsBoard initial={auto} locale={locale} compact seeAllHref="/tostao?aba=automatico" />
-            )}
-            {visibleSections.map((id) => (
-              <Fragment key={id}>{sectionsById[id]}</Fragment>
-            ))}
-
-            {restoreAlertsForm}
-            {customizeHomeLink}
-          </>
-        )}
-      </div>
-
-      {/* Desktop (lg+) */}
-      <div className="hidden lg:flex lg:flex-col lg:gap-7">
-        <header className="flex items-center justify-between gap-4">
-          {renderMonthSelector('desktop')}
+      {/*
+        Uma árvore só pro que é igual nos dois tamanhos (cabeçalho, alertas, estado vazio, achados do Tostão): esses
+        componentes têm estado e efeitos, então não podem montar duas vezes. O que muda de verdade (cartão de saldo e
+        corpo da página) fica em dois blocos exibidos por CSS (`lg:`).
+      */}
+      <div className="flex flex-col gap-6 lg:gap-7">
+        <header className="flex items-center justify-between gap-2 lg:gap-4">
+          {monthSelector}
           <div className="flex shrink-0 items-center gap-2">
             <StreakModalButton
               days={missions?.streakDays ?? progress.streakDays}
@@ -1026,7 +992,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
               label={t.nav.streakDays(missions?.streakDays ?? progress.streakDays)}
             />
             <span
-              className={`flex h-10 items-center rounded-full px-4 text-sm font-bold ${
+              className={`hidden h-10 items-center rounded-full px-4 text-sm font-bold lg:flex ${
                 isMonthInGreen ? 'bg-menta-clara text-verde-texto' : 'bg-rosa text-vermelho-texto'
               }`}
             >
@@ -1041,38 +1007,54 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
           emptyStateCard
         ) : (
           <>
-            <DesktopBalanceRow {...balanceProps} />
+            <div className="lg:hidden">{balanceCard}</div>
+            <div className="hidden lg:block">
+              <DesktopBalanceRow {...balanceProps} />
+            </div>
 
             {auto && auto.insights.length > 0 && (
               <TostaoFindingsBoard initial={auto} locale={locale} compact seeAllHref="/tostao?aba=automatico" />
             )}
 
-            {isSectionVisible('atalhos') && sectionsById.atalhos}
+            {/* Mobile & Tablet (< lg) */}
+            <div className="flex flex-col gap-6 lg:hidden">
+              {visibleSections.map((id) => (
+                <Fragment key={id}>{sectionsById[id]}</Fragment>
+              ))}
 
-            <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">
-              <div className="flex min-w-0 flex-col gap-[18px]">
-                {isSectionVisible('pra-onde-foi') && desktopWhereItWentCard}
-                {visibleSections
-                  .filter((id) => DESKTOP_LEFT_EXTRAS.has(id))
-                  .map((id) => (
-                    <Fragment key={id}>{sectionsById[id]}</Fragment>
-                  ))}
-              </div>
+              {restoreAlertsForm}
+              {customizeHomeLink}
+            </div>
 
-              <div className="flex min-w-0 flex-col gap-[18px]">
-                {desktopInsightCard}
-                <AskTostaoCard locale={locale} />
-                {isSectionVisible('semana') && sectionsById.semana}
-                {isSectionVisible('avisos') && (
-                  <>
-                    {!isSectionVisible('pra-onde-foi') && uncategorizedAlertCard}
-                    {monthlyClosingAlert}
-                    {subscriptionsAlert}
-                  </>
-                )}
-                <div className="flex flex-col items-center gap-2 pt-1">
-                  {restoreAlertsForm}
-                  {customizeHomeLink}
+            {/* Desktop (lg+) */}
+            <div className="hidden lg:flex lg:flex-col lg:gap-7">
+              {isSectionVisible('atalhos') && sectionsById.atalhos}
+
+              <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">
+                <div className="flex min-w-0 flex-col gap-[18px]">
+                  {isSectionVisible('pra-onde-foi') && desktopWhereItWentCard}
+                  {visibleSections
+                    .filter((id) => DESKTOP_LEFT_EXTRAS.has(id))
+                    .map((id) => (
+                      <Fragment key={id}>{sectionsById[id]}</Fragment>
+                    ))}
+                </div>
+
+                <div className="flex min-w-0 flex-col gap-[18px]">
+                  {desktopInsightCard}
+                  <AskTostaoCard locale={locale} />
+                  {isSectionVisible('semana') && sectionsById.semana}
+                  {isSectionVisible('avisos') && (
+                    <>
+                      {!isSectionVisible('pra-onde-foi') && uncategorizedAlertCard}
+                      {monthlyClosingAlert}
+                      {subscriptionsAlert}
+                    </>
+                  )}
+                  <div className="flex flex-col items-center gap-2 pt-1">
+                    {restoreAlertsForm}
+                    {customizeHomeLink}
+                  </div>
                 </div>
               </div>
             </div>

@@ -1,7 +1,11 @@
 import type { Repositories } from '../repositories/types.js';
 import { AppError } from '../domain/errors.js';
 import { categorizeByRules } from '../services/categorize.js';
-import { internalTransferUpdates, PAIR_WINDOW_DAYS } from '../services/internal-transfers.js';
+import {
+  applyInternalTransferUpdates,
+  internalTransferUpdates,
+  PAIR_WINDOW_DAYS,
+} from '../services/internal-transfers.js';
 import { parseStatement, StatementParseError, type SignConvention } from '../services/statement-parser.js';
 import { reconcileManualEntries } from './reconcile-manual-entries.js';
 
@@ -57,7 +61,9 @@ export class ImportStatementUseCase {
 
     let connection = await connections.findByUserAndItem(userId, itemId);
     if (!connection) connection = await connections.create({ userId, itemId, institution: name });
-    const existing = (await accounts.listByUser(userId)).find((a) => a.connectionId === connection.id);
+    // Contas lidas UMA vez: servem pra achar a desta importação agora e pras ocultas na conciliação, mais abaixo.
+    const knownAccounts = await accounts.listByUser(userId);
+    const existing = knownAccounts.find((a) => a.connectionId === connection.id);
     const account = await accounts.upsertByExternalId({
       userId,
       connectionId: connection.id,
@@ -70,26 +76,34 @@ export class ImportStatementUseCase {
     });
 
     const userRules = await rules.listForUser(userId);
-    let importedCount = 0;
-    let skipped = 0;
-    for (const tx of parsed.transactions) {
-      const externalId = `${connection.id}:${tx.externalId}`;
-      if (await transactions.findByExternalId(userId, externalId)) {
-        skipped++;
-        continue;
-      }
-      await transactions.create({
-        userId,
-        accountId: account.id,
-        externalId,
-        description: tx.description,
-        amountInCents: tx.amountInCents,
-        occurredAt: tx.occurredAt,
-        categoryId: categorizeByRules(tx.description, userRules),
-        isInternalTransfer: false,
-      });
-      importedCount++;
-    }
+    // Quem já foi importado vem numa query; o resto entra em INSERT em lote que pula duplicata (importar o mesmo arquivo
+    // de novo, ou duas vezes ao mesmo tempo, não duplica). Antes: 2 consultas por linha do extrato.
+    const rows = parsed.transactions.map((tx) => ({ tx, externalId: `${connection.id}:${tx.externalId}` }));
+    const already = new Set(
+      (
+        await transactions.findByExternalIds(
+          userId,
+          rows.map((r) => r.externalId),
+        )
+      ).map((t) => t.externalId),
+    );
+    const importedCount = await transactions.createMany(
+      rows
+        .filter((r) => !already.has(r.externalId))
+        .map(({ tx, externalId }) => ({
+          userId,
+          accountId: account.id,
+          externalId,
+          description: tx.description,
+          amountInCents: tx.amountInCents,
+          occurredAt: tx.occurredAt,
+          categoryId: categorizeByRules(tx.description, userRules),
+          isInternalTransfer: false,
+          seriesId: null,
+        })),
+      { skipDuplicates: true },
+    );
+    const skipped = rows.length - importedCount;
 
     // Pagamento de fatura, Pix entre contas suas etc. também valem pro que veio de arquivo.
     const sorted = parsed.transactions.map((t) => t.occurredAt.getTime()).sort((a, b) => a - b);
@@ -100,13 +114,13 @@ export class ImportStatementUseCase {
     const windowFrom = new Date(firstTime - PAIR_WINDOW_DAYS * DAY);
     const windowTo = new Date(lastTime + PAIR_WINDOW_DAYS * DAY);
     const window = await transactions.findManyInRange(userId, windowFrom, windowTo);
-    for (const { transaction, isInternalTransfer } of internalTransferUpdates(window, {
-      from: windowFrom,
-      to: windowTo,
-    }))
-      await transactions.save({ ...transaction, isInternalTransfer });
+    await applyInternalTransferUpdates(
+      transactions,
+      userId,
+      internalTransferUpdates(window, { from: windowFrom, to: windowTo }),
+    );
     // Anotações à mão que o extrato acabou de confirmar saem (par 1 pra 1).
-    const hidden = new Set((await accounts.listByUser(userId)).filter((a) => a.hidden).map((a) => a.id));
+    const hidden = new Set(knownAccounts.filter((a) => a.hidden).map((a) => a.id));
     const { removedCount: reconciledCount } = await reconcileManualEntries(
       this.repos,
       userId,

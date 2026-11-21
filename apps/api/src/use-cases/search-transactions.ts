@@ -1,15 +1,19 @@
-import { isYieldTransaction, type SearchQuery } from '@tostao/contracts';
+import { SEARCH_DEFAULT_LIMIT, type SearchQuery } from '@tostao/contracts';
 import type { Repositories } from '../repositories/types.js';
-import { normalizeDescription } from '../lib/text.js';
+import { AppError } from '../domain/errors.js';
+import { searchWords } from '../lib/text.js';
+import { decodeSearchCursor, encodeSearchCursor } from '../lib/search-cursor.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const SINCE: Record<SearchQuery['period'], number | null> = { '30d': 30, '3m': 92, '12m': 366, tudo: null };
-const LIMIT = 200;
 
 /**
- * Busca de transação: "ifood", "dani", "uber nubank". Cada palavra tem que aparecer na descrição,
- * na categoria ou no nome do banco (sem acento, sem maiúscula). Soma o que achou, que é a resposta
- * de "quanto já mandei pra fulano?". Transferência interna aparece na lista mas não entra na soma.
+ * Busca de transação: "ifood", "dani", "uber nubank". Cada palavra tem que aparecer na descrição, na categoria ou no
+ * nome do banco (sem diferenciar maiúscula; acento vale). Soma o que achou, que é a resposta de "quanto já mandei pra
+ * fulano?". Transferência interna aparece na lista mas não entra na soma.
+ *
+ * Quem filtra, ordena, pagina e soma é o Postgres (`transactions.search`): a pessoa com 5 anos de histórico não carrega
+ * tudo na memória a cada busca. A lista vem em páginas (`limit` + `nextCursor`); o total e as somas são do resultado todo.
  */
 export class SearchTransactionsUseCase {
   constructor(
@@ -25,41 +29,37 @@ export class SearchTransactionsUseCase {
     categoryId,
     excludeTransfers,
     excludeYields,
-  }: SearchQuery & { userId: string }) {
+    limit = SEARCH_DEFAULT_LIMIT,
+    cursor,
+  }: Omit<SearchQuery, 'limit'> & { userId: string; limit?: number }) {
     const now = this.now();
     const days = SINCE[period];
-    const from = days === null ? new Date(0) : new Date(now.getTime() - days * DAY);
-    const [txs, categories, accounts] = await Promise.all([
-      this.repos.transactions.findManyInRange(userId, from, new Date(now.getTime() + DAY)),
+    const decoded = cursor ? decodeSearchCursor(cursor) : undefined;
+    if (cursor && !decoded) throw new AppError('Esse "carregar mais" não vale mais. Faz a busca de novo.', 400);
+
+    const [result, categories, accounts] = await Promise.all([
+      this.repos.transactions.search(userId, {
+        from: days === null ? null : new Date(now.getTime() - days * DAY),
+        to: new Date(now.getTime() + DAY),
+        words: searchWords(q),
+        kind,
+        categoryId,
+        excludeTransfers,
+        excludeYields,
+        limit,
+        cursor: decoded ?? undefined,
+      }),
       this.repos.categories.list(userId),
       this.repos.accounts.listByUser(userId),
     ]);
     const cat = new Map(categories.map((c) => [c.id, c]));
     const accName = new Map(accounts.map((a) => [a.id, a.name]));
-    const hidden = new Set(accounts.filter((a) => a.hidden).map((a) => a.id));
-    const words = normalizeDescription(q).split(' ').filter(Boolean);
-
-    const found = txs
-      .filter((t) => !(t.accountId && hidden.has(t.accountId)))
-      .filter((t) => !excludeTransfers || !t.isInternalTransfer)
-      .filter((t) => !excludeYields || !isYieldTransaction(t))
-      .filter((t) => (kind === 'saida' ? t.amountInCents < 0 : kind === 'entrada' ? t.amountInCents > 0 : true))
-      .filter((t) => !categoryId || (categoryId === 'sem' ? !t.categoryId : t.categoryId === categoryId))
-      .filter((t) => {
-        if (!words.length) return true;
-        const hay = normalizeDescription(
-          `${t.description} ${t.categoryId ? (cat.get(t.categoryId)?.name ?? '') : ''} ${t.accountId ? (accName.get(t.accountId) ?? '') : ''}`,
-        );
-        return words.every((w) => hay.includes(w));
-      })
-      .sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
-
-    const counted = found.filter((t) => !t.isInternalTransfer);
     return {
-      count: found.length,
-      outInCents: counted.filter((t) => t.amountInCents < 0).reduce((s, t) => s - t.amountInCents, 0),
-      inInCents: counted.filter((t) => t.amountInCents > 0).reduce((s, t) => s + t.amountInCents, 0),
-      transactions: found.slice(0, LIMIT).map((t) => ({
+      count: result.count,
+      outInCents: result.outInCents,
+      inInCents: result.inInCents,
+      nextCursor: result.nextCursor ? encodeSearchCursor(result.nextCursor) : null,
+      transactions: result.transactions.map((t) => ({
         ...t,
         categoryName: t.categoryId ? (cat.get(t.categoryId)?.name ?? null) : null,
         categoryEmoji: t.categoryId ? (cat.get(t.categoryId)?.emoji ?? null) : null,

@@ -40,6 +40,8 @@ export interface UsersRepository {
   findByEmail(email: string): Promise<User | null>;
   findById(id: string): Promise<User | null>;
   listAllIds(): Promise<string[]>;
+  /** Várias pessoas numa query só (amigos, convites). Quem não existe fica de fora. */
+  findManyByIds(ids: string[]): Promise<User[]>;
   create(data: NewUser): Promise<User>;
   count(): Promise<number>;
   updatePassword(id: string, passwordHash: string): Promise<void>;
@@ -115,6 +117,8 @@ export interface BudgetsRepository {
 
 export interface LessonProgressRepository {
   listByUser(userId: string): Promise<LessonProgress[]>;
+  /** As lições de várias pessoas numa query só (ranking de amigos). */
+  listByUsers(userIds: string[]): Promise<LessonProgress[]>;
   /** Idempotente: marcar de novo não duplica. */
   markDone(userId: string, lessonId: string): Promise<void>;
 }
@@ -138,17 +142,63 @@ export interface IgnoredSubscriptionsRepository {
   set(userId: string, key: string, ignored: boolean): Promise<void>;
 }
 
+export type TransactionSearchFilter = {
+  /** Intervalo [from, to); `from` null = desde sempre. */
+  from: Date | null;
+  to: Date;
+  /** Palavras (minúsculas): cada uma tem que aparecer na descrição, no nome da categoria OU no nome da conta. */
+  words: string[];
+  kind: 'todas' | 'saida' | 'entrada';
+  /** 'sem' = só os sem categoria. */
+  categoryId?: string;
+  excludeTransfers?: boolean;
+  excludeYields?: boolean;
+  limit: number;
+  cursor?: { occurredAt: Date; id: string };
+};
+
+export type TransactionSearchResult = {
+  /** No máximo `limit`. */
+  transactions: Transaction[];
+  /** Cursor da próxima página, ou null se acabou. */
+  nextCursor: { occurredAt: Date; id: string } | null;
+  /** Totais de TODAS as páginas do mesmo filtro (a soma ignora transferência interna). */
+  count: number;
+  outInCents: number;
+  inInCents: number;
+};
+
+/** Resumo de acertos de uma pessoa: o que saiu menos o que entrou (positivo = ela te deve). */
+export type PersonBalance = { personId: string; balanceInCents: number; count: number; lastAt: Date | null };
+
 export type NewTransaction = Omit<Transaction, 'id' | 'createdAt'>;
 export interface TransactionsRepository {
   findById(id: string): Promise<Transaction | null>;
   findByExternalId(userId: string, externalId: string): Promise<Transaction | null>;
+  /** Os que já existem, de uma vez (sync e importação: no lugar de 1 consulta por lançamento). */
+  findByExternalIds(userId: string, externalIds: string[]): Promise<Transaction[]>;
   /** Intervalo [from, to) */
   findManyInRange(userId: string, from: Date, to: Date): Promise<Transaction[]>;
   findUncategorized(userId: string): Promise<Transaction[]>;
   create(data: NewTransaction): Promise<Transaction>;
   save(transaction: Transaction): Promise<void>;
-  /** Insere vários de uma vez (tudo ou nada). Devolve quantos. */
-  createMany(data: (NewTransaction & { id?: string })[]): Promise<number>;
+  /**
+   * Insere vários de uma vez (tudo ou nada). Devolve quantos.
+   * Com `skipDuplicates`, o que já existe (mesmo userId + externalId) é pulado em vez de falhar, e o retorno conta só os
+   * novos; nesse modo grava em lotes (sem o "tudo ou nada": rodar de novo completa o que faltou).
+   */
+  createMany(data: (NewTransaction & { id?: string })[], opts?: { skipDuplicates?: boolean }): Promise<number>;
+  /** Liga/desliga "transferência interna" de vários lançamentos DESSA pessoa numa query só (não mexe na decisão manual). */
+  setInternalTransfer(userId: string, ids: string[], isInternalTransfer: boolean): Promise<number>;
+  /** Põe a categoria só nos que continuam sem categoria (a pessoa pode ter categorizado no meio). Devolve quantos. */
+  categorizeUncategorized(userId: string, ids: string[], categoryId: string): Promise<number>;
+  /** Saldo, quantidade e último acerto de cada pessoa do caderninho, agregados no banco. */
+  summarizeByPerson(userId: string): Promise<PersonBalance[]>;
+  /**
+   * Busca paginada: filtros, ordem (occurredAt desc, id desc), página e totais no banco. Nada de carregar o histórico
+   * inteiro pra filtrar em JavaScript.
+   */
+  search(userId: string, filter: TransactionSearchFilter): Promise<TransactionSearchResult>;
   /** Tira a categoria (volta pra pendente) das transações DESSA pessoa nessa categoria. */
   clearCategory(userId: string, categoryId: string): Promise<void>;
   /** Apaga só os lançamentos que vieram do banco (external_id não nulo) das contas dessa conexão. Devolve quantos. */
@@ -279,6 +329,8 @@ export interface EngagementRepository {
   markActivity(userId: string, day: string, kind: string): Promise<void>;
   /** Linhas a partir de sinceDay (inclusive), "YYYY-MM-DD". */
   listActivity(userId: string, sinceDay: string): Promise<{ day: string; kind: string }[]>;
+  /** A atividade de várias pessoas numa query só (ranking de amigos). */
+  listActivityForUsers(userIds: string[], sinceDay: string): Promise<{ userId: string; day: string; kind: string }[]>;
   countActivity(userId: string): Promise<number>;
   getFriendCode(userId: string): Promise<string | null>;
   setFriendCode(userId: string, code: string): Promise<void>;
@@ -316,7 +368,13 @@ export type UpsertTostaoInsight = {
 };
 
 export interface TostaoAutoRepository {
-  listByUser(userId: string): Promise<TostaoInsight[]>;
+  /** Achados vivos (sem validade ou ainda dentro dela), mais recentes primeiro, no máximo `limit` (padrão 50). */
+  listByUser(userId: string, opts?: { now?: Date; limit?: number }): Promise<TostaoInsight[]>;
+  /**
+   * Quem quer aviso por WhatsApp (config `notifyWhatsapp` ligada e número vinculado), em ordem de id, em páginas:
+   * `after` é o último id da página anterior. Evita varrer todos os usuários a cada 15 minutos.
+   */
+  listWhatsappNotifiableUserIds(opts: { after?: string | null; limit: number }): Promise<string[]>;
   findById(id: string): Promise<TostaoInsight | null>;
   /** Cria se ainda não existir; se já existe PENDING (ou reabriu), atualiza título/corpo/payload e devolve { created }. */
   upsertPending(data: UpsertTostaoInsight): Promise<{ insight: TostaoInsight; created: boolean }>;

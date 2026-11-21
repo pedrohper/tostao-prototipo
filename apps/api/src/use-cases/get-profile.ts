@@ -13,6 +13,8 @@ export class GetProfileUseCase {
     private readonly connections: BankConnectionsRepository,
     private readonly accounts: AccountsRepository,
     private readonly oauthAccounts: OAuthAccountsRepository,
+    /** O gateway de banco tem widget (Pluggy)? A tela de conexão usa isso em vez de pedir um connect-token no render. */
+    private readonly pluggyEnabled = false,
   ) {}
 
   async execute({ userId }: { userId: string }) {
@@ -25,6 +27,7 @@ export class GetProfileUseCase {
     ]);
     return {
       user,
+      pluggyEnabled: this.pluggyEnabled,
       providers: oauthAccounts.map((o) => o.provider),
       connections: connections.map((c) => {
         const mine = accounts.filter((a) => a.connectionId === c.id);

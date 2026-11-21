@@ -2,11 +2,10 @@
  * Logos e selos de bancos e bandeiras de cartão.
  * Prioriza logos oficiais do gateway quando disponíveis; caso contrário usa marcas vetoriais locais.
  */
-import type { InstitutionLogosResponse } from '@tostao/contracts';
-import { api } from '@/lib/api';
+import type { BankLogo } from '@/lib/api-queries';
 
 type Visual = { sigla: string; bg: string; fg: string; brand?: BankBrandKey };
-export type BankLogo = InstitutionLogosResponse['logos'][number];
+export type { BankLogo };
 
 type BankBrandKey =
   | 'nubank'
@@ -30,15 +29,6 @@ type BankBrandKey =
   | 'banrisul'
   | 'original'
   | 'amazon';
-
-/** Logos oficiais (vêm da lista de bancos do Pluggy). Se falhar ou vier vazio, usa as marcas locais. */
-export async function getBankLogos(): Promise<BankLogo[]> {
-  try {
-    return (await api<InstitutionLogosResponse>('/institutions/logos')).logos;
-  } catch {
-    return [];
-  }
-}
 
 const norm = (s: string) =>
   s
@@ -303,6 +293,8 @@ export function BankBadge({
         width={size}
         height={size}
         loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
         className={`shrink-0 bg-white object-contain ring-1 ring-black/5 dark:ring-white/10 ${quadrado ? 'rounded-[30%]' : 'rounded-full'}`}
         style={{ width: size, height: size }}
       />

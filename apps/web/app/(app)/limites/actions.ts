@@ -1,5 +1,5 @@
 'use server';
-import { revalidatePath } from 'next/cache';
+import { revalidateFinance } from '@/lib/revalidate';
 import { setBudgetBody } from '@tostao/contracts';
 import { api, ApiError } from '@/lib/api';
 import { parseMoney } from '@/lib/format';
@@ -20,6 +20,6 @@ export async function saveBudget(_: BudgetState, form: FormData): Promise<Budget
     rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
-  revalidatePath('/', 'layout');
+  revalidateFinance();
   return { ok: parsed.data.limitInCents === null ? 'Limite tirado.' : 'Salvo.' };
 }

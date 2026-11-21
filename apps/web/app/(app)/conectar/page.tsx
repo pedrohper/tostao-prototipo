@@ -1,30 +1,22 @@
 import { Icon } from '@/components/icone';
 import Link from 'next/link';
-import type { ConnectTokenResponse, ProfileResponse } from '@tostao/contracts';
-import { api } from '@/lib/api';
 import { Mascot } from '@/components/mascote';
 import { BackLink, Card, Eyebrow, PageFrame } from '@/components/ui';
 import { resolveBackHref, updatedTimeLabel } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
 import { ConnectPanel, DisconnectButton, SyncButton } from './forms';
+import { getMe } from '@/lib/api-queries';
 
 export default async function ConectarPage({
   searchParams,
 }: {
   searchParams: Promise<{ novo?: string; voltar?: string }>;
 }) {
-  const [{ novo, voltar }, me, mode, { locale, t }] = await Promise.all([
-    searchParams,
-    api<ProfileResponse>('/me'),
-    // Só pra saber se a API fala com o Pluggy de verdade (token != null) ou com o banco de exemplo.
-    // Se falhar (Pluggy fora do ar, trial vencido), a gente avisa e oferece importar extrato.
-    api<ConnectTokenResponse>('/connections/connect-token', { method: 'POST', body: {} })
-      .then((r) => ({ ...r, down: false }))
-      .catch(() => ({ connectToken: null, down: true })),
-    getI18n(),
-  ]);
+  // Nenhum POST aqui: um GET de página não pode ter efeito colateral (antes pedia um connect-token ao Pluggy a cada
+  // visita). Se o servidor tem o widget vem em /me; o token só é pedido quando a pessoa clica em conectar.
+  const [{ novo, voltar }, me, { locale, t }] = await Promise.all([searchParams, getMe(), getI18n()]);
   const p = t.pages.conectar;
-  const widget = mode.connectToken !== null;
+  const widget = me.pluggyEnabled;
   const backHref = resolveBackHref(voltar, '/mais');
   const selfBack = novo
     ? '/conectar?novo=1'
@@ -177,26 +169,8 @@ export default async function ConectarPage({
         <div id="banco" className="flex scroll-mt-6 flex-col gap-4">
           <h2 className="pt-2 font-display text-xl font-extrabold lg:pt-0 lg:text-2xl">{p.sectionTitle}</h2>
 
-          {mode.down && (
-            <div role="alert" className="flex items-center gap-3 rounded-[20px] bg-amarelo-claro p-3.5">
-              <Mascot pose="preocupado" size={64} alt="" />
-              <p className="min-w-0 text-[15px] leading-[21px] text-tinta">
-                {p.downAlertBefore}
-                <Link href={importarHref} className="font-semibold underline">
-                  {p.downAlertLink}
-                </Link>
-                {p.downAlertAfter}
-              </p>
-            </div>
-          )}
-
           <div className="flex flex-col gap-2.5 rounded-[20px] border border-linha bg-papel-2 p-4">
-            {mode.down ? (
-              <>
-                <h3 className="font-display text-lg font-extrabold">{p.downBoxTitle}</h3>
-                <p className="text-[14px] leading-relaxed text-tinta-suave">{p.downBoxBody}</p>
-              </>
-            ) : widget ? (
+            {widget ? (
               <>
                 <Eyebrow>{p.howTitle}</Eyebrow>
                 <ol className="list-decimal space-y-1 pl-5 text-[14px] leading-relaxed text-tinta">
@@ -230,7 +204,7 @@ export default async function ConectarPage({
             )}
           </div>
 
-          {!mode.down && <ConnectPanel widget={widget} novo={Boolean(novo)} locale={locale} />}
+          <ConnectPanel widget={widget} novo={Boolean(novo)} locale={locale} />
 
           {me.connections.length > 0 && (
             <section className="flex flex-col gap-2.5 pt-1">

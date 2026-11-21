@@ -33,15 +33,20 @@ export class ListInvitesUseCase {
 
   async execute({ userId }: { userId: string }) {
     const invites = await this.repos.invites.listByCreator(userId);
+    // Quem usou, numa query só (antes uma por convite).
+    const usedBy = new Map(
+      (await this.repos.users.findManyByIds(invites.flatMap((i) => (i.usedById ? [i.usedById] : [])))).map((u) => [
+        u.id,
+        u.name,
+      ]),
+    );
     return {
-      invites: await Promise.all(
-        invites.map(async (i) => ({
-          code: i.code,
-          createdAt: i.createdAt,
-          usedAt: i.usedAt,
-          usedBy: i.usedById ? ((await this.repos.users.findById(i.usedById))?.name ?? null) : null,
-        })),
-      ),
+      invites: invites.map((i) => ({
+        code: i.code,
+        createdAt: i.createdAt,
+        usedAt: i.usedAt,
+        usedBy: i.usedById ? (usedBy.get(i.usedById) ?? null) : null,
+      })),
     };
   }
 }

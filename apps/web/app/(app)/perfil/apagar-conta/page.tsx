@@ -1,16 +1,16 @@
 import Link from 'next/link';
-import type { ProfileResponse } from '@tostao/contracts';
-import { api } from '@/lib/api';
+
 import { resolveBackHref } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
 import { Mascot } from '@/components/mascote';
 import { BackLink, Card, PageFrame } from '@/components/ui';
 import { DeleteAccountForm } from './delete-form';
+import { getMe } from '@/lib/api-queries';
 
 export const metadata = { title: 'Apagar minha conta · Tostão' };
 
 export default async function ApagarContaPage({ searchParams }: { searchParams: Promise<{ voltar?: string }> }) {
-  const [{ voltar }, { t }, me] = await Promise.all([searchParams, getI18n(), api<ProfileResponse>('/me')]);
+  const [{ voltar }, { t }, me] = await Promise.all([searchParams, getI18n(), getMe()]);
   const backHref = resolveBackHref(voltar, '/mais');
   const td = t.pages.deleteAccount;
 
