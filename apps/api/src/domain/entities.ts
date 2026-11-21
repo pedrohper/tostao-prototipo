@@ -99,6 +99,8 @@ export type Transaction = {
   personId?: string | null;
   /** Observação livre da pessoa sobre o lançamento. */
   note?: string | null;
+  /** Apelido dado pela pessoa; a `description` (do banco) fica como está. */
+  customDescription?: string | null;
   currency?: string;
   createdAt: Date;
 };

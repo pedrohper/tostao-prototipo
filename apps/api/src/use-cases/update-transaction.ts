@@ -41,6 +41,8 @@ export class UpdateTransactionUseCase {
       ...(patch.occurredAt !== undefined ? { occurredAt: noonOfCivilDay(patch.occurredAt, tz) } : {}),
       // A anotação é da pessoa: vale também pra transação do banco. Vazio apaga.
       ...(patch.note !== undefined ? { note: patch.note || null } : {}),
+      // O apelido também vale pra transação do banco e nunca mexe na `description` original.
+      ...(patch.customDescription !== undefined ? { customDescription: patch.customDescription?.trim() || null } : {}),
     };
     const now = this.now();
     await this.repos.tx(async (r) => {

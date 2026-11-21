@@ -8,6 +8,8 @@ import type {
   PeopleResponse,
   RemindersResponse,
   SubscriptionsResponse,
+  SummaryHistoryResponse,
+  TostaoInsightDTO,
   WeeklyResponse,
 } from '@tostao/contracts';
 import { CardNetworkBadge, BankBadge } from '@/components/banco';
@@ -18,6 +20,8 @@ import { DismissibleCard } from '@/components/fechavel';
 import { Await, SectionSkeleton, startEarly } from '@/components/suspense';
 import { orFallback } from '@/lib/rethrow';
 import { CatIcon, Icon } from '@/components/icone';
+import { CashflowLineChart, CategoryBars } from '@/components/graficos';
+import { QuickAddButton } from '@/components/quick-add-sheet';
 import { DesktopSplitShell } from '@/components/lateral';
 import { Mascot } from '@/components/mascote';
 import { MissionCompletionToast } from '@/components/sons';
@@ -41,12 +45,15 @@ import { restoreDismissedAlerts } from '@/lib/inicio-actions';
 import { readHomePrefs, resolveSectionOrder, type HomeSectionId } from '@/lib/inicio-prefs';
 import { modules } from '@/lib/lessons';
 import { NO_PROGRESS } from '@/lib/xp';
+import { PwaInstallBanner } from '@/components/pwa-install-banner';
+import { activationChecklist } from '@/lib/onboarding';
 import { AskTostaoCard } from './ask-card';
+import { changePct, stackedSegments } from '@/lib/chart-math';
+import { unifyAlerts, type LocalAlertKey } from '@/lib/home-alerts';
 import { DesktopBalanceRow, MobileBalanceCard, type BalanceCardProps } from './balance-card';
 import { PlanejarAtalhos } from './planejar-atalhos';
 import { getMe, getMissions, getProgress, getTostaoAuto } from '@/lib/api-queries';
 
-const BAR_SEGMENT_CLASSES = ['bg-laranja', 'bg-tinta', 'bg-menta', 'bg-amarelo', 'bg-tinta-suave'] as const;
 const DESKTOP_LEFT_EXTRAS = new Set<HomeSectionId>(['sobra', 'cartoes', 'limites', 'acertos', 'vence']);
 
 const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
@@ -85,25 +92,37 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   const weeklyP = startEarly(api<WeeklyResponse>('/weekly').catch(orFallback(null)));
   const splitsP = startEarly(api<PeopleResponse>('/people').catch(orFallback(null)));
 
-  const [profile, summary, subscriptions, budgetsData, progress, forecast, missions, bankLogos, auto, friends] =
-    await Promise.all([
-      getMe(),
-      api<MonthSummaryResponse>(`/summary?month=${month}`),
-      api<SubscriptionsResponse>('/subscriptions').catch(() => null),
-      api<BudgetsResponse>(`/budgets?month=${month}`).catch(() => ({ budgets: [] })),
-      getProgress().catch(() => NO_PROGRESS),
-      api<ForecastResponse>('/forecast').catch(() => null),
-      getMissions().catch(() => null),
-      getBankLogos(),
-      getTostaoAuto().catch(() => null),
-      api<FriendsResponse>('/friends').catch(() => null),
-    ]);
+  const [
+    profile,
+    summary,
+    subscriptions,
+    budgetsData,
+    progress,
+    forecast,
+    missions,
+    bankLogos,
+    auto,
+    friends,
+    history,
+  ] = await Promise.all([
+    getMe(),
+    api<MonthSummaryResponse>(`/summary?month=${month}`),
+    api<SubscriptionsResponse>('/subscriptions').catch(() => null),
+    api<BudgetsResponse>(`/budgets?month=${month}`).catch(() => ({ budgets: [] })),
+    getProgress().catch(() => NO_PROGRESS),
+    api<ForecastResponse>('/forecast').catch(() => null),
+    getMissions().catch(() => null),
+    getBankLogos(),
+    getTostaoAuto().catch(() => null),
+    api<FriendsResponse>('/friends').catch(() => null),
+    // Evolução mensal (3 queries pra 6 meses). Sem ela a Home só perde o gráfico.
+    api<SummaryHistoryResponse>(`/summary/history?month=${month}&months=6`).catch(() => null),
+  ]);
 
   const overBudgetCategory = budgetsData.budgets.find((b) => b.spentInCents > b.limitInCents);
   const activeSubscriptionCount = subscriptions?.subscriptions.filter((sub) => sub.active).length ?? 0;
   const currentMonthLabel = monthName(month, locale);
   const topCategories = summary.byCategory.filter((c) => c.categoryId);
-  const maxCategorySpend = Math.max(1, ...summary.byCategory.map((c) => c.totalInCents));
   const deliveryCategory = summary.byCategory.find((c) => c.categoryId === 'delivery');
   const bankAccounts = summary.accounts.filter((a) => a.type === 'BANK');
   const creditCards = summary.accounts.filter((a) => a.type === 'CREDIT');
@@ -121,6 +140,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     .sort()
     .at(-1);
   const isEmptyState = summary.balanceInCents === null && summary.outcomeInCents === 0 && summary.incomeInCents === 0;
+  const firstName = profile.name.trim().split(/\s+/)[0] || profile.name;
   const isMonthInGreen = summary.incomeInCents >= summary.outcomeInCents;
   const outcomePct =
     summary.incomeInCents > 0 ? Math.round((summary.outcomeInCents / summary.incomeInCents) * 100) : null;
@@ -186,6 +206,66 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         </Link>
       </DismissibleCard>
     ) : null;
+
+  const deliveryTipCard =
+    isAlertOpen(tipKey) && deliveryCategory && deliveryCategory.totalInCents >= 10000 ? (
+      <DismissibleCard id={tipKey} label={t.home.dismissAlertLabel}>
+        <div className="relative flex items-center gap-2 rounded-2xl bg-rosa py-3.5 pr-10 pl-2 text-tinta">
+          <Link href="/aprender/m1-l2" aria-label={t.home.viewLessonCta} className="absolute inset-0 rounded-2xl" />
+          <Mascot pose="preocupado" size={92} alt="Tostão" />
+          <div className="flex min-w-0 flex-col gap-2.5">
+            <p className="text-[15px] leading-[21px]">
+              <b>{t.home.deliveryAlert(money(deliveryCategory.totalInCents))}</b>.
+            </p>
+            <div className="relative z-[1] flex flex-wrap gap-2">
+              <Link
+                href="/aprender/m1-l2"
+                className="flex h-9 items-center rounded-full bg-tinta px-4 text-sm font-semibold text-papel no-underline"
+              >
+                {t.home.viewLessonCta}
+              </Link>
+              <Link
+                href="/tostao"
+                className="flex h-9 items-center rounded-full border-[1.5px] border-tinta px-4 text-sm font-semibold text-tinta no-underline"
+              >
+                {t.home.askTostao}
+              </Link>
+            </div>
+          </div>
+        </div>
+      </DismissibleCard>
+    ) : null;
+
+  const overBudgetCard = overBudgetCategory && isAlertOpen(`estourou:${overBudgetCategory.categoryId}:${month}`) && (
+    <DismissibleCard id={`estourou:${overBudgetCategory.categoryId}:${month}`} label={t.home.dismissAlertLabel}>
+      <Link
+        href="/limites?voltar=/inicio"
+        className="flex items-center gap-2 rounded-2xl bg-rosa p-3 pr-10 text-tinta no-underline"
+      >
+        <Mascot pose="chocado" size={64} alt="Tostão" />
+        <p className="text-[15px] leading-[21px]">
+          <b>
+            {t.home.overBudgetAlert(
+              overBudgetCategory.name,
+              money(overBudgetCategory.spentInCents),
+              money(overBudgetCategory.limitInCents),
+            )}
+          </b>
+        </p>
+      </Link>
+    </DismissibleCard>
+  );
+
+  // T4.3 · avisos unificados: no máximo 2, sem repetir o que o quadro de achados do Tostão já diz.
+  const localAlertNodes: Record<LocalAlertKey, React.ReactNode> = {
+    overBudget: overBudgetCard,
+    uncategorized: uncategorizedAlertCard,
+    deliveryTip: deliveryTipCard,
+    monthlyClosing: monthlyClosingAlert,
+    subscriptions: subscriptionsAlert,
+  };
+  const localPresent = (Object.keys(localAlertNodes) as LocalAlertKey[]).filter((k) => Boolean(localAlertNodes[k]));
+  const unified = unifyAlerts<TostaoInsightDTO>({ insights: auto?.insights ?? [], local: localPresent });
 
   const sectionsById: Record<HomeSectionId, React.ReactNode> = {
     atalhos: <PlanejarAtalhos t={t} />,
@@ -294,57 +374,32 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     ),
     avisos: (
       <>
-        {uncategorizedAlertCard}
-        {isAlertOpen(tipKey) && deliveryCategory && deliveryCategory.totalInCents >= 10000 ? (
-          <DismissibleCard id={tipKey} label={t.home.dismissAlertLabel}>
-            <div className="relative flex items-center gap-2 rounded-2xl bg-rosa py-3.5 pr-10 pl-2 text-tinta">
-              <Link href="/aprender/m1-l2" aria-label={t.home.viewLessonCta} className="absolute inset-0 rounded-2xl" />
-              <Mascot pose="preocupado" size={92} alt="Tostão" />
-              <div className="flex min-w-0 flex-col gap-2.5">
-                <p className="text-[15px] leading-[21px]">
-                  <b>{t.home.deliveryAlert(money(deliveryCategory.totalInCents))}</b>.
-                </p>
-                <div className="relative z-[1] flex flex-wrap gap-2">
-                  <Link
-                    href="/aprender/m1-l2"
-                    className="flex h-9 items-center rounded-full bg-tinta px-4 text-sm font-semibold text-papel no-underline"
-                  >
-                    {t.home.viewLessonCta}
-                  </Link>
-                  <Link
-                    href="/tostao"
-                    className="flex h-9 items-center rounded-full border-[1.5px] border-tinta px-4 text-sm font-semibold text-tinta no-underline"
-                  >
-                    {t.home.askTostao}
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </DismissibleCard>
-        ) : null}
-        {overBudgetCategory && isAlertOpen(`estourou:${overBudgetCategory.categoryId}:${month}`) && (
-          <DismissibleCard id={`estourou:${overBudgetCategory.categoryId}:${month}`} label={t.home.dismissAlertLabel}>
-            <Link
-              href="/limites?voltar=/inicio"
-              className="flex items-center gap-2 rounded-2xl bg-rosa p-3 pr-10 text-tinta no-underline"
-            >
-              <Mascot pose="chocado" size={64} alt="Tostão" />
-              <p className="text-[15px] leading-[21px]">
-                <b>
-                  {t.home.overBudgetAlert(
-                    overBudgetCategory.name,
-                    money(overBudgetCategory.spentInCents),
-                    money(overBudgetCategory.limitInCents),
-                  )}
-                </b>
-              </p>
-            </Link>
-          </DismissibleCard>
-        )}
-        {monthlyClosingAlert}
-        {subscriptionsAlert}
+        {unified.local.map((key) => (
+          <Fragment key={key}>{localAlertNodes[key]}</Fragment>
+        ))}
       </>
     ),
+    evolucao:
+      history && history.months.some((m) => m.incomeInCents > 0 || m.outcomeInCents > 0) ? (
+        <section className="flex flex-col gap-3">
+          <div className="flex flex-col gap-0.5">
+            <h2 className="font-display text-xl leading-[26px] font-extrabold">{t.growth.home.evolutionTitle}</h2>
+            <p className="text-[13px] leading-[18px] text-tinta-suave">{t.growth.home.evolutionSub}</p>
+          </div>
+          <Card>
+            <CashflowLineChart
+              data={history.months.map((m) => ({
+                month: m.month,
+                inInCents: m.incomeInCents,
+                outInCents: m.outcomeInCents,
+              }))}
+              atual={month}
+              locale={locale}
+              monthBasePath="/inicio"
+            />
+          </Card>
+        </section>
+      ) : null,
     'pra-onde-foi': (
       <section className="flex flex-col gap-3">
         <div className="flex items-baseline justify-between">
@@ -364,26 +419,14 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         {topCategories.length === 0 && (
           <p className="text-sm text-tinta-suave">{t.home.noCategorizedExpenses(currentMonthLabel)}</p>
         )}
-        <div className="flex flex-col gap-3">
-          {topCategories.slice(0, 5).map((cat, idx) => (
-            <Link
-              key={cat.categoryId}
-              href={`/carteira?${new URLSearchParams({ mes: month, cat: cat.categoryId ?? 'sem' })}#lista`}
-              className="flex flex-col gap-1.5 text-tinta no-underline"
-            >
-              <div className="flex justify-between text-[15px] font-semibold">
-                <span>{cat.name}</span>
-                <span className="tabular-nums">{money(cat.totalInCents)} ›</span>
-              </div>
-              <div className="h-2.5 rounded-full bg-papel-2">
-                <div
-                  className={`bar-fill h-full rounded-full ${idx === 0 ? 'bg-laranja' : 'bg-tinta'}`}
-                  style={{ width: `${Math.max(2, (cat.totalInCents / maxCategorySpend) * 100)}%` }}
-                />
-              </div>
-            </Link>
-          ))}
-        </div>
+        <CategoryBars
+          items={topCategories}
+          max={5}
+          locale={locale}
+          otherLabel={t.common.other}
+          hrefBase="/carteira"
+          hrefParams={{ mes: month }}
+        />
       </section>
     ),
     semana: (
@@ -617,6 +660,22 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     ? t.home.balanceAtEndOfMonth(currentMonthLabel)
     : t.home.balanceInAccounts(bankAccounts.length);
 
+  // Variação do gasto vs mês anterior. No mês corrente o gasto está pela metade: comparar com o mês cheio daria
+  // "-60%" enganoso, então mostramos quanto do mês passado já foi gasto.
+  const prevPoint = history?.months.at(-2);
+  const spendingChangeLabel =
+    prevPoint && prevPoint.outcomeInCents > 0 && summary.outcomeInCents > 0
+      ? month === hoje
+        ? t.growth.home.spentSoFarOfPrev(
+            Math.round((summary.outcomeInCents / prevPoint.outcomeInCents) * 100),
+            monthName(prevPoint.month, locale),
+          )
+        : t.growth.home.outcomeChange(changePct(summary.outcomeInCents, prevPoint.outcomeInCents) ?? 0)
+      : null;
+  // Cartão: saldo negativo = fatura em aberto.
+  const openBillsInCents = creditCards.reduce((sum, c) => sum + Math.max(0, -c.balanceInCents), 0);
+  const noAccounts = bankAccounts.length === 0 && creditCards.length === 0;
+
   const balanceProps: BalanceCardProps = {
     month,
     balanceInCents: summary.balanceInCents,
@@ -635,6 +694,9 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     hideBalanceAria: t.home.hideBalanceAria,
     showBalanceAria: t.home.showBalanceAria,
     accountsPreview: bankAccounts.slice(0, 3).map((a) => ({ name: a.name, balanceInCents: a.balanceInCents })),
+    changeLabel: spendingChangeLabel,
+    openBillsLabel: openBillsInCents > 0 ? t.growth.home.openBills(money(openBillsInCents)) : null,
+    connectCta: noAccounts ? { label: t.growth.home.connectCta, href: '/conectar?voltar=/inicio' } : null,
   };
 
   const balanceCard = <MobileBalanceCard {...balanceProps} />;
@@ -650,20 +712,105 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     </Link>
   );
 
+  // Home vazia (sem lançamento nem saldo): em vez de esconder tudo, mostra os primeiros passos e MANTÉM o que a
+  // pessoa já preencheu (renda/previsão, meta e aula), pra o plano que ela acabou de montar aparecer na hora.
+  const goalsForChecklist = forecast
+    ? forecast.goals && forecast.goals.length > 0
+      ? forecast.goals
+      : forecast.goal
+        ? [forecast.goal]
+        : []
+    : [];
+  const firstLessonHref = proxima ? `/aprender/${proxima.id}` : '/aprender';
+  const checklist = activationChecklist({
+    hasConnection: profile.connections.length > 0,
+    hasTransactions: !isEmptyState,
+    hasGoal: goalsForChecklist.length > 0,
+    lessonsDone: progress.done.length,
+    firstLessonHref,
+  });
+  const fs = t.growth.firstSteps;
   const emptyStateCard = (
-    <Card className="flex flex-col items-center gap-3 py-8 text-center">
-      <Mascot pose="dormindo" size={180} alt="Tostão" />
-      <h2 className="font-display text-2xl font-extrabold">{t.home.emptyTitle}</h2>
-      <p className="max-w-[300px] text-[15px] text-tinta-suave">{t.home.emptyDescription}</p>
-      <div className="mt-2 flex w-full max-w-sm flex-col gap-2.5">
-        <ButtonLink href="/conectar" variant="laranja">
-          {t.home.connectExpensesCta}
-        </ButtonLink>
-        <ButtonLink href="/anotar" variant="outline">
-          {t.home.logManualExpenseCta}
-        </ButtonLink>
+    <Card className="flex flex-col gap-4">
+      <div className="flex items-center gap-3">
+        <Mascot pose="dormindo" size={96} alt="Tostão" className="shrink-0" />
+        <div className="flex min-w-0 flex-col gap-1">
+          <h2 className="font-display text-[22px] leading-[26px] font-extrabold">{fs.title}</h2>
+          <p className="text-[14px] leading-[20px] text-tinta-suave">{fs.subtitle}</p>
+        </div>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <div
+          role="progressbar"
+          aria-label={fs.progress(checklist.doneCount, checklist.total)}
+          aria-valuemin={0}
+          aria-valuemax={checklist.total}
+          aria-valuenow={checklist.doneCount}
+          className="h-2 overflow-hidden rounded-full bg-papel-2"
+        >
+          <div
+            className="h-full rounded-full bg-menta transition-all"
+            style={{ width: `${(checklist.doneCount / checklist.total) * 100}%` }}
+          />
+        </div>
+        <span className="text-xs font-semibold text-tinta-suave">
+          {fs.progress(checklist.doneCount, checklist.total)}
+        </span>
+      </div>
+      <ol className="flex flex-col gap-2">
+        {checklist.items.map((item, index) => (
+          <li key={item.id}>
+            <Link
+              href={item.href}
+              className={`flex items-center gap-3 rounded-2xl border border-linha p-3 text-tinta no-underline transition-colors hover:bg-papel-2 ${
+                item.done ? 'bg-menta-clara' : 'bg-cartao'
+              }`}
+            >
+              <span
+                aria-hidden="true"
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+                  item.done ? 'bg-menta text-tinta-fixa' : 'bg-papel-2 text-tinta-suave'
+                }`}
+              >
+                {item.done ? '✓' : index + 1}
+              </span>
+              <span className="flex min-w-0 grow flex-col">
+                <span className={`text-[15px] font-bold ${item.done ? 'line-through decoration-1 opacity-70' : ''}`}>
+                  {fs.items[item.id].title}
+                </span>
+                <span className="text-[13px] leading-[18px] text-tinta-suave">{fs.items[item.id].desc}</span>
+              </span>
+              {item.done ? (
+                <span className="shrink-0 text-xs font-bold text-verde-texto">{fs.doneTag}</span>
+              ) : (
+                <span className="shrink-0 text-tinta-suave" aria-hidden="true">
+                  ›
+                </span>
+              )}
+            </Link>
+          </li>
+        ))}
+      </ol>
+      <div className="flex flex-col gap-2.5 sm:flex-row">
+        <div className="flex-1">
+          <ButtonLink href="/anotar" variant="laranja">
+            {fs.tryFirstExpense}
+          </ButtonLink>
+        </div>
+        <div className="flex-1">
+          <ButtonLink href={firstLessonHref} variant="outline">
+            {fs.exploreLesson}
+          </ButtonLink>
+        </div>
       </div>
     </Card>
+  );
+  const emptyStatePlan = (forecast?.hasPlan || goalsForChecklist.length > 0 || progress.done.length > 0) && (
+    <div className="flex flex-col gap-4">
+      {forecast?.hasPlan && sectionsById.sobra}
+      {goalsForChecklist.length > 0 && sectionsById.meta}
+      {progress.done.length > 0 && sectionsById.aula}
+    </div>
   );
 
   const restoreAlertsForm = prefs.fechados.length > 0 && (
@@ -699,10 +846,6 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   );
 
   const desktopTopCategories = topCategories.slice(0, 5);
-  const desktopBarTotal = Math.max(
-    1,
-    desktopTopCategories.reduce((sum, c) => sum + c.totalInCents, 0),
-  );
   const desktopSpendingTotal = Math.max(
     1,
     summary.outcomeInCents || topCategories.reduce((sum, c) => sum + c.totalInCents, 0),
@@ -727,11 +870,16 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
               .map((c) => `${c.name} ${Math.round((c.totalInCents / desktopSpendingTotal) * 100)}%`)
               .join(', ')}
           >
-            {desktopTopCategories.map((cat, idx) => (
-              <div
-                key={cat.categoryId}
-                className={`h-full ${BAR_SEGMENT_CLASSES[idx % BAR_SEGMENT_CLASSES.length]}`}
-                style={{ width: `${Math.max(2, (cat.totalInCents / desktopBarTotal) * 100)}%` }}
+            {/* A cor de cada fatia é a da categoria (cat.color): bate 1:1 com a bolinha da legenda logo abaixo. */}
+            {stackedSegments(desktopTopCategories, desktopSpendingTotal).map((seg) => (
+              <Link
+                key={seg.key}
+                href={`/carteira?${new URLSearchParams({ mes: month, cat: seg.key })}#lista`}
+                title={`${seg.name} · ${money(seg.totalInCents)} · ${seg.pct}%`}
+                aria-label={`${seg.name} ${seg.pct}%`}
+                data-segment-color={seg.color}
+                className="h-full"
+                style={{ width: `${seg.widthPct}%`, background: seg.color }}
               />
             ))}
           </div>
@@ -982,6 +1130,20 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         corpo da página) fica em dois blocos exibidos por CSS (`lg:`).
       */}
       <div className="flex flex-col gap-6 lg:gap-7">
+        {/* Mobile: saudação personalizada + badge do mês (no desktop o badge fica no cabeçalho, ao lado da ofensiva). */}
+        <div className="flex items-center justify-between gap-3 lg:hidden">
+          <p className="min-w-0 truncate font-display text-[22px] leading-[28px] font-extrabold">
+            {t.home.greeting(firstName)}
+          </p>
+          <span
+            className={`flex h-8 shrink-0 items-center rounded-full px-3 text-xs font-bold ${
+              isMonthInGreen ? 'bg-menta-clara text-verde-texto' : 'bg-rosa text-vermelho-texto'
+            }`}
+          >
+            {isMonthInGreen ? t.home.monthInGreen : t.home.monthTight}
+          </span>
+        </div>
+
         <header className="flex items-center justify-between gap-2 lg:gap-4">
           {monthSelector}
           <div className="flex shrink-0 items-center gap-2">
@@ -1003,17 +1165,32 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
 
         {brokenConnectionsAlert}
 
+        <PwaInstallBanner locale={locale} />
+
         {isEmptyState ? (
-          emptyStateCard
+          <>
+            {emptyStateCard}
+            {emptyStatePlan}
+          </>
         ) : (
           <>
-            <div className="lg:hidden">{balanceCard}</div>
+            <div className="flex flex-col gap-3 lg:hidden">
+              {balanceCard}
+              <QuickAddButton variant="inline" label={t.growth.home.quickAdd} locale={locale} />
+              <AskTostaoCard locale={locale} compact />
+            </div>
             <div className="hidden lg:block">
               <DesktopBalanceRow {...balanceProps} />
             </div>
 
-            {auto && auto.insights.length > 0 && (
-              <TostaoFindingsBoard initial={auto} locale={locale} compact seeAllHref="/tostao?aba=automatico" />
+            {/* Um quadro só (e no máximo 2 achados): o que ele já diz não se repete nos avisos abaixo. */}
+            {isSectionVisible('avisos') && auto && unified.insights.length > 0 && (
+              <TostaoFindingsBoard
+                initial={{ ...auto, insights: unified.insights }}
+                locale={locale}
+                compact
+                seeAllHref="/tostao?aba=automatico"
+              />
             )}
 
             {/* Mobile & Tablet (< lg) */}
@@ -1041,16 +1218,21 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
                 </div>
 
                 <div className="flex min-w-0 flex-col gap-[18px]">
-                  {desktopInsightCard}
+                  {isSectionVisible('avisos') &&
+                    (unified.local.includes('deliveryTip') || unified.local.includes('overBudget')) &&
+                    desktopInsightCard}
                   <AskTostaoCard locale={locale} />
                   {isSectionVisible('semana') && sectionsById.semana}
-                  {isSectionVisible('avisos') && (
-                    <>
-                      {!isSectionVisible('pra-onde-foi') && uncategorizedAlertCard}
-                      {monthlyClosingAlert}
-                      {subscriptionsAlert}
-                    </>
-                  )}
+                  {isSectionVisible('avisos') &&
+                    unified.local
+                      // Dica de delivery e limite estourado já estão no cartão do topo; pendentes já estão no "Pra onde foi".
+                      .filter(
+                        (k) =>
+                          k !== 'deliveryTip' &&
+                          k !== 'overBudget' &&
+                          !(k === 'uncategorized' && isSectionVisible('pra-onde-foi')),
+                      )
+                      .map((k) => <Fragment key={k}>{localAlertNodes[k]}</Fragment>)}
                   <div className="flex flex-col items-center gap-2 pt-1">
                     {restoreAlertsForm}
                     {customizeHomeLink}

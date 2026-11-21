@@ -9,6 +9,7 @@ import type {
   UpdateTostaoAutoConfigBody,
 } from '@tostao/contracts';
 import { Mascot, type MascotPose } from './mascote';
+import { useToast } from './toast';
 import { ago } from '@/lib/format';
 import { getDictionary, type Locale } from '@/lib/i18n';
 import {
@@ -46,6 +47,7 @@ export function TostaoFindingsBoard({
   seeAllHref?: string;
 }) {
   const router = useRouter();
+  const toast = useToast();
   const t = getDictionary(locale);
   const [state, setState] = useState<TostaoAutoResponse>(initial);
   const [banner, setBanner] = useState<string | null>(null);
@@ -86,7 +88,7 @@ export function TostaoFindingsBoard({
             insights: prev.insights.filter((i) => i.id !== insight.id),
             history: [res.insight, ...prev.history].slice(0, 15),
           }));
-          setBanner(res.appliedSummary);
+          toast.success(res.appliedSummary || t.growth.toast.insightApplied);
           if (res.redirectTo && insight.kind === 'uncategorized_batch') {
             router.refresh();
           }

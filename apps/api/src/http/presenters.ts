@@ -25,5 +25,6 @@ export function presentTransaction(
     seriesId: t.seriesId ?? null,
     personId: t.personId ?? null,
     note: t.note ?? null,
+    customDescription: t.customDescription ?? null,
   };
 }

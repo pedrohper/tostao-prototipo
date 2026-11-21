@@ -11,6 +11,14 @@ import { IgnoreButton } from './ignore-button';
 const day = (iso: string, locale: Locale) =>
   new Date(iso).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' });
 
+/** Calendário da próxima cobrança: "DEZ" em cima, "05" embaixo (dia civil de Brasília, como o resto do app). */
+const calendarChip = (iso: string, locale: Locale) => {
+  const date = new Date(iso);
+  const fmt = (o: Intl.DateTimeFormatOptions) =>
+    date.toLocaleDateString(locale, { timeZone: 'America/Sao_Paulo', ...o });
+  return { month: fmt({ month: 'short' }).replace('.', '').slice(0, 3), day: fmt({ day: '2-digit' }) };
+};
+
 export default async function AssinaturasPage({ searchParams }: { searchParams: Promise<{ voltar?: string }> }) {
   const [{ voltar }, { subscriptions, ignored, monthlyInCents, yearlyInCents }, { locale, t }] = await Promise.all([
     searchParams,
@@ -133,30 +141,45 @@ export default async function AssinaturasPage({ searchParams }: { searchParams: 
           </div>
 
           <div className="flex min-w-0 flex-col gap-5">
-            <Card className="flex flex-col divide-y divide-linha p-0">
-              {active.map((s) => (
-                <div key={s.key} className="flex items-center justify-between gap-3 p-4">
-                  <div className="flex min-w-0 flex-col items-start">
-                    <span className="font-semibold [overflow-wrap:anywhere]">{s.name}</span>
-                    <span className="text-[13px] text-tinta-suave">
-                      {p.nextChargeMeta(day(s.nextChargeAt, locale), s.installmentsLeft, s.chargeCount)}
-                    </span>
-                    {s.duplicateOf && (
-                      <span className="mt-1 rounded-full bg-rosa px-2 py-0.5 text-[12px] font-semibold text-tinta">
-                        {p.duplicateBadge(s.duplicateOf)}
-                      </span>
-                    )}
-                    <IgnoreButton
-                      subscriptionKey={s.key}
-                      ignored={false}
-                      ignoreLabel={p.ignoreBtn}
-                      undoLabel={p.undoBtn}
-                    />
-                  </div>
-                  <span className="shrink-0 font-bold tabular-nums">{money(s.amountInCents)}</span>
-                </div>
-              ))}
-            </Card>
+            {/* T4.4 · cards visuais: calendário com a próxima cobrança, nome, plano e valor por mês. */}
+            <ul className="flex flex-col gap-2.5">
+              {active.map((s) => {
+                const chip = calendarChip(s.nextChargeAt, locale);
+                return (
+                  <li key={s.key}>
+                    <Card className="flex items-center gap-3 p-3.5">
+                      <div
+                        aria-hidden="true"
+                        className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-amarelo-claro text-tinta-fixa"
+                      >
+                        <span className="text-[10px] leading-3 font-bold tracking-wider uppercase">{chip.month}</span>
+                        <span className="font-display text-[22px] leading-6 font-extrabold tabular-nums">
+                          {chip.day}
+                        </span>
+                      </div>
+                      <div className="flex min-w-0 grow flex-col items-start gap-0.5">
+                        <span className="font-semibold [overflow-wrap:anywhere]">{s.name}</span>
+                        <span className="text-[13px] text-tinta-suave">
+                          {p.nextChargeMeta(day(s.nextChargeAt, locale), s.installmentsLeft, s.chargeCount)}
+                        </span>
+                        {s.duplicateOf && (
+                          <span className="mt-1 rounded-full bg-rosa px-2 py-0.5 text-[12px] font-semibold text-tinta">
+                            {p.duplicateBadge(s.duplicateOf)}
+                          </span>
+                        )}
+                        <IgnoreButton
+                          subscriptionKey={s.key}
+                          ignored={false}
+                          ignoreLabel={p.ignoreBtn}
+                          undoLabel={p.undoBtn}
+                        />
+                      </div>
+                      <span className="shrink-0 text-[17px] font-bold tabular-nums">{money(s.amountInCents)}</span>
+                    </Card>
+                  </li>
+                );
+              })}
+            </ul>
 
             {secondarySections}
             <div className="lg:hidden">{note}</div>

@@ -8,7 +8,7 @@ import { createInvite } from './actions';
 import { CopyLink } from './copy-link';
 
 export default async function ConvitesPage({ searchParams }: { searchParams: Promise<{ voltar?: string }> }) {
-  const [{ voltar }, { invites }, { t }] = await Promise.all([
+  const [{ voltar }, { invites }, { t, locale }] = await Promise.all([
     searchParams,
     api<InvitesResponse>('/invites'),
     getI18n(),
@@ -41,7 +41,7 @@ export default async function ConvitesPage({ searchParams }: { searchParams: Pro
               {i.usedAt ? (
                 <span className="text-[13px] text-tinta-suave">{tc.usedBy(i.usedBy)}</span>
               ) : (
-                <CopyLink code={i.code} copyLabel={tc.copyLink} copiedLabel={tc.copied} />
+                <CopyLink code={i.code} copyLabel={tc.copyLink} copiedLabel={tc.copied} locale={locale} />
               )}
             </div>
           ))}

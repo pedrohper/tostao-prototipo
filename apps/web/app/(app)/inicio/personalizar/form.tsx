@@ -25,11 +25,14 @@ export function PersonalizarForm({
   linhas,
   ocultos,
   padrao,
+  padraoOcultos = [],
   locale = 'pt-BR',
 }: {
   linhas: Linha[];
   ocultos: string[];
   padrao: string[];
+  /** Seções escondidas no padrão enxuto ('Restaurar padrão' volta pra elas). */
+  padraoOcultos?: string[];
   locale?: Locale;
 }) {
   const dict = getDictionary(locale);
@@ -102,7 +105,7 @@ export function PersonalizarForm({
         type="button"
         onClick={() => {
           setOrdem(padrao);
-          setOff(new Set());
+          setOff(new Set(padraoOcultos));
         }}
         className="min-h-11 self-center text-sm font-semibold text-laranja-texto"
       >

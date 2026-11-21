@@ -1,6 +1,7 @@
 'use client';
 import { useActionState, useState, useTransition } from 'react';
 import Link from 'next/link';
+import { Icon } from '@/components/icone';
 import { Button, ErrorNote, Field } from '@/components/ui';
 import { getDictionary, type Locale } from '@/lib/i18n';
 import { connectBank, connectItem, disconnectBank, getConnectToken, syncNow, type ConnectState } from './actions';
@@ -10,14 +11,25 @@ import { connectBank, connectItem, disconnectBank, getConnectToken, syncNow, typ
  * autoriza, e o onSuccess entrega o item.id, que a gente liga ao usuário na hora.
  * Campo manual fica de plano B (e é o único caminho com BANK_GATEWAY=fake).
  */
+export type ConnectCard = { icon: string; bg: string; title: string; tag: string | null; desc: string };
+
 export function ConnectPanel({
   widget,
   novo = false,
   locale = 'pt-BR',
+  layout = 'default',
+  card,
 }: {
   widget: boolean;
   novo?: boolean;
   locale?: Locale;
+  /**
+   * default: botão do widget + "Já tenho um Item ID" recolhido (tela normal).
+   * card: só o cartão "Conectar banco" do onboarding, que abre o widget direto.
+   * manual: só o campo de Item ID (vai dentro do bloco "Avançado e suporte").
+   */
+  layout?: 'default' | 'card' | 'manual';
+  card?: ConnectCard;
 }) {
   const labels = getDictionary(locale).pages.conectar.panel;
   const [state, setState] = useState<ConnectState>({});
@@ -87,7 +99,42 @@ export function ConnectPanel({
     </form>
   );
 
-  if (!widget) return manualForm;
+  if (layout === 'manual' || !widget) return manualForm;
+
+  if (layout === 'card' && card) {
+    return (
+      <div className="flex flex-col gap-2">
+        <button
+          type="button"
+          onClick={openWidget}
+          disabled={pending}
+          className="flex w-full items-center gap-3 rounded-2xl border border-linha bg-cartao p-3.5 text-left text-tinta transition-colors hover:bg-papel-2 disabled:opacity-60"
+        >
+          <span
+            aria-hidden="true"
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${card.bg}`}
+          >
+            <Icon src={card.icon} size={30} />
+          </span>
+          <span className="flex min-w-0 grow flex-col gap-0.5">
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[15px] font-bold">
+              {pending ? labels.connecting : card.title}
+              {card.tag && (
+                <span className="rounded-full bg-amarelo-claro px-2 py-0.5 text-[11px] font-semibold text-tinta">
+                  {card.tag}
+                </span>
+              )}
+            </span>
+            <span className="text-[13px] leading-[18px] text-tinta-suave">{card.desc}</span>
+          </span>
+          <span className="shrink-0 text-tinta-suave" aria-hidden="true">
+            ›
+          </span>
+        </button>
+        <ErrorNote message={state.error} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-3">

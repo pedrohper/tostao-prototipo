@@ -28,6 +28,7 @@ export function CategorizeForm({ id, back, options, current, rulePattern, locale
     <form action={action} className="flex grow flex-col gap-4">
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="back" value={back} />
+      {current && <input type="hidden" name="previousCategoryId" value={current} />}
       <fieldset className="flex flex-col gap-2.5">
         <legend className="mb-2.5 text-[13px] font-semibold text-tinta-suave">{labels.categorizeLabel}</legend>
         <div className="flex flex-wrap gap-2">

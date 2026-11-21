@@ -1,11 +1,13 @@
 'use client';
 
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState, useTransition } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { CatIcon, Icon } from '@/components/icone';
 import Link from 'next/link';
 import type { TransactionDTO } from '@tostao/contracts';
 import { money, shortDate } from '@/lib/format';
 import { getDictionary, type Dictionary, type Locale } from '@/lib/i18n';
+import { withQuery } from '@/lib/wallet-search';
 
 /** Barra de busca da Carteira. Formulário comum (GET), funciona até sem JavaScript. */
 export function SearchBar({
@@ -84,6 +86,8 @@ export type FilterDropdownOption = {
   active?: boolean;
   dotColor?: string | null;
   dividerBefore?: boolean;
+  /** Título de grupo mostrado antes desta opção (ex.: "Conta ou cartão"). */
+  groupLabel?: string;
 };
 
 /** Pill dropdown para filtros da Carteira, mantendo links reais de navegação. */
@@ -186,6 +190,14 @@ export function FilterDropdown({
           {options.map((opt) => (
             <Fragment key={`${opt.href}-${opt.label}`}>
               {opt.dividerBefore && <div className="my-1 border-t border-linha" role="separator" />}
+              {opt.groupLabel && (
+                <div
+                  role="presentation"
+                  className="px-3 pt-1.5 pb-1 text-[11px] font-bold tracking-[0.08em] text-tinta-suave uppercase"
+                >
+                  {opt.groupLabel}
+                </div>
+              )}
               <Link
                 href={opt.href}
                 role="menuitem"
@@ -227,6 +239,98 @@ export function FilterDropdown({
   );
 }
 
+/**
+ * Busca do extrato que filtra enquanto digita (espera 300 ms parada e troca `?q=` na URL sem recarregar nem perder o
+ * foco). Enter continua indo pra busca global em todos os meses (/carteira/busca), e sem JavaScript também funciona.
+ */
+export function InlineSearch({
+  q,
+  hidden,
+  placeholder,
+  ariaLabel,
+  clearLabel,
+  hint,
+  autoFocus = false,
+}: {
+  q: string;
+  hidden?: Record<string, string>;
+  placeholder: string;
+  ariaLabel: string;
+  clearLabel: string;
+  hint: string;
+  autoFocus?: boolean;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const [value, setValue] = useState(q);
+  const [, startTransition] = useTransition();
+  const skipFirst = useRef(true);
+
+  useEffect(() => {
+    if (skipFirst.current) {
+      skipFirst.current = false;
+      return;
+    }
+    const timer = setTimeout(() => {
+      startTransition(() => router.replace(`${pathname}${withQuery(params, value)}`, { scroll: false }));
+    }, 300);
+    return () => clearTimeout(timer);
+    // `params` muda depois de cada replace: só a digitação (value) reinicia o relógio.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  return (
+    <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <form
+        action="/carteira/busca"
+        role="search"
+        className="flex h-11 items-center gap-2 rounded-full border border-linha bg-cartao px-3.5 transition-colors focus-within:border-tinta sm:px-4"
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          aria-hidden="true"
+          className="shrink-0 text-tinta-suave"
+        >
+          <circle cx="11" cy="11" r="7" />
+          <path d="M20 20l-3.5-3.5" />
+        </svg>
+        <input
+          name="q"
+          type="search"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          autoFocus={autoFocus}
+          placeholder={placeholder}
+          aria-label={ariaLabel}
+          enterKeyHint="search"
+          className="min-w-0 flex-1 bg-transparent text-[15px] text-tinta outline-none placeholder:text-tinta-suave"
+        />
+        {value !== '' && (
+          <button
+            type="button"
+            onClick={() => setValue('')}
+            aria-label={clearLabel}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-tinta-suave hover:text-tinta"
+          >
+            <span aria-hidden="true">✕</span>
+          </button>
+        )}
+        {Object.entries(hidden ?? {}).map(([k, v]) => (
+          <input key={k} type="hidden" name={k} value={v} />
+        ))}
+      </form>
+      {value.trim() !== '' && <span className="px-3 text-[11px] text-tinta-suave">{hint}</span>}
+    </div>
+  );
+}
+
 /** Cabeçalho do Extrato com ícones compactos de Lupa (expande busca) e Filtro de categorias. */
 export function ExtratoHeaderBar({
   title,
@@ -238,6 +342,9 @@ export function ExtratoHeaderBar({
   filterActive,
   filterOptions,
   desktopControls,
+  q = '',
+  clearSearchLabel = 'Limpar busca',
+  searchHint = '',
 }: {
   title: string;
   searchPlaceholder: string;
@@ -248,8 +355,20 @@ export function ExtratoHeaderBar({
   filterActive: boolean;
   filterOptions: FilterDropdownOption[];
   desktopControls?: React.ReactNode;
+  /** Busca atual (`?q=`): a barra já abre preenchida. */
+  q?: string;
+  clearSearchLabel?: string;
+  searchHint?: string;
 }) {
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(q !== '');
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  // Fechar a busca também tira o `?q=` da URL: senão o extrato ficaria filtrado sem barra visível.
+  const toggleSearch = () => {
+    if (searchOpen && q !== '') router.replace(`${pathname}${withQuery(params, '')}`, { scroll: false });
+    setSearchOpen((prev) => !prev);
+  };
 
   return (
     <div className="flex flex-col gap-3">
@@ -261,7 +380,7 @@ export function ExtratoHeaderBar({
           {desktopControls}
           <button
             type="button"
-            onClick={() => setSearchOpen((prev) => !prev)}
+            onClick={toggleSearch}
             aria-expanded={searchOpen}
             aria-label={searchAriaLabel}
             title={searchAriaLabel}
@@ -289,16 +408,18 @@ export function ExtratoHeaderBar({
 
       {searchOpen && (
         <div className="flex items-center gap-2">
-          <SearchBar
+          <InlineSearch
+            q={q}
             autoFocus
             hidden={searchHidden}
             placeholder={searchPlaceholder}
             ariaLabel={searchAriaLabel}
-            className="min-w-0 flex-1"
+            clearLabel={clearSearchLabel}
+            hint={searchHint}
           />
           <button
             type="button"
-            onClick={() => setSearchOpen(false)}
+            onClick={toggleSearch}
             aria-label={closeLabel}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-linha bg-cartao text-tinta-suave transition-colors hover:text-tinta"
           >
@@ -370,7 +491,7 @@ export function Row({
         {icon}
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="truncate text-[15px] leading-5 font-semibold">{t.description}</span>
+        <span className="truncate text-[15px] leading-5 font-semibold">{t.customDescription || t.description}</span>
         <span
           className={`truncate text-[13px] leading-4 ${pending ? 'font-semibold text-laranja-texto' : 'text-tinta-suave'}`}
         >

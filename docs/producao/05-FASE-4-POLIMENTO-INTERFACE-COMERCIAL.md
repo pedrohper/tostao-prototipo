@@ -7,7 +7,7 @@
 
 ## T4.1 — Toast Global com "Desfazer", Prompt de Instalação PWA, Nav & Dark Mode
 
-- [ ] Concluída
+- [x] Concluída
 
 ### Problema atual
 
@@ -37,7 +37,7 @@
 
 ## T4.2 — Onboarding Guiado sem Fricção & Empty State Motivador ("Aha Moment" em 60s)
 
-- [ ] Concluída
+- [x] Concluída
 
 ### Problema atual
 
@@ -66,7 +66,7 @@
 
 ## T4.3 — Home Enxuta, Paridade Mobile/Desktop e Gráficos Interativos
 
-- [ ] Concluída
+- [x] Concluída
 
 ### Problema atual
 
@@ -100,7 +100,9 @@
 
 ## T4.4 — Carteira Nativa, Anotar em 3 Toques e Logos de Marcas Populares
 
-- [ ] Concluída
+- [x] Concluída
+
+> **Escopo ajustado (decisão do Pedro, 2026-11-21):** o item 1 da correção técnica (pacote local de logos de marcas — `brand-logos.ts`, `brand-logo.tsx`, `brand-logos.spec.ts` e `BrandLogo` em `transaction-row.tsx` e `assinaturas/page.tsx`) **foi pro backlog** e NÃO foi feito. As assinaturas ganharam cards com calendário da próxima cobrança, mas sem logo. Todo o resto de T4.4 está entregue.
 
 ### Problema atual
 

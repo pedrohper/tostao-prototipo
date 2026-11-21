@@ -464,6 +464,7 @@ class PrismaTransactionsRepository implements TransactionsRepository {
     occurredAt,
     personId,
     note,
+    customDescription,
   }: Transaction) {
     await this.db.transaction.update({
       where: { id },
@@ -476,6 +477,7 @@ class PrismaTransactionsRepository implements TransactionsRepository {
         occurredAt,
         ...(personId !== undefined ? { personId } : {}),
         ...(note !== undefined ? { note } : {}),
+        ...(customDescription !== undefined ? { customDescription } : {}),
       },
     });
   }

@@ -9,6 +9,8 @@ import {
   manualTransactionBody,
   updateTransactionBody,
   monthQuery,
+  summaryHistoryQuery,
+  type SummaryHistoryResponse,
   type CategoryDTO,
   type MonthSummaryResponse,
   type SubscriptionsResponse,
@@ -63,6 +65,16 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases, limits: Li
   app.get('/summary', { onRequest: verifyJwt }, async (request) => {
     const { month } = monthQuery.parse(request.query);
     return (await uc.getMonthSummary.execute({ userId: request.user.sub, month })) satisfies MonthSummaryResponse;
+  });
+
+  // Evolução mensal (Home). Vem antes de qualquer rota com parâmetro em /summary.
+  app.get('/summary/history', { onRequest: verifyJwt }, async (request) => {
+    const { month, months } = summaryHistoryQuery.parse(request.query);
+    return (await uc.getSummaryHistory.execute({
+      userId: request.user.sub,
+      month,
+      months,
+    })) satisfies SummaryHistoryResponse;
   });
 
   app.get('/subscriptions', { onRequest: verifyJwt }, async (request) => {

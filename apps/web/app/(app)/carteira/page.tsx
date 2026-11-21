@@ -4,6 +4,7 @@ import Link from 'next/link';
 import {
   isYieldTransaction,
   type BudgetsResponse,
+  type CategoryDTO,
   type FinancialPlanResponse,
   type ForecastResponse,
   type MonthSummaryResponse,
@@ -19,6 +20,9 @@ import { Mascot } from '@/components/mascote';
 import { BudgetProgressBar } from '@/components/graficos';
 import { DesktopSplitShell } from '@/components/lateral';
 import { AutoCategorizeButton } from './auto-categorize-button';
+import { CategorizeQueue } from './categorize-queue';
+import { QuickAddButton } from '@/components/quick-add-sheet';
+import { cleanQuery, matchesQuery } from '@/lib/wallet-search';
 import { PlannerHub } from './planner-hub';
 import { Simulacao } from './simulacao';
 import { Chevron, ExtratoHeaderBar, FilterDropdown, Row } from './transaction-row';
@@ -40,6 +44,8 @@ export default async function CarteiraPage({
     conta?: string;
     semEntreContas?: string;
     semRendimentos?: string;
+    q?: string;
+    modo?: string;
   }>;
 }) {
   const [{ locale, t }, sp] = await Promise.all([getI18n(), searchParams]);
@@ -60,7 +66,8 @@ export default async function CarteiraPage({
 
   const statementMonth = month > hoje ? hoje : month;
 
-  const [{ transactions }, summary, logos, profile, plannerData] = await Promise.all([
+  const categorizeMode = sp.modo === 'categorizar' && aba === 'extrato';
+  const [{ transactions }, summary, logos, profile, plannerData, categoriesData] = await Promise.all([
     api<{ transactions: TransactionDTO[] }>(`/transactions?month=${statementMonth}`),
     api<MonthSummaryResponse>(`/summary?month=${statementMonth}`),
     getBankLogos(),
@@ -74,12 +81,14 @@ export default async function CarteiraPage({
           api<PeopleResponse>('/people').catch(() => null),
         ])
       : Promise.resolve(null),
+    categorizeMode ? api<{ categories: CategoryDTO[] }>('/categories').catch(() => null) : Promise.resolve(null),
   ]);
 
   // Categoria escolhida: só os gastos dela ("sem" = sem categoria).
   const rawCat = sp.cat ?? sp.categoria;
   const cat = rawCat && /^[\w-]{1,60}$/.test(rawCat) ? rawCat : null;
   const conta = sp.conta?.trim() ? sp.conta.trim().slice(0, 80) : null;
+  const search = cleanQuery(sp.q);
   const hideTransfers = sp.semEntreContas === '1';
   const hideYields = sp.semRendimentos === '1';
   const catInfo = cat ? (summary.byCategory.find((c) => (c.categoryId ?? 'sem') === cat) ?? null) : null;
@@ -87,6 +96,7 @@ export default async function CarteiraPage({
     if (hideTransfers && tx.isInternalTransfer) return false;
     if (hideYields && isYieldTransaction(tx)) return false;
     if (conta && tx.accountName !== conta) return false;
+    if (search && !matchesQuery(tx, search)) return false;
     if (cat)
       return !tx.isInternalTransfer && (tx.categoryId ?? 'sem') === cat && (cat !== 'sem' || tx.amountInCents < 0);
     if (filter === 'saidas') return tx.amountInCents < 0 && !tx.isInternalTransfer;
@@ -108,6 +118,7 @@ export default async function CarteiraPage({
       filtro: filter,
       ...(cat ? { cat } : {}),
       ...(conta ? { conta } : {}),
+      ...(search ? { q: search } : {}),
       ...(hideTransfers ? { semEntreContas: '1' } : {}),
       ...(hideYields ? { semRendimentos: '1' } : {}),
     };
@@ -248,6 +259,9 @@ export default async function CarteiraPage({
               : undefined
           }
           closeLabel={t.common.close}
+          q={search}
+          clearSearchLabel={t.growth.wallet.searchClear}
+          searchHint={t.growth.wallet.searchHint}
           filterLabel={
             cat
               ? activeCategoryLabel
@@ -259,7 +273,7 @@ export default async function CarteiraPage({
                     ? tw.hideYields
                     : t.wallet.allCategories
           }
-          filterActive={Boolean(cat) || hideTransfers || hideYields}
+          filterActive={Boolean(cat) || Boolean(conta) || hideTransfers || hideYields}
           filterOptions={[
             { label: t.wallet.allCategories, href: semCat, active: !cat },
             ...summary.byCategory.map((c) => ({
@@ -279,6 +293,19 @@ export default async function CarteiraPage({
               href: toggleHideYieldsHref,
               active: hideYields,
             },
+            // T4.4 · conta/cartão também no mobile (antes o filtro só existia no desktop).
+            ...(contas.length > 0
+              ? [
+                  {
+                    label: t.wallet.allAccounts,
+                    href: semConta,
+                    active: !conta,
+                    dividerBefore: true,
+                    groupLabel: t.growth.wallet.accountFilterLabel,
+                  },
+                  ...contas.map((a) => ({ label: a.name, href: q({ conta: a.name }), active: conta === a.name })),
+                ]
+              : []),
           ]}
           desktopControls={
             <div className="hidden items-center gap-2 lg:flex">
@@ -499,6 +526,31 @@ export default async function CarteiraPage({
           )}
 
           <div id="lista" className="scroll-mt-4 flex flex-col gap-5 pb-20 lg:pb-0">
+            {categorizeMode && (
+              <CategorizeQueue
+                pending={transactions
+                  .filter((tx) => !tx.categoryId && !tx.isInternalTransfer && tx.amountInCents !== 0)
+                  .slice(0, 100)
+                  .map((tx) => ({
+                    id: tx.id,
+                    description: tx.description,
+                    customDescription: tx.customDescription,
+                    amountInCents: tx.amountInCents,
+                    occurredAt: tx.occurredAt,
+                  }))}
+                categories={categoriesData?.categories ?? []}
+                exitHref={buildHref({ modo: null })}
+                locale={locale}
+              />
+            )}
+            {!categorizeMode && !cat && summary.uncategorizedCount > 0 && (
+              <Link
+                href={q({ filtro: 'pendentes', modo: 'categorizar' })}
+                className="flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-rosa px-4 text-[14px] font-bold text-tinta no-underline"
+              >
+                {t.growth.wallet.categorizeMode} ({summary.uncategorizedCount}) ›
+              </Link>
+            )}
             {cat ? (
               <div className="flex items-center gap-2 rounded-2xl bg-papel-2 py-2.5 pr-2 pl-3.5 lg:hidden">
                 <i
@@ -641,7 +693,7 @@ export default async function CarteiraPage({
                                   href={href}
                                   className="block truncate text-[15px] font-semibold text-tinta no-underline hover:underline"
                                 >
-                                  {tx.description}
+                                  {tx.customDescription || tx.description}
                                 </Link>
                                 <span className="block truncate text-xs text-tinta-suave xl:hidden">
                                   {tx.accountName ?? tw.manualLabel}
@@ -812,11 +864,7 @@ export default async function CarteiraPage({
                       </div>
 
                       {a.creditLimitInCents ? (
-                        <BudgetProgressBar
-                          usado={fatura}
-                          limite={a.creditLimitInCents}
-                          t={t.walletExtra.accountDetail}
-                        />
+                        <BudgetProgressBar usado={fatura} limite={a.creditLimitInCents} locale={locale} />
                       ) : null}
                     </Link>
                   );
@@ -871,26 +919,7 @@ export default async function CarteiraPage({
         />
       )}
 
-      {aba === 'extrato' && (
-        <Link
-          href="/anotar"
-          className="fixed right-5 bottom-[calc(86px+env(safe-area-inset-bottom))] z-20 flex h-13 items-center gap-2 rounded-full bg-tinta pr-5 pl-4 text-[15px] font-semibold text-papel no-underline shadow-[0_4px_16px_rgba(30,27,24,0.28)] md:hidden"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            aria-hidden="true"
-          >
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          {t.nav.addExpense}
-        </Link>
-      )}
+      {aba === 'extrato' && <QuickAddButton variant="fab" label={t.nav.addExpense} locale={locale} />}
     </DesktopSplitShell>
   );
 }

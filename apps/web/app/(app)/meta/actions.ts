@@ -5,6 +5,7 @@ import { goalBody } from '@tostao/contracts';
 import { api, ApiError } from '@/lib/api';
 import { parseMoney, resolveBackHref } from '@/lib/format';
 import { rethrowIfRedirect } from '@/lib/rethrow';
+import { flashToast } from '@/lib/flash-toast-server';
 
 export type GoalState = { error?: string; message?: string };
 
@@ -34,6 +35,7 @@ export async function saveGoal(_: GoalState, form: FormData): Promise<GoalState>
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
   revalidateFinance();
+  await flashToast('Meta salva.');
   const qs = new URLSearchParams();
   if (targetId) qs.set('id', targetId);
   if (voltarRaw) qs.set('voltar', resolveBackHref(voltarRaw, '/carteira?aba=planejar'));
@@ -59,6 +61,7 @@ export async function deposit(_: GoalState, form: FormData): Promise<GoalState> 
 export async function deleteGoal(form: FormData) {
   const id = String(form.get('id') ?? '').trim();
   const voltarRaw = String(form.get('voltar') ?? '').trim();
+  let failed = false;
   try {
     if (id) {
       await api(`/goals/${encodeURIComponent(id)}`, { method: 'DELETE' });
@@ -67,9 +70,10 @@ export async function deleteGoal(form: FormData) {
     }
   } catch (caught) {
     rethrowIfRedirect(caught);
-    /* fica como estava */
+    failed = true; // fica como estava
   }
   revalidateFinance();
+  await (failed ? flashToast('Não consegui apagar a meta agora.', 'error') : flashToast('Meta apagada.'));
   const qs = new URLSearchParams();
   if (voltarRaw) qs.set('voltar', resolveBackHref(voltarRaw, '/carteira?aba=planejar'));
   const query = qs.toString();

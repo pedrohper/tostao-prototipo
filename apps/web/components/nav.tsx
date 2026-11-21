@@ -37,7 +37,8 @@ export function Nav({
         pathname.startsWith('/acertos') ||
         pathname.startsWith('/fechamento') ||
         pathname.startsWith('/categorias') ||
-        pathname.startsWith('/anotacoes')
+        pathname.startsWith('/anotacoes') ||
+        pathname.startsWith('/anotar')
       );
     }
     if (href === '/tostao') return pathname.startsWith('/tostao') || pathname.startsWith('/chat');
@@ -129,7 +130,8 @@ export function Nav({
               <Icon
                 src={isActive ? `${item.icon}-ativo` : item.icon}
                 size={24}
-                className={isActive ? '' : 'opacity-75 dark:invert'}
+                // Escuro: o ícone vira traço claro de uma cor só (brightness-0 + invert) em vez de inverter as cores quentes do desenho.
+                className={isActive ? '' : 'opacity-75 dark:opacity-70 dark:brightness-0 dark:invert'}
               />
               {typeof item.badge === 'number' && item.badge > 0 && (
                 <span

@@ -4,14 +4,12 @@ import type { CategoryDTO } from '@tostao/contracts';
 import { ErrorNote, CardIcon, BankIcon } from '@/components/ui';
 import { Mascot } from '@/components/mascote';
 import { pill } from '@/components/sheet';
+import { useToast } from '@/components/toast';
+import { AmountInput, CategoryPills, DateChips, DescriptionInput, NoteField } from '@/components/quick-add-fields';
+import { centsFromMasked } from '@/lib/money-mask';
+import { canSaveQuickAdd } from '@/lib/quick-add';
 import { getDictionary, type Locale } from '@/lib/i18n';
 import { createManual, type ActionState } from '../carteira/actions';
-
-const field =
-  'h-12 rounded-xl border-[1.5px] border-linha bg-cartao px-4 text-base text-tinta outline-none focus:border-tinta';
-
-// As 8 que mais aparecem no dia a dia (igual ao artefato). O resto fica atrás do "Mais".
-const PRINCIPAIS = ['delivery', 'comer-fora', 'mercado', 'transporte', 'compras', 'role', 'casa', 'outros'];
 
 export type ContaOption = {
   id: string;
@@ -25,6 +23,7 @@ export function AnotarForm({
   categories,
   contas,
   today,
+  recents = [],
   back = '/carteira',
   locale = 'pt-BR',
   children,
@@ -32,6 +31,8 @@ export function AnotarForm({
   categories: CategoryDTO[];
   contas: ContaOption[];
   today: string;
+  /** Últimas descrições que a pessoa usou (sugestões enquanto digita). */
+  recents?: string[];
   /** Pra onde voltar depois de salvar. */
   back?: string;
   locale?: Locale;
@@ -40,21 +41,36 @@ export function AnotarForm({
   const dict = getDictionary(locale);
   const labels = dict.pages.anotar;
   const saveText = dict.common.save;
-  const [state, action, pending] = useActionState<ActionState, FormData>(createManual, {});
-  const [kind, setKind] = useState<'saida' | 'entrada'>('saida');
+  const q = dict.growth.quickAdd;
+  const toast = useToast();
+  // Qual botão enviou: só pra trocar o texto "Anotando…" no botão certo.
+  const [sending, setSending] = useState<'save' | 'another'>('save');
+  const [amount, setAmount] = useState('');
+  const [date, setDate] = useState(today);
+  const [description, setDescription] = useState('');
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [note, setNote] = useState('');
   const [cat, setCat] = useState<string | null>(null);
+  // "Salvar e anotar outro": a ação não redireciona. Aqui (e não num efeito) mostra o toast e limpa valor, descrição,
+  // nota e categoria, mantendo tipo, data e conta pra quem anota vários seguidos.
+  const [state, action, pending] = useActionState<ActionState, FormData>(async (prev, formData) => {
+    const result = await createManual(prev, formData);
+    if (result.saved) {
+      toast.success(q.savedAnother);
+      setAmount('');
+      setDescription('');
+      setNote('');
+      setNoteOpen(false);
+      setCat(null);
+    }
+    return result;
+  }, {});
+  const [kind, setKind] = useState<'saida' | 'entrada'>('saida');
   const [todas, setTodas] = useState(false);
   const [conta, setConta] = useState<string | null>(null);
   const [repete, setRepete] = useState<'nao' | 'mensal' | 'parcelado'>('nao');
   const [vezes, setVezes] = useState(2);
-  const doTipo = categories.filter((c) => c.kind === kind);
-  const principais = doTipo
-    .filter((c) => PRINCIPAIS.includes(c.id))
-    .sort((a, b) => PRINCIPAIS.indexOf(a.id) - PRINCIPAIS.indexOf(b.id));
-  const options =
-    todas || kind === 'entrada' || principais.length < 3
-      ? doTipo
-      : [...principais, ...doTipo.filter((c) => c.id === cat && !PRINCIPAIS.includes(c.id))];
+  const ready = canSaveQuickAdd({ cents: centsFromMasked(amount), description });
   const escolhida = contas.find((c) => c.id === conta);
 
   return (
@@ -99,32 +115,23 @@ export function AnotarForm({
             </label>
           ))}
         </div>
-        <label className="flex flex-col gap-1">
-          <span className="text-[13px] font-semibold text-tinta-suave">{labels.amountLabel}</span>
-          <span className="flex items-baseline gap-1.5 border-b-2 border-tinta pb-1">
-            <span className="font-display text-[28px] font-extrabold">R$</span>
-            <input
-              name="amount"
-              inputMode="decimal"
-              placeholder="0,00"
-              required
-              autoFocus
-              className="min-w-0 grow bg-transparent font-display text-[40px] leading-[44px] font-extrabold text-tinta outline-none placeholder:text-linha"
-            />
-          </span>
-        </label>
-        <label className="flex flex-col gap-[5px]">
-          <span className="text-[13px] font-semibold">{labels.descLabel}</span>
-          <input name="description" placeholder={labels.descPlaceholder} required className={field} />
-        </label>
-        <label className="flex flex-col gap-[5px]">
-          <span className="text-[13px] font-semibold">{labels.noteLabel}</span>
-          <input name="note" maxLength={280} placeholder={labels.notePlaceholder} className={field} />
-        </label>
-        <label className="flex flex-col gap-[5px]">
-          <span className="text-[13px] font-semibold">{labels.dateLabel}</span>
-          <input name="occurredAt" type="date" defaultValue={today} required className={field} />
-        </label>
+        <AmountInput value={amount} onChange={setAmount} label={labels.amountLabel} autoFocus />
+        <DateChips value={date} onChange={setDate} today={today} locale={locale} />
+        <DescriptionInput
+          value={description}
+          onChange={setDescription}
+          recents={recents}
+          label={labels.descLabel}
+          placeholder={labels.descPlaceholder}
+        />
+        <NoteField
+          value={note}
+          onChange={setNote}
+          open={noteOpen}
+          onOpen={() => setNoteOpen(true)}
+          addLabel={q.addNote}
+          placeholder={labels.notePlaceholder}
+        />
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-2 text-[13px] font-semibold">{labels.repeatLegend}</legend>
           <input type="hidden" name="repeat" value={repete} />
@@ -185,33 +192,20 @@ export function AnotarForm({
                 : labels.repeatInstallmentHint(vezes)}
           </p>
         </fieldset>
-        <fieldset className="flex flex-col gap-2">
-          <legend className="mb-2 text-[13px] font-semibold">
-            {labels.categoryLegend} <span className="font-normal text-tinta-suave">{labels.categoryOptional}</span>
-          </legend>
-          <input type="hidden" name="categoryId" value={cat ?? ''} />
-          <div className="flex flex-wrap gap-2">
-            {options.map((c) => (
-              <button
-                type="button"
-                key={c.id}
-                onClick={() => setCat(cat === c.id ? null : c.id)}
-                className={`${pill(cat === c.id)} h-11 shrink-0 px-4 whitespace-nowrap`}
-              >
-                <span>{c.name}</span>
-              </button>
-            ))}
-          </div>
-          {options.length < doTipo.length && (
-            <button
-              type="button"
-              onClick={() => setTodas(true)}
-              className="self-start text-[13px] font-semibold text-laranja-texto underline"
-            >
-              {labels.moreCategories}
-            </button>
-          )}
-        </fieldset>
+        <CategoryPills
+          categories={categories}
+          kind={kind}
+          value={cat}
+          onChange={setCat}
+          showAll={todas}
+          onShowAll={() => setTodas(true)}
+          legend={
+            <>
+              {labels.categoryLegend} <span className="font-normal text-tinta-suave">{labels.categoryOptional}</span>
+            </>
+          }
+          moreLabel={labels.moreCategories}
+        />
         {contas.length > 0 && (
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-2 text-[13px] font-semibold">
@@ -264,13 +258,32 @@ export function AnotarForm({
         <ErrorNote message={state.error} />
       </div>
       <div className="shrink-0 border-t border-linha bg-cartao px-5 pt-3 pb-[max(28px,env(safe-area-inset-bottom))] md:px-6 md:pb-5">
-        <button
-          type="submit"
-          disabled={pending}
-          className="mx-auto flex h-[54px] w-full max-w-[480px] items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel transition-opacity hover:opacity-90 disabled:opacity-50 md:max-w-none"
-        >
-          {pending ? labels.saving : saveText}
-        </button>
+        <div className="mx-auto flex w-full max-w-[480px] flex-col gap-2 md:max-w-none">
+          <button
+            type="submit"
+            name="intent"
+            value="save"
+            disabled={pending || !ready}
+            onClick={() => {
+              setSending('save');
+            }}
+            className="flex h-[54px] w-full items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {pending && sending === 'save' ? labels.saving : saveText}
+          </button>
+          <button
+            type="submit"
+            name="intent"
+            value="another"
+            disabled={pending || !ready}
+            onClick={() => {
+              setSending('another');
+            }}
+            className="flex h-11 w-full items-center justify-center rounded-full border-[1.5px] border-tinta text-[15px] font-semibold text-tinta disabled:opacity-50"
+          >
+            {pending && sending === 'another' ? labels.saving : q.saveAnother}
+          </button>
+        </div>
       </div>
     </form>
   );

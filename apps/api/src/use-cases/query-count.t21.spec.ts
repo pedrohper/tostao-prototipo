@@ -10,6 +10,7 @@ import { makePrismaRepositories } from '../repositories/prisma/index.js';
 import { AskTostaoUseCase } from './ask-tostao.js';
 import { ForecastUseCase } from './financial-plan.js';
 import { GetMonthSummaryUseCase } from './get-month-summary.js';
+import { GetSummaryHistoryUseCase } from './get-summary-history.js';
 import { ListPeopleUseCase } from './people.js';
 
 const url = process.env.TEST_DATABASE_URL;
@@ -71,6 +72,14 @@ describe.skipIf(!url)('T2.1 contagem de queries (Postgres real)', () => {
     const { count } = await measure('summary', () =>
       new GetMonthSummaryUseCase(repos, () => NOW).execute({ userId, month: '2026-11' }),
     );
+    expect(count).toBeLessThanOrEqual(4);
+  });
+
+  it('T4.3 · evolução de 6 meses da Home ≤ 4 queries (uma janela só, não uma por mês)', async () => {
+    const { result, count } = await measure('history', () =>
+      new GetSummaryHistoryUseCase(repos, () => NOW).execute({ userId, month: '2026-11', months: 6 }),
+    );
+    expect(result.months).toHaveLength(6);
     expect(count).toBeLessThanOrEqual(4);
   });
 });

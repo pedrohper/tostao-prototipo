@@ -1393,4 +1393,129 @@ export interface Dictionary {
       claimXpCta: string;
     };
   };
+
+  /** Crescimento/ativação (T4.1 e T4.2): toast global, convite PWA, onboarding focado, metas e primeiros passos. */
+  growth: {
+    toast: {
+      dismissAria: string;
+      undo: string;
+      undone: string;
+      undoFailed: string;
+      linkCopied: string;
+      copyFailed: string;
+      insightApplied: string;
+    };
+    pwa: {
+      title: string;
+      body: string;
+      install: string;
+      dismiss: string;
+      dismissAria: string;
+      iosTitle: string;
+      iosStep1: string;
+      iosStep2: string;
+      iosStep3: string;
+    };
+    onboarding: {
+      progressAria: (step: number, total: number) => string;
+      stepLabel: (step: number, total: number) => string;
+      later: string;
+      incomeVaries: string;
+      incomeVariesHint: string;
+      advancedTitle: string;
+      advancedHint: string;
+    };
+    goal: {
+      presetsTitle: string;
+      presetNote: string;
+      presets: Record<'reserva-3-meses' | 'quitar-cartao' | 'viagem' | 'equipamento', { label: string; name: string }>;
+      monthlyLabel: string;
+      projection: (monthly: string, month: string) => string;
+      projectionNone: string;
+      reachedNow: string;
+      useDeadline: string;
+      neededForDeadline: (monthly: string) => string;
+      liveAria: string;
+    };
+    firstSteps: {
+      title: string;
+      subtitle: string;
+      progress: (done: number, total: number) => string;
+      doneTag: string;
+      items: Record<'conectar' | 'anotar' | 'meta' | 'licao', { title: string; desc: string }>;
+      tryFirstExpense: string;
+      exploreLesson: string;
+    };
+
+    charts: {
+      ofIncome: (pct: number) => string;
+      ofSpending: (pct: number) => string;
+      viewMonth: (month: string) => string;
+      inLabel: string;
+      outLabel: string;
+      flowTitle: string;
+      flowAria: string;
+      hintTouch: string;
+      categoryLink: (name: string) => string;
+    };
+    home: {
+      quickAdd: string;
+      spentSoFarOfPrev: (pct: number, month: string) => string;
+      outcomeChange: (pct: number) => string;
+      openBills: (amount: string) => string;
+      connectCta: string;
+      evolutionTitle: string;
+      evolutionSub: string;
+    };
+    quickAdd: {
+      title: string;
+      kindOut: string;
+      kindIn: string;
+      amountLabel: string;
+      today: string;
+      yesterday: string;
+      otherDate: string;
+      descLabel: string;
+      descPlaceholder: string;
+      categoryLabel: string;
+      moreCategories: string;
+      addNote: string;
+      notePlaceholder: string;
+      save: string;
+      saveAnother: string;
+      saving: string;
+      close: string;
+      savedAnother: string;
+      loading: string;
+      loadError: string;
+      fullForm: string;
+    };
+    wallet: {
+      accountFilterLabel: string;
+      searchClear: string;
+      searchHint: string;
+      categorizeMode: string;
+      categorizeTitle: (count: number) => string;
+      categorizeHint: string;
+      remember: string;
+      skip: string;
+      categorizeDone: string;
+      categorized: string;
+      categorizeError: string;
+      exitMode: string;
+    };
+    detail: {
+      nicknameSection: string;
+      nicknameLabel: string;
+      nicknamePlaceholder: string;
+      nicknameSave: string;
+      nicknameHint: string;
+      originalDescription: (text: string) => string;
+      nicknameSaved: string;
+      categorySection: string;
+      noteSection: string;
+      transferSection: string;
+      manageSection: string;
+    };
+  };
 }
