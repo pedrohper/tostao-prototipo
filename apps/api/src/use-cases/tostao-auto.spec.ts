@@ -21,6 +21,8 @@ beforeEach(() => {
   now = new Date('2026-11-16T15:00:00Z');
 });
 
+const hojeEmBrasilia = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+
 describe('funções automáticas do Tostão & Caramelo', () => {
   it('avisa quando uma anotada parece igual a mais de uma cobrança do banco (ambíguo) e some quando resolvida', async () => {
     const u = await setupUser('amb@x.com');
@@ -265,7 +267,8 @@ describe('funções automáticas do Tostão & Caramelo', () => {
       method: 'POST',
       url: '/transactions',
       headers: auth1,
-      payload: { description: 'Mercado do bairro', amountInCents: 4500, kind: 'saida', occurredAt: '2026-11-16' },
+      // Hoje no fuso de Brasília (a regra do app): o aviso olha o MÊS ATUAL, então uma data fixa quebra na virada do mês.
+      payload: { description: 'Mercado do bairro', amountInCents: 4500, kind: 'saida', occurredAt: hojeEmBrasilia() },
     });
 
     const checkRes = await app.inject({ method: 'POST', url: '/tostao/auto/check', headers: auth1 });

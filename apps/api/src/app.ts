@@ -67,6 +67,9 @@ export function parseOrigins(webOrigin: string): string[] {
 export const JWT_ISSUER = 'tostao-api';
 export const JWT_AUDIENCE = 'tostao-web';
 
+/** O Node derruba socket sem tráfego por esse tempo. O SSE do chat manda heartbeat bem antes (ver SSE_HEARTBEAT_MS). */
+export const CONNECTION_TIMEOUT_MS = 10_000;
+
 type Options = Omit<Deps, 'appUrl'> & {
   jwtSecret: string;
   webOrigin: string;
@@ -113,7 +116,7 @@ export async function buildApp({
     trustProxy,
     bodyLimit: BODY_LIMIT_BYTES,
     requestTimeout: 30_000, // tempo máximo pra RECEBER o pedido inteiro (não limita o processamento)
-    connectionTimeout: 10_000,
+    connectionTimeout: CONNECTION_TIMEOUT_MS,
   });
 
   // Cabeçalhos de segurança. A API só fala JSON: nada dela deve ser carregado como página, script ou moldura.

@@ -18,6 +18,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  // Teclado virtual do Android encolhe a área da página (e o chat, que usa dvh, encolhe junto) em vez de cobri-la.
+  interactiveWidget: 'resizes-content',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#FDFBF6' },
     { media: '(prefers-color-scheme: dark)', color: '#1A1714' },

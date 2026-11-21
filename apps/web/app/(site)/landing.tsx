@@ -2,6 +2,8 @@
 // é uma página só, responsiva. Quem já está logado nem vê: a raiz manda pro /inicio.
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
+import { LandingVitrine } from '@/components/landing-vitrine';
+import { FAQ, FEATURES, PLANS } from '@/lib/landing-content';
 import { SiteFooter, SiteHeader } from './chrome';
 import { ScrollReveal } from './scroll-reveal';
 import s from './site.module.css';
@@ -27,7 +29,7 @@ function Check() {
       height="16"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="var(--color-verde-texto)"
+      stroke="#0e7a55"
       strokeWidth="2.4"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -71,8 +73,8 @@ export function Landing({
               Grana explicada, de <span className={s.mark}>tostão em tostão</span>
             </h1>
             <p>
-              Conecte seu banco, veja pra onde o dinheiro foi e aprenda com os seus próprios gastos, em lições de 2
-              minutos. Sem sermão.
+              Conecte seu banco (ou anote na mão), veja pra onde o dinheiro foi e aprenda com os seus próprios gastos,
+              em lições de 2 minutos. Sem sermão.
             </p>
             <div className={s['hero-ctas']}>
               <Link href="/criar-conta" className={cta}>
@@ -121,7 +123,40 @@ export function Landing({
         </section>
       </div>
 
-      <section className={`${s.sec} ${s['sec-alt']}`} id="como">
+      <section className={s.sec} id="app">
+        <div className={s.wrap}>
+          <span className={s.eyebrow} data-reveal>
+            O app por dentro
+          </span>
+          <h2 className={s.disp} data-reveal style={delay(80)}>
+            Veja o Tostão em ação
+          </h2>
+          <div data-reveal style={delay(160)}>
+            <LandingVitrine />
+          </div>
+        </div>
+      </section>
+
+      <section className={`${s.sec} ${s['sec-alt']}`} id="recursos">
+        <div className={s.wrap}>
+          <span className={s.eyebrow} data-reveal>
+            Tudo num lugar só
+          </span>
+          <h2 className={s.disp} data-reveal style={delay(80)}>
+            Do extrato à lição, sem trocar de app
+          </h2>
+          <div className={s.recursos}>
+            {FEATURES.map((f, i) => (
+              <div key={f.id} className={s.card} data-reveal style={delay((i % 3) * 100)}>
+                <h3 className={s.disp}>{f.title}</h3>
+                <p>{f.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className={s.sec} id="como">
         <div className={s.wrap}>
           <span className={s.eyebrow} data-reveal>
             Como funciona
@@ -173,7 +208,7 @@ export function Landing({
         </div>
       </section>
 
-      <section className={s.sec} id="aprender">
+      <section className={`${s.sec} ${s['sec-alt']}`} id="aprender">
         <div className={`${s.wrap} ${s.split}`}>
           <div>
             <span className={s.eyebrow} data-reveal>
@@ -251,13 +286,13 @@ export function Landing({
         </div>
       </section>
 
-      <section className={`${s.sec} ${s['sec-alt']}`}>
+      <section className={s.sec}>
         <div className={s.wrap}>
           <span className={s.eyebrow} data-reveal>
             A turma
           </span>
           <h2 className={s.disp} data-reveal style={delay(80)}>
-            Dois amigos do seu lado, dois vilões que todo mundo de 20 anos já encontrou
+            Dois amigos do seu lado, dois vilões que todo mundo já encontrou
           </h2>
           <div className={s.vils}>
             <div className={s.vil} data-reveal style={{ background: 'var(--lp-pink)', ...delay(0) }}>
@@ -316,7 +351,7 @@ export function Landing({
         </div>
       </section>
 
-      <section className={s.sec} id="seguranca">
+      <section className={`${s.sec} ${s['sec-alt']}`} id="seguranca">
         <div className={s.wrap}>
           <span className={s.eyebrow} data-reveal>
             Segurança
@@ -340,6 +375,77 @@ export function Landing({
                 <Link href="/privacidade">Política de privacidade</Link>.
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className={s.sec} id="planos">
+        <div className={s.wrap}>
+          <span className={s.eyebrow} data-reveal>
+            Planos
+          </span>
+          <h2 className={s.disp} data-reveal style={delay(80)}>
+            Transparente desde o começo
+          </h2>
+          <p className={s.lead} data-reveal style={delay(120)}>
+            Hoje o Tostão é grátis. Seus dados nunca são vendidos, em plano nenhum.
+          </p>
+          <div className={s.planos}>
+            {PLANS.map((p, i) => (
+              <div
+                key={p.id}
+                className={`${s.card} ${s.plano} ${p.id === 'beta' ? s['plano-destaque'] : s['plano-soon']}`}
+                data-reveal
+                style={delay(i * 120)}
+              >
+                <div className={s['plano-head']}>
+                  <h3 className={s.disp}>{p.name}</h3>
+                  <span className={s['plano-badge']}>{p.badge}</span>
+                </div>
+                <p className={`${s.disp} ${s['plano-price']}`}>{p.price}</p>
+                <p className={s['plano-note']}>{p.note}</p>
+                <ul>
+                  {p.bullets.map((b) => (
+                    <li key={b}>
+                      <Check />
+                      <span>{b}</span>
+                    </li>
+                  ))}
+                </ul>
+                {p.cta && (
+                  <Link href="/criar-conta" className={cta}>
+                    {p.cta}
+                  </Link>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className={`${s.sec} ${s['sec-alt']}`} id="faq">
+        <div className={s.wrap}>
+          <span className={s.eyebrow} data-reveal>
+            Perguntas frequentes
+          </span>
+          <h2 className={s.disp} data-reveal style={delay(80)}>
+            O que todo mundo pergunta antes de começar
+          </h2>
+          <div className={s.faq}>
+            {FAQ.map((f, i) => (
+              <details key={f.id} data-reveal style={delay(i * 60)}>
+                <summary>{f.question}</summary>
+                <p>
+                  {f.answer}
+                  {f.link && (
+                    <>
+                      {' '}
+                      <Link href={f.link.href}>{f.link.label}</Link>
+                    </>
+                  )}
+                </p>
+              </details>
+            ))}
           </div>
         </div>
       </section>

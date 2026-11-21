@@ -1,6 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { money } from '@/lib/format';
+import { Selo } from '@/components/selo';
+import { TostaoSlider } from '@/components/tostao-slider';
 
 export const SIMULATORS_M6_M9: Record<string, () => React.ReactNode> = {
   'm6-l1': CalculadoraHoleriteReal,
@@ -91,15 +93,7 @@ function CalculadoraHoleriteReal() {
           <span>Salário bruto CLT</span>
           <span className="font-display text-base font-extrabold">{money(brutoCents)}</span>
         </span>
-        <input
-          type="range"
-          min={1500}
-          max={15000}
-          step={100}
-          value={bruto}
-          onChange={(e) => setBruto(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={1500} max={15000} step={100} value={bruto} onChange={(e) => setBruto(+e.target.value)} />
       </label>
 
       <div className="grid grid-cols-2 gap-2.5">
@@ -122,8 +116,8 @@ function CalculadoraHoleriteReal() {
       </div>
 
       <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
-        💡 O INSS é cobrado por faixas (como uma escada), não sobre o total. E o IRRF usa o desconto simplificado
-        automático quando ele é mais vantajoso que a dedução do INSS.
+        <Selo tipo="dica" />O INSS é cobrado por faixas (como uma escada), não sobre o total. E o IRRF usa o desconto
+        simplificado automático quando ele é mais vantajoso que a dedução do INSS.
       </p>
     </div>
   );
@@ -148,15 +142,7 @@ function SaqueAniversarioVsRescisao() {
           <span>Salário bruto</span>
           <span className="font-display text-base font-extrabold">{money(bruto * 100)}</span>
         </span>
-        <input
-          type="range"
-          min={1500}
-          max={12000}
-          step={100}
-          value={bruto}
-          onChange={(e) => setBruto(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={1500} max={12000} step={100} value={bruto} onChange={(e) => setBruto(+e.target.value)} />
       </label>
 
       <div className="flex flex-col gap-1.5">
@@ -198,7 +184,8 @@ function SaqueAniversarioVsRescisao() {
       </div>
 
       <p className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
-        ⚠️ No Saque-Aniversário, <b>{money(travadoCents)}</b> do seu saldo ficam retidos se você for demitido sem justa
+        <Selo tipo="alerta" />
+        No Saque-Aniversário, <b>{money(travadoCents)}</b> do seu saldo ficam retidos se você for demitido sem justa
         causa — e voltar para o Saque-Rescisão leva 25 meses.
       </p>
     </div>
@@ -227,15 +214,7 @@ function FatiadorDecimoTerceiro() {
           <span>13º líquido total</span>
           <span className="font-display text-base font-extrabold">{money(totalCents)}</span>
         </span>
-        <input
-          type="range"
-          min={1000}
-          max={10000}
-          step={100}
-          value={liquido}
-          onChange={(e) => setLiquido(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={1000} max={10000} step={100} value={liquido} onChange={(e) => setLiquido(+e.target.value)} />
         <span className="text-[11px] text-tinta-suave">
           1ª parcela (nov): ~{money(parc1Cents)} · 2ª parcela (dez, com descontos): ~{money(parc2Cents)}
         </span>
@@ -249,8 +228,7 @@ function FatiadorDecimoTerceiro() {
               {dividas}% ({money(divCents)})
             </span>
           </span>
-          <input
-            type="range"
+          <TostaoSlider
             min={0}
             max={100}
             step={5}
@@ -260,7 +238,7 @@ function FatiadorDecimoTerceiro() {
               setDividas(v);
               if (v + janeiro > 100) setJaneiro(100 - v);
             }}
-            className="accent-menta"
+            tone="menta"
           />
         </label>
 
@@ -271,8 +249,7 @@ function FatiadorDecimoTerceiro() {
               {janeiro}% ({money(janCents)})
             </span>
           </span>
-          <input
-            type="range"
+          <TostaoSlider
             min={0}
             max={100}
             step={5}
@@ -282,7 +259,7 @@ function FatiadorDecimoTerceiro() {
               setJaneiro(v);
               if (v + dividas > 100) setDividas(100 - v);
             }}
-            className="accent-amarelo"
+            tone="amarelo"
           />
         </label>
       </div>
@@ -327,15 +304,7 @@ function ContaRetornoFerias() {
           <span>Salário mensal líquido</span>
           <span className="font-display text-base font-extrabold">{money(salCents)}</span>
         </span>
-        <input
-          type="range"
-          min={1500}
-          max={10000}
-          step={100}
-          value={salario}
-          onChange={(e) => setSalario(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={1500} max={10000} step={100} value={salario} onChange={(e) => setSalario(+e.target.value)} />
       </label>
 
       <div className="grid grid-cols-2 gap-2.5">
@@ -375,9 +344,10 @@ function ContaRetornoFerias() {
       </div>
 
       <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
+        <Selo tipo={gastouTudo ? 'perigo' : 'ok'} />
         {gastouTudo
-          ? `😰 Se você gastar os ${money(entraNaSaidaCents)} viajando, na volta das férias o próximo salário já foi adiantado — sobra ${money(0)} para pagar aluguel e mercado.`
-          : `✅ Separando ${money(salCents)} para o mês seguinte, você curte as férias com o 1/3 extra (${money(tercoCents)}) sem cair no rotativo na volta.`}
+          ? `Se você gastar os ${money(entraNaSaidaCents)} viajando, na volta das férias o próximo salário já foi adiantado — sobra ${money(0)} para pagar aluguel e mercado.`
+          : `Separando ${money(salCents)} para o mês seguinte, você curte as férias com o 1/3 extra (${money(tercoCents)}) sem cair no rotativo na volta.`}
       </p>
     </div>
   );
@@ -418,14 +388,12 @@ function EquivalenciaCltPj() {
           <span>Salário bruto CLT</span>
           <span className="font-bold">{money(cltBrutoCents)}</span>
         </span>
-        <input
-          type="range"
+        <TostaoSlider
           min={2000}
           max={15000}
           step={250}
           value={cltBruto}
           onChange={(e) => setCltBruto(+e.target.value)}
-          className="accent-laranja"
         />
       </label>
 
@@ -434,14 +402,12 @@ function EquivalenciaCltPj() {
           <span>Benefícios CLT (VR/VA/Saúde por mês)</span>
           <span className="font-bold">{money(beneficios * 100)}</span>
         </span>
-        <input
-          type="range"
+        <TostaoSlider
           min={0}
           max={2500}
           step={100}
           value={beneficios}
           onChange={(e) => setBeneficios(+e.target.value)}
-          className="accent-laranja"
         />
       </label>
 
@@ -450,14 +416,12 @@ function EquivalenciaCltPj() {
           <span>Proposta PJ mensal</span>
           <span className="font-bold">{money(pjMensal * 100)}</span>
         </span>
-        <input
-          type="range"
+        <TostaoSlider
           min={2000}
           max={25000}
           step={250}
           value={pjMensal}
           onChange={(e) => setPjMensal(+e.target.value)}
-          className="accent-laranja"
         />
       </label>
 
@@ -475,9 +439,10 @@ function EquivalenciaCltPj() {
       </div>
 
       <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
+        <Selo tipo="dados" />
         {diffAnual >= 0
-          ? `📊 O PJ paga ${money(diffAnual)} a mais por ano (considerando 11 meses trabalhados, 6% de DAS e R$ 200/mês de contador).`
-          : `📊 A CLT vence por ${money(Math.abs(diffAnual))}/ano quando somamos 13º, 1/3 de férias, FGTS e benefícios.`}
+          ? `O PJ paga ${money(diffAnual)} a mais por ano (considerando 11 meses trabalhados, 6% de DAS e R$ 200/mês de contador).`
+          : `A CLT vence por ${money(Math.abs(diffAnual))}/ano quando somamos 13º, 1/3 de férias, FGTS e benefícios.`}
       </p>
     </div>
   );
@@ -512,15 +477,7 @@ function CalculadoraCDI() {
           <span>Valor aplicado</span>
           <span className="font-display text-base font-extrabold">{money(valor * 100)}</span>
         </span>
-        <input
-          type="range"
-          min={500}
-          max={20000}
-          step={500}
-          value={valor}
-          onChange={(e) => setValor(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={500} max={20000} step={500} value={valor} onChange={(e) => setValor(+e.target.value)} />
       </label>
 
       <label className="flex flex-col gap-1">
@@ -530,15 +487,7 @@ function CalculadoraCDI() {
             {meses} meses (IR {(irAliquota * 100).toFixed(1).replace('.', ',')}%)
           </span>
         </span>
-        <input
-          type="range"
-          min={3}
-          max={60}
-          step={3}
-          value={meses}
-          onChange={(e) => setMeses(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={3} max={60} step={3} value={meses} onChange={(e) => setMeses(+e.target.value)} />
       </label>
 
       <div className="grid grid-cols-2 gap-2.5">
@@ -555,8 +504,9 @@ function CalculadoraCDI() {
       </div>
 
       <p className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
-        🚀 Mesmo pagando Imposto de Renda, o CDB 100% CDI coloca <b>{money(diferencaCents)}</b> a mais no seu bolso
-        nesse prazo.
+        <Selo tipo="alta" />
+        Mesmo pagando Imposto de Renda, o CDB 100% CDI coloca <b>{money(diferencaCents)}</b> a mais no seu bolso nesse
+        prazo.
       </p>
     </div>
   );
@@ -595,14 +545,12 @@ function RaioXGarantiaFGC() {
                   {money(b.valor * 100)} {passou ? '(acima de R$ 250 mil!)' : ''}
                 </span>
               </span>
-              <input
-                type="range"
+              <TostaoSlider
                 min={0}
                 max={500000}
                 step={10000}
                 value={b.valor}
                 onChange={(e) => b.set(+e.target.value)}
-                className="accent-laranja"
               />
             </label>
           );
@@ -621,11 +569,12 @@ function RaioXGarantiaFGC() {
       </div>
 
       <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
+        <Selo tipo={total > TETO_GLOBAL || descoberto > 0 ? 'alerta' : 'ok'} />
         {total > TETO_GLOBAL
-          ? '⚠️ Atenção: você ultrapassou o teto global de R$ 1 milhão por CPF a cada 4 anos!'
+          ? 'Atenção: você ultrapassou o teto global de R$ 1 milhão por CPF a cada 4 anos!'
           : descoberto > 0
-            ? `⚠️ Você tem ${money(descoberto * 100)} acima do limite de R$ 250 mil por instituição. Dividir entre bancos diferentes resolve!`
-            : '✅ Tudo coberto! Nenhum banco passa de R$ 250 mil e o total está dentro do teto de R$ 1 milhão.'}
+            ? `Você tem ${money(descoberto * 100)} acima do limite de R$ 250 mil por instituição. Dividir entre bancos diferentes resolve!`
+            : 'Tudo coberto! Nenhum banco passa de R$ 250 mil e o total está dentro do teto de R$ 1 milhão.'}
       </p>
     </div>
   );
@@ -649,15 +598,7 @@ function MordidaLeaoResgate() {
           <span>Aplicação inicial (CDB 100% CDI)</span>
           <span className="font-display text-base font-extrabold">{money(valor * 100)}</span>
         </span>
-        <input
-          type="range"
-          min={1000}
-          max={20000}
-          step={500}
-          value={valor}
-          onChange={(e) => setValor(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={1000} max={20000} step={500} value={valor} onChange={(e) => setValor(+e.target.value)} />
       </label>
 
       <div className="flex flex-col gap-2">
@@ -790,15 +731,7 @@ function CalculadoraGanhoReal() {
           <span>Rentabilidade nominal (% a.a.)</span>
           <span className="font-bold">{nominal.toFixed(1).replace('.', ',')}%</span>
         </span>
-        <input
-          type="range"
-          min={4}
-          max={20}
-          step={0.5}
-          value={nominal}
-          onChange={(e) => setNominal(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={4} max={20} step={0.5} value={nominal} onChange={(e) => setNominal(+e.target.value)} />
       </label>
 
       <label className="flex flex-col gap-1">
@@ -806,14 +739,13 @@ function CalculadoraGanhoReal() {
           <span>Inflação IPCA (% a.a.)</span>
           <span className="font-bold text-vermelho-texto">{ipca.toFixed(1).replace('.', ',')}%</span>
         </span>
-        <input
-          type="range"
+        <TostaoSlider
           min={2}
           max={15}
           step={0.5}
           value={ipca}
           onChange={(e) => setIpca(+e.target.value)}
-          className="accent-alerta"
+          tone="alerta"
         />
       </label>
 
@@ -877,7 +809,7 @@ function SocioVsApostador() {
             modo === 'dia' ? 'bg-rosa text-vermelho-texto shadow-sm' : 'border border-linha bg-cartao text-tinta-suave'
           }`}
         >
-          😰 Olhar todo dia
+          Olhar todo dia
         </button>
         <button
           type="button"
@@ -888,7 +820,7 @@ function SocioVsApostador() {
               : 'border border-linha bg-cartao text-tinta-suave'
           }`}
         >
-          🧘 Olhar em 5 anos
+          Olhar em 5 anos
         </button>
       </div>
 
@@ -937,15 +869,7 @@ function RendaPassivaFIIs() {
           <span>Meta de renda mensal isenta</span>
           <span className="font-display text-base font-extrabold">{money(meta * 100)}/mês</span>
         </span>
-        <input
-          type="range"
-          min={50}
-          max={3000}
-          step={50}
-          value={meta}
-          onChange={(e) => setMeta(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={50} max={3000} step={50} value={meta} onChange={(e) => setMeta(+e.target.value)} />
       </label>
 
       <label className="flex flex-col gap-1">
@@ -953,15 +877,7 @@ function RendaPassivaFIIs() {
           <span>Dividend Yield mensal estimado (cota R$ 100)</span>
           <span className="font-bold">{dy.toFixed(2).replace('.', ',')}%/mês</span>
         </span>
-        <input
-          type="range"
-          min={0.6}
-          max={1.1}
-          step={0.05}
-          value={dy}
-          onChange={(e) => setDy(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={0.6} max={1.1} step={0.05} value={dy} onChange={(e) => setDy(+e.target.value)} />
       </label>
 
       <div className="grid grid-cols-2 gap-2.5">
@@ -995,15 +911,7 @@ function ApostaIndividualVsIndice() {
           <span>Capital investido</span>
           <span className="font-display text-base font-extrabold">{money(valorCents)}</span>
         </span>
-        <input
-          type="range"
-          min={1000}
-          max={20000}
-          step={500}
-          value={valor}
-          onChange={(e) => setValor(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={1000} max={20000} step={500} value={valor} onChange={(e) => setValor(+e.target.value)} />
       </label>
 
       <div className="grid grid-cols-2 gap-2.5">
@@ -1020,7 +928,8 @@ function ApostaIndividualVsIndice() {
       </div>
 
       <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
-        🎯 Diferença de <b>{money(etfIndiceCents - acaoUnicaCents)}</b>: uma empresa isolada pode quebrar ou perder
+        <Selo tipo="meta" />
+        Diferença de <b>{money(etfIndiceCents - acaoUnicaCents)}</b>: uma empresa isolada pode quebrar ou perder
         mercado; um índice amplo dilui o risco entre dezenas de companhias.
       </p>
     </div>
@@ -1044,14 +953,13 @@ function DetectorCharlatanismo() {
           <span>Rentabilidade mensal prometida</span>
           <span className="font-bold text-vermelho-texto">{taxaMes.toFixed(1).replace('.', ',')}% ao mês</span>
         </span>
-        <input
-          type="range"
+        <TostaoSlider
           min={2}
           max={15}
           step={0.5}
           value={taxaMes}
           onChange={(e) => setTaxaMes(+e.target.value)}
-          className="accent-alerta"
+          tone="alerta"
         />
       </label>
 
@@ -1060,15 +968,7 @@ function DetectorCharlatanismo() {
           <span>Aporte inicial único</span>
           <span className="font-bold">{money(aporte * 100)}</span>
         </span>
-        <input
-          type="range"
-          min={500}
-          max={10000}
-          step={500}
-          value={aporte}
-          onChange={(e) => setAporte(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={500} max={10000} step={500} value={aporte} onChange={(e) => setAporte(+e.target.value)} />
       </label>
 
       <div className="flex flex-col gap-2">
@@ -1087,8 +987,9 @@ function DetectorCharlatanismo() {
       </div>
 
       <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
-        🚨 O PIB inteiro do Brasil é ~R$ 11 trilhões. Se alguém promete {taxaMes.toFixed(1).replace('.', ',')}% fixos ao
-        mês, em poucos anos superaria toda a economia do país — é matematicamente impossível.
+        <Selo tipo="perigo" />O PIB inteiro do Brasil é ~R$ 11 trilhões. Se alguém promete{' '}
+        {taxaMes.toFixed(1).replace('.', ',')}% fixos ao mês, em poucos anos superaria toda a economia do país — é
+        matematicamente impossível.
       </p>
     </div>
   );
@@ -1111,15 +1012,7 @@ function TesteCardiacoVolatilidade() {
           <span>Valor investido</span>
           <span className="font-bold">{money(valorCents)}</span>
         </span>
-        <input
-          type="range"
-          min={500}
-          max={20000}
-          step={500}
-          value={valor}
-          onChange={(e) => setValor(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={500} max={20000} step={500} value={valor} onChange={(e) => setValor(+e.target.value)} />
       </label>
 
       <label className="flex flex-col gap-1">
@@ -1127,14 +1020,13 @@ function TesteCardiacoVolatilidade() {
           <span>Queda em cripto / ativo volátil</span>
           <span className="font-bold text-vermelho-texto">−{quedaPct}%</span>
         </span>
-        <input
-          type="range"
+        <TostaoSlider
           min={10}
           max={60}
           step={5}
           value={quedaPct}
           onChange={(e) => setQuedaPct(+e.target.value)}
-          className="accent-alerta"
+          tone="alerta"
         />
       </label>
 
@@ -1150,7 +1042,8 @@ function TesteCardiacoVolatilidade() {
       </div>
 
       <div className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
-        📉 Depois de cair <b>−{quedaPct}%</b>, seu ativo precisa subir{' '}
+        <Selo tipo="queda" />
+        Depois de cair <b>−{quedaPct}%</b>, seu ativo precisa subir{' '}
         <b>+{altaNecessariaPct.toFixed(1).replace('.', ',')}%</b> só para voltar aos {money(valorCents)} iniciais!
       </div>
     </div>
@@ -1234,7 +1127,7 @@ function TesteFalsaCentral() {
             </div>
             {escolhida !== undefined && (
               <p className={`text-[11px] leading-snug ${acertou ? 'text-verde-texto' : 'text-vermelho-texto'}`}>
-                {acertou ? '✅ ' : '❌ '}
+                <Selo tipo={acertou ? 'ok' : 'erro'} />
                 {c.explicacao}
               </p>
             )}
@@ -1281,14 +1174,12 @@ function VantagemDaBanca() {
           <span>Banca inicial</span>
           <span className="font-bold">{money(bancaInicial * 100)}</span>
         </span>
-        <input
-          type="range"
+        <TostaoSlider
           min={50}
           max={500}
           step={50}
           value={bancaInicial}
           onChange={(e) => setBancaInicial(+e.target.value)}
-          className="accent-laranja"
         />
       </label>
 
@@ -1297,15 +1188,7 @@ function VantagemDaBanca() {
           <span>Aposta por jogada (RTP 95%)</span>
           <span className="font-bold">{money(aposta * 100)}</span>
         </span>
-        <input
-          type="range"
-          min={2}
-          max={20}
-          step={2}
-          value={aposta}
-          onChange={(e) => setAposta(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={2} max={20} step={2} value={aposta} onChange={(e) => setAposta(+e.target.value)} />
       </label>
 
       <button
@@ -1313,7 +1196,7 @@ function VantagemDaBanca() {
         onClick={() => setSeed((s) => s + 1)}
         className="rounded-xl bg-laranja px-4 py-2.5 text-xs font-extrabold text-tinta shadow-sm transition active:scale-[0.99]"
       >
-        🎲 Simular 1.000 jogadas
+        Simular 1.000 jogadas
       </button>
 
       <div className="flex items-end gap-1.5 rounded-2xl bg-papel-2 p-3 h-24">
@@ -1383,14 +1266,7 @@ function QuebraGeometricaPiramide() {
           <span>Nível da pirâmide</span>
           <span className="font-bold">Nível {niveis}</span>
         </span>
-        <input
-          type="range"
-          min={1}
-          max={16}
-          value={niveis}
-          onChange={(e) => setNiveis(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={1} max={16} value={niveis} onChange={(e) => setNiveis(+e.target.value)} />
       </label>
 
       <div className="grid grid-cols-2 gap-2.5">
@@ -1405,11 +1281,12 @@ function QuebraGeometricaPiramide() {
       </div>
 
       <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
+        <Selo tipo={passouTerra || passouBrasil ? 'perigo' : 'alta'} />
         {passouTerra
-          ? '🌍 Estourou a população da Terra (8 bilhões)! Não existe mais ninguém no planeta para recrutar.'
+          ? 'Estourou a população da Terra (8 bilhões)! Não existe mais ninguém no planeta para recrutar.'
           : passouBrasil
-            ? '🇧🇷 Já passou de toda a população do Brasil (212 milhões). A base sempre fica sem ter quem recrutar e perde dinheiro.'
-            : '📈 Suba mais alguns níveis para ver como a progressão geométrica esgota rapidamente a população inteira.'}
+            ? 'Já passou de toda a população do Brasil (212 milhões). A base sempre fica sem ter quem recrutar e perde dinheiro.'
+            : 'Suba mais alguns níveis para ver como a progressão geométrica esgota rapidamente a população inteira.'}
       </p>
     </div>
   );
@@ -1457,7 +1334,11 @@ function EscrutinioDaVaga() {
                 ativo ? 'border-alerta bg-rosa text-vermelho-texto' : 'border-linha bg-cartao text-tinta'
               }`}
             >
-              <span className="text-sm">{ativo ? '🚩' : '⬜'}</span>
+              {ativo ? (
+                <Selo tipo="alerta" className="mr-0" />
+              ) : (
+                <span aria-hidden="true" className="inline-block h-[18px] w-[18px] rounded-full border border-linha" />
+              )}
               <span>{sinal}</span>
             </button>
           );
@@ -1489,15 +1370,7 @@ function ContaAbsurdoEconomico() {
           <span>Valor prometido por vídeo de 30s</span>
           <span className="font-bold">{money(porVideo * 100)}</span>
         </span>
-        <input
-          type="range"
-          min={1}
-          max={15}
-          step={1}
-          value={porVideo}
-          onChange={(e) => setPorVideo(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={1} max={15} step={1} value={porVideo} onChange={(e) => setPorVideo(+e.target.value)} />
       </label>
 
       <label className="flex flex-col gap-1">
@@ -1507,14 +1380,12 @@ function ContaAbsurdoEconomico() {
             {minutosDia} min ({videosDia} vídeos)
           </span>
         </span>
-        <input
-          type="range"
+        <TostaoSlider
           min={10}
           max={120}
           step={10}
           value={minutosDia}
           onChange={(e) => setMinutosDia(+e.target.value)}
-          className="accent-laranja"
         />
       </label>
 
@@ -1554,7 +1425,8 @@ function ContaAbsurdoEconomico() {
       </div>
 
       <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
-        💸 Um anunciante real paga ~R$ 0,03 por visualização. Pagar {money(porVideo * 100)} por vídeo exigiria que a
+        <Selo tipo="dinheiro" />
+        Um anunciante real paga ~R$ 0,03 por visualização. Pagar {money(porVideo * 100)} por vídeo exigiria que a
         empresa queimasse <b>{formatCompactMoney(custoMesReais)}</b> todo mês — a conta não fecha!
       </p>
     </div>

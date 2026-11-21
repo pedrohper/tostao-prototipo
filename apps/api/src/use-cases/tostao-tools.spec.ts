@@ -3,7 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { makeInMemoryRepositories } from '../repositories/in-memory/index.js';
 import { executeTostaoTool, validateRegisterArgs } from './tostao-tools.js';
 
-const ALL = new Set(['consultar_gastos_categoria', 'verificar_limite_categoria', 'registrar_transacao']);
+const ALL = new Set([
+  'consultar_gastos_categoria',
+  'verificar_limite_categoria',
+  'consultar_meta',
+  'registrar_transacao',
+]);
 const categories = makeInMemoryRepositories().categories.items;
 
 describe('data e mês no fuso da pessoa', () => {
@@ -84,5 +89,54 @@ describe('data e mês no fuso da pessoa', () => {
       await executeTostaoTool(makeInMemoryRepositories(), 'u1', 'registrar_transacao', '{}', new Date(), new Set()),
     );
     expect(out.erro).toMatch(/não disponível/);
+  });
+});
+
+describe('consultar_meta (T4.5, só leitura)', () => {
+  const now = new Date('2026-11-20T18:00:00Z');
+
+  it('sem plano ou sem meta: diz que não tem, sem inventar número', async () => {
+    const repos = makeInMemoryRepositories();
+    const u = await repos.users.create({ name: 'A', email: 'a@x.com', passwordHash: 'x' });
+    const out = JSON.parse(await executeTostaoTool(repos, u.id, 'consultar_meta', '{}', now, ALL));
+    expect(out).toMatchObject({ tem_meta: false });
+    expect(out.guardado).toBeUndefined();
+  });
+
+  it('com meta: devolve guardado, falta e quanto guardar por mês (texto e centavos)', async () => {
+    const repos = makeInMemoryRepositories();
+    const u = await repos.users.create({ name: 'A', email: 'a@x.com', passwordHash: 'x' });
+    await repos.plans.save(u.id, {
+      salary: null,
+      otherIncomes: [],
+      benefits: [],
+      fixedExpenses: [],
+      goal: { kind: 'viagem', label: 'Praia', amountInCents: 300_000, deadline: '2027-07', savedInCents: 60_000 },
+    });
+    const out = JSON.parse(await executeTostaoTool(repos, u.id, 'consultar_meta', '{}', now, ALL));
+    expect(out).toMatchObject({
+      tem_meta: true,
+      meta: 'Praia',
+      valor_meta_centavos: 300_000,
+      guardado_centavos: 60_000,
+      prazo: '2027-07',
+      atingida: false,
+    });
+    expect(out.precisa_guardar_por_mes_centavos).toBeGreaterThan(0);
+  });
+
+  it('é de quem pergunta: a meta de outra pessoa não aparece', async () => {
+    const repos = makeInMemoryRepositories();
+    const a = await repos.users.create({ name: 'A', email: 'a@x.com', passwordHash: 'x' });
+    const b = await repos.users.create({ name: 'B', email: 'b@x.com', passwordHash: 'x' });
+    await repos.plans.save(a.id, {
+      salary: null,
+      otherIncomes: [],
+      benefits: [],
+      fixedExpenses: [],
+      goal: { kind: 'viagem', label: 'Segredo da A', amountInCents: 100_000, deadline: null, savedInCents: 0 },
+    });
+    const out = await executeTostaoTool(repos, b.id, 'consultar_meta', '{}', now, ALL);
+    expect(out).not.toContain('Segredo da A');
   });
 });

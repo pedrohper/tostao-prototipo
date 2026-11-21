@@ -505,12 +505,62 @@ export type PendingActionDTO = {
   date: string; // YYYY-MM-DD
   expiresAt: string;
 };
+/**
+ * Cartão estruturado que acompanha uma resposta do Tostão (montado no servidor a partir do resultado das
+ * ferramentas, nunca do texto da IA). `href` é sempre um caminho interno do app.
+ */
+export type ChatCardDTO =
+  | {
+      kind: 'categoria';
+      categoryId: string;
+      categoryName: string;
+      month: string; // YYYY-MM
+      totalInCents: number;
+      count: number;
+      href: string;
+    }
+  | {
+      kind: 'limite';
+      categoryId: string;
+      categoryName: string;
+      month: string;
+      limitInCents: number;
+      spentInCents: number;
+      percentUsed: number;
+      href: string;
+    }
+  | {
+      kind: 'meta';
+      label: string;
+      amountInCents: number | null;
+      savedInCents: number;
+      deadline: string | null;
+      monthlyNeededInCents: number | null;
+      fits: boolean | null;
+      reached: boolean;
+      href: string;
+    };
+
 export type ChatReplyResponse = {
   question: ChatMessageDTO;
   reply: ChatMessageDTO;
   remainingToday: number;
   pendingAction: PendingActionDTO | null;
+  /** 2 a 3 perguntas que fazem sentido depois desta resposta (calculadas no servidor, sem nova chamada à IA). */
+  followUps?: string[];
+  cards?: ChatCardDTO[];
 };
+
+/**
+ * Eventos de `POST /chat/stream` (SSE, uma linha `data: {json}` por evento). `status` é o que o Tostão está fazendo
+ * ("Consultando seu extrato..."), `delta` é um pedaço da resposta, `done` fecha o turno (já gravado) e `error`
+ * encerra sem gravar nada.
+ */
+export type ChatStreamEvent =
+  | { type: 'status'; text: string }
+  | { type: 'delta'; text: string }
+  | ({ type: 'done' } & ChatReplyResponse)
+  | { type: 'error'; message: string; code?: string; status: number };
 export const pendingActionBody = z.object({ actionId: z.string().min(8).max(64) });
 export type ConfirmPendingActionResponse = { ok: true; message: string; transactionId?: string };
 

@@ -584,6 +584,11 @@ describe('ferramentas do chat', () => {
     }
     const ai = new SpyAi();
     await ask(ai).execute({ userId, message: 'oi' });
-    expect(ai.offered).toEqual(['consultar_gastos_categoria', 'verificar_limite_categoria', 'registrar_transacao']);
+    expect(ai.offered).toEqual([
+      'consultar_gastos_categoria',
+      'verificar_limite_categoria',
+      'consultar_meta',
+      'registrar_transacao',
+    ]);
   });
 });

@@ -16,6 +16,8 @@ export async function SiteHeader({ home = false }: { home?: boolean }) {
         <a href={anchor('como')}>{l.navHow}</a>
         <a href={anchor('aprender')}>{l.navLearn}</a>
         <a href={anchor('seguranca')}>{l.navSafety}</a>
+        <a href={anchor('planos')}>{l.navPlans}</a>
+        <a href={anchor('faq')}>{l.navFaq}</a>
       </nav>
       <div className={s['nav-cta']}>
         <Link href="/entrar" className={`${s.btn} ${s['btn-ghost']} ${s['btn-sm']}`}>

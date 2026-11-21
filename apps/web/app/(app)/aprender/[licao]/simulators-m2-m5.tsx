@@ -1,9 +1,14 @@
 'use client';
 import { useState } from 'react';
 import { money } from '@/lib/format';
+import { termometroPreset } from '@/lib/lesson-context';
+import { PresetHint } from '@/components/preset-hint';
+import type { SimulatorProps } from './simulators';
+import { Selo } from '@/components/selo';
+import { TostaoSlider } from '@/components/tostao-slider';
 
 // Simuladores interativos dos Módulos 2, 3, 4 e 5.
-export const SIMULATORS_M2_M5: Record<string, () => React.ReactNode> = {
+export const SIMULATORS_M2_M5: Record<string, (props: SimulatorProps) => React.ReactNode> = {
   'm2-l1': IlusaoDePoder,
   'm2-l2': BolaDeNeveDoMinimo,
   'm2-l4': RaioXDoCetNoPix,
@@ -47,15 +52,7 @@ function IlusaoDePoder() {
           <span>Limite do cartão</span>
           <span className="font-display font-extrabold">{money(limiteCents)}</span>
         </span>
-        <input
-          type="range"
-          min={500}
-          max={15000}
-          step={250}
-          value={limite}
-          onChange={(e) => setLimite(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={500} max={15000} step={250} value={limite} onChange={(e) => setLimite(+e.target.value)} />
       </label>
 
       <label className="flex flex-col gap-1">
@@ -63,15 +60,7 @@ function IlusaoDePoder() {
           <span>Sua renda mensal real</span>
           <span className="font-display font-extrabold">{money(rendaCents)}</span>
         </span>
-        <input
-          type="range"
-          min={1200}
-          max={10000}
-          step={100}
-          value={renda}
-          onChange={(e) => setRenda(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={1200} max={10000} step={100} value={renda} onChange={(e) => setRenda(+e.target.value)} />
       </label>
 
       <div className="grid grid-cols-2 gap-2.5">
@@ -92,14 +81,16 @@ function IlusaoDePoder() {
       >
         {multiplo > 1 ? (
           <>
-            ⚠️ <b>Armadilha do limite alto:</b> seu limite equivale a <b>{multiplo.toFixed(1).replace('.', ',')}x</b> a
-            sua renda mensal. Estourar o cartão significa trabalhar <b>{diasTrabalho} dias úteis inteiros</b> (base 22
+            <Selo tipo="alerta" />
+            <b>Armadilha do limite alto:</b> seu limite equivale a <b>{multiplo.toFixed(1).replace('.', ',')}x</b> a sua
+            renda mensal. Estourar o cartão significa trabalhar <b>{diasTrabalho} dias úteis inteiros</b> (base 22
             dias/mês) só para empatar — sem contar os juros.
           </>
         ) : (
           <>
-            ✅ <b>Limite sob controle:</b> seu limite representa <b>{Math.round(multiplo * 100)}%</b> da sua renda
-            mensal ({diasTrabalho} dias úteis). Mesmo assim, limite não é extensão do salário.
+            <Selo tipo="ok" />
+            <b>Limite sob controle:</b> seu limite representa <b>{Math.round(multiplo * 100)}%</b> da sua renda mensal (
+            {diasTrabalho} dias úteis). Mesmo assim, limite não é extensão do salário.
           </>
         )}
       </p>
@@ -147,14 +138,12 @@ function BolaDeNeveDoMinimo() {
           <span>Fatura inicial no rotativo</span>
           <span className="font-display font-extrabold">{money(faturaCents)}</span>
         </span>
-        <input
-          type="range"
+        <TostaoSlider
           min={200}
           max={4000}
           step={50}
           value={faturaInicial}
           onChange={(e) => setFaturaInicial(+e.target.value)}
-          className="accent-laranja"
         />
       </label>
 
@@ -164,15 +153,7 @@ function BolaDeNeveDoMinimo() {
             <span>Pagamento mínimo</span>
             <span className="font-bold">{pctMinimo}%</span>
           </span>
-          <input
-            type="range"
-            min={15}
-            max={40}
-            step={5}
-            value={pctMinimo}
-            onChange={(e) => setPctMinimo(+e.target.value)}
-            className="accent-laranja"
-          />
+          <TostaoSlider min={15} max={40} step={5} value={pctMinimo} onChange={(e) => setPctMinimo(+e.target.value)} />
         </label>
 
         <label className="flex flex-col gap-1">
@@ -180,14 +161,12 @@ function BolaDeNeveDoMinimo() {
             <span>Rotativo + IOF/mês</span>
             <span className="font-bold">{taxaMensal.toFixed(1).replace('.', ',')}%</span>
           </span>
-          <input
-            type="range"
+          <TostaoSlider
             min={10}
             max={18}
             step={0.5}
             value={taxaMensal}
             onChange={(e) => setTaxaMensal(+e.target.value)}
-            className="accent-laranja"
           />
         </label>
       </div>
@@ -210,7 +189,8 @@ function BolaDeNeveDoMinimo() {
       </div>
 
       <p className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
-        ⚖️ <b>Lei 14.690/2023 (Teto de 100%):</b> os juros do rotativo não podem passar do dobro da dívida original (
+        <Selo tipo="lei" />
+        <b>Lei 14.690/2023 (Teto de 100%):</b> os juros do rotativo não podem passar do dobro da dívida original (
         {money(tetoLeiCents)}). Em 12 meses pagando só o mínimo, você já terá desembolsado <b>{money(m12.totalPago)}</b>{' '}
         e ainda deverá <b>{money(m12.saldo)}</b>.
       </p>
@@ -256,8 +236,7 @@ function RaioXDoCetNoPix() {
           <span>Valor do Pix à vista</span>
           <span className="font-display font-extrabold">{money(valorCents)}</span>
         </span>
-        <input
-          type="range"
+        <TostaoSlider
           min={100}
           max={3000}
           step={50}
@@ -268,7 +247,6 @@ function RaioXDoCetNoPix() {
             const minParcela = Math.ceil(v / parcelas);
             if (valorParcela < minParcela) setValorParcela(minParcela);
           }}
-          className="accent-laranja"
         />
       </label>
 
@@ -278,8 +256,7 @@ function RaioXDoCetNoPix() {
             <span>Parcelas</span>
             <span className="font-bold">{parcelas}x</span>
           </span>
-          <input
-            type="range"
+          <TostaoSlider
             min={2}
             max={12}
             step={1}
@@ -290,7 +267,6 @@ function RaioXDoCetNoPix() {
               const sugestao = Math.ceil((valorPix * 1.15) / n);
               setValorParcela(sugestao);
             }}
-            className="accent-laranja"
           />
         </label>
 
@@ -299,14 +275,12 @@ function RaioXDoCetNoPix() {
             <span>Parcela do banco</span>
             <span className="font-bold">{money(parcelaCents)}</span>
           </span>
-          <input
-            type="range"
+          <TostaoSlider
             min={Math.max(10, Math.floor(valorPix / parcelas))}
             max={Math.ceil((valorPix * 1.8) / parcelas) + 50}
             step={2}
             value={valorParcela}
             onChange={(e) => setValorParcela(+e.target.value)}
-            className="accent-laranja"
           />
         </label>
       </div>
@@ -340,13 +314,14 @@ function RaioXDoCetNoPix() {
       <p className="text-xs leading-relaxed text-tinta-suave">
         {taxaMensalPct >= 4 ? (
           <>
-            🚨 <b>Pix parcelado caro:</b> o banco está cobrando{' '}
-            <b>{taxaMensalPct.toFixed(1).replace('.', ',')}% ao mês</b> escondido na parcela. Só faça se for emergência
-            real e sem alternativa à vista.
+            <Selo tipo="perigo" />
+            <b>Pix parcelado caro:</b> o banco está cobrando <b>{taxaMensalPct.toFixed(1).replace('.', ',')}% ao mês</b>{' '}
+            escondido na parcela. Só faça se for emergência real e sem alternativa à vista.
           </>
         ) : (
           <>
-            💡 <b>Compare sempre pelo CET:</b> mesmo parcelas pequenas somam juros altos no fim do contrato.
+            <Selo tipo="dica" />
+            <b>Compare sempre pelo CET:</b> mesmo parcelas pequenas somam juros altos no fim do contrato.
           </>
         )}
       </p>
@@ -372,14 +347,7 @@ function ReguaDeDatas() {
             <span>Fechamento</span>
             <span className="font-bold">Dia {fechamento}</span>
           </span>
-          <input
-            type="range"
-            min={1}
-            max={28}
-            value={fechamento}
-            onChange={(e) => setFechamento(+e.target.value)}
-            className="accent-laranja"
-          />
+          <TostaoSlider min={1} max={28} value={fechamento} onChange={(e) => setFechamento(+e.target.value)} />
         </label>
 
         <label className="flex flex-col gap-1">
@@ -387,14 +355,7 @@ function ReguaDeDatas() {
             <span>Vencimento</span>
             <span className="font-bold">Dia {vencimento}</span>
           </span>
-          <input
-            type="range"
-            min={1}
-            max={28}
-            value={vencimento}
-            onChange={(e) => setVencimento(+e.target.value)}
-            className="accent-laranja"
-          />
+          <TostaoSlider min={1} max={28} value={vencimento} onChange={(e) => setVencimento(+e.target.value)} />
         </label>
       </div>
 
@@ -403,14 +364,7 @@ function ReguaDeDatas() {
           <span>Dia da compra no mês</span>
           <span className="font-display font-extrabold">Dia {compra}</span>
         </span>
-        <input
-          type="range"
-          min={1}
-          max={30}
-          value={compra}
-          onChange={(e) => setCompra(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={1} max={30} value={compra} onChange={(e) => setCompra(+e.target.value)} />
       </label>
 
       <div className="grid grid-cols-2 gap-2.5">
@@ -433,12 +387,14 @@ function ReguaDeDatas() {
       >
         {caiNaProxima ? (
           <>
-            🎯 <b>Melhor janela de compra:</b> comprando a partir do dia {fechamento} (fechamento), você ganha{' '}
+            <Selo tipo="meta" />
+            <b>Melhor janela de compra:</b> comprando a partir do dia {fechamento} (fechamento), você ganha{' '}
             <b>{diasFolego} dias</b> de fôlego antes do vencimento no dia {vencimento} do próximo ciclo.
           </>
         ) : (
           <>
-            ⏳ <b>Cai nesta fatura:</b> como você comprou antes do fechamento (dia {fechamento}), a cobrança já vem no
+            <Selo tipo="tempo" />
+            <b>Cai nesta fatura:</b> como você comprou antes do fechamento (dia {fechamento}), a cobrança já vem no
             vencimento próximo (dia {vencimento}), em apenas <b>{diasFolego} dias</b>.
           </>
         )}
@@ -505,14 +461,12 @@ function TermometroDeSangria() {
                     <span>Saldo: {money(d.saldo * 100)}</span>
                     <span>Sangria: {money(Math.round(d.saldo * 100 * (d.taxa / 100)))}/mês</span>
                   </div>
-                  <input
-                    type="range"
+                  <TostaoSlider
                     min={300}
                     max={6000}
                     step={100}
                     value={d.saldo}
                     onChange={(e) => atualizar(d.id, { saldo: +e.target.value })}
-                    className="accent-laranja"
                   />
                 </div>
               )}
@@ -528,7 +482,8 @@ function TermometroDeSangria() {
 
       {ativasOrdenadas.length > 0 && (
         <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
-          🔥 <b>Ordem de ataque (da mais cara p/ mais barata):</b>{' '}
+          <Selo tipo="fogo" />
+          <b>Ordem de ataque (da mais cara p/ mais barata):</b>{' '}
           {ativasOrdenadas.map((d, i) => `${i + 1}º ${d.nome} (${d.taxa}%)`).join(' → ')}.
         </p>
       )}
@@ -614,7 +569,7 @@ function AvalancheVsBolaDeNeve() {
               : 'border-linha bg-cartao text-tinta-suave'
           }`}
         >
-          🏔️ Avalanche (maior juro)
+          Avalanche (maior juro)
         </button>
         <button
           type="button"
@@ -623,7 +578,7 @@ function AvalancheVsBolaDeNeve() {
             metodo === 'bola' ? 'border-menta bg-menta-clara text-tinta' : 'border-linha bg-cartao text-tinta-suave'
           }`}
         >
-          ⛄ Bola de neve (menor saldo)
+          Bola de neve (menor saldo)
         </button>
       </div>
 
@@ -632,15 +587,7 @@ function AvalancheVsBolaDeNeve() {
           <span>Aporte extra mensal</span>
           <span className="font-display font-extrabold">{money(extra * 100)}</span>
         </span>
-        <input
-          type="range"
-          min={50}
-          max={800}
-          step={50}
-          value={extra}
-          onChange={(e) => setExtra(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={50} max={800} step={50} value={extra} onChange={(e) => setExtra(+e.target.value)} />
       </label>
 
       <div className="grid grid-cols-2 gap-2.5">
@@ -657,7 +604,8 @@ function AvalancheVsBolaDeNeve() {
       </div>
 
       <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
-        📊 <b>Comparativo ({atual.meses} meses p/ zerar tudo):</b>{' '}
+        <Selo tipo="dados" />
+        <b>Comparativo ({atual.meses} meses p/ zerar tudo):</b>{' '}
         {economiaAvalanche > 0 ? (
           <>
             a <b>Avalanche</b> economiza <b>{money(economiaAvalanche)}</b> em juros, enquanto a <b>Bola de Neve</b> dá
@@ -690,14 +638,12 @@ function CalculadoraValorOriginal() {
           <span>Valor cobrado hoje</span>
           <span className="font-display font-extrabold">{money(hojeCents)}</span>
         </span>
-        <input
-          type="range"
+        <TostaoSlider
           min={500}
           max={20000}
           step={250}
           value={valorHoje}
           onChange={(e) => setValorHoje(+e.target.value)}
-          className="accent-laranja"
         />
       </label>
 
@@ -707,14 +653,7 @@ function CalculadoraValorOriginal() {
             <span>Meses em atraso</span>
             <span className="font-bold">{mesesAtraso}m</span>
           </span>
-          <input
-            type="range"
-            min={1}
-            max={60}
-            value={mesesAtraso}
-            onChange={(e) => setMesesAtraso(+e.target.value)}
-            className="accent-laranja"
-          />
+          <TostaoSlider min={1} max={60} value={mesesAtraso} onChange={(e) => setMesesAtraso(+e.target.value)} />
         </label>
 
         <label className="flex flex-col gap-1">
@@ -722,14 +661,12 @@ function CalculadoraValorOriginal() {
             <span>Taxa estimada</span>
             <span className="font-bold">{taxaEstimada}%/mês</span>
           </span>
-          <input
-            type="range"
+          <TostaoSlider
             min={2}
             max={15}
             step={0.5}
             value={taxaEstimada}
             onChange={(e) => setTaxaEstimada(+e.target.value)}
-            className="accent-laranja"
           />
         </label>
       </div>
@@ -746,7 +683,8 @@ function CalculadoraValorOriginal() {
       </div>
 
       <div className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
-        🤝 <b>Faixa de contraoferta realista à vista:</b> entre <b>{money(ofertaMinCents)}</b> e{' '}
+        <Selo tipo="ok" />
+        <b>Faixa de contraoferta realista à vista:</b> entre <b>{money(ofertaMinCents)}</b> e{' '}
         <b>{money(ofertaMaxCents)}</b>. Nunca aceite a primeira proposta parcelada sem saber quanto da dívida é só bola
         de neve.
       </div>
@@ -769,15 +707,7 @@ function SimuladorDesenrolaSerasa() {
           <span>Renda líquida mensal</span>
           <span className="font-display font-extrabold">{money(renda * 100)}</span>
         </span>
-        <input
-          type="range"
-          min={1200}
-          max={8000}
-          step={100}
-          value={renda}
-          onChange={(e) => setRenda(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={1200} max={8000} step={100} value={renda} onChange={(e) => setRenda(+e.target.value)} />
       </label>
 
       <label className="flex flex-col gap-1">
@@ -785,15 +715,7 @@ function SimuladorDesenrolaSerasa() {
           <span>Parcela da renegociação</span>
           <span className="font-display font-extrabold">{money(parcela * 100)}</span>
         </span>
-        <input
-          type="range"
-          min={50}
-          max={2000}
-          step={25}
-          value={parcela}
-          onChange={(e) => setParcela(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={50} max={2000} step={25} value={parcela} onChange={(e) => setParcela(+e.target.value)} />
       </label>
 
       <div className="flex flex-col gap-1.5">
@@ -818,13 +740,15 @@ function SimuladorDesenrolaSerasa() {
       >
         {risco ? (
           <>
-            🚨 <b>Zona de risco de re-inadimplência:</b> comprometer mais de 20% da renda com acordo (
+            <Selo tipo="perigo" />
+            <b>Zona de risco de re-inadimplência:</b> comprometer mais de 20% da renda com acordo (
             {money(Math.round(renda * 20))}/mês no máximo) costuma quebrar o combinado no primeiro imprevisto. Peça
             prazo maior ou desconto maior antes de assinar.
           </>
         ) : (
           <>
-            ✅ <b>Parcela saudável:</b> cabe dentro dos 20% recomendados da sua renda. Você consegue honrar o acordo sem
+            <Selo tipo="ok" />
+            <b>Parcela saudável:</b> cabe dentro dos 20% recomendados da sua renda. Você consegue honrar o acordo sem
             atrasar aluguel, luz ou mercado.
           </>
         )}
@@ -852,15 +776,7 @@ function CalculadoraMinimoExistencial() {
           <span>Aluguel / Moradia</span>
           <span className="font-bold">{money(moradia * 100)}</span>
         </span>
-        <input
-          type="range"
-          min={0}
-          max={2500}
-          step={50}
-          value={moradia}
-          onChange={(e) => setMoradia(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={0} max={2500} step={50} value={moradia} onChange={(e) => setMoradia(+e.target.value)} />
       </label>
 
       <label className="flex flex-col gap-1">
@@ -868,14 +784,12 @@ function CalculadoraMinimoExistencial() {
           <span>Alimentação básica</span>
           <span className="font-bold">{money(alimentacao * 100)}</span>
         </span>
-        <input
-          type="range"
+        <TostaoSlider
           min={200}
           max={1500}
           step={50}
           value={alimentacao}
           onChange={(e) => setAlimentacao(+e.target.value)}
-          className="accent-laranja"
         />
       </label>
 
@@ -884,15 +798,7 @@ function CalculadoraMinimoExistencial() {
           <span>Água, luz e transporte</span>
           <span className="font-bold">{money(basicos * 100)}</span>
         </span>
-        <input
-          type="range"
-          min={100}
-          max={1000}
-          step={20}
-          value={basicos}
-          onChange={(e) => setBasicos(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={100} max={1000} step={20} value={basicos} onChange={(e) => setBasicos(+e.target.value)} />
       </label>
 
       <label className="flex flex-col gap-1">
@@ -900,15 +806,7 @@ function CalculadoraMinimoExistencial() {
           <span>Sua renda mensal disponível</span>
           <span className="font-bold">{money(rendaCents)}</span>
         </span>
-        <input
-          type="range"
-          min={1000}
-          max={6000}
-          step={100}
-          value={renda}
-          onChange={(e) => setRenda(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={1000} max={6000} step={100} value={renda} onChange={(e) => setRenda(+e.target.value)} />
       </label>
 
       <div className="grid grid-cols-2 gap-2.5">
@@ -925,8 +823,9 @@ function CalculadoraMinimoExistencial() {
       </div>
 
       <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
-        ⚖️ <b>Piso legal vs. vida real:</b> o decreto federal protege pelo menos <b>{money(PISO_LEGAL_CENTS)}</b> da
-        renda na Lei do Superendividamento, mas o seu mínimo de sobrevivência real é <b>{money(minimoRealCents)}</b>. Só
+        <Selo tipo="lei" />
+        <b>Piso legal vs. vida real:</b> o decreto federal protege pelo menos <b>{money(PISO_LEGAL_CENTS)}</b> da renda
+        na Lei do Superendividamento, mas o seu mínimo de sobrevivência real é <b>{money(minimoRealCents)}</b>. Só
         negocie parcelas que caibam na sobra real ({margemRealCents > 0 ? money(margemRealCents) : 'R$ 0,00'}).
       </p>
     </div>
@@ -1032,15 +931,7 @@ function ComparadorLiquidezSeguranca() {
           <span>Urgência médica inesperada</span>
           <span className="font-display font-extrabold">{money(urgenciaCents)}</span>
         </span>
-        <input
-          type="range"
-          min={300}
-          max={5000}
-          step={100}
-          value={urgencia}
-          onChange={(e) => setUrgencia(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={300} max={5000} step={100} value={urgencia} onChange={(e) => setUrgencia(+e.target.value)} />
       </label>
 
       <div className="grid grid-cols-2 gap-2.5">
@@ -1060,7 +951,8 @@ function ComparadorLiquidezSeguranca() {
       </div>
 
       <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
-        💧 <b>Liquidez vale mais que 0,1% de rentabilidade:</b> mesmo que o investimento travado renda{' '}
+        <Selo tipo="dica" />
+        <b>Liquidez vale mais que 0,1% de rentabilidade:</b> mesmo que o investimento travado renda{' '}
         {money(rendimentoTravadoCents)} no mês, o rotativo cobra <b>{money(custoRotativoCents)}</b> até o dinheiro
         destravar. Reserva de emergência precisa ser D+0.
       </p>
@@ -1106,7 +998,7 @@ function SemaforoDaEmergencia() {
     if (inesperado && urgente && !alternativa) {
       return {
         cor: 'bg-menta-clara text-verde-texto',
-        titulo: '🟢 Sinal Verde — Emergência real',
+        titulo: 'Sinal Verde — Emergência real',
         texto:
           'É inesperado, urgente e não há opção mais barata. É exatamente para isso que sua reserva existe: use sem culpa e planeje a reposição.',
       };
@@ -1114,14 +1006,14 @@ function SemaforoDaEmergencia() {
     if (!inesperado && !urgente) {
       return {
         cor: 'bg-rosa text-vermelho-texto',
-        titulo: '🔴 Sinal Vermelho — Desejo disfarçado',
+        titulo: 'Sinal Vermelho — Desejo disfarçado',
         texto:
           'Não é inesperado nem urgente. Não toque na reserva! Se você quer isso, crie uma caixinha separada e junte antes.',
       };
     }
     return {
       cor: 'bg-amarelo-claro text-laranja-texto',
-      titulo: '🟡 Sinal Amarelo — Adie 7 dias ou reduza',
+      titulo: 'Sinal Amarelo — Adie 7 dias ou reduza',
       texto: alternativa
         ? 'Existe uma alternativa mais barata: resolva pelo menor custo possível antes de mexer no seu colchão.'
         : 'Espere 7 dias ou reajuste o orçamento do mês antes de sacar da reserva.',
@@ -1159,15 +1051,7 @@ function ReconstrucaoDoMuro() {
           <span>Quanto usou da reserva</span>
           <span className="font-display font-extrabold">{money(usou * 100)}</span>
         </span>
-        <input
-          type="range"
-          min={200}
-          max={6000}
-          step={100}
-          value={usou}
-          onChange={(e) => setUsou(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={200} max={6000} step={100} value={usou} onChange={(e) => setUsou(+e.target.value)} />
       </label>
 
       <label className="flex flex-col gap-1">
@@ -1175,15 +1059,7 @@ function ReconstrucaoDoMuro() {
           <span>Aporte mensal p/ recompor</span>
           <span className="font-display font-extrabold">{money(porMes * 100)}/mês</span>
         </span>
-        <input
-          type="range"
-          min={50}
-          max={1500}
-          step={50}
-          value={porMes}
-          onChange={(e) => setPorMes(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={50} max={1500} step={50} value={porMes} onChange={(e) => setPorMes(+e.target.value)} />
       </label>
 
       <div className="rounded-2xl bg-menta-clara p-3 flex items-center justify-between">
@@ -1204,7 +1080,8 @@ function ReconstrucaoDoMuro() {
       </div>
 
       <p className="text-xs leading-relaxed text-tinta-suave">
-        🧱 <b>Usar a reserva não é fracasso:</b> ela cumpriu o papel dela. Coloque a reposição de{' '}
+        <Selo tipo="dica" />
+        <b>Usar a reserva não é fracasso:</b> ela cumpriu o papel dela. Coloque a reposição de{' '}
         <b>{money(porMes * 100)}/mês</b> como conta fixa até fechar os <b>{meses} meses</b>.
       </p>
     </div>
@@ -1212,9 +1089,14 @@ function ReconstrucaoDoMuro() {
 }
 
 /** m4-l5: O termômetro da paz de espírito */
-function TermometroPazDeEspirito() {
-  const [guardado, setGuardado] = useState(3600);
-  const [custoBasico, setCustoBasico] = useState(1800);
+function TermometroPazDeEspirito({ userContext = null }: SimulatorProps) {
+  const preset = termometroPreset(userContext);
+  const [guardado, setGuardado] = useState(preset?.guardado ?? 3600);
+  const [custoBasico, setCustoBasico] = useState(preset?.custoBasico ?? 1800);
+  // A régua cobre os valores reais mesmo fora do intervalo didático.
+  const maxGuardado = Math.max(25_000, preset?.guardado ?? 0);
+  const minCusto = Math.min(800, preset?.custoBasico ?? 800);
+  const maxCusto = Math.max(6000, preset?.custoBasico ?? 6000);
 
   const mesesAutonomia = guardado / custoBasico;
   const pctBarra = Math.min(100, Math.round((mesesAutonomia / 6) * 100));
@@ -1230,19 +1112,22 @@ function TermometroPazDeEspirito() {
 
   return (
     <div className="flex flex-col gap-4">
+      {preset && (
+        <PresetHint>
+          Saldo das suas contas e custo do mês já estão aí. Mexa à vontade pra ver outros cenários.
+        </PresetHint>
+      )}
       <label className="flex flex-col gap-1">
         <span className="flex justify-between text-sm font-semibold">
           <span>Saldo guardado hoje</span>
           <span className="font-display font-extrabold">{money(guardado * 100)}</span>
         </span>
-        <input
-          type="range"
+        <TostaoSlider
           min={0}
-          max={25000}
+          max={maxGuardado}
           step={200}
           value={guardado}
           onChange={(e) => setGuardado(+e.target.value)}
-          className="accent-laranja"
         />
       </label>
 
@@ -1251,14 +1136,12 @@ function TermometroPazDeEspirito() {
           <span>Seu custo básico mensal</span>
           <span className="font-display font-extrabold">{money(custoBasico * 100)}</span>
         </span>
-        <input
-          type="range"
-          min={800}
-          max={6000}
+        <TostaoSlider
+          min={minCusto}
+          max={maxCusto}
           step={100}
           value={custoBasico}
           onChange={(e) => setCustoBasico(+e.target.value)}
-          className="accent-laranja"
         />
       </label>
 
@@ -1310,14 +1193,12 @@ function AportesVsAumentoDeRenda() {
           <span>Cenário A: aporte desde o dia 1 (10 anos)</span>
           <span className="font-bold">{money(aporteInicial * 100)}/mês</span>
         </span>
-        <input
-          type="range"
+        <TostaoSlider
           min={50}
           max={400}
           step={25}
           value={aporteInicial}
           onChange={(e) => setAporteInicial(+e.target.value)}
-          className="accent-laranja"
         />
       </label>
 
@@ -1326,14 +1207,12 @@ function AportesVsAumentoDeRenda() {
           <span>Cenário B: aporte após 3 anos de carreira (7 anos)</span>
           <span className="font-bold">{money(aportePosCarreira * 100)}/mês</span>
         </span>
-        <input
-          type="range"
+        <TostaoSlider
           min={300}
           max={2000}
           step={50}
           value={aportePosCarreira}
           onChange={(e) => setAportePosCarreira(+e.target.value)}
-          className="accent-laranja"
         />
       </label>
 
@@ -1360,7 +1239,8 @@ function AportesVsAumentoDeRenda() {
       </div>
 
       <p className="text-xs leading-relaxed text-tinta-suave">
-        🚀 <b>Renda é o motor do aporte (0,8%/mês em 10 anos):</b> aumentar sua capacidade de ganhar gera{' '}
+        <Selo tipo="alta" />
+        <b>Renda é o motor do aporte (0,8%/mês em 10 anos):</b> aumentar sua capacidade de ganhar gera{' '}
         <b>
           {cenarioBCents >= cenarioACents
             ? `${money(cenarioBCents - cenarioACents)} a mais`
@@ -1390,15 +1270,7 @@ function CalculadoraRoiEducacional() {
           <span>Custo total do curso / formação</span>
           <span className="font-display font-extrabold">{money(custoCents)}</span>
         </span>
-        <input
-          type="range"
-          min={200}
-          max={10000}
-          step={100}
-          value={custo}
-          onChange={(e) => setCusto(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={200} max={10000} step={100} value={custo} onChange={(e) => setCusto(+e.target.value)} />
       </label>
 
       <label className="flex flex-col gap-1">
@@ -1406,15 +1278,7 @@ function CalculadoraRoiEducacional() {
           <span>Aumento mensal esperado na renda</span>
           <span className="font-display font-extrabold">+{money(aumentoCents)}/mês</span>
         </span>
-        <input
-          type="range"
-          min={100}
-          max={3000}
-          step={50}
-          value={aumento}
-          onChange={(e) => setAumento(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={100} max={3000} step={50} value={aumento} onChange={(e) => setAumento(+e.target.value)} />
       </label>
 
       <div className="grid grid-cols-2 gap-2.5">
@@ -1431,7 +1295,8 @@ function CalculadoraRoiEducacional() {
       </div>
 
       <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
-        🎓 <b>ROI em 24 meses: {roiPct.toFixed(0)}%.</b>{' '}
+        <Selo tipo="dica" />
+        <b>ROI em 24 meses: {roiPct.toFixed(0)}%.</b>{' '}
         {paybackMeses <= 12
           ? 'Excelente retorno: em menos de 1 ano o curso já devolveu cada centavo investido.'
           : 'Retorno de médio prazo: valide se a vaga/mercado realmente paga esse aumento antes de fechar.'}
@@ -1457,15 +1322,7 @@ function BalancoDoEstagio() {
           <span>Bolsa-auxílio mensal</span>
           <span className="font-bold text-verde-texto">+{money(bolsa * 100)}</span>
         </span>
-        <input
-          type="range"
-          min={500}
-          max={3000}
-          step={50}
-          value={bolsa}
-          onChange={(e) => setBolsa(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={500} max={3000} step={50} value={bolsa} onChange={(e) => setBolsa(+e.target.value)} />
       </label>
 
       <label className="flex flex-col gap-1">
@@ -1473,14 +1330,12 @@ function BalancoDoEstagio() {
           <span>Mensalidade do curso</span>
           <span className="font-bold text-vermelho-texto">−{money(mensalidade * 100)}</span>
         </span>
-        <input
-          type="range"
+        <TostaoSlider
           min={0}
           max={1500}
           step={50}
           value={mensalidade}
           onChange={(e) => setMensalidade(+e.target.value)}
-          className="accent-laranja"
         />
       </label>
 
@@ -1489,15 +1344,7 @@ function BalancoDoEstagio() {
           <span>Transporte</span>
           <span className="font-bold text-vermelho-texto">−{money(transporte * 100)}</span>
         </span>
-        <input
-          type="range"
-          min={0}
-          max={500}
-          step={20}
-          value={transporte}
-          onChange={(e) => setTransporte(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={0} max={500} step={20} value={transporte} onChange={(e) => setTransporte(+e.target.value)} />
       </label>
 
       <label className="flex flex-col gap-1">
@@ -1505,14 +1352,12 @@ function BalancoDoEstagio() {
           <span>Alimentação fora</span>
           <span className="font-bold text-vermelho-texto">−{money(alimentacao * 100)}</span>
         </span>
-        <input
-          type="range"
+        <TostaoSlider
           min={0}
           max={800}
           step={20}
           value={alimentacao}
           onChange={(e) => setAlimentacao(+e.target.value)}
-          className="accent-laranja"
         />
       </label>
 
@@ -1524,13 +1369,15 @@ function BalancoDoEstagio() {
       <p className="text-xs leading-relaxed text-tinta-suave">
         {positivo ? (
           <>
-            ✅ <b>Saldo positivo:</b> além da experiência no currículo, sobram <b>{money(liquidoCents)}</b> limpos por
-            mês ({money(liquidoCents * 12)}/ano).
+            <Selo tipo="ok" />
+            <b>Saldo positivo:</b> além da experiência no currículo, sobram <b>{money(liquidoCents)}</b> limpos por mês
+            ({money(liquidoCents * 12)}/ano).
           </>
         ) : (
           <>
-            ⚠️ <b>Você está pagando para estagiar:</b> faltam {money(Math.abs(liquidoCents))}/mês. Só vale se houver
-            chance real de efetivação rápida ou auxílio-transporte/refeição.
+            <Selo tipo="alerta" />
+            <b>Você está pagando para estagiar:</b> faltam {money(Math.abs(liquidoCents))}/mês. Só vale se houver chance
+            real de efetivação rápida ou auxílio-transporte/refeição.
           </>
         )}
       </p>
@@ -1558,15 +1405,7 @@ function CalculadoraHoraDeFreela() {
             <span>Horas estimadas</span>
             <span className="font-bold">{horas}h</span>
           </span>
-          <input
-            type="range"
-            min={2}
-            max={60}
-            step={1}
-            value={horas}
-            onChange={(e) => setHoras(+e.target.value)}
-            className="accent-laranja"
-          />
+          <TostaoSlider min={2} max={60} step={1} value={horas} onChange={(e) => setHoras(+e.target.value)} />
         </label>
 
         <label className="flex flex-col gap-1">
@@ -1574,15 +1413,7 @@ function CalculadoraHoraDeFreela() {
             <span>Sua hora desejada</span>
             <span className="font-bold">{money(valorHora * 100)}</span>
           </span>
-          <input
-            type="range"
-            min={20}
-            max={200}
-            step={5}
-            value={valorHora}
-            onChange={(e) => setValorHora(+e.target.value)}
-            className="accent-laranja"
-          />
+          <TostaoSlider min={20} max={200} step={5} value={valorHora} onChange={(e) => setValorHora(+e.target.value)} />
         </label>
       </div>
 
@@ -1592,14 +1423,12 @@ function CalculadoraHoraDeFreela() {
             <span>Custos (net/MEI/app)</span>
             <span className="font-bold">{money(custosCents)}</span>
           </span>
-          <input
-            type="range"
+          <TostaoSlider
             min={0}
             max={800}
             step={20}
             value={custosDiretos}
             onChange={(e) => setCustosDiretos(+e.target.value)}
-            className="accent-laranja"
           />
         </label>
 
@@ -1608,14 +1437,12 @@ function CalculadoraHoraDeFreela() {
             <span>Margem de revisão</span>
             <span className="font-bold">+{margemRevisao}%</span>
           </span>
-          <input
-            type="range"
+          <TostaoSlider
             min={0}
             max={40}
             step={5}
             value={margemRevisao}
             onChange={(e) => setMargemRevisao(+e.target.value)}
-            className="accent-laranja"
           />
         </label>
       </div>
@@ -1626,8 +1453,9 @@ function CalculadoraHoraDeFreela() {
       </div>
 
       <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
-        🧮 <b>Sem pagar para trabalhar:</b> {money(maoDeObraCents)} de horas + {money(margemCents)} de margem de
-        alteração + {money(custosCents)} de custos diretos.
+        <Selo tipo="dados" />
+        <b>Sem pagar para trabalhar:</b> {money(maoDeObraCents)} de horas + {money(margemCents)} de margem de alteração
+        + {money(custosCents)} de custos diretos.
       </p>
     </div>
   );
@@ -1652,14 +1480,12 @@ function AlocacaoRendaExtra() {
           <span>Valor do bico / freela</span>
           <span className="font-display font-extrabold">{money(totalCents)}</span>
         </span>
-        <input
-          type="range"
+        <TostaoSlider
           min={100}
           max={3000}
           step={50}
           value={valorExtra}
           onChange={(e) => setValorExtra(+e.target.value)}
-          className="accent-laranja"
         />
       </label>
 
@@ -1671,8 +1497,7 @@ function AlocacaoRendaExtra() {
               {pctPendencias}% ({money(pendenciasCents)})
             </span>
           </span>
-          <input
-            type="range"
+          <TostaoSlider
             min={0}
             max={100}
             step={5}
@@ -1682,7 +1507,7 @@ function AlocacaoRendaExtra() {
               setPctPendencias(v);
               if (v + pctReserva > 100) setPctReserva(100 - v);
             }}
-            className="accent-amarelo"
+            tone="amarelo"
           />
         </label>
 
@@ -1693,8 +1518,7 @@ function AlocacaoRendaExtra() {
               {pctReserva}% ({money(reservaCents)})
             </span>
           </span>
-          <input
-            type="range"
+          <TostaoSlider
             min={0}
             max={100}
             step={5}
@@ -1704,7 +1528,7 @@ function AlocacaoRendaExtra() {
               setPctReserva(v);
               if (v + pctPendencias > 100) setPctPendencias(100 - v);
             }}
-            className="accent-menta"
+            tone="menta"
           />
         </label>
       </div>
@@ -1731,8 +1555,9 @@ function AlocacaoRendaExtra() {
       </div>
 
       <p className="text-xs leading-relaxed text-tinta-suave">
-        ✨ <b>Regra do esforço recompensado:</b> separe uma fatia planejada para o lazer ({money(lazerCents)}) sem culpa
-        — assim você mantém o gás para os próximos extras sem torrar tudo.
+        <Selo tipo="brilho" />
+        <b>Regra do esforço recompensado:</b> separe uma fatia planejada para o lazer ({money(lazerCents)}) sem culpa —
+        assim você mantém o gás para os próximos extras sem torrar tudo.
       </p>
     </div>
   );

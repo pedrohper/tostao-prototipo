@@ -137,7 +137,9 @@
 
 ## T4.5 — Chat IA com Streaming & Cards Ricos + Lições com Dados Reais + Landing Page Comercial
 
-- [ ] Concluída
+- [x] Concluída
+
+> Entrega registrada em `AGENT_SYNC.md` (2026-11-21, branch `feat/fase4-t45`). O streaming foi provado de ponta a ponta contra um servidor SSE que imita a DeepSeek; **a chamada real à DeepSeek com `stream:true` ainda não foi testada** (precisa da chave). O card de confirmação mostra Valor, Descrição, Categoria e Data, mas é **só leitura** (editar mudaria o que a pessoa aprova no `PendingAction`). Personalização das lições: M1-L1, M1-L2, M1-L3 e M4-L5.
 
 ### Problema atual
 

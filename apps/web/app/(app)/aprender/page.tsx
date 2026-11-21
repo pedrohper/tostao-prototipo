@@ -162,6 +162,19 @@ export default async function AprenderPage({ searchParams }: { searchParams: Pro
             <span className="text-[15px] leading-[19px] font-bold">{th.investirTitle}</span>
             <span className="text-xs text-tinta-suave">{th.investirSub}</span>
           </Link>
+          <Link
+            href="/aprender/simuladores"
+            className="flex items-center gap-3 rounded-[18px] border border-linha bg-cartao p-3 text-tinta no-underline transition-colors hover:bg-papel-2 min-[360px]:col-span-2 lg:p-4"
+          >
+            <Mascot pose="pensando" size={48} alt="" />
+            <span className="flex min-w-0 grow flex-col gap-0.5">
+              <span className="text-[15px] leading-[19px] font-bold">{t.growth.learn.simulatorsEntryTitle}</span>
+              <span className="text-xs text-tinta-suave">{t.growth.learn.simulatorsEntrySub}</span>
+            </span>
+            <span aria-hidden="true" className="text-tinta-suave">
+              →
+            </span>
+          </Link>
         </div>
       </section>
 

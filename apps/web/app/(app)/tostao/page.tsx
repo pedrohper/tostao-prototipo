@@ -149,32 +149,53 @@ export default async function TostaoPage({ searchParams }: { searchParams?: Prom
     </>
   );
 
+  // Só a conversa liberada ocupa a tela toda (cabeçalho + chat numa caixa de altura única); o resto rola normal.
+  const chatMode = activeTab === 'conversa' && Boolean(me.aiConsentAt);
+
+  const headerEl = (
+    <header className="flex items-center justify-between gap-3">
+      <Link href="/tostao" aria-label={t.auto.hubTitle} className="flex items-center gap-2.5 text-tinta no-underline">
+        <Mascot pose="avatar" size={34} alt="" className="rounded-full" still />
+        <span className="font-display text-[22px] leading-none font-extrabold text-tinta lg:text-[24px]">
+          {t.auto.hubTitle}
+        </span>
+      </Link>
+      <Link
+        href={activeTab === 'automatico' ? '/tostao' : '/tostao?aba=automatico'}
+        aria-current={activeTab === 'automatico' ? 'page' : undefined}
+        className={`inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold no-underline transition ${
+          activeTab === 'automatico'
+            ? 'bg-tinta text-papel'
+            : 'border border-linha bg-cartao text-tinta hover:bg-papel-2'
+        }`}
+      >
+        <span>{t.auto.tabAuto}</span>
+        {pendingCount > 0 && (
+          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-laranja px-1.5 text-[11px] font-bold text-tinta-fixa tabular-nums">
+            {pendingCount}
+          </span>
+        )}
+      </Link>
+    </header>
+  );
+
   return (
     <DesktopSplitShell rightWidth={340} right={rightRail}>
-      <header className="flex items-center justify-between gap-3">
-        <Link href="/tostao" aria-label={t.auto.hubTitle} className="flex items-center gap-2.5 text-tinta no-underline">
-          <Mascot pose="avatar" size={34} alt="" className="rounded-full" still />
-          <span className="font-display text-[22px] leading-none font-extrabold text-tinta lg:text-[24px]">
-            {t.auto.hubTitle}
-          </span>
-        </Link>
-        <Link
-          href={activeTab === 'automatico' ? '/tostao' : '/tostao?aba=automatico'}
-          aria-current={activeTab === 'automatico' ? 'page' : undefined}
-          className={`inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold no-underline transition ${
-            activeTab === 'automatico'
-              ? 'bg-tinta text-papel'
-              : 'border border-linha bg-cartao text-tinta hover:bg-papel-2'
-          }`}
-        >
-          <span>{t.auto.tabAuto}</span>
-          {pendingCount > 0 && (
-            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-laranja px-1.5 text-[11px] font-bold text-tinta-fixa tabular-nums">
-              {pendingCount}
-            </span>
-          )}
-        </Link>
-      </header>
+      {chatMode ? (
+        <div className="-mb-10 flex h-[calc(100dvh-8.5rem)] min-h-[420px] min-w-0 flex-col gap-6 md:mb-0 md:h-[calc(100dvh-7rem)] lg:h-[calc(100dvh-5.75rem)] lg:gap-7">
+          {headerEl}
+          <ChatClient
+            initial={messages}
+            firstName={me.name.split(' ')[0] ?? me.name}
+            subtitle={synced}
+            askIncome={!plan}
+            initialQuery={sp.q?.trim() || undefined}
+            locale={locale}
+          />
+        </div>
+      ) : (
+        headerEl
+      )}
 
       {activeTab === 'automatico' ? (
         <div className="flex flex-col gap-5">
@@ -210,16 +231,7 @@ export default async function TostaoPage({ searchParams }: { searchParams?: Prom
         <div className="flex flex-col gap-3">
           <AiConsentCard />
         </div>
-      ) : (
-        <ChatClient
-          initial={messages}
-          firstName={me.name.split(' ')[0] ?? me.name}
-          subtitle={synced}
-          askIncome={!plan}
-          initialQuery={sp.q?.trim() || undefined}
-          locale={locale}
-        />
-      )}
+      ) : null}
     </DesktopSplitShell>
   );
 }

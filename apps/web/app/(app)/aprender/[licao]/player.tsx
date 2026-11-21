@@ -6,11 +6,15 @@ import { useState } from 'react';
 import type { MissionsResponse } from '@tostao/contracts';
 import { getDictionary, type Locale } from '@/lib/i18n';
 import type { Lesson } from '@/lib/lessons';
+import { dilemmaLead, dilemmaOptions } from '@/lib/lesson-dilemma';
+import { canGoBack, previousStep } from '@/lib/lesson-steps';
+import { personalizeHook, type LessonUserContext } from '@/lib/lesson-context';
 import { playSound } from '@/lib/sons';
 import { getStoryPageMeta } from '@/lib/story-cast';
 import { XP_PER_LESSON } from '@/lib/xp';
 import { markLessonDone } from '../actions';
 import { Mascot, type MascotPose } from '@/components/mascote';
+import { Selo } from '@/components/selo';
 import { Button } from '@/components/ui';
 import { Confetti } from '@/components/confete';
 import { SIMULATORS } from './simulators';
@@ -25,6 +29,8 @@ type Props = {
   locale: Locale;
   initialMissions?: MissionsResponse | null;
   today: string;
+  /** Números reais da pessoa (null = lição didática, como sempre foi). */
+  userContext?: LessonUserContext | null;
 };
 
 const STEP_META: { pose: MascotPose; bg: string }[] = [
@@ -75,10 +81,12 @@ export function LessonPlayer({
   locale,
   initialMissions = null,
   today,
+  userContext = null,
 }: Props) {
   const router = useRouter();
   const dict = getDictionary(locale);
   const t = dict.pages.learnExtra;
+  const tl = dict.growth.learn;
   const [step, setStep] = useState(0);
   const [vote, setVote] = useState<'A' | 'B' | null>(null);
   const [missions, setMissions] = useState<MissionsResponse | null>(initialMissions);
@@ -91,6 +99,9 @@ export function LessonPlayer({
   const isCompletion = step === 4;
   const isChallenge = step === 5;
   const isEndFlow = isCompletion || isChallenge;
+  const hook = personalizeHook(lesson.id, userContext, lesson.hook);
+  const dilemma = dilemmaOptions(lesson.dilemma);
+  const dilemmaIntro = dilemmaLead(lesson.dilemma.question);
   const cleanCommitment = lesson.commitment.replace(/\s*---\s*$/, '').trim();
   const challengeRoute = CHALLENGE_ROUTES[lesson.id];
 
@@ -170,7 +181,13 @@ export function LessonPlayer({
                 </div>
               )}
               <p className="rounded-[20px] bg-cartao p-4 font-display text-xl leading-snug font-bold">
-                “{lesson.hook}”
+                {hook.personalized && (
+                  <span className="mb-2 flex w-fit items-center gap-1 rounded-full bg-menta-clara px-2.5 py-0.5 font-sans text-[11px] font-bold tracking-wider text-verde-texto uppercase">
+                    <Selo tipo="dados" className="mr-0" />
+                    {tl.yourStatement}
+                  </span>
+                )}
+                “{hook.text}”
               </p>
             </div>
           )}
@@ -188,7 +205,7 @@ export function LessonPlayer({
             <div className="flex flex-col gap-3 rounded-[20px] bg-cartao p-4">
               <span className="font-display text-lg font-extrabold">{lesson.simulator.name}</span>
               {Sim ? (
-                <Sim locale={locale} />
+                <Sim locale={locale} userContext={userContext} />
               ) : (
                 <>
                   <p className="text-[15px]">
@@ -204,12 +221,12 @@ export function LessonPlayer({
           )}
           {step === 3 && (
             <div className="flex flex-col gap-3">
-              <p className="rounded-[20px] bg-cartao p-4 font-semibold">{lesson.dilemma.question}</p>
+              <p className="rounded-[20px] bg-cartao p-4 font-semibold">{dilemmaIntro ?? tl.dilemmaAsk}</p>
               <div className="flex flex-col gap-2.5">
                 {(
                   [
-                    ['A', lesson.dilemma.optionA || t.optionLabel('A')],
-                    ['B', lesson.dilemma.optionB || t.optionLabel('B')],
+                    ['A', dilemma.a || t.optionLabel('A')],
+                    ['B', dilemma.b || t.optionLabel('B')],
                   ] as const
                 ).map(([side, text]) => (
                   <button
@@ -368,9 +385,22 @@ export function LessonPlayer({
             )}
           </div>
         ) : (
-          <Button variant="dark" onClick={advance} disabled={step === 3 && !vote}>
-            {step === 3 && !vote ? t.chooseSide : t.continueCta}
-          </Button>
+          <div className="flex flex-col gap-1.5">
+            <Button variant="dark" onClick={advance} disabled={step === 3 && !vote}>
+              {step === 3 && !vote ? t.chooseSide : t.continueCta}
+            </Button>
+            {canGoBack(step) && (
+              <button
+                type="button"
+                onClick={() => setStep(previousStep(step))}
+                aria-label={tl.backAria}
+                className="flex h-10 items-center justify-center gap-1.5 rounded-full text-sm font-semibold text-tinta-suave transition-colors hover:text-tinta"
+              >
+                <span aria-hidden="true">←</span>
+                {tl.back}
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>

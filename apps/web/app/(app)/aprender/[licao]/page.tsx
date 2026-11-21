@@ -7,9 +7,15 @@ import { getBookPageAssets, getSlideAsset } from '@/lib/art-assets';
 import { getStoryPageMeta } from '@/lib/story-cast';
 import { LessonPlayer } from './player';
 import { getMissions } from '@/lib/api-queries';
+import { loadLessonContext } from '@/lib/lesson-context-server';
 
 export default async function LicaoPage({ params }: { params: Promise<{ licao: string }> }) {
-  const [{ licao }, { locale }, missions] = await Promise.all([params, getI18n(), getMissions().catch(() => null)]);
+  const { licao } = await params;
+  const [{ locale }, missions, userContext] = await Promise.all([
+    getI18n(),
+    getMissions().catch(() => null),
+    loadLessonContext(licao),
+  ]);
   const found = findLesson(licao);
   if (!found) notFound();
   const all = modules.flatMap((m) => m.lessons);
@@ -27,6 +33,7 @@ export default async function LicaoPage({ params }: { params: Promise<{ licao: s
       locale={locale}
       initialMissions={missions}
       today={todayIso()}
+      userContext={userContext}
     />
   );
 }
