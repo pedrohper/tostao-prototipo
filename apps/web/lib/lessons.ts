@@ -15,7 +15,7 @@ export function findLesson(id: string) {
   return null;
 }
 
-// Cor de cada módulo na trilha (igual ao protótipo do canvas)
+// Cor de cada módulo na trilha (igual ao desenho original do canvas)
 export const MODULE_COLORS = [
   '#FFC233',
   '#DCEBFF',

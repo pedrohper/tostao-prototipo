@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { deletePushSubscription, savePushSubscription } from '@/lib/push-actions';
+import { useToast } from '@/components/toast';
 import { getDictionary, type Locale } from '@/lib/i18n';
 
 const urlBase64ToUint8Array = (b64: string) => {
@@ -24,6 +25,7 @@ export function PushNotificationCard({
   const [status, setStatus] = useState<PushStatus>('loading');
   const [busy, setBusy] = useState(false);
   const t = getDictionary(locale);
+  const toast = useToast();
 
   useEffect(() => {
     (async () => {
@@ -57,8 +59,10 @@ export function PushNotificationCard({
         }));
       const res = await savePushSubscription(subscription.toJSON());
       setStatus(res.ok ? 'enabled' : 'disabled');
+      if (!res.ok) toast.error(t.system.actionFailed);
     } catch {
       setStatus('disabled');
+      toast.error(t.system.actionFailed);
     } finally {
       setBusy(false);
     }
@@ -74,6 +78,8 @@ export function PushNotificationCard({
         await subscription.unsubscribe();
       }
       setStatus('disabled');
+    } catch {
+      toast.error(t.system.actionFailed);
     } finally {
       setBusy(false);
     }
@@ -81,7 +87,7 @@ export function PushNotificationCard({
 
   return (
     <section
-      id="avisos"
+      id="notificacoes-push"
       className={
         embedded
           ? 'flex scroll-mt-4 flex-col gap-1.5 py-3.5'

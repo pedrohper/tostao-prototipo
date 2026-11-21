@@ -30,7 +30,7 @@ describe('isTrustedOrigin (anti-CSRF)', () => {
     expect(isTrustedOrigin(h({ origin: 'null', host: 'app.exemplo.test' }))).toBe(false);
     expect(isTrustedOrigin(h({ origin: 'lixo', host: 'app.exemplo.test' }))).toBe(false);
   });
-  it('atrás do proxy do Tailscale (Host interno): vale a APP_PUBLIC_URL', () => {
+  it('atrás de um proxy reverso (Host interno): vale a APP_PUBLIC_URL', () => {
     const headers = h({ origin: SITE, host: 'localhost:3000' });
     expect(isTrustedOrigin(headers)).toBe(false);
     expect(isTrustedOrigin(headers, SITE)).toBe(true);

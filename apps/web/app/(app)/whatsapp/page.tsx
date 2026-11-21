@@ -1,5 +1,6 @@
 import { api } from '@/lib/api';
 import { resolveBackHref } from '@/lib/format';
+import { ConfirmSubmitButton } from '@/components/confirm-dialog';
 import { getI18n } from '@/lib/i18n-server';
 import { Mascot } from '@/components/mascote';
 import { BackLink, PageFrame } from '@/components/ui';
@@ -42,9 +43,15 @@ export default async function WhatsAppPage({ searchParams }: { searchParams: Pro
             </a>
           )}
           <form action={unlink}>
-            <button type="submit" className="w-full py-1 text-sm font-semibold text-vermelho-texto underline">
+            <ConfirmSubmitButton
+              title={t.system.unlinkWhatsappTitle}
+              description={t.system.unlinkWhatsappBody}
+              confirmLabel={tw.unlink}
+              cancelLabel={t.common.cancel}
+              className="w-full py-1 text-sm font-semibold text-vermelho-texto underline"
+            >
               {tw.unlink}
-            </button>
+            </ConfirmSubmitButton>
           </form>
         </div>
       ) : (

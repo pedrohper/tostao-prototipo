@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { erroDe } from '@/lib/erros';
 import { isSafePathSegment, safeInternalPath, safePathSegment } from '@/lib/safe-redirect';
 import { dayLabel, money } from '@/lib/format';
+import { ConfirmSubmitButton } from '@/components/confirm-dialog';
 import { getI18n } from '@/lib/i18n-server';
 import { Sheet } from '@/components/sheet';
 import { Mascot } from '@/components/mascote';
@@ -189,23 +190,29 @@ export default async function CategorizarPage({
                 {/\(\d+\/\d+\)$/.test(t.description) ? d.manualSeriesInstallment : d.manualSeriesMonthly}
               </span>
             )}
-            <button
-              type="submit"
+            <ConfirmSubmitButton
               name="serie"
               value="0"
+              title={dict.system.deleteEntryTitle}
+              description={dict.system.confirmIrreversible}
+              confirmLabel={d.deleteThis}
+              cancelLabel={dict.common.cancel}
               className="flex h-11 items-center text-[14px] font-semibold text-vermelho-texto hover:underline"
             >
               {d.deleteThis}
-            </button>
+            </ConfirmSubmitButton>
             {t.seriesId && (
-              <button
-                type="submit"
+              <ConfirmSubmitButton
                 name="serie"
                 value="1"
+                title={dict.system.deleteSeriesTitle}
+                description={`${dict.system.deleteSeriesBody} ${dict.system.confirmIrreversible}`}
+                confirmLabel={d.deleteSeries}
+                cancelLabel={dict.common.cancel}
                 className="flex h-11 items-center text-[14px] font-semibold text-vermelho-texto hover:underline"
               >
                 {d.deleteSeries}
-              </button>
+              </ConfirmSubmitButton>
             )}
           </form>
         </Section>

@@ -202,10 +202,14 @@ export interface Dictionary {
       friendsChallenge: string;
       inviteSomeone: string;
     };
-    prototypeBanner: string;
+    supportBanner: string;
     disconnectBanks: string;
     signOut: string;
     deleteAccount: string;
+    exportData: string;
+    exportDataBusy: string;
+    exportDataDone: string;
+    exportDataError: string;
     openFinanceActive: (count: number) => string;
     openFinanceError: string;
     openFinanceMissing: string;
@@ -287,6 +291,31 @@ export interface Dictionary {
     close: string;
     undo: string;
     other: string;
+  };
+  system: {
+    confirmIrreversible: string;
+    deleteEntryTitle: string;
+    deleteSeriesTitle: string;
+    deleteSeriesBody: string;
+    deleteGoalTitle: string;
+    deleteGoalBody: string;
+    unlinkWhatsappTitle: string;
+    unlinkWhatsappBody: string;
+    disconnectBankTitle: string;
+    deleteCategoryTitle: string;
+    removeFriendTitle: string;
+    errorTitle: string;
+    errorBody: string;
+    retry: string;
+    goHome: string;
+    notFoundTitle: string;
+    notFoundBody: string;
+    loadingAria: string;
+    offlineTitle: string;
+    offlineBody: string;
+    actionFailed: string;
+    stepDone: string;
+    stepPending: string;
   };
   authPages: {
     loginTitle: string;
@@ -726,9 +755,6 @@ export interface Dictionary {
       downBoxBody: string;
       howTitle: string;
       howSteps: readonly [string, string, string, string];
-      fakeTitle: string;
-      fakeBodyBefore: string;
-      fakeBodyAfter: string;
       connectedBanks: string;
       importedTag: string;
       activeTag: string;
@@ -1277,7 +1303,6 @@ export interface Dictionary {
       stepAria: (step: number, total: number) => string;
       modulePrefix: (n: number, title: string) => string;
       steps: readonly [string, string, string, string, string, string];
-      simulatorWip: string;
       optionLabel: (side: 'A' | 'B') => string;
       sideAFor: string;
       sideBFor: string;

@@ -115,7 +115,7 @@
 
 ## T2.4 — Error Boundaries, Skeletons, Bugs de UI e Acessibilidade (WCAG AA)
 
-- [ ] Concluída
+- [x] Concluída
 
 ### Problema atual
 
@@ -154,7 +154,9 @@
 
 ## T2.5 — Remoção de Vestígios de Protótipo, Textos Comerciais e Portabilidade LGPD
 
-- [ ] Concluída
+- [x] Concluída
+
+> **Decisões da entrega (2026-11-21):** o desafio semanal **não** ganhou a tabela `WeeklyChallenge`: a copy foi ajustada pra não prometer acompanhamento que ainda não existe (opção que o doc permite). Sem `NEXT_PUBLIC_SUPPORT_EMAIL` o app não inventa e-mail (mostra "canal de suporte" e esconde a faixa de ajuda). O Sentry aparece na Política como "assim que for ativado" (ainda não existe no código; Fase 3).
 
 ### Problema atual
 

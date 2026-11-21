@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import type { MissionsResponse } from '@tostao/contracts';
 import { Icon } from './icone';
 import { getDictionary, type Locale } from '@/lib/i18n';
+import { useDialogA11y } from '@/lib/use-dialog-a11y';
 
 function StreakDialog({
   open,
@@ -22,14 +23,12 @@ function StreakDialog({
 }) {
   const t = getDictionary(locale);
 
-  useEffect(() => {
-    if (!open) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [open, onClose]);
+  const panel = useRef<HTMLDivElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
+  const titleId = useId();
+  const weekId = useId();
+  // Focus trap, Esc, scroll-lock e retorno do foco; o foco inicial vai pro botão de fechar.
+  useDialogA11y({ open, containerRef: panel, onClose, initialFocusRef: closeButton });
 
   if (!open || typeof document === 'undefined') return null;
 
@@ -42,11 +41,13 @@ function StreakDialog({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-[2px]"
       onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label={t.nav.streakDays(streakDays)}
     >
       <div
+        ref={panel}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         className="flex max-h-[85dvh] w-full max-w-[440px] flex-col gap-5 overflow-y-auto rounded-[26px] border border-linha bg-cartao p-6 text-tinta shadow-2xl"
       >
@@ -56,13 +57,16 @@ function StreakDialog({
               <Icon src="ui/ofensiva" size={28} />
             </span>
             <div className="flex flex-col">
-              <h2 className="font-display text-2xl leading-7 font-extrabold">{t.nav.streakDays(streakDays)}</h2>
+              <h2 id={titleId} className="font-display text-2xl leading-7 font-extrabold">
+                {t.nav.streakDays(streakDays)}
+              </h2>
               <span className="text-[13px] text-tinta-suave">
                 {missions?.todayKept ? t.engagement.streakKeptHint : t.engagement.oneMissionHint}
               </span>
             </div>
           </div>
           <button
+            ref={closeButton}
             type="button"
             onClick={onClose}
             aria-label={t.common.close}
@@ -85,10 +89,10 @@ function StreakDialog({
 
         {missions && missions.week.length > 0 && (
           <div className="flex flex-col gap-2.5 rounded-2xl bg-papel-2/70 p-4">
-            <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">
+            <span id={weekId} className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">
               {locale === 'en' ? '7-day sequence' : locale === 'es' ? 'Secuencia de 7 días' : 'Sequência de 7 dias'}
             </span>
-            <div className="flex items-center justify-between gap-1.5" role="img">
+            <div className="flex items-center justify-between gap-1.5" role="group" aria-labelledby={weekId}>
               {missions.week.map((dayItem, idx) => {
                 const active = dayItem.done > 0;
                 return (
@@ -106,6 +110,7 @@ function StreakDialog({
                       {active ? <Icon src="ui/ofensiva" size={18} /> : <span className="text-[11px]">·</span>}
                     </span>
                     <span className={active ? 'font-bold text-tinta' : ''}>{t.weekdaysShort[idx]}</span>
+                    <span className="sr-only">{active ? t.system.stepDone : t.system.stepPending}</span>
                   </span>
                 );
               })}
@@ -134,10 +139,11 @@ function StreakDialog({
                     className="flex min-h-[52px] items-center gap-3 py-2.5 text-tinta no-underline transition-opacity hover:opacity-80"
                   >
                     {mission.done ? (
-                      <Icon src="jogo/dia-cumprido" size={24} alt="done" />
+                      <Icon src="jogo/dia-cumprido" size={24} alt={t.system.stepDone} />
                     ) : (
                       <span
-                        aria-label="todo"
+                        role="img"
+                        aria-label={t.system.stepPending}
                         className="h-6 w-6 shrink-0 rounded-full border-2 border-dashed border-tinta-suave"
                       />
                     )}

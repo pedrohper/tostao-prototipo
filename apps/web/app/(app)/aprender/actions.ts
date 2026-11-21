@@ -23,7 +23,7 @@ export async function markLessonDone(lessonId: string): Promise<MissionsResponse
   }
 }
 
-/** Uma vez só: sobe o que ficou salvo no navegador (versão antiga do protótipo) pro servidor. */
+/** Uma vez só: sobe o que ficou salvo no navegador (versão antiga do app) pro servidor. */
 export async function importLocalProgress(ids: string[]) {
   for (const id of ids.filter((x) => /^m\d+-l\d+$/.test(x)).slice(0, 100)) await markLessonDone(id);
 }

@@ -1,5 +1,7 @@
 'use client';
 import { useActionState, useState } from 'react';
+import { ConfirmAction } from '@/components/confirm-dialog';
+import { useToast } from '@/components/toast';
 import { getDictionary, type Locale } from '@/lib/i18n';
 import { addFriend, removeFriend, respondFriendRequest, type AmigoState } from './actions';
 
@@ -65,29 +67,41 @@ export function AdicionarAmigo({ locale = 'pt-BR' }: { locale?: Locale }) {
 }
 
 export function Remover({ id, name, locale = 'pt-BR' }: { id: string; name: string; locale?: Locale }) {
-  const labels = getDictionary(locale).pages.amigos.client;
+  const dict = getDictionary(locale);
+  const labels = dict.pages.amigos.client;
+  const toast = useToast();
   return (
-    <button
-      type="button"
-      aria-label={labels.removeAria(name)}
-      className="flex h-9 w-9 items-center justify-center text-tinta-suave"
-      onClick={() => {
-        if (confirm(labels.removeConfirm(name))) void removeFriend(id);
+    <ConfirmAction
+      title={dict.system.removeFriendTitle}
+      description={labels.removeConfirm(name)}
+      confirmLabel={dict.common.delete}
+      cancelLabel={dict.common.cancel}
+      onConfirm={() => {
+        removeFriend(id).catch(() => toast.error(dict.system.actionFailed));
       }}
-    >
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        aria-hidden="true"
-      >
-        <path d="M18 6L6 18M6 6l12 12" />
-      </svg>
-    </button>
+      trigger={(open) => (
+        <button
+          type="button"
+          aria-label={labels.removeAria(name)}
+          aria-haspopup="dialog"
+          className="flex h-11 w-11 items-center justify-center text-tinta-suave"
+          onClick={open}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      )}
+    />
   );
 }
 

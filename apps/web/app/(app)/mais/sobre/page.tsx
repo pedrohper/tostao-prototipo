@@ -1,5 +1,5 @@
+import { SupportBanner } from '@/components/support-banner';
 import Link from 'next/link';
-import { Mascot } from '@/components/mascote';
 import { BackLink, PageFrame } from '@/components/ui';
 import { resolveBackHref } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
@@ -38,10 +38,7 @@ export default async function MaisSobrePage({ searchParams }: { searchParams?: P
         </Link>
       </div>
 
-      <div className="flex items-center gap-3 rounded-2xl bg-amarelo-claro px-4 py-3">
-        <Mascot pose="caramelo-moeda" size={52} alt="Caramelo" />
-        <p className="min-w-0 text-[13px] leading-[19px] text-tinta">{t.profile.prototypeBanner}</p>
-      </div>
+      <SupportBanner text={t.profile.supportBanner} />
     </PageFrame>
   );
 }

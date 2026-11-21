@@ -50,6 +50,13 @@ export function TostaoFindingsBoard({
   const toast = useToast();
   const t = getDictionary(locale);
   const [state, setState] = useState<TostaoAutoResponse>(initial);
+  // O servidor manda um `initial` novo depois de router.refresh(): sem isto o quadro ficava preso ao primeiro valor.
+  // (Padrão "ajustar estado durante o render": sem efeito extra e sem piscar o valor velho.)
+  const [seenInitial, setSeenInitial] = useState(initial);
+  if (initial !== seenInitial) {
+    setSeenInitial(initial);
+    setState(initial);
+  }
   const [banner, setBanner] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -96,6 +103,8 @@ export function TostaoFindingsBoard({
           await applyTostaoInsightAction(insight.id).catch(() => null);
           if (insight.actionHref) router.push(insight.actionHref);
         }
+      } catch {
+        toast.error(t.system.actionFailed);
       } finally {
         setBusyId(null);
       }
@@ -112,6 +121,8 @@ export function TostaoFindingsBoard({
           insights: prev.insights.filter((i) => i.id !== insight.id),
           history: [updated, ...prev.history].slice(0, 15),
         }));
+      } catch {
+        toast.error(t.system.actionFailed);
       } finally {
         setBusyId(null);
       }
@@ -272,6 +283,7 @@ export function TostaoAutoConfigPanel({
 }) {
   const t = getDictionary(locale);
   const [config, setConfig] = useState<TostaoAutoConfigDTO>(initialConfig);
+  const toast = useToast();
   const [, startTransition] = useTransition();
 
   const toggle = (key: keyof UpdateTostaoAutoConfigBody) => {
@@ -283,6 +295,7 @@ export function TostaoAutoConfigPanel({
         setConfig(saved);
       } catch {
         setConfig((prev) => ({ ...prev, [key]: !nextVal }));
+        toast.error(t.system.actionFailed);
       }
     });
   };
@@ -299,7 +312,7 @@ export function TostaoAutoConfigPanel({
   ];
 
   return (
-    <div id="avisos" className="flex scroll-mt-6 flex-col gap-3 rounded-[20px] border border-linha bg-cartao p-4">
+    <div id="tostao-auto" className="flex scroll-mt-6 flex-col gap-3 rounded-[20px] border border-linha bg-cartao p-4">
       <div className="flex flex-col gap-0.5">
         <span className="font-display text-[17px] font-extrabold">{t.auto.watchesTitle}</span>
         <span className="text-xs leading-[18px] text-tinta-suave">{t.auto.watchesSubtitle}</span>

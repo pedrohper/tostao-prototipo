@@ -178,10 +178,11 @@ export function BookCarousel({ modules, initialBookId, currentBookId, done, page
           </div>
         )}
 
-        {/* Barra fina de progresso do livro */}
+        {/* Barra fina de progresso do livro. Container "group" (não "img": ele tem botões dentro); cada botão tem
+            área de toque de 44 px e a barra visual de 6 px fica dentro dele. */}
         <div
           className="flex w-full gap-1.5"
-          role="img"
+          role="group"
           aria-label={t.learn.moduleCounter(book.number, doneInBook, book.lessons.length)}
         >
           {book.lessons.map((l, idx) => {
@@ -193,10 +194,15 @@ export function BookCarousel({ modules, initialBookId, currentBookId, done, page
                 type="button"
                 onClick={() => scrollToSlide(idx)}
                 aria-label={th.pageOfTotal(l.number, book.lessons.length)}
-                className={`h-1.5 grow cursor-pointer rounded-full transition-colors ${
-                  isDone ? 'bg-tinta' : isCurr ? 'bg-laranja' : 'bg-papel-2'
-                }`}
-              />
+                className="flex h-11 min-w-0 grow cursor-pointer items-center"
+              >
+                <span
+                  aria-hidden="true"
+                  className={`block h-1.5 w-full rounded-full transition-colors ${
+                    isDone ? 'bg-tinta' : isCurr ? 'bg-laranja' : 'bg-papel-2'
+                  }`}
+                />
+              </button>
             );
           })}
         </div>

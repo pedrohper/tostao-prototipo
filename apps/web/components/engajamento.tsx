@@ -80,10 +80,11 @@ export function DailyMissions({
           <li key={mission.id} className="relative z-[1]">
             <Link href={mission.href} className="flex min-h-11 items-center gap-2.5 text-tinta no-underline">
               {mission.done ? (
-                <Icon src="jogo/dia-cumprido" size={24} alt="done" />
+                <Icon src="jogo/dia-cumprido" size={24} alt={t.system.stepDone} />
               ) : (
                 <span
-                  aria-label="todo"
+                  role="img"
+                  aria-label={t.system.stepPending}
                   className="h-6 w-6 shrink-0 rounded-full border-2 border-dashed border-tinta-suave"
                 />
               )}
@@ -96,7 +97,11 @@ export function DailyMissions({
         ))}
       </ul>
       {!compact && (
-        <div className="flex items-center justify-between gap-1 border-t border-linha pt-2.5" role="img">
+        <div
+          className="flex items-center justify-between gap-1 border-t border-linha pt-2.5"
+          role="group"
+          aria-label={t.engagement.daysCount(data.streakDays)}
+        >
           {data.week.map((dayItem, idx) => (
             <span
               key={dayItem.day}

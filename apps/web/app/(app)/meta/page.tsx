@@ -7,6 +7,7 @@ import { BackLink, PageFrame } from '@/components/ui';
 import { api } from '@/lib/api';
 import { money, monthName, resolveBackHref } from '@/lib/format';
 import type { Locale } from '@/lib/i18n';
+import { ConfirmSubmitButton } from '@/components/confirm-dialog';
 import { getI18n } from '@/lib/i18n-server';
 import { deleteGoal } from './actions';
 import { DepositForm, GoalForm } from './forms';
@@ -89,9 +90,15 @@ export default async function MetaPage({
           <form action={deleteGoal}>
             {active.id && <input type="hidden" name="id" value={active.id} />}
             {voltarParam && <input type="hidden" name="voltar" value={voltarParam} />}
-            <button type="submit" className="w-full py-2 text-sm font-semibold text-vermelho-texto underline">
+            <ConfirmSubmitButton
+              title={t.system.deleteGoalTitle}
+              description={`${t.system.deleteGoalBody} ${t.system.confirmIrreversible}`}
+              confirmLabel={p.deleteGoal}
+              cancelLabel={t.common.cancel}
+              className="w-full py-2 text-sm font-semibold text-vermelho-texto underline"
+            >
               {p.deleteGoal}
-            </button>
+            </ConfirmSubmitButton>
           </form>
         </div>
       </PageFrame>

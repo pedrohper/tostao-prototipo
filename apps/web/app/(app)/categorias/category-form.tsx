@@ -1,6 +1,7 @@
 'use client';
 import { useActionState, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
+import { ConfirmSubmitButton } from '@/components/confirm-dialog';
 import { Button, ErrorNote, Field } from '@/components/ui';
 import { getDictionary, type Locale } from '@/lib/i18n';
 import { createCategory, deleteCategory, type CategoryState } from './actions';
@@ -53,16 +54,29 @@ export function CategoryForm({ locale = 'pt-BR' }: { locale?: Locale }) {
   );
 }
 
-function DeleteSubmit({ deleteLabel }: { deleteLabel: string }) {
+function DeleteSubmit({
+  deleteLabel,
+  title,
+  description,
+  cancelLabel,
+}: {
+  deleteLabel: string;
+  title: string;
+  description: string;
+  cancelLabel: string;
+}) {
   const { pending } = useFormStatus();
   return (
-    <button
-      type="submit"
+    <ConfirmSubmitButton
       disabled={pending}
+      title={title}
+      description={description}
+      confirmLabel={deleteLabel}
+      cancelLabel={cancelLabel}
       className="text-[13px] font-semibold text-tinta-suave underline disabled:opacity-50"
     >
       {pending ? '…' : deleteLabel}
-    </button>
+    </ConfirmSubmitButton>
   );
 }
 
@@ -72,14 +86,14 @@ export function DeleteCategoryButton({ id, name, locale = 'pt-BR' }: { id: strin
   const labels = dict.pages.categorias.form;
   const delText = dict.common.delete;
   return (
-    <form
-      action={deleteCategory}
-      onSubmit={(e) => {
-        if (!confirm(labels.deleteConfirm(name))) e.preventDefault();
-      }}
-    >
+    <form action={deleteCategory}>
       <input type="hidden" name="id" value={id} />
-      <DeleteSubmit deleteLabel={delText} />
+      <DeleteSubmit
+        deleteLabel={delText}
+        title={dict.system.deleteCategoryTitle}
+        description={labels.deleteConfirm(name)}
+        cancelLabel={dict.common.cancel}
+      />
     </form>
   );
 }

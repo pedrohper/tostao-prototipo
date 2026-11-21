@@ -6,7 +6,7 @@ describe('erroDe', () => {
     expect(erroDe('nome_invalido')).toBe(ERROS.nome_invalido);
     expect(erroDe(['falha_salvar', 'x'])).toBe(ERROS.falha_salvar);
   });
-  it('ignora texto livre, protótipos e valores que não são código (sem alerta forjado)', () => {
+  it('ignora texto livre, chaves herdadas e valores que não são código (sem alerta forjado)', () => {
     expect(erroDe('Sua conta foi bloqueada, ligue 0800 123')).toBeUndefined();
     expect(erroDe('<script>alert(1)</script>')).toBeUndefined();
     expect(erroDe('toString')).toBeUndefined();

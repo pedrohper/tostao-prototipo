@@ -7,7 +7,7 @@ import { clientIpFromHeaders, forwardedForHeader } from './client-ip';
 export type ChatProxyDeps = {
   getToken: () => Promise<string | null>;
   apiUrl: string;
-  /** `APP_PUBLIC_URL` (produção atrás do proxy do Tailscale). */
+  /** `APP_PUBLIC_URL` (produção atrás de um proxy reverso). */
   appPublicUrl?: string;
   fetchImpl?: typeof fetch;
 };

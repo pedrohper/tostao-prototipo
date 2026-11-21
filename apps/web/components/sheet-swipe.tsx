@@ -1,6 +1,15 @@
 'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
+import { useDialogA11y } from '@/lib/use-dialog-a11y';
+
+const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
+function subscribeReducedMotion(onChange: () => void) {
+  const query = window.matchMedia(REDUCED_MOTION);
+  query.addEventListener('change', onChange);
+  return () => query.removeEventListener('change', onChange);
+}
+const getReducedMotion = () => window.matchMedia(REDUCED_MOTION).matches;
 
 /**
  * Folha que fecha arrastando pra baixo pela alça (no mobile) e vira dialog centralizado no desktop (md+).
@@ -24,7 +33,18 @@ export function SwipeSheet({
   const [panelHeight, setPanelHeight] = useState(600);
   const [solto, setSolto] = useState(true);
   const [closing, setClosing] = useState(false);
-  const reduz = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // matchMedia só existe no navegador: ler no render dava HTML diferente no servidor e no cliente (hydration mismatch).
+  // useSyncExternalStore usa `false` no servidor e na hidratação e só depois passa pro valor real (e acompanha mudanças).
+  const reduz = useSyncExternalStore(subscribeReducedMotion, getReducedMotion, () => false);
+  const [labelId, setLabelId] = useState<string | undefined>(undefined);
+  const headingId = useId();
+  // O conteúdo da folha vem de fora: o primeiro título dele nomeia o diálogo (aria-labelledby).
+  useEffect(() => {
+    const heading = panel.current?.querySelector<HTMLElement>('h1, h2, h3');
+    if (!heading) return;
+    if (!heading.id) heading.id = headingId;
+    setLabelId(heading.id);
+  }, [headingId]);
   const measureHeight = () => panel.current?.offsetHeight ?? 600;
 
   const fechar = useCallback(() => {
@@ -42,13 +62,8 @@ export function SwipeSheet({
     }
   }, [back, reduz, router]);
 
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') fechar();
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [fechar]);
+  // Focus trap, Esc, scroll-lock e retorno do foco (a folha é uma rota: ao fechar o foco volta pra quem abriu).
+  useDialogA11y({ open: true, containerRef: panel, onClose: fechar });
 
   const down = (e: React.PointerEvent) => {
     setPanelHeight(measureHeight());
@@ -94,7 +109,10 @@ export function SwipeSheet({
         ref={panel}
         role="dialog"
         aria-modal="true"
-        className="relative mx-auto flex w-full max-w-[520px] grow flex-col overflow-hidden rounded-t-[26px] bg-papel text-tinta md:m-auto md:max-h-[86dvh] md:w-full md:max-w-[540px] md:grow-0 md:rounded-[26px] md:border md:border-linha md:shadow-2xl"
+        aria-labelledby={labelId}
+        aria-label={labelId ? undefined : closeLabel}
+        tabIndex={-1}
+        className="relative outline-none mx-auto flex w-full max-w-[520px] grow flex-col overflow-hidden rounded-t-[26px] bg-papel text-tinta md:m-auto md:max-h-[86dvh] md:w-full md:max-w-[540px] md:grow-0 md:rounded-[26px] md:border md:border-linha md:shadow-2xl"
         style={{
           transform: closing ? 'scale(0.97)' : dy > 0 ? `translateY(${dy}px)` : undefined,
           opacity: closing ? 0 : 1,

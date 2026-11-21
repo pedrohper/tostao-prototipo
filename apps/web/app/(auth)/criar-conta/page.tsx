@@ -1,5 +1,6 @@
 import { Mascot } from '@/components/mascote';
 import { BackLink } from '@/components/ui';
+import { redirectIfAuthenticated } from '@/lib/auth-redirect';
 import { getI18n } from '@/lib/i18n-server';
 import { AuthForm } from '../auth-form';
 import { SocialAuthButtons } from '../social-buttons';
@@ -9,6 +10,7 @@ export default async function CriarContaPage({
 }: {
   searchParams: Promise<{ convite?: string; oauthError?: string }>;
 }) {
+  await redirectIfAuthenticated();
   const [{ convite, oauthError }, { t }] = await Promise.all([searchParams, getI18n()]);
   const p = t.authPages;
   return (

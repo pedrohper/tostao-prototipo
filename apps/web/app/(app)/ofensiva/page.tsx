@@ -62,7 +62,7 @@ export default async function OfensivaPage({ searchParams }: { searchParams?: Pr
       {missions && missions.week.length > 0 && (
         <section className="flex flex-col gap-3 rounded-[22px] border border-linha bg-cartao p-5">
           <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">{sequenceLabel}</span>
-          <div className="flex items-center justify-between gap-1.5" role="img">
+          <div className="flex items-center justify-between gap-1.5" role="group" aria-label={sequenceLabel}>
             {missions.week.map((dayItem, idx) => {
               const active = dayItem.done > 0;
               return (
@@ -107,10 +107,11 @@ export default async function OfensivaPage({ searchParams }: { searchParams?: Pr
                   className="flex min-h-[58px] items-center gap-3 py-3 text-tinta no-underline transition-opacity hover:opacity-80"
                 >
                   {mission.done ? (
-                    <Icon src="jogo/dia-cumprido" size={24} alt="done" />
+                    <Icon src="jogo/dia-cumprido" size={24} alt={t.system.stepDone} />
                   ) : (
                     <span
-                      aria-label="todo"
+                      role="img"
+                      aria-label={t.system.stepPending}
                       className="h-6 w-6 shrink-0 rounded-full border-2 border-dashed border-tinta-suave"
                     />
                   )}

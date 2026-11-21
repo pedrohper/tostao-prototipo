@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getI18n } from '@/lib/i18n-server';
-import { Contato, LegalPage, Resumo, disp } from '../legal';
+import { Contato, Controlador, LegalPage, Resumo, disp } from '../legal';
 
 export const metadata: Metadata = {
   title: 'Termos de uso · Tostão',
@@ -90,8 +90,8 @@ export default async function TermosPage() {
       <h2 className={disp}>6. Fase de testes</h2>
       <p>
         O Tostão está em beta. Funcionalidades podem mudar, aparecer ou sumir, e o app pode ficar fora do ar de vez em
-        quando (ele roda num servidor próprio). Fazemos backup diário, mas não prometemos que o serviço vai estar sempre
-        disponível ou livre de erros.
+        quando, por manutenção ou por falha de algum serviço de que ele depende. Fazemos backup, mas não prometemos que
+        o serviço vai estar sempre disponível ou livre de erros.
       </p>
 
       <h2 className={disp}>7. Preço</h2>
@@ -131,7 +131,7 @@ export default async function TermosPage() {
 
       <h2 className={disp}>13. Contato</h2>
       <p>
-        Dúvidas sobre estes Termos: <Contato />.
+        O Tostão é operado por <Controlador />. Dúvidas sobre estes Termos: <Contato />.
       </p>
     </LegalPage>
   );

@@ -1,6 +1,7 @@
 'use client';
 import { useActionState, useState, useTransition } from 'react';
 import Link from 'next/link';
+import { ConfirmSubmitButton } from '@/components/confirm-dialog';
 import { Icon } from '@/components/icone';
 import { Button, ErrorNote, Field } from '@/components/ui';
 import { getDictionary, type Locale } from '@/lib/i18n';
@@ -9,7 +10,7 @@ import { connectBank, connectItem, disconnectBank, getConnectToken, syncNow, typ
 /**
  * Caminho principal: o widget Pluggy Connect. A pessoa escolhe o banco (ou o MeuPluggy),
  * autoriza, e o onSuccess entrega o item.id, que a gente liga ao usuário na hora.
- * Campo manual fica de plano B (e é o único caminho com BANK_GATEWAY=fake).
+ * Campo manual fica de plano B (e é o único caminho quando o provedor de bancos não está configurado).
  */
 export type ConnectCard = { icon: string; bg: string; title: string; tag: string | null; desc: string };
 
@@ -170,24 +171,22 @@ export function SyncButton({ id, locale = 'pt-BR' }: { id: string; locale?: Loca
 }
 
 export function DisconnectButton({ id, name, locale = 'pt-BR' }: { id: string; name: string; locale?: Locale }) {
-  const labels = getDictionary(locale).pages.conectar.panel;
+  const dict = getDictionary(locale);
+  const labels = dict.pages.conectar.panel;
   const [state, action, pending] = useActionState<ConnectState, FormData>(disconnectBank, {});
   return (
-    <form
-      action={action}
-      onSubmit={(e) => {
-        if (!confirm(labels.disconnectConfirm(name))) e.preventDefault();
-      }}
-      className="flex items-center gap-3"
-    >
+    <form action={action} className="flex items-center gap-3">
       <input type="hidden" name="id" value={id} />
-      <button
-        type="submit"
+      <ConfirmSubmitButton
         disabled={pending}
+        title={dict.system.disconnectBankTitle}
+        description={labels.disconnectConfirm(name)}
+        confirmLabel={labels.disconnect}
+        cancelLabel={dict.common.cancel}
         className="text-sm font-semibold text-vermelho-texto underline disabled:opacity-50"
       >
         {pending ? labels.disconnecting : labels.disconnect}
-      </button>
+      </ConfirmSubmitButton>
       {state.error && <span className="text-sm text-vermelho-texto">{state.error}</span>}
     </form>
   );
