@@ -34,8 +34,12 @@ export type BankConnection = {
   userId: string;
   itemId: string;
   institution: string | null;
-  status: 'ACTIVE' | 'ERROR';
+  /** RECONNECT_REQUIRED: 3 falhas seguidas do sync; a pessoa precisa reconectar o banco. */
+  status: 'ACTIVE' | 'ERROR' | 'RECONNECT_REQUIRED';
   lastSyncedAt: Date | null;
+  /** Falhas seguidas do sync (zera no primeiro sucesso). */
+  errorCount: number;
+  lastErrorAt: Date | null;
   createdAt: Date;
 };
 
@@ -87,6 +91,8 @@ export type Transaction = {
   occurredAt: Date;
   categoryId: string | null;
   isInternalTransfer: boolean;
+  /** true = a pessoa marcou como transferência; false = a pessoa desmarcou; null/ausente = automático. */
+  internalTransferManual?: boolean | null;
   /** "Todo mês" ou "parcelado" anotado à mão: as ocorrências futuras têm o mesmo seriesId. */
   seriesId?: string | null;
   /** Acerto com alguém: sai do gasto e da renda e entra no saldo dessa pessoa. */
@@ -158,7 +164,7 @@ export type ChatMessage = {
 };
 
 // Jogos: Tribunal (enquete da semana) e Batalha (desafio conferido no extrato)
-export type TribunalVote = { userId: string; caseId: string; choice: number; votedAt: Date };
+export type TribunalVote = { userId: string; caseId: string; weekKey: string; choice: number; votedAt: Date };
 export type BattleKind = 'tigrinho' | 'urubu';
 export type BattleStatus = 'ativa' | 'vencida' | 'perdida';
 export type Battle = {
@@ -241,4 +247,13 @@ export type OutboxJob = {
   lastError: string | null;
   processedAt: Date | null;
   createdAt: Date;
+};
+
+export type FriendRequest = {
+  id: string;
+  requesterId: string;
+  addresseeId: string;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
+  createdAt: Date;
+  respondedAt: Date | null;
 };

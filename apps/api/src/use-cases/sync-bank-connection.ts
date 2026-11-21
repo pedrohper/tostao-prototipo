@@ -4,7 +4,9 @@ import type { Repositories } from '../repositories/types.js';
 import type { BankConnection } from '../domain/entities.js';
 import { ResourceNotFoundError, BankConnectionError } from '../domain/errors.js';
 import { categorizeByProviderCategory, categorizeByRules } from '../services/categorize.js';
-import { detectInternalTransfers } from '../services/internal-transfers.js';
+import { internalTransferUpdates, PAIR_WINDOW_DAYS } from '../services/internal-transfers.js';
+import { endOfCivilDay } from '../lib/tz.js';
+import { timezoneOf } from '../lib/user-tz.js';
 import { isGenericInstitution } from '../services/bank-names.js';
 import { nextDueDate } from './get-month-summary.js';
 import { reconcileManualEntries, SYNC_LOOKBACK_DAYS } from './reconcile-manual-entries.js';
@@ -15,7 +17,13 @@ const OVERLAP_DAYS = 3; // depois: volta 3 dias, porque o banco às vezes lança
 const FUTURE_DAYS = 400; // cartão: parcelas futuras vêm com data lá na frente
 const CARD_BACK_DAYS = 45;
 
-type Deps = Pick<Repositories, 'connections' | 'accounts' | 'transactions' | 'rules' | 'reconciledNotes' | 'tx'> & {
+/** Falhas seguidas do sync até pedir pra pessoa reconectar o banco. */
+export const MAX_SYNC_FAILURES = 3;
+
+type Deps = Pick<
+  Repositories,
+  'connections' | 'accounts' | 'transactions' | 'rules' | 'reconciledNotes' | 'tx' | 'users'
+> & {
   bank: BankGateway;
   now?: () => Date;
 };
@@ -50,6 +58,7 @@ export class SyncBankConnectionUseCase {
       ? new Date(connection.lastSyncedAt.getTime() - OVERLAP_DAYS * DAY)
       : new Date(now.getTime() - FIRST_SYNC_DAYS * DAY);
 
+    const tz = await timezoneOf(this.deps.users, connection.userId);
     try {
       const userRules = await rules.listForUser(connection.userId);
       const remoteAccounts = await bank.fetchAccounts(connection.itemId);
@@ -80,12 +89,14 @@ export class SyncBankConnectionUseCase {
           from,
           isCard ? new Date(now.getTime() + FUTURE_DAYS * DAY) : now,
         );
-        // Parcela que ainda vai cair não é gasto de hoje: fica fora do histórico.
-        const remoteTxs = fetched.filter((t) => t.occurredAt <= now);
+        // Parcela que ainda vai cair não é gasto de hoje: fica fora do histórico. Lançamento que o banco só deu o DIA
+        // (sem hora) vale até o fim do dia civil: antes das 12h de Brasília ele ficaria "no futuro" e sumia.
+        const endOfToday = endOfCivilDay(now, tz);
+        const remoteTxs = fetched.filter((t) => t.occurredAt <= (t.dateOnly ? endOfToday : now));
         const { institution: _bank, ...data } = remote;
         const account = await accounts.upsertByExternalId({
           ...data,
-          balanceInCents: isCard ? openBill(remote, fetched, now) : remote.balanceInCents,
+          balanceInCents: isCard ? openBill(remote, fetched, now, tz) : remote.balanceInCents,
           fingerprint,
           userId: connection.userId,
           connectionId: connection.id,
@@ -116,17 +127,18 @@ export class SyncBankConnectionUseCase {
         }
       }
 
-      const window = await transactions.findManyInRange(
-        connection.userId,
-        new Date(since.getTime() - DAY),
-        new Date(now.getTime() + DAY),
+      // Janela da detecção: cobre o cartão (CARD_BACK_DAYS) e mais 3 dias de cada lado (compensação de boleto/TED).
+      // Lado de par que ficou na borda não é desmarcado (o outro lado pode estar fora da janela).
+      const windowFrom = new Date(
+        Math.min(since.getTime(), now.getTime() - CARD_BACK_DAYS * DAY) - PAIR_WINDOW_DAYS * DAY,
       );
-      const internal = detectInternalTransfers(window);
-      for (const t of window) {
-        const shouldBe = internal.has(t.id);
-        if (t.isInternalTransfer !== shouldBe && t.accountId)
-          await transactions.save({ ...t, isInternalTransfer: shouldBe });
-      }
+      const windowTo = new Date(now.getTime() + PAIR_WINDOW_DAYS * DAY);
+      const window = await transactions.findManyInRange(connection.userId, windowFrom, windowTo);
+      for (const { transaction, isInternalTransfer } of internalTransferUpdates(window, {
+        from: windowFrom,
+        to: windowTo,
+      }))
+        await transactions.save({ ...transaction, isInternalTransfer });
 
       // Limpeza opcional: se falhar, a importação já feita vale e a conexão continua saudável.
       let reconciledCount = 0;
@@ -146,10 +158,25 @@ export class SyncBankConnectionUseCase {
       const institution = isGenericInstitution(connection.institution)
         ? (remoteAccounts.map((a) => a.institution).find(Boolean) ?? connection.institution)
         : connection.institution;
-      await connections.save({ ...connection, institution, status: 'ACTIVE', lastSyncedAt: now });
+      // Sucesso: zera a contagem de falhas.
+      await connections.save({
+        ...connection,
+        institution,
+        status: 'ACTIVE',
+        lastSyncedAt: now,
+        errorCount: 0,
+        lastErrorAt: null,
+      });
       return { importedCount, accounts: keptAccounts, reconciledCount };
     } catch (err) {
-      await connections.save({ ...connection, status: 'ERROR' });
+      // Falha: ERROR e uma nova tentativa a cada 24 h (jobs/daily-sync). Na 3ª falha seguida o banco precisa ser reconectado.
+      const errorCount = connection.errorCount + 1;
+      await connections.save({
+        ...connection,
+        status: errorCount >= MAX_SYNC_FAILURES ? 'RECONNECT_REQUIRED' : 'ERROR',
+        errorCount,
+        lastErrorAt: now,
+      });
       if (err instanceof BankConnectionError) throw err;
       throw new BankConnectionError();
     }
@@ -188,11 +215,15 @@ export function openBill(
   remote: Pick<BankAccountData, 'balanceInCents' | 'dueDate' | 'institution'>,
   fetched: BankTransactionData[],
   now: Date,
+  tz?: string,
 ) {
+  // Date-only vale até o fim do dia civil (ver o filtro do sync); com hora, vale até agora.
+  const endOfToday = endOfCivilDay(now, tz);
+  const notFuture = (t: BankTransactionData) => t.occurredAt <= (t.dateOnly ? endOfToday : now);
   // Só o Nubank deixa as compras da fatura aberta sem billId (conferido com o app dele).
   // Mercado Pago e Bradescard usam billId de outro jeito: lá o balance menos as parcelas futuras é que bate.
   if (remote.institution === 'Nubank' && fetched.some((t) => t.billId)) {
-    const open = fetched.filter((t) => !t.billId && t.occurredAt <= now && !PAYMENT.test(t.description));
+    const open = fetched.filter((t) => !t.billId && notFuture(t) && !PAYMENT.test(t.description));
     return Math.min(
       0,
       open.reduce((s, t) => s + t.amountInCents, 0),

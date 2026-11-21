@@ -21,7 +21,9 @@ export class CategorizeTransactionUseCase {
     if (!canUseCategory(await categories.findById(categoryId), userId)) throw new ResourceNotFoundError('Categoria');
 
     // "Não conta" tira do gasto/renda; sair dela devolve (o próximo sync reavalia fatura e afins).
-    const internal = (current: boolean) => (isNeutral(categoryId) ? true : isNeutral(tx.categoryId) ? false : current);
+    // Acerto com alguém (personId) NUNCA vira gasto ao sair de "Não conta": continua transferência.
+    const internal = (current: boolean) =>
+      isNeutral(categoryId) ? true : isNeutral(tx.categoryId) ? tx.personId != null : current;
     await transactions.save({ ...tx, categoryId, isInternalTransfer: internal(tx.isInternalTransfer) });
     let alsoUpdated = 0;
 

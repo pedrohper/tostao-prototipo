@@ -56,6 +56,8 @@ model User {
   friendCode              FriendCode?
   friendships             Friendship[]             @relation("FriendOf")
   friendOf                Friendship[]             @relation("FriendIs")
+  friendRequestsSent      FriendRequest[]          @relation("RequestsSent")
+  friendRequestsReceived  FriendRequest[]          @relation("RequestsReceived")
   pushSubscriptions       PushSubscription[]
   sentNotifications       SentNotification[]
   tostaoInsights          TostaoInsight[]
@@ -88,6 +90,9 @@ model BankConnection {
   institution  String?
   status       ConnectionStatus @default(ACTIVE)
   lastSyncedAt DateTime?        @map("last_synced_at") @db.Timestamptz(3)
+  // Falhas seguidas do sync (nova tentativa a cada 24 h; 3 falhas viram RECONNECT_REQUIRED).
+  errorCount   Int              @default(0) @map("error_count")
+  lastErrorAt  DateTime?        @map("last_error_at") @db.Timestamptz(3)
   createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -155,23 +160,26 @@ model CategoryRule {
 }
 
 model Transaction {
-  id                 String   @id @default(uuid())
-  userId             String   @map("user_id")
-  accountId          String?  @map("account_id") // null = anotado na mão
-  externalId         String?  @map("external_id") // id do Pluggy, pra não importar duas vezes
-  description        String
-  amountInCents      BigInt   @map("amount_in_cents")
-  currency           String   @default("BRL")
-  occurredAt         DateTime @map("occurred_at") @db.Timestamptz(3)
-  categoryId         String?  @map("category_id")
-  isInternalTransfer Boolean  @default(false) @map("is_internal_transfer")
+  id                     String   @id @default(uuid())
+  userId                 String   @map("user_id")
+  accountId              String?  @map("account_id") // null = anotado na mão
+  externalId             String?  @map("external_id") // id do Pluggy, pra não importar duas vezes
+  description            String
+  amountInCents          BigInt   @map("amount_in_cents")
+  currency               String   @default("BRL")
+  occurredAt             DateTime @map("occurred_at") @db.Timestamptz(3)
+  categoryId             String?  @map("category_id")
+  isInternalTransfer     Boolean  @default(false) @map("is_internal_transfer")
+  // true = a pessoa marcou como transferência; false = a pessoa desmarcou; null = automático (o sync e a importação decidem).
+  // Quem tem valor aqui nunca é reclassificado automaticamente.
+  internalTransferManual Boolean? @map("internal_transfer_manual")
   // Anotado com "todo mês" ou "parcelado": as próximas já ficam lançadas nos meses seguintes, com o mesmo seriesId.
-  seriesId           String?  @map("series_id")
+  seriesId               String?  @map("series_id")
   // Acerto com alguém (emprestei o cartão, emprestei/peguei grana, me pagou): não é gasto nem renda.
-  personId           String?  @map("person_id")
+  personId               String?  @map("person_id")
   // Anotação livre da pessoa ("pago pro João, devolve dia 10"). Pode existir mesmo em transação do banco.
-  note               String?
-  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  note                   String?
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   // SetNull: desconectar o banco apaga só os lançamentos do banco (DisconnectBankUseCase); os manuais ficam com accountId nulo.
@@ -405,12 +413,14 @@ model WhatsappLink {
 model TribunalVote {
   userId  String   @map("user_id")
   caseId  String   @map("case_id")
+  // Segunda-feira (AAAA-MM-DD, Brasília) da semana do voto: o mesmo caso volta em outra semana e vale de novo.
+  weekKey String   @map("week_key")
   choice  Int
   votedAt DateTime @default(now()) @map("voted_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@id([userId, caseId])
+  @@id([userId, caseId, weekKey])
   @@index([caseId])
   @@map("tribunal_votes")
 }
@@ -466,6 +476,23 @@ model Friendship {
 
   @@id([userId, friendId])
   @@map("friendships")
+}
+
+/// Pedido de amizade: só vira Friendship quando a outra pessoa aceita.
+model FriendRequest {
+  id          String              @id @default(uuid())
+  requesterId String              @map("requester_id")
+  addresseeId String              @map("addressee_id")
+  status      FriendRequestStatus @default(PENDING)
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  respondedAt DateTime?           @map("responded_at") @db.Timestamptz(3)
+
+  requester User @relation("RequestsSent", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee User @relation("RequestsReceived", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId, status])
+  @@map("friend_requests")
 }
 
 model PushSubscription {
@@ -562,6 +589,7 @@ enum OAuthProvider {
 enum ConnectionStatus {
   ACTIVE
   ERROR
+  RECONNECT_REQUIRED
 }
 
 enum AccountType {
@@ -612,4 +640,10 @@ enum OutboxStatus {
   PENDING
   DONE
   FAILED
+}
+
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
 }

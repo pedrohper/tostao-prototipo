@@ -51,12 +51,23 @@ describe('amigos', () => {
     const { code } = await eng.friends(b.id);
     await eng.track(b.id, 'licao');
     await eng.track(b.id, 'anotar');
-    const r = await eng.addFriend(a.id, code.toLowerCase());
+    // Usar o código MANDA UM PEDIDO: ninguém entra no ranking até a outra pessoa aceitar.
+    const pending = await eng.addFriend(a.id, code.toLowerCase());
+    expect(pending.ranking).toHaveLength(1);
+    expect(pending.requests.outgoing.map((r) => r.name)).toEqual(['Bia']);
+    const incoming = (await eng.friends(b.id)).requests.incoming;
+    expect(incoming.map((r) => r.name)).toEqual(['Ana']);
+    const r = await eng.respondRequest(b.id, incoming[0]!.id, true);
     expect(r.ranking.map((p) => [p.name, p.weekScore, p.me])).toEqual([
+      ['Bia', 2, true],
+      ['Ana', 0, false],
+    ]);
+    const forA = await eng.friends(a.id);
+    expect(forA.ranking.map((p) => [p.name, p.weekScore, p.me])).toEqual([
       ['Bia', 2, false],
       ['Ana', 0, true],
     ]);
-    expect((await eng.friends(b.id)).ranking).toHaveLength(2);
+    expect(forA.requests).toEqual({ incoming: [], outgoing: [] });
     await expect(eng.addFriend(a.id, (await eng.friends(a.id)).code)).rejects.toThrow('próprio');
     await expect(eng.addFriend(a.id, 'TOST-NADA0')).rejects.toThrow('Não achei');
     expect((await eng.removeFriend(a.id, b.id)).ranking).toHaveLength(1);

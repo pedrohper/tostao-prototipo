@@ -72,6 +72,7 @@ describe.skipIf(!url)('T1.4 no Postgres real', () => {
           'InsightStatus',
           'OAuthProvider',
           'OutboxStatus',
+          'FriendRequestStatus',
         ].sort(),
       );
     });
@@ -117,7 +118,7 @@ describe.skipIf(!url)('T1.4 no Postgres real', () => {
         /friendships_not_self|check constraint/i,
       );
       await rejects(
-        db.tribunalVote.create({ data: { userId: u.id, caseId: 'c', choice: -1 } }),
+        db.tribunalVote.create({ data: { userId: u.id, caseId: 'c', weekKey: '2026-11-16', choice: -1 } }),
         /tribunal_votes_choice_nonnegative|check constraint/i,
       );
       // e o caso válido passa

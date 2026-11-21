@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import type {
   FriendDTO,
+  FriendRequestDTO,
   FriendsResponse,
   MissionDTO,
   MissionsResponse,
@@ -8,15 +9,24 @@ import type {
   WeeklyResponse,
 } from '@tostao/contracts';
 import type { Repositories } from '../repositories/types.js';
-import { AppError } from '../domain/errors.js';
+import { AppError, ConflictError, ResourceNotFoundError } from '../domain/errors.js';
+import {
+  addCivilDays,
+  calendarDay,
+  civilDay,
+  DEFAULT_TIMEZONE,
+  diffCivilDays,
+  endOfCivilDay,
+  startOfCivilDay,
+} from '../lib/tz.js';
+import { timezoneOf } from '../lib/user-tz.js';
 import { ListSubscriptionsUseCase } from './list-subscriptions.js';
+import { nextDueDate } from './get-month-summary.js';
 
 const DAY = 24 * 60 * 60 * 1000;
-const BR = 3 * 60 * 60 * 1000;
-/** Dia em Brasília (UTC−3), como "2026-11-12". */
-export const brDay = (d: Date) => new Date(d.getTime() - BR).toISOString().slice(0, 10);
-const addDays = (day: string, n: number) =>
-  new Date(Date.parse(`${day}T12:00:00Z`) + n * DAY).toISOString().slice(0, 10);
+/** Dia civil no fuso (padrão Brasília), como "2026-11-12". */
+export const brDay = (d: Date, tz: string = DEFAULT_TIMEZONE) => civilDay(d, tz);
+const addDays = addCivilDays;
 /** Segunda-feira da semana do dia. */
 export const weekStart = (day: string) => {
   const dow = new Date(`${day}T12:00:00Z`).getUTCDay(); // 0 = domingo
@@ -27,8 +37,8 @@ export const weekStart = (day: string) => {
  * Ofensiva = dias seguidos com pelo menos uma missão, contando até hoje.
  * Se hoje ainda não teve, a de ontem continua valendo (só quebra amanhã).
  */
-export function streakFromDays(days: Set<string>, now: Date) {
-  const today = brDay(now);
+export function streakFromDays(days: Set<string>, now: Date, tz: string = DEFAULT_TIMEZONE) {
+  const today = brDay(now, tz);
   let cursor = days.has(today) ? today : addDays(today, -1);
   let streak = 0;
   while (days.has(cursor)) {
@@ -76,9 +86,22 @@ function byDay(rows: { day: string; kind: string }[]) {
   return map;
 }
 
-/** XP das missões: 5 por missão feita (lição e Tribunal já dão XP próprio). */
-export const missionXp = (rows: { kind: string }[]) =>
-  rows.filter((r) => r.kind !== 'licao' && r.kind !== 'tribunal').length * 5;
+/**
+ * XP das missões: 5 por missão do dia que foi feita (lição e Tribunal já dão XP próprio, ficam de fora).
+ * Conta MISSÕES que existem naquele dia, não linhas de atividade: um tipo inventado ou uma missão que não é do dia
+ * não rende XP (antes, cada linha extra valia 5 XP e dava pra "plantar" XP).
+ */
+export const missionXp = (rows: { day: string; kind: string }[]) => {
+  const kindsByDay = byDay(rows);
+  let xp = 0;
+  for (const [day, kinds] of kindsByDay) {
+    xp +=
+      missionsFor(day).filter(
+        (m) => !m.kinds.every((k) => k === 'licao' || k === 'tribunal') && m.kinds.some((k) => kinds.has(k)),
+      ).length * 5;
+  }
+  return xp;
+};
 
 export class EngagementUseCase {
   constructor(
@@ -86,20 +109,31 @@ export class EngagementUseCase {
     private readonly now: () => Date = () => new Date(),
   ) {}
 
-  track(userId: string, kind: string) {
-    return this.repos.engagement.markActivity(userId, brDay(this.now()), kind);
+  async track(userId: string, kind: string) {
+    const tz = await timezoneOf(this.repos.users, userId);
+    return this.repos.engagement.markActivity(userId, brDay(this.now(), tz), kind);
   }
 
   /** Ofensiva + placar da semana de uma pessoa (o que amigo pode ver: nada de dinheiro). */
   async score(userId: string) {
     const now = this.now();
-    const today = brDay(now);
-    const rows = await this.repos.engagement.listActivity(userId, addDays(today, -400));
+    const tz = await timezoneOf(this.repos.users, userId);
+    const today = brDay(now, tz);
+    const [rows, lessons] = await Promise.all([
+      this.repos.engagement.listActivity(userId, addDays(today, -400)),
+      this.repos.lessons.listByUser(userId),
+    ]);
     const days = byDay(rows);
     const monday = weekStart(today);
     let weekScore = 0;
     for (let d = monday; d <= today; d = addDays(d, 1)) weekScore += doneCount(d, days.get(d) ?? new Set());
-    return { streakDays: streakFromDays(new Set(days.keys()), now), weekScore, days, today, monday };
+    // Ofensiva = dias com qualquer missão OU lição concluída: a MESMA conta da tela de Aprender (ListLessonProgress).
+    const streakDays = streakFromDays(
+      new Set([...days.keys(), ...lessons.map((l) => brDay(l.completedAt, tz))]),
+      now,
+      tz,
+    );
+    return { streakDays, weekScore, days, today, monday, tz };
   }
 
   async missions(userId: string): Promise<MissionsResponse> {
@@ -134,7 +168,13 @@ export class EngagementUseCase {
   }
 
   async friends(userId: string): Promise<FriendsResponse> {
-    const [code, ids] = await Promise.all([this.friendCode(userId), this.repos.engagement.listFriendIds(userId)]);
+    const [code, ids, incoming, outgoing, tz] = await Promise.all([
+      this.friendCode(userId),
+      this.repos.engagement.listFriendIds(userId),
+      this.repos.engagement.listIncomingFriendRequests(userId),
+      this.repos.engagement.listOutgoingFriendRequests(userId),
+      timezoneOf(this.repos.users, userId),
+    ]);
     const people = await Promise.all(
       [userId, ...ids].map(async (id): Promise<FriendDTO | null> => {
         const u = await this.repos.users.findById(id);
@@ -152,20 +192,54 @@ export class EngagementUseCase {
     const ranking = people
       .filter((p): p is FriendDTO => p !== null)
       .sort((a, b) => b.weekScore - a.weekScore || b.streakDays - a.streakDays);
-    const sunday = addDays(weekStart(brDay(this.now())), 6);
+    const sunday = addDays(weekStart(brDay(this.now(), tz)), 6);
+    const toDto = async (id: string, requestId: string, createdAt: Date): Promise<FriendRequestDTO | null> => {
+      const u = await this.repos.users.findById(id);
+      return u
+        ? { id: requestId, name: u.name.trim().split(/\s+/)[0] ?? u.name, createdAt: createdAt.toISOString() }
+        : null;
+    };
+    const nonNull = (list: (FriendRequestDTO | null)[]) => list.filter((r): r is FriendRequestDTO => r !== null);
     return {
       code,
-      challenge: { title: 'Quem cumpre mais missões na semana', endsAt: `${sunday}T23:59:59-03:00` },
+      challenge: {
+        title: 'Quem cumpre mais missões na semana',
+        endsAt: endOfCivilDay(startOfCivilDay(sunday, tz), tz).toISOString(),
+      },
       ranking,
+      requests: {
+        incoming: nonNull(await Promise.all(incoming.map((r) => toDto(r.requesterId, r.id, r.createdAt)))),
+        outgoing: nonNull(await Promise.all(outgoing.map((r) => toDto(r.addresseeId, r.id, r.createdAt)))),
+      },
     };
   }
 
+  /**
+   * Usar o código de alguém MANDA UM PEDIDO (a outra pessoa precisa aceitar): ninguém entra no ranking nem
+   * vê a ofensiva de quem não aceitou. Se a outra pessoa já tinha pedido pra você, o pedido dela é aceito na hora.
+   */
   async addFriend(userId: string, rawCode: string) {
     const code = rawCode.trim().toUpperCase().replace(/\s+/g, '');
     const friendId = await this.repos.engagement.findUserByFriendCode(code);
     if (!friendId) throw new AppError('Não achei ninguém com esse código. Confere com seu amigo?', 404);
     if (friendId === userId) throw new AppError('Esse é o seu próprio código.', 400);
-    await this.repos.engagement.addFriend(userId, friendId);
+    if ((await this.repos.engagement.listFriendIds(userId)).includes(friendId)) return this.friends(userId);
+
+    const reverse = await this.repos.engagement.findFriendRequest(friendId, userId);
+    if (reverse && reverse.requesterId === friendId && reverse.status === 'PENDING') {
+      await this.repos.engagement.respondFriendRequest(reverse.id, userId, true, this.now());
+      return this.friends(userId);
+    }
+    const { request, created } = await this.repos.engagement.createFriendRequest(userId, friendId);
+    if (!created && request.status === 'PENDING')
+      throw new ConflictError('Você já mandou um pedido pra essa pessoa. Agora é esperar ela aceitar.');
+    return this.friends(userId);
+  }
+
+  /** Aceitar ou recusar um pedido que a pessoa RECEBEU. Pedido de outra pessoa, já respondido ou inexistente: 404. */
+  async respondRequest(userId: string, requestId: string, accept: boolean) {
+    const done = await this.repos.engagement.respondFriendRequest(requestId, userId, accept, this.now());
+    if (!done) throw new ResourceNotFoundError('Pedido de amizade');
     return this.friends(userId);
   }
 
@@ -178,18 +252,19 @@ export class EngagementUseCase {
   /** Faturas, contas fixas e assinaturas que vencem nos próximos `days` dias. */
   async reminders(userId: string, days = 7): Promise<{ reminders: ReminderDTO[] }> {
     const now = this.now();
-    const today = brDay(now);
+    const tz = await timezoneOf(this.repos.users, userId);
+    const today = brDay(now, tz);
     const [accounts, plan, subs] = await Promise.all([
       this.repos.accounts.listByUser(userId),
       this.repos.plans.get(userId),
       new ListSubscriptionsUseCase(this.repos, () => now).execute({ userId }),
     ]);
-    const diff = (iso: string) =>
-      Math.round((Date.parse(`${iso.slice(0, 10)}T12:00:00Z`) - Date.parse(`${today}T12:00:00Z`)) / DAY);
+    const diff = (iso: string) => diffCivilDays(today, iso.slice(0, 10));
     const out: ReminderDTO[] = [];
     for (const a of accounts) {
       if (a.type !== 'CREDIT' || a.hidden || !a.dueDate) continue;
-      const due = brDay(new Date(a.dueDate.getTime() + BR));
+      // O vencimento é uma data de calendário (o Pluggy manda a fatura anterior às vezes): rola pro próximo de verdade.
+      const due = calendarDay(nextDueDate(a.dueDate, now));
       const owed = Math.max(0, -a.balanceInCents);
       if (owed > 0)
         out.push({
@@ -221,7 +296,7 @@ export class EngagementUseCase {
     }
     for (const s of subs.subscriptions) {
       if (!s.active) continue;
-      const d = brDay(new Date(s.nextChargeAt));
+      const d = brDay(new Date(s.nextChargeAt), tz);
       out.push({
         key: `assinatura:${s.key}:${d}`,
         kind: 'assinatura',
@@ -242,10 +317,11 @@ export class EngagementUseCase {
   /** Últimos 7 dias contra os 7 anteriores (gasto de verdade: sem transferência entre contas e sem conta oculta). */
   async weekly(userId: string): Promise<WeeklyResponse> {
     const now = this.now();
-    const today = brDay(now);
+    const tz = await timezoneOf(this.repos.users, userId);
+    const today = brDay(now, tz);
     const from = addDays(today, -6);
     const prevFrom = addDays(today, -13);
-    const start = new Date(Date.parse(`${prevFrom}T03:00:00Z`));
+    const start = startOfCivilDay(prevFrom, tz);
     const [txs, accounts, categories, score] = await Promise.all([
       this.repos.transactions.findManyInRange(userId, start, new Date(now.getTime() + DAY)),
       this.repos.accounts.listByUser(userId),
@@ -259,7 +335,7 @@ export class EngagementUseCase {
     const byCat = new Map<string | null, number>();
     for (const t of txs) {
       if (t.amountInCents >= 0 || t.isInternalTransfer || (t.accountId && hidden.has(t.accountId))) continue;
-      const d = brDay(t.occurredAt);
+      const d = brDay(t.occurredAt, tz);
       if (d >= from && d <= today) {
         spent -= t.amountInCents;
         byCat.set(t.categoryId, (byCat.get(t.categoryId) ?? 0) - t.amountInCents);

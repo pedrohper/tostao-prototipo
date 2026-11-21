@@ -83,9 +83,15 @@ export type VeredictoCompra = {
   melhor: 'a-vista' | 'parcelado' | 'empate';
 };
 
+/** Rendimento líquido de IR de UM mês, no mês `m` (1, 2, 3...): a alíquota é a da tabela regressiva pra esse prazo. */
+const taxaLiquidaNoMes = (rendeAnual: number, m: number) =>
+  anualParaMensal(rendeAnual) * (1 - aliquotaIR(Math.round(m * 30.42)));
+
 /**
  * À vista ou parcelado? Compara pagar tudo hoje com deixar o dinheiro rendendo e tirar dele cada parcela.
- * O rendimento já sai líquido de IR (alíquota pelo prazo do parcelamento).
+ * O rendimento sai líquido de IR calculado POR MÊS DE RESGATE: cada parcela é paga com dinheiro que ficou aplicado
+ * aquele tempo, então o mês 1 paga 22,5% e o mês 12 paga 17,5% (e não a alíquota do prazo final em todos os meses).
+ * `parcelas` precisa ser um inteiro >= 1.
  */
 export function compararCompra({
   aVistaInCents,
@@ -93,11 +99,11 @@ export function compararCompra({
   parcelas,
   rendeAnual,
 }: CompraParcelada): VeredictoCompra {
+  if (!Number.isInteger(parcelas) || parcelas < 1) throw new RangeError('parcelas precisa ser um inteiro >= 1');
   const total = parcelaInCents * parcelas;
   const taxaMes = taxaImplicita(aVistaInCents, parcelaInCents, parcelas);
-  const rendeMes = anualParaMensal(rendeAnual) * (1 - aliquotaIR(Math.round(parcelas * 30.42)));
   let saldo = aVistaInCents;
-  for (let i = 0; i < parcelas; i++) saldo = saldo * (1 + rendeMes) - parcelaInCents;
+  for (let i = 1; i <= parcelas; i++) saldo = saldo * (1 + taxaLiquidaNoMes(rendeAnual, i)) - parcelaInCents;
   const saldoInCents = Math.round(saldo);
   const margem = Math.max(100, Math.round(aVistaInCents * 0.002)); // diferença menor que R$ 1 (ou 0,2%) é empate
   return {
@@ -110,7 +116,11 @@ export function compararCompra({
   };
 }
 
-/** Quantos meses guardando `porMesInCents` (rendendo `rendeAnual`) até juntar `alvoInCents`. null se passa de 20 anos. */
+/**
+ * Quantos meses guardando `porMesInCents` (rendendo `rendeAnual`) até juntar `alvoInCents`. null se passa de 20 anos.
+ * Funciona também com `porMesInCents = 0` quando já existe saldo (`jaTemInCents > 0`): ele só cresce por juros compostos.
+ * O IR vem do prazo REAL: pra cada prazo candidato usa a alíquota daquele prazo (e não sempre a de 360 dias).
+ */
 export function mesesParaJuntar(
   alvoInCents: number,
   porMesInCents: number,
@@ -118,12 +128,13 @@ export function mesesParaJuntar(
   jaTemInCents = 0,
 ): number | null {
   if (jaTemInCents >= alvoInCents) return 0;
-  if (porMesInCents <= 0) return null;
-  const r = anualParaMensal(rendeAnual) * (1 - aliquotaIR(360));
-  let saldo = jaTemInCents;
-  for (let m = 1; m <= 240; m++) {
-    saldo = saldo * (1 + r) + porMesInCents;
-    if (saldo >= alvoInCents) return m;
+  if (porMesInCents < 0 || (porMesInCents === 0 && jaTemInCents <= 0)) return null;
+  const bruta = anualParaMensal(rendeAnual);
+  for (let meses = 1; meses <= 240; meses++) {
+    const r = bruta * (1 - aliquotaIR(Math.round(meses * 30.42)));
+    let saldo = jaTemInCents;
+    for (let m = 1; m <= meses; m++) saldo = saldo * (1 + r) + porMesInCents;
+    if (saldo >= alvoInCents) return meses;
   }
   return null;
 }

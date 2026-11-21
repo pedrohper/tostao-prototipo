@@ -1,6 +1,9 @@
 import { cardIdentity } from './card-identity.js';
 import type { Repositories } from '../repositories/types.js';
 import { currentMonth, monthRange } from '../lib/month.js';
+import { civilParts } from '../lib/tz.js';
+import { timezoneOf } from '../lib/user-tz.js';
+import { MANUAL_PREFIX } from './import-statement.js';
 
 /**
  * Resumo do mês pra tela de Início.
@@ -8,14 +11,15 @@ import { currentMonth, monthRange } from '../lib/month.js';
  */
 export class GetMonthSummaryUseCase {
   constructor(
-    private readonly repos: Pick<Repositories, 'transactions' | 'categories' | 'accounts'>,
+    private readonly repos: Pick<Repositories, 'transactions' | 'categories' | 'accounts' | 'users'>,
     private readonly now: () => Date = () => new Date(),
   ) {}
 
   async execute({ userId, month }: { userId: string; month: string }) {
     const now = this.now();
-    const { from, to } = monthRange(month);
-    const isPastMonth = month < currentMonth(now) && to <= now;
+    const tz = await timezoneOf(this.repos.users, userId);
+    const { from, to } = monthRange(month, tz);
+    const isPastMonth = month < currentMonth(now, tz) && to <= now;
     const [txs, afterTxs, categories, accounts] = await Promise.all([
       this.repos.transactions.findManyInRange(userId, from, to),
       isPastMonth
@@ -50,8 +54,13 @@ export class GetMonthSummaryUseCase {
     const bankIds = new Set(bankAccounts.map((a) => a.id));
     const deltaAfterByAccount = new Map<string, number>();
     if (isPastMonth && bankIds.size > 0) {
+      // Só desfaz o que o saldo de verdade já incorporou: numa conta conectada (Pluggy/arquivo) é o movimento do banco
+      // (external_id); numa conta MANUAL o saldo é mantido pelo próprio app a cada lançamento, então desfaz os lançamentos dela.
+      // Anotação à mão ligada a conta conectada nunca entrou no saldo do banco: desfazê-la distorceria o histórico.
+      const manualIds = new Set(accounts.filter((a) => a.externalId.startsWith(MANUAL_PREFIX)).map((a) => a.id));
       for (const t of afterTxs) {
         if (!t.accountId || !bankIds.has(t.accountId)) continue;
+        if (t.externalId === null && !manualIds.has(t.accountId)) continue;
         deltaAfterByAccount.set(t.accountId, (deltaAfterByAccount.get(t.accountId) ?? 0) + t.amountInCents);
       }
     }
@@ -73,7 +82,7 @@ export class GetMonthSummaryUseCase {
         type: a.type === 'CREDIT' ? ('CREDIT' as const) : ('BANK' as const),
         balanceInCents: balanceAtMonthEnd(a.id, a.balanceInCents, a.type),
         creditLimitInCents: a.creditLimitInCents ?? null,
-        dueDate: a.dueDate ? nextDueDate(a.dueDate, now).toISOString() : null,
+        dueDate: a.dueDate ? nextDueDate(a.dueDate, now, tz).toISOString() : null,
         ...cardIdentity(a.fingerprint),
       })),
       hiddenAccounts: accounts
@@ -87,8 +96,11 @@ export class GetMonthSummaryUseCase {
  * A Pluggy às vezes manda o vencimento da fatura anterior (já passou).
  * Cartão vence todo mês no mesmo dia, então empurra mês a mês até chegar em hoje ou depois.
  */
-export function nextDueDate(due: Date, now: Date) {
-  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+export function nextDueDate(due: Date, now: Date, tz?: string) {
+  // "Hoje" é o dia civil da PESSOA (não o dia UTC: depois das 21h de Brasília o UTC já virou). O vencimento é uma
+  // data de calendário guardada como meia-noite UTC; só os campos UTC dele importam.
+  const p = civilParts(now, tz);
+  const today = new Date(Date.UTC(p.year, p.month - 1, p.day));
   let d = new Date(due);
   for (let i = 0; i < 24 && d < today; i++) {
     const day = due.getUTCDate();

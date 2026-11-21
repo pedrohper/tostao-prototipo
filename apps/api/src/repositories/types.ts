@@ -20,6 +20,7 @@ import type {
   EmailVerificationToken,
   ChatMessage,
   TribunalVote,
+  FriendRequest,
   Battle,
   BattleKind,
   Person,
@@ -64,6 +65,8 @@ export interface BankConnectionsRepository {
   findByItemId(itemId: string): Promise<BankConnection | null>;
   listByUser(userId: string): Promise<BankConnection[]>;
   listActive(): Promise<BankConnection[]>;
+  /** Conexões em ERROR cuja última falha foi em `before` ou antes (hora de tentar de novo). RECONNECT_REQUIRED nunca volta sozinha. */
+  listRetryable(before: Date): Promise<BankConnection[]>;
   /** ConflictError se o Item (Open Finance) já estiver ligado a alguém. */
   create(data: Pick<BankConnection, 'userId' | 'itemId' | 'institution'>): Promise<BankConnection>;
   save(connection: BankConnection): Promise<void>;
@@ -83,6 +86,8 @@ export interface AccountsRepository {
   /** Apaga a conta e, em cascata, as transações dela. */
   delete(id: string): Promise<void>;
   setHidden(id: string, hidden: boolean): Promise<void>;
+  /** Soma `deltaInCents` ao saldo de forma atômica (balance = balance + delta): dois lançamentos ao mesmo tempo não se perdem. */
+  adjustBalance(id: string, deltaInCents: number): Promise<void>;
 }
 
 export interface CategoriesRepository {
@@ -116,9 +121,10 @@ export interface LessonProgressRepository {
 
 export interface GamesRepository {
   /** Um voto por pessoa por caso; votar de novo troca o voto. */
-  vote(userId: string, caseId: string, choice: number): Promise<void>;
-  findVote(userId: string, caseId: string): Promise<TribunalVote | null>;
-  countVotes(caseId: string): Promise<number[]>;
+  /** Um voto por pessoa, por caso, por semana. false se a pessoa já votou nesse caso nessa semana (nunca troca o voto). */
+  vote(userId: string, caseId: string, weekKey: string, choice: number): Promise<boolean>;
+  findVote(userId: string, caseId: string, weekKey: string): Promise<TribunalVote | null>;
+  countVotes(caseId: string, weekKey: string): Promise<number[]>;
   countUserVotes(userId: string): Promise<number>;
   listBattles(userId: string): Promise<Battle[]>;
   saveBattle(battle: Battle): Promise<void>;
@@ -279,6 +285,13 @@ export interface EngagementRepository {
   findUserByFriendCode(code: string): Promise<string | null>;
   /** Guarda nos dois sentidos. */
   addFriend(a: string, b: string): Promise<void>;
+  /** Pedido de amizade: único por par (quem pediu, quem recebe). Devolve o pedido existente se já havia. */
+  createFriendRequest(requesterId: string, addresseeId: string): Promise<{ request: FriendRequest; created: boolean }>;
+  findFriendRequest(a: string, b: string): Promise<FriendRequest | null>;
+  listIncomingFriendRequests(userId: string): Promise<FriendRequest[]>;
+  listOutgoingFriendRequests(userId: string): Promise<FriendRequest[]>;
+  /** Responde um pedido PENDING dirigido a `userId`, de forma atômica. Devolve o pedido, ou null se não existe/já respondido/não é pra essa pessoa. */
+  respondFriendRequest(id: string, userId: string, accept: boolean, at: Date): Promise<FriendRequest | null>;
   removeFriend(a: string, b: string): Promise<void>;
   listFriendIds(userId: string): Promise<string[]>;
   /** ForbiddenError se o endpoint já pertence a outro usuário (nunca sobrescreve o dono). */

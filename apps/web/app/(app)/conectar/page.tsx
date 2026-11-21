@@ -250,7 +250,13 @@ export default async function ConectarPage({
                               : 'text-vermelho-texto'
                         }`}
                       >
-                        {imported ? p.importedTag : c.status === 'ACTIVE' ? p.activeTag : p.errorTag}
+                        {imported
+                          ? p.importedTag
+                          : c.status === 'ACTIVE'
+                            ? p.activeTag
+                            : c.status === 'RECONNECT_REQUIRED'
+                              ? p.reconnectTag
+                              : p.errorTag}
                       </span>
                     </div>
                     <span className="text-xs text-tinta-suave">
@@ -262,6 +268,10 @@ export default async function ConectarPage({
                     </span>
                     {!imported && c.status === 'ERROR' && (
                       <p className="text-[13px] text-vermelho-texto">{p.errorHelp}</p>
+                    )}
+                    {/* 3 falhas seguidas: o servidor para de tentar sozinho e a pessoa precisa reconectar o banco. */}
+                    {!imported && c.status === 'RECONNECT_REQUIRED' && (
+                      <p className="text-[13px] font-semibold text-vermelho-texto">{p.reconnectHelp}</p>
                     )}
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       {imported ? (

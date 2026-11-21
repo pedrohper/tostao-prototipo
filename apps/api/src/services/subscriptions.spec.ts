@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Transaction } from '../domain/entities.js';
-import { detectSubscriptions, subscriptionKey } from './subscriptions.js';
+import { detectSubscriptions, installmentOf, subscriptionBaseKey, subscriptionKey } from './subscriptions.js';
 
 const NOW = new Date('2026-11-12T12:00:00Z');
 let n = 0;
@@ -157,5 +157,86 @@ describe('assinatura em dobro', () => {
     const prime = subs.filter((s) => s.key.startsWith('AMAZON PRIME'));
     expect(prime).toHaveLength(2);
     expect(prime.every((s) => s.duplicateOf)).toBe(true);
+  });
+});
+
+describe('T1.5 · assinaturas: parcela x data, faixa de valor, duplicata e fuso', () => {
+  it('"15/12" é uma DATA (dia 15), não a parcela 15 de 12: continua no texto e não vira parcelado', () => {
+    expect(installmentOf('LOJA 15/12')).toBeNull();
+    expect(installmentOf('LOJA 5/12')).toEqual({ n: 5, total: 12 });
+    expect(installmentOf('PARCELA 2 DE 6')).toEqual({ n: 2, total: 6 });
+    expect(installmentOf('parc 03/10')).toEqual({ n: 3, total: 10 }); // minúscula (flag /i)
+    expect(installmentOf('SAQUE 13/12')).toBeNull();
+    // uma cobrança mensal com data no texto não é tratada como "parcelado": sem installmentsLeft
+    const subs = detectSubscriptions(
+      [
+        tx('STREAMX 15/09', -3000, '2026-09-15'),
+        tx('STREAMX 15/10', -3000, '2026-10-15'),
+        tx('STREAMX 15/11', -3000, '2026-11-12'),
+      ],
+      NOW,
+    );
+    expect(subs.map((x) => x.installmentsLeft)).toEqual([null]);
+  });
+
+  it('subscriptionKey só tira parcela VÁLIDA do texto', () => {
+    expect(subscriptionKey('AMAZON PRIME 5/12')).toBe('AMAZON PRIME');
+    expect(subscriptionKey('Amazon Prime parc 5/12')).toBe('AMAZON PRIME');
+  });
+
+  it('dois planos da MESMA loja (valores diferentes) ganham chaves diferentes e NÃO são duplicata um do outro', () => {
+    const subs = detectSubscriptions(
+      [
+        tx('NETFLIX', -2990, '2026-09-10'),
+        tx('NETFLIX', -2990, '2026-10-10'),
+        tx('NETFLIX', -2990, '2026-11-10'),
+        tx('NETFLIX', -5590, '2026-09-11'),
+        tx('NETFLIX', -5590, '2026-10-11'),
+        tx('NETFLIX', -5590, '2026-11-11'),
+      ],
+      NOW,
+    );
+    expect(subs).toHaveLength(2);
+    expect(new Set(subs.map((x) => x.key)).size).toBe(2); // chaves distintas (ignorar um não esconde o outro)
+    expect(subs.map((x) => subscriptionBaseKey(x.key))).toEqual(['NETFLIX', 'NETFLIX']);
+    expect(subs.every((x) => x.duplicateOf === null)).toBe(true);
+  });
+
+  it('um plano só mantém a chave simples (nada de sufixo à toa)', () => {
+    const subs = detectSubscriptions([tx('SPOTIFY', -2190, '2026-10-03'), tx('SPOTIFY', -2190, '2026-11-03')], NOW);
+    expect(subs.map((x) => x.key)).toEqual(['SPOTIFY']);
+  });
+
+  it('duas cobranças ativas do mesmo serviço com valor PARECIDO continuam marcadas como duplicata', () => {
+    const subs = detectSubscriptions(
+      [
+        tx('AMAZON PRIME 3/12', -1990, '2026-09-05'),
+        tx('AMAZON PRIME 4/12', -1990, '2026-10-05'),
+        tx('AMAZON PRIME 5/12', -1990, '2026-11-05'),
+        tx('AMAZON PRIME 1/12', -1990, '2026-09-20'),
+        tx('AMAZON PRIME 2/12', -1990, '2026-10-20'),
+        tx('AMAZON PRIME 3/12', -1990, '2026-11-19'),
+      ],
+      NOW,
+    );
+    expect(subs.filter((x) => x.duplicateOf !== null).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('o mês da série parcelada vem do FUSO: cobrança às 22h de Brasília é do mesmo mês, não do UTC seguinte', () => {
+    // 30/09 22h BRT = 01/10 01h UTC. A parcela 1/12 de uma série que começa em setembro precisa cair na MESMA série
+    // da 2/12 de 30/10 (22h BRT) e da 3/12 de 30/11 — sem isso, a virada de mês UTC quebraria a série.
+    const at = (iso: string) => new Date(`${iso}-03:00`);
+    const t = (d: string, desc: string) => tx(desc, -1990, '2026-01-01', { occurredAt: at(d) });
+    const brt = detectSubscriptions(
+      [
+        t('2026-09-30T22:00:00', 'PRIME 1/12'),
+        t('2026-10-30T22:00:00', 'PRIME 2/12'),
+        t('2026-11-29T22:00:00', 'PRIME 3/12'),
+      ],
+      new Date('2026-12-05T12:00:00Z'),
+      'America/Sao_Paulo',
+    );
+    expect(brt).toHaveLength(1);
+    expect(brt[0]!.chargeCount).toBe(3);
   });
 });

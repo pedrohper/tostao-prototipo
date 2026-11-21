@@ -495,6 +495,8 @@ export const importStatementBody = z.object({
   fileName: z.string().max(200),
   content: z.string().min(10, 'Arquivo vazio').max(4_000_000, 'Arquivo grande demais (máx. 4 MB)'),
   isCard: z.boolean().optional(),
+  /** Só cartão: como o arquivo representa compra. 'auto' (padrão) descobre pelos números; as outras forçam. */
+  signConvention: z.enum(['auto', 'compras-positivas', 'compras-negativas']).optional(),
 });
 export type ImportResponse = {
   importedCount: number;
@@ -682,6 +684,10 @@ export type AutoCategorizeResponse = { categorized: number; asked: number; skipp
 
 // ---------- Missões, ofensiva, amigos, avisos e resumo da semana ----------
 /** O que conta como missão feita. "visita:*" vem das telas que a missão do dia manda abrir. */
+/**
+ * Missões que o SERVIDOR marca sozinho quando a ação acontece de verdade (lição, categorizar, anotar...).
+ * Ficam fora de POST /activity: a pessoa não pode "declarar" que fez e ganhar XP.
+ */
 export const ACTIVITY_KINDS = [
   'licao',
   'categorizar',
@@ -698,7 +704,12 @@ export const ACTIVITY_KINDS = [
   'visita:fechamento',
 ] as const;
 export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
-export const activityBody = z.object({ kind: z.enum(ACTIVITY_KINDS) });
+/** Só as visitas a telas podem ser avisadas pelo cliente (POST /activity); o resto o servidor deriva. */
+export const ACTIVITY_VISIT_KINDS = ACTIVITY_KINDS.filter((k) => k.startsWith('visita:')) as Extract<
+  (typeof ACTIVITY_KINDS)[number],
+  `visita:${string}`
+>[];
+export const activityBody = z.object({ kind: z.enum(ACTIVITY_VISIT_KINDS as [string, ...string[]]) });
 
 export type MissionDTO = { id: string; title: string; href: string; done: boolean };
 export type MissionsResponse = {
@@ -711,7 +722,15 @@ export type MissionsResponse = {
 };
 
 export type FriendDTO = { id: string; name: string; streakDays: number; weekScore: number; me: boolean };
-export type FriendsResponse = { code: string; challenge: { title: string; endsAt: string }; ranking: FriendDTO[] };
+/** Pedido de amizade pendente (quem pediu ou pra quem foi). Só o primeiro nome: nada de dinheiro nem e-mail. */
+export type FriendRequestDTO = { id: string; name: string; createdAt: string };
+export type FriendsResponse = {
+  code: string;
+  challenge: { title: string; endsAt: string };
+  ranking: FriendDTO[];
+  /** Pedidos que a pessoa recebeu (precisa aceitar ou recusar) e os que ela mandou (esperando resposta). */
+  requests: { incoming: FriendRequestDTO[]; outgoing: FriendRequestDTO[] };
+};
 export const addFriendBody = z.object({ code: z.string().trim().min(4).max(20) });
 
 export type ReminderDTO = {

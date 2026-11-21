@@ -819,6 +819,9 @@ export const ptBR: Dictionary = {
       importedTag: 'Extrato importado',
       activeTag: 'Ativo',
       errorTag: 'Parou de atualizar',
+      reconnectTag: 'Reconectar',
+      reconnectHelp:
+        'O banco parou de responder várias vezes seguidas. Desconecta e conecta de novo pra voltar a atualizar.',
       lastFile: 'Último arquivo',
       lastSync: 'Última sincronização',
       never: 'nunca',
@@ -1334,7 +1337,13 @@ export const ptBR: Dictionary = {
       yourCode: 'Seu código',
       privacyNote:
         'Amigo vê só seu primeiro nome, a ofensiva e quantas missões você fez. Saldo, gastos e banco ficam só com você.',
+      incomingTitle: 'Pedidos de amizade',
+      outgoingTitle: (n) => `Esperando ${n} aceitar o seu pedido.`,
       client: {
+        requestSent: 'Pedido enviado! Quando a pessoa aceitar, vocês entram no mesmo desafio.',
+        acceptBtn: 'Aceitar',
+        declineBtn: 'Recusar',
+        incomingText: (n) => `${n} quer entrar no seu desafio.`,
         shareText: (url) =>
           `Bora disputar quem cuida melhor da grana essa semana? Entra no Tostão pelo meu link: ${url}`,
         copied: 'Link copiado!',

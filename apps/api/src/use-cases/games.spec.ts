@@ -35,7 +35,7 @@ describe('Tribunal do Tostão', () => {
     expect(a.endsAt.toISOString()).toBe('2026-11-16T02:59:59.999Z'); // domingo 23:59:59 em Brasília
   });
 
-  it('placar e veredito só aparecem depois do voto; votar de novo troca o voto', async () => {
+  it('placar e veredito só aparecem depois do voto; votar de novo no mesmo caso/semana é 409 e NÃO troca o voto', async () => {
     const before = await games.tribunal('u1');
     expect(before.votes).toBeNull();
     expect(before.verdict).toBeNull();
@@ -43,9 +43,11 @@ describe('Tribunal do Tostão', () => {
     const after = await games.vote('u1', before.case.id, 0);
     expect(after.votes).toEqual([1, 1]);
     expect(after.verdict?.title).toBeTruthy();
-    const changed = await games.vote('u1', before.case.id, 1);
-    expect(changed.votes).toEqual([0, 2]);
-    expect(changed.myVote).toBe(1);
+    // Voto dado não se troca (senão dava pra ver o placar e escolher o lado que está ganhando).
+    await expect(games.vote('u1', before.case.id, 1)).rejects.toMatchObject({ statusCode: 409 });
+    const still = await games.tribunal('u1');
+    expect(still.votes).toEqual([1, 1]);
+    expect(still.myVote).toBe(0);
   });
 
   it('não aceita voto em caso velho nem opção que não existe', async () => {

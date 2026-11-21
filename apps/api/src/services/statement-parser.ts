@@ -1,6 +1,7 @@
 // Lê extrato baixado do app do banco (OFX ou CSV) e devolve transações no formato do Tostão.
 // Função pura: não sabe de banco de dados. Quem grava é o ImportStatementUseCase.
 import { createHash } from 'node:crypto';
+import { daysInMonth, noonOfCivilDay } from '../lib/tz.js';
 
 export type ParsedTransaction = { externalId: string; occurredAt: Date; amountInCents: number; description: string };
 export type ParsedStatement = {
@@ -19,9 +20,22 @@ const norm = (s: string) =>
     .toLowerCase()
     .trim();
 
-/** Meio-dia de Brasília: extrato só tem o dia, e assim ele não pula pro dia anterior. */
-const noonBr = (y: string, m: string, d: string) =>
-  new Date(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T12:00:00-03:00`);
+/**
+ * Meio-dia de Brasília: extrato só tem o dia, e assim ele não pula pro dia anterior.
+ * Valida o calendário de verdade: "99/99/2026", "31/02/2026" e mês 13 viram null (a linha é descartada),
+ * em vez de uma data inválida que quebraria o resto da importação.
+ */
+const noonBr = (y: string, m: string, d: string): Date | null => {
+  const year = Number(y);
+  const month = Number(m);
+  const day = Number(d);
+  if (!Number.isInteger(year) || year < 1990 || year > 2100) return null;
+  if (!Number.isInteger(month) || month < 1 || month > 12) return null;
+  const mm = String(month).padStart(2, '0');
+  if (!Number.isInteger(day) || day < 1 || day > daysInMonth(`${year}-${mm}`)) return null;
+  const date = noonOfCivilDay(`${year}-${mm}-${String(day).padStart(2, '0')}`);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
 
 /** "1.234,56", "-12.50", "R$ 9,90", "(10,00)" → centavos */
 export function parseAmount(raw: string): number | null {
@@ -41,6 +55,8 @@ export function parseAmount(raw: string): number | null {
   const lastDot = s.lastIndexOf('.');
   if (lastComma > lastDot)
     s = s.replace(/\./g, '').replace(',', '.'); // formato BR
+  else if (lastComma < 0 && /^[1-9]\d{0,2}(\.\d{3})+$/.test(s))
+    s = s.replace(/\./g, ''); // BR sem decimais: "1.500" = R$ 1.500 (150000), "1.200.000" = R$ 1.200.000
   else s = s.replace(/,/g, '');
   if (!/^\d+(\.\d+)?$/.test(s)) return null;
   const cents = Math.round(Number(s) * 100);
@@ -102,12 +118,20 @@ function parseOfx(text: string): ParsedStatement {
     rows.push({ occurredAt, amountInCents: amount, description });
     fitids.push(tag(b, 'FITID') || null);
   }
-  const bal = parseAmount(tag(text.match(/<LEDGERBAL>[\s\S]*?(<\/LEDGERBAL>|<AVAILBAL>|$)/i)?.[0] ?? '', 'BALAMT'));
+  const rawBal = parseAmount(tag(text.match(/<LEDGERBAL>[\s\S]*?(<\/LEDGERBAL>|<AVAILBAL>|$)/i)?.[0] ?? '', 'BALAMT'));
+  // Cartão: no Tostão o saldo é "quanto devo" (negativo). Uns bancos mandam o devido como positivo, outros como negativo.
+  const bal = rawBal !== null && isCard ? -Math.abs(rawBal) : rawBal;
+  // FITID repetido no mesmo arquivo (BB e Caixa mandam FITID=0 em tudo): não serve de identidade. Vira data+valor+descrição+índice.
+  const fitCount = new Map<string, number>();
+  for (const f of fitids) if (f) fitCount.set(f, (fitCount.get(f) ?? 0) + 1);
   return {
     format: 'ofx',
     kind: isCard ? 'CREDIT' : 'BANK',
     balanceInCents: bal,
-    transactions: withStableIds(rows, (_, i) => (fitids[i] ? `ofx:${fitids[i]}` : null)),
+    transactions: withStableIds(rows, (_, i) => {
+      const f = fitids[i];
+      return f && fitCount.get(f) === 1 ? `ofx:${f}` : null;
+    }),
   };
 }
 
@@ -149,7 +173,22 @@ function findHeader(lines: string[]) {
   return null;
 }
 
-function parseCsv(text: string, isCardHint: boolean | undefined): ParsedStatement {
+/**
+ * Como o arquivo de CARTÃO representa compra: positiva (Nubank: gasto +, pagamento −) ou negativa (já no sinal do Tostão).
+ * 'auto' decide pelos números (a maioria das linhas de cartão é compra); o resto força.
+ */
+export type SignConvention = 'auto' | 'compras-positivas' | 'compras-negativas';
+
+function decidePurchasesPositive(amounts: number[], convention: SignConvention, nubankLike: boolean): boolean {
+  if (convention === 'compras-positivas') return true;
+  if (convention === 'compras-negativas') return false;
+  const positives = amounts.filter((a) => a > 0).length;
+  const negatives = amounts.filter((a) => a < 0).length;
+  if (positives === negatives) return nubankLike; // sem como decidir pelos números: segue o formato conhecido (Nubank)
+  return positives > negatives; // compra é a maioria das linhas de uma fatura
+}
+
+function parseCsv(text: string, isCardHint: boolean | undefined, convention: SignConvention): ParsedStatement {
   const lines = text.split(/\r?\n/).filter((l) => l.trim());
   // O cabeçalho pode não ser a primeira linha (alguns bancos põem título e resumo antes)
   const found = findHeader(lines);
@@ -160,9 +199,16 @@ function parseCsv(text: string, isCardHint: boolean | undefined): ParsedStatemen
   const iDate = find(DATE_COL);
   // Mercado Pago: TRANSACTION_NET_AMOUNT. Ignora colunas de saldo.
   const iNet = find(/net_amount|valor liquido/);
-  const iAmount = iNet >= 0 ? iNet : find(AMOUNT_COL, /saldo|balance|credito|debito|entrada|saida/);
-  const iCredit = iAmount < 0 ? find(CREDIT_COL, /saldo/) : -1;
-  const iDebit = iAmount < 0 ? find(DEBIT_COL, /saldo/) : -1;
+  let iAmount = iNet >= 0 ? iNet : find(AMOUNT_COL, /saldo|balance|credito|debito|entrada|saida/);
+  let iCredit = iAmount < 0 ? find(CREDIT_COL, /saldo/) : -1;
+  let iDebit = iAmount < 0 ? find(DEBIT_COL, /saldo/) : -1;
+  // "Valor Débito/Crédito" é UMA coluna só (casa nas duas buscas): é o valor com sinal, não um par crédito/débito.
+  if (iCredit >= 0 && iCredit === iDebit) {
+    iAmount = iCredit;
+    iCredit = -1;
+    iDebit = -1;
+  }
+  const splitColumns = iAmount < 0 && iCredit >= 0 && iDebit >= 0;
   // Descrição: junta "Histórico" + "Descrição" quando os dois existem (Inter, Bradesco, C6)
   const descCols = header
     .map((h, i) =>
@@ -180,6 +226,7 @@ function parseCsv(text: string, isCardHint: boolean | undefined): ParsedStatemen
 
   const ids: (string | null)[] = [];
   const rows: Omit<ParsedTransaction, 'externalId'>[] = [];
+  const rawAmounts: number[] = [];
   for (const line of lines.slice(headerIdx + 1)) {
     const cols = splitCsvLine(line, sep).map((c) => c.replace(/^"|"$/g, ''));
     const occurredAt = parseDate(cols[iDate] ?? '');
@@ -193,9 +240,14 @@ function parseCsv(text: string, isCardHint: boolean | undefined): ParsedStatemen
     const parts = descCols.map((i) => cols[i] ?? '').filter(Boolean);
     const description = [...new Set(parts)].join(' - ').replace(/\s+/g, ' ').trim() || 'Sem descrição';
     if (!occurredAt || amount === null || amount === 0 || isBalanceLine(description)) continue;
-    rows.push({ occurredAt, amountInCents: isCard ? -amount : amount, description });
+    rows.push({ occurredAt, amountInCents: amount, description });
+    rawAmounts.push(amount);
     ids.push(iId >= 0 && cols[iId] ? `csv:${cols[iId]}` : null);
   }
+  // Só inverte o sinal quando o arquivo de cartão DIZ compra positiva. Colunas Crédito/Débito separadas já saem no
+  // sinal certo (débito = negativo); e arquivo cuja maioria é negativa já usa o sinal do Tostão.
+  const purchasesPositive = isCard && !splitColumns && decidePurchasesPositive(rawAmounts, convention, nubankCard);
+  if (purchasesPositive) for (const r of rows) r.amountInCents = -r.amountInCents;
   return {
     format: 'csv',
     kind: isCard ? 'CREDIT' : 'BANK',
@@ -204,10 +256,14 @@ function parseCsv(text: string, isCardHint: boolean | undefined): ParsedStatemen
   };
 }
 
-export function parseStatement(content: string, fileName: string, opts: { isCard?: boolean } = {}): ParsedStatement {
+export function parseStatement(
+  content: string,
+  fileName: string,
+  opts: { isCard?: boolean; signConvention?: SignConvention } = {},
+): ParsedStatement {
   const text = content.replace(/^\uFEFF/, '');
   const looksOfx = /\.ofx$/i.test(fileName) || /<OFX>/i.test(text) || /OFXHEADER/i.test(text);
-  const parsed = looksOfx ? parseOfx(text) : parseCsv(text, opts.isCard);
+  const parsed = looksOfx ? parseOfx(text) : parseCsv(text, opts.isCard, opts.signConvention ?? 'auto');
   if (looksOfx && opts.isCard !== undefined) parsed.kind = opts.isCard ? 'CREDIT' : 'BANK';
   if (!parsed.transactions.length) throw new StatementParseError('Não achei nenhuma transação nesse arquivo.');
   return parsed;

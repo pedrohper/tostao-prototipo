@@ -1,8 +1,8 @@
 import type { Repositories } from '../repositories/types.js';
 import { AppError } from '../domain/errors.js';
 import { categorizeByRules } from '../services/categorize.js';
-import { detectInternalTransfers } from '../services/internal-transfers.js';
-import { parseStatement, StatementParseError } from '../services/statement-parser.js';
+import { internalTransferUpdates, PAIR_WINDOW_DAYS } from '../services/internal-transfers.js';
+import { parseStatement, StatementParseError, type SignConvention } from '../services/statement-parser.js';
 import { reconcileManualEntries } from './reconcile-manual-entries.js';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -21,7 +21,14 @@ const slug = (s: string) =>
     .replace(/^-|-$/g, '')
     .slice(0, 40);
 
-type Input = { userId: string; accountName: string; fileName: string; content: string; isCard?: boolean };
+type Input = {
+  userId: string;
+  accountName: string;
+  fileName: string;
+  content: string;
+  isCard?: boolean;
+  signConvention?: SignConvention;
+};
 
 /**
  * Importar extrato (OFX/CSV) sem Pluggy. Cada nome de conta vira uma "conexão de importação"
@@ -35,10 +42,11 @@ export class ImportStatementUseCase {
     >,
   ) {}
 
-  async execute({ userId, accountName, fileName, content, isCard }: Input) {
+  async execute({ userId, accountName, fileName, content, isCard, signConvention }: Input) {
+    // Lê e valida o arquivo ANTES de criar conexão ou conta: arquivo sem transação nenhuma não deixa conta vazia pra trás.
     let parsed;
     try {
-      parsed = parseStatement(content, fileName, { isCard });
+      parsed = parseStatement(content, fileName, { isCard, signConvention });
     } catch (e) {
       if (e instanceof StatementParseError) throw new AppError(e.message, 400);
       throw e;
@@ -84,21 +92,19 @@ export class ImportStatementUseCase {
     }
 
     // Pagamento de fatura, Pix entre contas suas etc. também valem pro que veio de arquivo.
-    if (parsed.transactions.length === 0) throw new AppError('Não achei lançamentos nesse arquivo.', 400);
     const sorted = parsed.transactions.map((t) => t.occurredAt.getTime()).sort((a, b) => a - b);
     const firstTime = sorted[0]!;
     const lastTime = sorted.at(-1)!;
-    const window = await transactions.findManyInRange(
-      userId,
-      new Date(firstTime - 2 * DAY),
-      new Date(lastTime + 2 * DAY),
-    );
-    const internal = detectInternalTransfers(window);
-    for (const t of window) {
-      const shouldBe = internal.has(t.id);
-      if (t.accountId && t.isInternalTransfer !== shouldBe)
-        await transactions.save({ ...t, isInternalTransfer: shouldBe });
-    }
+    // Janela com 3 dias de folga (compensação de boleto/TED). O que é par e ficou na borda não é desmarcado, e o que a
+    // pessoa marcou/desmarcou à mão (internalTransferManual) nunca é reclassificado.
+    const windowFrom = new Date(firstTime - PAIR_WINDOW_DAYS * DAY);
+    const windowTo = new Date(lastTime + PAIR_WINDOW_DAYS * DAY);
+    const window = await transactions.findManyInRange(userId, windowFrom, windowTo);
+    for (const { transaction, isInternalTransfer } of internalTransferUpdates(window, {
+      from: windowFrom,
+      to: windowTo,
+    }))
+      await transactions.save({ ...transaction, isInternalTransfer });
     // Anotações à mão que o extrato acabou de confirmar saem (par 1 pra 1).
     const hidden = new Set((await accounts.listByUser(userId)).filter((a) => a.hidden).map((a) => a.id));
     const { removedCount: reconciledCount } = await reconcileManualEntries(

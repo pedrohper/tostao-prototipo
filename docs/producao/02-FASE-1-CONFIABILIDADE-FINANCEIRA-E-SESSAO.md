@@ -163,7 +163,7 @@
 
 ## T1.5 — Corrigir Bugs Críticos de Lógica Financeira (Sync, Saldo, Transferências, Fuso, CSV/OFX, Juros)
 
-- [ ] Concluída
+- [x] Concluída
 
 ### Lista de bugs comprovados a corrigir (com arquivos exatos)
 
@@ -219,7 +219,7 @@
 
 ## T1.6 — Corrigir Bugs em `daily-sync`, WhatsApp Parser, Tostão Auto e Gamificação
 
-- [ ] Concluída
+- [x] Concluída
 
 ### Correções pontuais
 

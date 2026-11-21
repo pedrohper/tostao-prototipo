@@ -1,5 +1,6 @@
 import type { Transaction } from '../domain/entities.js';
 import { normalizeDescription } from '../lib/text.js';
+import { civilParts } from '../lib/tz.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -20,8 +21,30 @@ export type Subscription = {
   duplicateOf: string | null;
 };
 
-// Parcela no fim/meio da descrição: "5/12", "PARC 03/10", "PARCELA 2 DE 6"
-const INSTALLMENT = /(?:PARC(?:ELA)?\.?\s*)?\b(\d{1,2})\s*(?:\/|DE)\s*(\d{1,2})\b/;
+// Parcela no fim/meio da descrição: "5/12", "PARC 03/10", "PARCELA 2 DE 6" (sem diferenciar maiúscula)
+const INSTALLMENT = /(?:PARC(?:ELA)?\.?\s*)?\b(\d{1,2})\s*(?:\/|DE)\s*(\d{1,2})\b/i;
+const INSTALLMENT_GLOBAL = new RegExp(INSTALLMENT.source, 'gi');
+
+/**
+ * "5/12" é a parcela 5 de 12; "15/12" é uma DATA (15 de dezembro), não parcela. Parcela válida tem 1 <= n <= total.
+ * Devolve null pra tudo que não é parcela de verdade.
+ */
+export function installmentOf(text: string): { n: number; total: number } | null {
+  for (const m of text.matchAll(INSTALLMENT_GLOBAL)) {
+    const n = Number(m[1]);
+    const total = Number(m[2]);
+    if (total >= 2 && n >= 1 && n <= total) return { n, total };
+  }
+  return null;
+}
+/** Tira só a parcela VÁLIDA do texto (uma data DD/MM continua no texto). */
+const stripInstallment = (text: string) =>
+  text.replace(INSTALLMENT_GLOBAL, (whole, n: string, total: string) =>
+    Number(total) >= 2 && Number(n) >= 1 && Number(n) <= Number(total) ? ' ' : whole,
+  );
+
+/** A chave sem os sufixos de série (#) e de faixa de valor (@): a loja em si. É o que casa com a descrição de uma compra. */
+export const subscriptionBaseKey = (key: string) => key.split(/[#@]/)[0]!;
 // Não é assinatura: Pix, transferência e pagamento de fatura/boleto
 const NOT_SUBSCRIPTION = /\bPIX\b|TRANSF|\bTED\b|\bDOC\b|PAGTO|FATURA|NU PAGAMENTOS|BOLETO|SAQUE/;
 // Ruído no fim das descrições de loja
@@ -32,7 +55,7 @@ const NOISE = new Set(['BR', 'COM', 'WWW', 'LTDA', 'SA', 'ME', 'EIRELI', 'BRASIL
  * Prefixo curto antes do * é o intermediário de pagamento (DL*, DM*, EBW*, GLOBO*): fica o nome depois dele.
  */
 export function subscriptionKey(description: string): string {
-  let text = normalizeDescription(description).replace(INSTALLMENT, ' ');
+  let text = stripInstallment(normalizeDescription(description));
   const star = text.indexOf('*');
   if (star >= 0) {
     const before = text.slice(0, star).trim();
@@ -57,7 +80,7 @@ const median = (xs: number[]) => {
  * e ~1 mês entre elas. Plano anual parcelado (x/12 com mesmo valor) entra marcado com as parcelas que faltam.
  * Função pura: recebe as transações, devolve as assinaturas.
  */
-export function detectSubscriptions(transactions: Transaction[], now: Date): Subscription[] {
+export function detectSubscriptions(transactions: Transaction[], now: Date, tz?: string): Subscription[] {
   const groups = new Map<string, Transaction[]>();
   for (const t of transactions) {
     // "Todo mês" anotado à mão já entra na previsão pela série: não conta de novo como assinatura.
@@ -65,13 +88,18 @@ export function detectSubscriptions(transactions: Transaction[], now: Date): Sub
     const text = normalizeDescription(t.description);
     if (NOT_SUBSCRIPTION.test(text)) continue;
     // Parcela só entra se for x/12 (plano anual parcelado). Compra em 10x não é assinatura.
-    const parcel = text.match(INSTALLMENT);
-    if (parcel && parcel[2] !== '12') continue;
+    // "15/12" é data (dia 15), não a parcela 15: installmentOf recusa.
+    const parcel = installmentOf(text);
+    if (parcel && parcel.total !== 12) continue;
     let key = subscriptionKey(t.description);
     if (key.length < 3) continue;
     // Duas séries do mesmo plano parcelado (ex.: renovou o Prime) não podem se misturar:
     // separa pelo mês em que a série começou (mês da cobrança menos o número da parcela).
-    if (parcel) key += `#${t.occurredAt.getUTCFullYear() * 12 + t.occurredAt.getUTCMonth() - Number(parcel[1])}`;
+    if (parcel) {
+      // O mês da cobrança é o do FUSO da pessoa (uma cobrança às 22h de Brasília já é do dia seguinte em UTC).
+      const p = civilParts(t.occurredAt, tz);
+      key += `#${p.year * 12 + (p.month - 1) - parcel.n}`;
+    }
     groups.set(key, [...(groups.get(key) ?? []), t]);
   }
 
@@ -81,7 +109,9 @@ export function detectSubscriptions(transactions: Transaction[], now: Date): Sub
     all.sort((a, b) => a.occurredAt.getTime() - b.occurredAt.getTime());
 
     // Mesma loja com valores bem diferentes pode ser duas assinaturas (ex.: dois planos): separa por faixa de valor.
-    for (const txs of splitByAmount(all)) {
+    const bands = splitByAmount(all);
+    const monthlyBands = bands.filter((b) => b.length >= 2).length;
+    for (const txs of bands) {
       if (txs.length < 2) continue;
       const gaps = txs.slice(1).map((t, i) => (t.occurredAt.getTime() - txs[i]!.occurredAt.getTime()) / DAY);
       const gap = median(gaps);
@@ -90,11 +120,15 @@ export function detectSubscriptions(transactions: Transaction[], now: Date): Sub
 
       const last = txs[txs.length - 1]!;
       const nextChargeAt = new Date(last.occurredAt.getTime() + Math.round(gap) * DAY);
-      const parcel = normalizeDescription(last.description).match(INSTALLMENT);
-      const installmentsLeft = parcel ? Math.max(0, Number(parcel[2]) - Number(parcel[1])) : null;
+      const parcel = installmentOf(normalizeDescription(last.description));
+      const installmentsLeft = parcel ? Math.max(0, parcel.total - parcel.n) : null;
+      // Dois planos da MESMA loja (faixas de valor diferentes) precisam de chaves diferentes, senão "ignorar um"
+      // esconde os dois e o aviso de duplicidade se confunde. A faixa entra na chave só quando há mais de uma.
+      const bandKey =
+        monthlyBands > 1 ? `${key}@${Math.round(median(txs.map((x) => Math.abs(x.amountInCents))) / 100)}` : key;
       found.push({
-        key,
-        name: last.description.replace(INSTALLMENT, '').replace(/\s+/g, ' ').trim(),
+        key: bandKey,
+        name: stripInstallment(last.description).replace(/\s+/g, ' ').trim(),
         amountInCents: Math.abs(last.amountInCents),
         chargeCount: txs.length,
         lastChargedAt: last.occurredAt,
@@ -117,8 +151,16 @@ export function detectSubscriptions(transactions: Transaction[], now: Date): Sub
 function markDuplicates(subs: Subscription[]): Subscription[] {
   return subs.map((s) => {
     if (!s.active) return s;
-    const base = s.key.split('#')[0];
-    const twin = subs.find((o) => o !== s && o.active && o.key.split('#')[0] === base);
+    const base = subscriptionBaseKey(s.key);
+    // Duplicata = mesmo serviço, valor PARECIDO (até 25%) ativo ao mesmo tempo. Planos de preço diferente da mesma loja
+    // (ex.: Netflix básico e premium) não são cobrança em dobro.
+    const twin = subs.find(
+      (o) =>
+        o !== s &&
+        o.active &&
+        subscriptionBaseKey(o.key) === base &&
+        Math.abs(o.amountInCents - s.amountInCents) <= 0.25 * Math.max(o.amountInCents, s.amountInCents),
+    );
     return twin ? { ...s, duplicateOf: twin.name } : s;
   });
 }

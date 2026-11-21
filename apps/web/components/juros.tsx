@@ -166,7 +166,7 @@ function NaLoja({
   const [n, setN] = useState(10);
   const av = parseMoney(aVista) ?? 0;
   const pa = parseMoney(parcela) ?? 0;
-  const ok = av > 0 && pa > 0 && n > 0;
+  const ok = av > 0 && pa > 0 && Number.isInteger(n) && n >= 1;
   const v = ok ? compararCompra({ aVistaInCents: av, parcelaInCents: pa, parcelas: n, rendeAnual: taxas.cdi }) : null;
   const juntar = ok ? mesesParaJuntar(av, pa, taxas.cdi) : null;
 

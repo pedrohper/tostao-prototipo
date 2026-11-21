@@ -57,6 +57,11 @@ export function pluggyDate(iso: string): Date {
   }
   return d;
 }
+/** O ISO do Pluggy veio sem hora (meia-noite UTC exata)? */
+export function isDateOnlyIso(iso: string): boolean {
+  const d = new Date(iso);
+  return d.getUTCHours() === 0 && d.getUTCMinutes() === 0 && d.getUTCSeconds() === 0 && d.getUTCMilliseconds() === 0;
+}
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
 
 /** Só pra cartão: bandeira + 4 últimos dígitos. Conta corrente e poupança podem ter o mesmo número, então ficam de fora. */
@@ -298,6 +303,7 @@ export class PluggyBankGateway implements BankGateway {
           description: cleanPluggyDescription(t.description, merchantName, providerCategory),
           amountInCents: t.type === 'DEBIT' ? -cents : cents,
           occurredAt: pluggyDate(t.date),
+          dateOnly: isDateOnlyIso(t.date),
           billId: t.creditCardMetadata?.billId ?? null,
           merchantName,
           providerCategory,

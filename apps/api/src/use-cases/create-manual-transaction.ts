@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import type { Repositories } from '../repositories/types.js';
-import { ResourceNotFoundError } from '../domain/errors.js';
+import { AppError, ResourceNotFoundError } from '../domain/errors.js';
 import { categorizeByRules } from '../services/categorize.js';
+import { balanceEffect, isManualAccount } from '../services/manual-balance.js';
 import { canUseCategory, isNeutral } from './categories.js';
 
 type Input = {
@@ -32,6 +33,7 @@ export function addMonths(d: Date, k: number): Date {
 export class CreateManualTransactionUseCase {
   constructor(
     private readonly repos: Pick<Repositories, 'transactions' | 'categories' | 'rules' | 'accounts' | 'tx'>,
+    private readonly now: () => Date = () => new Date(),
   ) {}
 
   async execute(input: Input) {
@@ -40,14 +42,22 @@ export class CreateManualTransactionUseCase {
     if (categoryId && !canUseCategory(await categories.findById(categoryId), input.userId))
       throw new ResourceNotFoundError('Categoria');
     const accountId = input.accountId ?? null;
-    if (accountId && !(await this.repos.accounts.listByUser(input.userId)).some((a) => a.id === accountId))
-      throw new ResourceNotFoundError('Conta');
+    const account = accountId
+      ? (await this.repos.accounts.listByUser(input.userId)).find((a) => a.id === accountId)
+      : null;
+    if (accountId && !account) throw new ResourceNotFoundError('Conta');
     if (!categoryId) categoryId = categorizeByRules(input.description, await rules.listForUser(input.userId));
 
     const sign = input.kind === 'saida' ? -1 : 1;
     const total = Math.abs(input.amountInCents);
     const repeat = input.repeat ?? 'nao';
     const n = repeat === 'mensal' ? MONTHLY_AHEAD : repeat === 'parcelado' ? Math.max(2, input.times ?? 2) : 1;
+    // Parcelar R$ 0,05 em 12x daria parcelas de 0 centavos (lançamento que não existe). Recusa antes de gravar qualquer uma.
+    if (repeat === 'parcelado' && total < n)
+      throw new AppError(
+        `R$ ${(total / 100).toFixed(2).replace('.', ',')} não dá pra dividir em ${n} parcelas (cada uma teria menos de 1 centavo).`,
+        400,
+      );
     const seriesId = n > 1 ? randomUUID() : null;
     // Parcelado: o total dividido; os centavos que sobram vão na primeira parcela.
     const parcel = repeat === 'parcelado' ? Math.floor(total / n) : total;
@@ -67,8 +77,14 @@ export class CreateManualTransactionUseCase {
       seriesId,
       note: input.note || null,
     }));
+    const now = this.now();
     const transaction = await this.repos.tx(async (r) => {
       await r.transactions.createMany(rows);
+      // Conta manual: o saldo acompanha o que já aconteceu (junto, na mesma transação).
+      if (account && isManualAccount(account)) {
+        const delta = rows.reduce((sum, row) => sum + balanceEffect(row, now), 0);
+        if (delta !== 0) await r.accounts.adjustBalance(account.id, delta);
+      }
       return (await r.transactions.findById(rows[0]!.id))!;
     });
     return { transaction, count: n };

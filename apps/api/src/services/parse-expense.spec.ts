@@ -41,4 +41,20 @@ describe('parseExpense', () => {
     expect(parseAmountToCents('25.5')).toBe(2550);
     expect(parseAmountToCents('1.000')).toBe(100000);
   });
+
+  it('T1.6 · pergunta não vira despesa (termina em "?" ou tem palavra de pergunta)', () => {
+    for (const msg of [
+      'gastei 25 no ifood?',
+      'será que posso gastar 300 no mercado',
+      'paguei 80 de luz, tá muito caro',
+      'comprei 1.200 numa tv, compensa?',
+      'quanto gastei 25 no uber',
+      'gastei 50 hoje, devo me preocupar',
+      'paguei 30 no uber, vale a pena?',
+    ])
+      expect(parseExpense(msg), msg).toBeNull();
+    // e o que é despesa de verdade segue funcionando
+    expect(parseExpense('gastei 25 no ifood')).toMatchObject({ amountInCents: 2500 });
+    expect(parseExpense('recebi 100 do pai')).toMatchObject({ kind: 'entrada' });
+  });
 });

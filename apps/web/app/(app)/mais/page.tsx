@@ -25,7 +25,7 @@ export default async function MaisPage() {
 
   const { xp, level } = xpFrom(done.length, bonusXp);
   const openFinanceConns = profile.connections.filter((c) => !c.isImport);
-  const hasOpenFinanceError = openFinanceConns.some((c) => c.status === 'ERROR');
+  const hasOpenFinanceError = openFinanceConns.some((c) => c.status === 'ERROR' || c.status === 'RECONNECT_REQUIRED');
   const totalAccounts = profile.connections.reduce((sum, conn) => sum + conn.accounts.length, 0);
   const pendingInsights = auto?.insights.length ?? 0;
 

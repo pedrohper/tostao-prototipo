@@ -820,6 +820,9 @@ export const es: Dictionary = {
       importedTag: 'Extracto importado',
       activeTag: 'Activo',
       errorTag: 'Dejó de actualizar',
+      reconnectTag: 'Reconectar',
+      reconnectHelp:
+        'El banco falló varias veces seguidas. Desconéctalo y conéctalo de nuevo para volver a actualizar.',
       lastFile: 'Último archivo',
       lastSync: 'Última sincronización',
       never: 'nunca',
@@ -1340,7 +1343,13 @@ export const es: Dictionary = {
       yourCode: 'Tu código',
       privacyNote:
         'Tus amigos solo ven tu primer nombre, tu racha y cuántas misiones completaste. Saldo, gastos y bancos son solo tuyos.',
+      incomingTitle: 'Solicitudes de amistad',
+      outgoingTitle: (n) => `Esperando que ${n} acepte tu solicitud.`,
       client: {
+        requestSent: '¡Solicitud enviada! Cuando acepte, estarán en el mismo desafío.',
+        acceptBtn: 'Aceptar',
+        declineBtn: 'Rechazar',
+        incomingText: (n) => `${n} quiere unirse a tu desafío.`,
         shareText: (url) =>
           `¿Competimos a ver quién cuida mejor su dinero esta semana? Entra a Tostão con mi enlace: ${url}`,
         copied: '¡Enlace copiado!',
