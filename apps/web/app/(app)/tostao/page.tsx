@@ -1,11 +1,5 @@
 import Link from 'next/link';
-import type {
-  ChatHistoryResponse,
-  FinancialPlanResponse,
-  LessonProgressResponse,
-  ProfileResponse,
-  TostaoAutoResponse,
-} from '@tostao/contracts';
+import type { ChatHistoryResponse, FinancialPlanResponse, TostaoAutoResponse } from '@tostao/contracts';
 import { ChatClient } from '@/app/(app)/chat/chat-client';
 import { DesktopSplitShell } from '@/components/lateral';
 import { AiConsentCard } from '@/components/ai-consent-card';
@@ -15,6 +9,7 @@ import { api } from '@/lib/api';
 import { getI18n } from '@/lib/i18n-server';
 import { modules } from '@/lib/lessons';
 import { NO_PROGRESS } from '@/lib/xp';
+import { getMe, getProgress, getTostaoAuto } from '@/lib/api-queries';
 
 type WhatsAppStatus = {
   enabled: boolean;
@@ -46,11 +41,11 @@ export default async function TostaoPage({ searchParams }: { searchParams?: Prom
   const [{ locale, t }, sp, me, { messages }, { plan }, progress, auto, whatsapp] = await Promise.all([
     getI18n(),
     searchParams ?? Promise.resolve<{ aba?: string; q?: string }>({}),
-    api<ProfileResponse>('/me'),
+    getMe(),
     api<ChatHistoryResponse>('/chat').catch((): ChatHistoryResponse => ({ messages: [] })),
     api<FinancialPlanResponse>('/plan').catch((): FinancialPlanResponse => ({ plan: null })),
-    api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
-    api<TostaoAutoResponse>('/tostao/auto').catch(() => EMPTY_AUTO),
+    getProgress().catch(() => NO_PROGRESS),
+    getTostaoAuto().catch(() => EMPTY_AUTO),
     api<WhatsAppStatus>('/whatsapp').catch(() => EMPTY_WHATSAPP),
   ]);
 

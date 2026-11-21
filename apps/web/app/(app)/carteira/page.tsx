@@ -1,4 +1,5 @@
-import { CardNetworkBadge, getBankLogos, BankBadge } from '@/components/banco';
+import { CardNetworkBadge, BankBadge } from '@/components/banco';
+import { getBankLogos } from '@/lib/api-queries';
 import Link from 'next/link';
 import {
   isYieldTransaction,
@@ -7,7 +8,6 @@ import {
   type ForecastResponse,
   type MonthSummaryResponse,
   type PeopleResponse,
-  type ProfileResponse,
   type SubscriptionsResponse,
   type TransactionDTO,
 } from '@tostao/contracts';
@@ -22,6 +22,7 @@ import { AutoCategorizeButton } from './auto-categorize-button';
 import { PlannerHub } from './planner-hub';
 import { Simulacao } from './simulacao';
 import { Chevron, ExtratoHeaderBar, FilterDropdown, Row } from './transaction-row';
+import { getMe } from '@/lib/api-queries';
 
 const FILTER_KEYS = ['tudo', 'saidas', 'entradas', 'pendentes'] as const;
 type Filter = (typeof FILTER_KEYS)[number];
@@ -63,7 +64,7 @@ export default async function CarteiraPage({
     api<{ transactions: TransactionDTO[] }>(`/transactions?month=${statementMonth}`),
     api<MonthSummaryResponse>(`/summary?month=${statementMonth}`),
     getBankLogos(),
-    aba === 'contas' ? api<ProfileResponse>('/me').catch(() => null) : Promise.resolve(null),
+    aba === 'contas' ? getMe().catch(() => null) : Promise.resolve(null),
     aba === 'planejar'
       ? Promise.all([
           api<FinancialPlanResponse>('/plan').catch(() => null),

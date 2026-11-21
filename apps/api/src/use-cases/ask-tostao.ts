@@ -1,16 +1,16 @@
 import type { Repositories } from '../repositories/types.js';
 import { AiUnavailableError, type AiGateway, type ChatTurn } from '../gateways/ai-gateway.js';
 import { AppError } from '../domain/errors.js';
-import { currentMonth } from '../lib/month.js';
-import { timezoneOf } from '../lib/user-tz.js';
+import { currentMonth, monthRange } from '../lib/month.js';
+import { safeTimezone } from '../lib/tz.js';
 import { testOnlyKeyValueStore, type KeyValueStore } from '../lib/redis.js';
 import { firstName, scrubFinancialText } from '../services/pii-scrubber.js';
 import { PendingActionStore, type PendingAction } from '../services/pending-actions.js';
 import { requireAiConsent } from './ai-consent.js';
-import { GetMonthSummaryUseCase } from './get-month-summary.js';
-import { ListSubscriptionsUseCase } from './list-subscriptions.js';
-import { GetBudgetsUseCase } from './budgets.js';
-import { ForecastUseCase } from './financial-plan.js';
+import { budgetsOfMonth } from './budgets.js';
+import { computeForecast, loadForecastData, type ForecastResult } from './financial-plan.js';
+import { listSubscriptions } from './list-subscriptions.js';
+import { sliceRange, summarizeMonth } from './month-aggregation.js';
 import { TOSTAO_TOOLS, executeTostaoTool } from './tostao-tools.js';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -82,7 +82,7 @@ export class AskTostaoUseCase {
     try {
       const [history, data] = await Promise.all([
         this.repos.chat.listRecent(userId, HISTORY),
-        this.snapshot(userId, now),
+        this.snapshot(userId, now, safeTimezone(user.timezone)),
       ]);
       const allowedTools = new Set(TOSTAO_TOOLS.map((t) => t.function.name));
       // Pessoa: só o primeiro nome. Dados financeiros: bloco delimitado de "informação, não instrução".
@@ -154,27 +154,31 @@ export class AskTostaoUseCase {
     };
   }
 
-  /** O que a IA enxerga: números já calculados pelo app, em texto curto (barato e sem inventar). */
-  private async snapshot(userId: string, now: Date) {
-    const tz = await timezoneOf(this.repos.users, userId);
+  /**
+   * O que a IA enxerga: números já calculados pelo app, em texto curto (barato e sem inventar).
+   * Tudo sai de UMA janela de lançamentos carregada de uma vez (plano, orçamentos e a janela: 6 queries no total;
+   * antes cada resumo, assinatura e previsão ia ao banco por conta própria, ~40).
+   */
+  private async snapshot(userId: string, now: Date, tz: string) {
     const month = currentMonth(now, tz);
-    // Mesmo relógio (now) do resto do turno: o resumo não pode olhar "agora" por conta própria.
-    const summary = new GetMonthSummaryUseCase(this.repos, () => now);
-    const [cur, prev, subs, budgets, categories, recent, plan, forecast, accounts] = await Promise.all([
-      summary.execute({ userId, month }),
-      summary.execute({ userId, month: prevMonth(month) }),
-      new ListSubscriptionsUseCase(this.repos, () => now).execute({ userId }),
-      new GetBudgetsUseCase(this.repos).execute({ userId, month }),
-      this.repos.categories.list(userId),
-      this.repos.transactions.findManyInRange(
-        userId,
-        new Date(now.getTime() - 45 * DAY),
-        new Date(now.getTime() + DAY),
-      ),
+    const [plan, budgetRows, data] = await Promise.all([
       this.repos.plans.get(userId),
-      new ForecastUseCase(this.repos, () => now).execute({ userId }),
-      this.repos.accounts.listByUser(userId),
+      this.repos.budgets.listByUser(userId),
+      loadForecastData(this.repos, userId, { now, tz }),
     ]);
+    const { accounts, categories } = data;
+    // Mesmo relógio (now) do resto do turno: nada aqui olha "agora" por conta própria.
+    const cur = summarizeMonth(data, month, now);
+    const prev = summarizeMonth(data, prevMonth(month), now);
+    const subs = listSubscriptions({ txs: data.txs, accounts, tz, ignoredKeys: data.ignoredKeys, now });
+    const budgets = budgetsOfMonth({
+      budgets: budgetRows,
+      categories,
+      accounts,
+      txs: sliceRange(data.txs, monthRange(month).from, monthRange(month).to),
+    });
+    const recent = sliceRange(data.txs, new Date(now.getTime() - 45 * DAY), new Date(now.getTime() + DAY));
+    const forecast = plan ? computeForecast(plan, data, now) : { months: [], goal: null as ForecastResult['goal'] };
     // Conta oculta sai do saldo e das telas; também não vai pra IA.
     const hiddenAccountIds = new Set(accounts.filter((a) => a.hidden).map((a) => a.id));
     const safe = scrubFinancialText; // tudo que vem de extrato ou de texto livre passa pelo mascaramento

@@ -1,5 +1,5 @@
 'use server';
-import { revalidatePath } from 'next/cache';
+import { revalidateFinance } from '@/lib/revalidate';
 import {
   connectBankBody,
   type ConnectTokenResponse,
@@ -22,7 +22,7 @@ export async function connectItem(itemId: string): Promise<ConnectState> {
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
   try {
     const r = await api<SyncResponse>('/connections', { method: 'POST', body: parsed.data });
-    revalidatePath('/', 'layout');
+    revalidateFinance();
     return {
       ok: `Conectado! ${r.accounts} ${r.accounts === 1 ? 'conta' : 'contas'} e ${r.importedCount} transações novas.`,
     };
@@ -48,7 +48,7 @@ export async function syncNow(_: ConnectState, form: FormData): Promise<ConnectS
       method: 'POST',
       body: {},
     });
-    revalidatePath('/', 'layout');
+    revalidateFinance();
     return { ok: r.importedCount ? `${r.importedCount} transações novas.` : 'Já tava tudo em dia.' };
   } catch (e) {
     rethrowIfRedirect(e);
@@ -59,7 +59,7 @@ export async function syncNow(_: ConnectState, form: FormData): Promise<ConnectS
 export async function disconnectBank(_: ConnectState, form: FormData): Promise<ConnectState> {
   try {
     const r = await api<DisconnectResponse>(`/connections/${safePathSegment(form.get('id'))}`, { method: 'DELETE' });
-    revalidatePath('/', 'layout');
+    revalidateFinance();
     return {
       ok: r.providerDeleted
         ? 'Banco removido.'

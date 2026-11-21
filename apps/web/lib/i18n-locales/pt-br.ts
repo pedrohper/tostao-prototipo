@@ -523,7 +523,10 @@ export const ptBR: Dictionary = {
       resultsCount: (count, query) => `${count} ${count === 1 ? 'lançamento' : 'lançamentos'} com “${query}”`,
       outLabel: 'saiu',
       inLabel: 'entrou',
-      truncatedNote: (shown) => `Mostrando os ${shown} mais recentes. A soma conta todos.`,
+      shownOfTotal: (shown, total) => `Mostrando ${shown} de ${total}. A soma conta todos.`,
+      loadMore: 'Carregar mais',
+      loadingMore: 'Carregando…',
+      loadMoreError: 'Não consegui carregar mais agora. Tenta de novo?',
     },
     txRow: {
       notCounted: 'Não conta',

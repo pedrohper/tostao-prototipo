@@ -4,7 +4,11 @@ import type { Repositories } from '../repositories/types.js';
 import type { BankConnection } from '../domain/entities.js';
 import { ResourceNotFoundError, BankConnectionError } from '../domain/errors.js';
 import { categorizeByProviderCategory, categorizeByRules } from '../services/categorize.js';
-import { internalTransferUpdates, PAIR_WINDOW_DAYS } from '../services/internal-transfers.js';
+import {
+  applyInternalTransferUpdates,
+  internalTransferUpdates,
+  PAIR_WINDOW_DAYS,
+} from '../services/internal-transfers.js';
 import { endOfCivilDay } from '../lib/tz.js';
 import { timezoneOf } from '../lib/user-tz.js';
 import { isGenericInstitution } from '../services/bank-names.js';
@@ -60,17 +64,23 @@ export class SyncBankConnectionUseCase {
 
     const tz = await timezoneOf(this.deps.users, connection.userId);
     try {
-      const userRules = await rules.listForUser(connection.userId);
-      const remoteAccounts = await bank.fetchAccounts(connection.itemId);
+      // Tudo que o loop consulta várias vezes é lido UMA vez aqui (contas e conexões da pessoa, regras de categoria).
+      const [userRules, remoteAccounts, knownAccounts, knownConnections] = await Promise.all([
+        rules.listForUser(connection.userId),
+        bank.fetchAccounts(connection.itemId),
+        accounts.listByUser(connection.userId),
+        connections.listByUser(connection.userId),
+      ]);
+      const connectionById = new Map(knownConnections.map((c) => [c.id, c]));
       let importedCount = 0;
 
       let keptAccounts = 0;
 
       for (const remote of remoteAccounts) {
         const fingerprint = remote.fingerprint ?? null;
-        if (fingerprint && (await this.belongsToOlderConnection(connection, fingerprint))) {
+        if (fingerprint && belongsToOlderConnection(connection, fingerprint, knownAccounts, connectionById)) {
           // Mesmo cartão já vem de uma conexão mais antiga: ignora este e apaga a cópia, se ficou de um sync anterior.
-          const copy = (await accounts.listByUser(connection.userId)).find((a) => a.externalId === remote.externalId);
+          const copy = knownAccounts.find((a) => a.externalId === remote.externalId);
           if (copy) {
             // A FK é SET NULL: sem apagar os lançamentos do banco dessa cópia antes, eles ficariam soltos (duplicados).
             await this.deps.tx(async (r) => {
@@ -102,29 +112,42 @@ export class SyncBankConnectionUseCase {
           connectionId: connection.id,
         });
 
+        // Os que já existem vêm numa query só; os novos entram num INSERT em lote (pula duplicata, então uma corrida
+        // entre dois syncs não estoura nem duplica). Antes: 2 consultas por lançamento.
+        const existingBy = new Map(
+          (
+            await transactions.findByExternalIds(
+              connection.userId,
+              remoteTxs.map((t) => t.externalId),
+            )
+          ).map((e) => [e.externalId, e]),
+        );
+        const fresh: Parameters<typeof transactions.createMany>[0] = [];
+        const seen = new Set<string>();
         for (const tx of remoteTxs) {
-          const existing = await transactions.findByExternalId(connection.userId, tx.externalId);
+          const existing = existingBy.get(tx.externalId);
           if (existing) {
             // O banco corrigiu o valor (ex.: compra em dólar que antes entrou em USD): acompanha.
             if (existing.amountInCents !== tx.amountInCents)
               await transactions.save({ ...existing, amountInCents: tx.amountInCents });
             continue;
           }
-          const categoryId =
-            categorizeByRules(tx.description, userRules, tx.merchantName) ??
-            categorizeByProviderCategory(tx.providerCategory, tx.amountInCents);
-          await transactions.create({
+          if (seen.has(tx.externalId)) continue; // o banco mandou o mesmo lançamento duas vezes na mesma resposta
+          seen.add(tx.externalId);
+          fresh.push({
             userId: connection.userId,
             accountId: account.id,
             externalId: tx.externalId,
             description: tx.description,
             amountInCents: tx.amountInCents,
             occurredAt: tx.occurredAt,
-            categoryId,
+            categoryId:
+              categorizeByRules(tx.description, userRules, tx.merchantName) ??
+              categorizeByProviderCategory(tx.providerCategory, tx.amountInCents),
             isInternalTransfer: false,
           });
-          importedCount++;
         }
+        importedCount += await transactions.createMany(fresh, { skipDuplicates: true });
       }
 
       // Janela da detecção: cobre o cartão (CARD_BACK_DAYS) e mais 3 dias de cada lado (compensação de boleto/TED).
@@ -134,16 +157,16 @@ export class SyncBankConnectionUseCase {
       );
       const windowTo = new Date(now.getTime() + PAIR_WINDOW_DAYS * DAY);
       const window = await transactions.findManyInRange(connection.userId, windowFrom, windowTo);
-      for (const { transaction, isInternalTransfer } of internalTransferUpdates(window, {
-        from: windowFrom,
-        to: windowTo,
-      }))
-        await transactions.save({ ...transaction, isInternalTransfer });
+      await applyInternalTransferUpdates(
+        transactions,
+        connection.userId,
+        internalTransferUpdates(window, { from: windowFrom, to: windowTo }),
+      );
 
       // Limpeza opcional: se falhar, a importação já feita vale e a conexão continua saudável.
       let reconciledCount = 0;
       try {
-        const hidden = new Set((await accounts.listByUser(connection.userId)).filter((a) => a.hidden).map((a) => a.id));
+        const hidden = new Set(knownAccounts.filter((a) => a.hidden).map((a) => a.id));
         ({ removedCount: reconciledCount } = await reconcileManualEntries(
           this.deps,
           connection.userId,
@@ -181,26 +204,29 @@ export class SyncBankConnectionUseCase {
       throw new BankConnectionError();
     }
   }
+}
 
-  /**
-   * O mesmo cartão em duas conexões (ex.: Bradesco e Bradescard): fica com a conexão mais antiga.
-   * Regra determinística, então não importa qual das duas sincroniza primeiro.
-   */
-  private async belongsToOlderConnection(connection: BankConnection, fingerprint: string) {
-    const twins = (await this.deps.accounts.findByFingerprint(connection.userId, fingerprint)).filter(
-      (a) => a.connectionId !== connection.id,
-    );
-    for (const twin of twins) {
-      const owner = await this.deps.connections.findById(twin.connectionId);
-      if (
-        owner &&
-        (owner.createdAt < connection.createdAt ||
-          (owner.createdAt.getTime() === connection.createdAt.getTime() && owner.id < connection.id))
-      )
-        return true;
-    }
-    return false;
+/**
+ * O mesmo cartão em duas conexões (ex.: Bradesco e Bradescard): fica com a conexão mais antiga.
+ * Regra determinística, então não importa qual das duas sincroniza primeiro. Usa as contas e conexões já carregadas.
+ */
+function belongsToOlderConnection(
+  connection: BankConnection,
+  fingerprint: string,
+  accounts: { connectionId: string; fingerprint: string | null }[],
+  connectionById: ReadonlyMap<string, BankConnection>,
+) {
+  const twins = accounts.filter((a) => a.fingerprint === fingerprint && a.connectionId !== connection.id);
+  for (const twin of twins) {
+    const owner = connectionById.get(twin.connectionId);
+    if (
+      owner &&
+      (owner.createdAt < connection.createdAt ||
+        (owner.createdAt.getTime() === connection.createdAt.getTime() && owner.id < connection.id))
+    )
+      return true;
   }
+  return false;
 }
 
 const PAYMENT = /pagamento (recebido|de fatura|da fatura)|pgto fatura|pagto fatura/i;

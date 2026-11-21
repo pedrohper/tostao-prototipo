@@ -105,6 +105,8 @@ export type ProfileResponse = {
   name: string;
   email: string;
   hasPassword: boolean;
+  /** O servidor tem o widget Pluggy Connect? false = só o campo manual. O connect-token só é pedido no clique. */
+  pluggyEnabled: boolean;
   providers: OAuthProvider[];
   createdAt: string;
   /** Quando aceitou o aviso de uso de IA (LGPD). null = IA bloqueada até aceitar. */
@@ -169,6 +171,9 @@ export const monthQuery = z.object({
 });
 
 /** Busca na Carteira: texto livre (loja, pessoa, categoria, banco) + filtros. */
+export const SEARCH_DEFAULT_LIMIT = 50;
+export const SEARCH_MAX_LIMIT = 200;
+
 export const searchQuery = z.object({
   q: z.string().trim().max(80).default(''),
   period: z.enum(['30d', '3m', '12m', 'tudo']).default('12m'),
@@ -182,6 +187,10 @@ export const searchQuery = z.object({
     .union([z.boolean(), z.enum(['true', 'false', '1', '0'])])
     .transform((v) => v === true || v === 'true' || v === '1')
     .optional(),
+  /** Quantos lançamentos por página (a lista é paginada no banco; `nextCursor` traz a próxima). */
+  limit: z.coerce.number().int().min(1).max(SEARCH_MAX_LIMIT).default(SEARCH_DEFAULT_LIMIT),
+  /** `nextCursor` da página anterior (opaco: a web só devolve). Sem ele, é a primeira página. */
+  cursor: z.string().min(1).max(200).optional(),
 });
 export type SearchQuery = z.infer<typeof searchQuery>;
 
@@ -308,11 +317,15 @@ export const personEntryBody = z.object({
 export type PersonEntryBody = z.infer<typeof personEntryBody>;
 
 export type SearchResponse = {
+  /** Uma página (do mais recente pro mais antigo). */
   transactions: TransactionDTO[];
-  /** Total achado (a lista vem cortada em 200). */
+  /** Total achado em TODAS as páginas (não só nesta). */
   count: number;
+  /** Soma de saídas / entradas de todas as páginas (transferência interna não entra na soma). */
   outInCents: number;
   inInCents: number;
+  /** Passe em `cursor` pra pedir a próxima página; null = acabou. */
+  nextCursor: string | null;
 };
 
 /** kind "neutra" = "Não conta" (some do gasto e da renda). custom = criada pela pessoa. */

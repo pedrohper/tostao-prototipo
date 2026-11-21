@@ -1,5 +1,5 @@
 'use server';
-import { revalidatePath } from 'next/cache';
+import { revalidateFinance } from '@/lib/revalidate';
 import { ignoreSubscriptionBody } from '@tostao/contracts';
 import { api } from '@/lib/api';
 import { rethrowIfRedirect } from '@/lib/rethrow';
@@ -13,5 +13,5 @@ export async function setIgnored(form: FormData) {
     rethrowIfRedirect(caught);
     /* se falhar, a lista só não muda */
   }
-  revalidatePath('/', 'layout');
+  revalidateFinance();
 }

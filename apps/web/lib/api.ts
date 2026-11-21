@@ -30,7 +30,13 @@ async function currentClientIp(): Promise<string | null> {
 
 export async function api<T>(
   path: string,
-  init: { method?: string; body?: unknown; skipAuthRedirect?: boolean } = {},
+  init: {
+    method?: string;
+    body?: unknown;
+    skipAuthRedirect?: boolean;
+    /** Segundos de cache do Next pra essa resposta (só GET e só dado que muda pouco, ex.: logos). Padrão: sem cache. */
+    revalidate?: number;
+  } = {},
 ): Promise<T> {
   const token = await getToken();
   const headers: Record<string, string> = { ...forwardedForHeader(await currentClientIp()) };
@@ -43,7 +49,8 @@ export async function api<T>(
       method: init.method ?? 'GET',
       headers,
       body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
-      cache: 'no-store',
+      // O cache do Next separa por cabeçalho (Authorization incluso): a resposta de uma pessoa nunca serve outra.
+      ...(init.revalidate !== undefined ? { next: { revalidate: init.revalidate } } : { cache: 'no-store' as const }),
     });
   } catch {
     throw new ApiError('A API tá fora do ar. Ela tá rodando? (pnpm dev na raiz)', 503);

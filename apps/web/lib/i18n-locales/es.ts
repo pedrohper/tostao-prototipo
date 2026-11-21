@@ -526,7 +526,10 @@ export const es: Dictionary = {
       resultsCount: (count, query) => `${count} ${count === 1 ? 'movimiento' : 'movimientos'} con “${query}”`,
       outLabel: 'salió',
       inLabel: 'entró',
-      truncatedNote: (shown) => `Mostrando los ${shown} más recientes. La suma cuenta todos.`,
+      shownOfTotal: (shown, total) => `Mostrando ${shown} de ${total}. La suma cuenta todos.`,
+      loadMore: 'Cargar más',
+      loadingMore: 'Cargando…',
+      loadMoreError: 'No pude cargar más ahora. ¿Intentas de nuevo?',
     },
     txRow: {
       notCounted: 'No cuenta',

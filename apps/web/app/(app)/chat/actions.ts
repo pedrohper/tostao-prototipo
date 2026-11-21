@@ -1,5 +1,5 @@
 'use server';
-import { revalidatePath } from 'next/cache';
+import { revalidateFinance } from '@/lib/revalidate';
 import {
   chatBody,
   pendingActionBody,
@@ -35,7 +35,7 @@ export async function resolvePendingAction(actionId: string, confirm: boolean): 
       method: 'POST',
       body: parsed.data,
     });
-    if (confirm) revalidatePath('/', 'layout'); // o lançamento novo aparece na Carteira e no Início
+    if (confirm) revalidateFinance(); // o lançamento novo aparece na Carteira e no Início
     return { ok: true, message: r.message };
   } catch (e) {
     rethrowIfRedirect(e);

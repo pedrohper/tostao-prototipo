@@ -17,6 +17,7 @@ import {
   DEFAULT_TIMEZONE,
   diffCivilDays,
   endOfCivilDay,
+  safeTimezone,
   startOfCivilDay,
 } from '../lib/tz.js';
 import { timezoneOf } from '../lib/user-tz.js';
@@ -103,6 +104,22 @@ export const missionXp = (rows: { day: string; kind: string }[]) => {
   return xp;
 };
 
+/** Ofensiva + placar da semana a partir de dados já carregados (a mesma conta pra mim e pra cada amigo do ranking). */
+function scoreOf(rows: { day: string; kind: string }[], lessons: { completedAt: Date }[], now: Date, tz: string) {
+  const today = brDay(now, tz);
+  const days = byDay(rows);
+  const monday = weekStart(today);
+  let weekScore = 0;
+  for (let d = monday; d <= today; d = addDays(d, 1)) weekScore += doneCount(d, days.get(d) ?? new Set());
+  // Ofensiva = dias com qualquer missão OU lição concluída: a MESMA conta da tela de Aprender (ListLessonProgress).
+  const streakDays = streakFromDays(
+    new Set([...days.keys(), ...lessons.map((l) => brDay(l.completedAt, tz))]),
+    now,
+    tz,
+  );
+  return { streakDays, weekScore, days, today, monday, tz };
+}
+
 export class EngagementUseCase {
   constructor(
     private readonly repos: Repositories,
@@ -123,17 +140,7 @@ export class EngagementUseCase {
       this.repos.engagement.listActivity(userId, addDays(today, -400)),
       this.repos.lessons.listByUser(userId),
     ]);
-    const days = byDay(rows);
-    const monday = weekStart(today);
-    let weekScore = 0;
-    for (let d = monday; d <= today; d = addDays(d, 1)) weekScore += doneCount(d, days.get(d) ?? new Set());
-    // Ofensiva = dias com qualquer missão OU lição concluída: a MESMA conta da tela de Aprender (ListLessonProgress).
-    const streakDays = streakFromDays(
-      new Set([...days.keys(), ...lessons.map((l) => brDay(l.completedAt, tz))]),
-      now,
-      tz,
-    );
-    return { streakDays, weekScore, days, today, monday, tz };
+    return scoreOf(rows, lessons, now, tz);
   }
 
   async missions(userId: string): Promise<MissionsResponse> {
@@ -175,29 +182,38 @@ export class EngagementUseCase {
       this.repos.engagement.listOutgoingFriendRequests(userId),
       timezoneOf(this.repos.users, userId),
     ]);
-    const people = await Promise.all(
-      [userId, ...ids].map(async (id): Promise<FriendDTO | null> => {
-        const u = await this.repos.users.findById(id);
+    // Ranking em 3 queries (pessoas, atividade e lições de TODOS de uma vez); antes eram 3 por amigo.
+    const now = this.now();
+    const everyone = [userId, ...ids];
+    const requestIds = [...incoming.map((r) => r.requesterId), ...outgoing.map((r) => r.addresseeId)];
+    const [users, activity, lessons] = await Promise.all([
+      this.repos.users.findManyByIds([...new Set([...everyone, ...requestIds])]),
+      // O mais antigo que alguém precisa (400 dias antes de "hoje" na hora dele); o recorte exato é por pessoa, abaixo.
+      this.repos.engagement.listActivityForUsers(everyone, addDays(brDay(now), -402)),
+      this.repos.lessons.listByUsers(everyone),
+    ]);
+    const userById = new Map(users.map((u) => [u.id, u]));
+    const firstName = (u: { name: string }) => u.name.trim().split(/\s+/)[0] ?? u.name;
+    const ranking = everyone
+      .map((id): FriendDTO | null => {
+        const u = userById.get(id);
         if (!u) return null;
-        const s = await this.score(id);
-        return {
-          id,
-          name: u.name.trim().split(/\s+/)[0] ?? u.name,
-          streakDays: s.streakDays,
-          weekScore: s.weekScore,
-          me: id === userId,
-        };
-      }),
-    );
-    const ranking = people
+        const utz = safeTimezone(u.timezone);
+        const since = addDays(brDay(now, utz), -400);
+        const s = scoreOf(
+          activity.filter((a) => a.userId === id && a.day >= since),
+          lessons.filter((l) => l.userId === id),
+          now,
+          utz,
+        );
+        return { id, name: firstName(u), streakDays: s.streakDays, weekScore: s.weekScore, me: id === userId };
+      })
       .filter((p): p is FriendDTO => p !== null)
       .sort((a, b) => b.weekScore - a.weekScore || b.streakDays - a.streakDays);
     const sunday = addDays(weekStart(brDay(this.now(), tz)), 6);
-    const toDto = async (id: string, requestId: string, createdAt: Date): Promise<FriendRequestDTO | null> => {
-      const u = await this.repos.users.findById(id);
-      return u
-        ? { id: requestId, name: u.name.trim().split(/\s+/)[0] ?? u.name, createdAt: createdAt.toISOString() }
-        : null;
+    const toDto = (id: string, requestId: string, createdAt: Date): FriendRequestDTO | null => {
+      const u = userById.get(id);
+      return u ? { id: requestId, name: firstName(u), createdAt: createdAt.toISOString() } : null;
     };
     const nonNull = (list: (FriendRequestDTO | null)[]) => list.filter((r): r is FriendRequestDTO => r !== null);
     return {
@@ -208,8 +224,8 @@ export class EngagementUseCase {
       },
       ranking,
       requests: {
-        incoming: nonNull(await Promise.all(incoming.map((r) => toDto(r.requesterId, r.id, r.createdAt)))),
-        outgoing: nonNull(await Promise.all(outgoing.map((r) => toDto(r.addresseeId, r.id, r.createdAt)))),
+        incoming: nonNull(incoming.map((r) => toDto(r.requesterId, r.id, r.createdAt))),
+        outgoing: nonNull(outgoing.map((r) => toDto(r.addresseeId, r.id, r.createdAt))),
       },
     };
   }

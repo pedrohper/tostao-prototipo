@@ -30,7 +30,7 @@ import type {
   UserConsent,
   AuditLog,
 } from '../../domain/entities.js';
-import type { FinancialPlan, UpdateTostaoAutoConfigBody } from '@tostao/contracts';
+import { isYieldTransaction, type FinancialPlan, type UpdateTostaoAutoConfigBody } from '@tostao/contracts';
 import type {
   AccountData,
   NewUser,
@@ -69,6 +69,9 @@ import type {
   UserConsentsRepository,
   NewOutboxJob,
   NewAuditLog,
+  PersonBalance,
+  TransactionSearchFilter,
+  TransactionSearchResult,
 } from '../types.js';
 import { DEFAULT_CATEGORIES, DEFAULT_RULES } from '../../lib/defaults.js';
 import { shouldReopenInsight } from '../../services/insight-reopen.js';
@@ -104,6 +107,10 @@ export class InMemoryUsersRepository implements UsersRepository {
   }
   async listAllIds() {
     return this.items.map((u) => u.id);
+  }
+  async findManyByIds(ids: string[]) {
+    const wanted = new Set(ids);
+    return this.items.filter((u) => wanted.has(u.id));
   }
   async create(data: NewUser) {
     const user: User = {
@@ -274,11 +281,17 @@ export class InMemoryTransactionsRepository implements TransactionsRepository {
   items: Transaction[] = [];
   /** Ligado pelo makeInMemoryRepositories: deleteBankByConnection precisa saber quais contas são da conexão. */
   accounts?: { items: Account[] };
+  /** Ligado pelo makeInMemoryRepositories: a busca casa palavra com o nome da categoria. */
+  categories?: { items: Category[] };
   async findById(id: string) {
     return this.items.find((t) => t.id === id) ?? null;
   }
   async findByExternalId(userId: string, externalId: string) {
     return this.items.find((t) => t.userId === userId && t.externalId === externalId) ?? null;
+  }
+  async findByExternalIds(userId: string, externalIds: string[]) {
+    const wanted = new Set(externalIds);
+    return this.items.filter((t) => t.userId === userId && t.externalId !== null && wanted.has(t.externalId));
   }
   async findManyInRange(userId: string, from: Date, to: Date) {
     return this.items
@@ -297,9 +310,94 @@ export class InMemoryTransactionsRepository implements TransactionsRepository {
     const i = this.items.findIndex((t) => t.id === transaction.id);
     if (i >= 0) this.items[i] = transaction;
   }
-  async createMany(data: (Omit<Transaction, 'id' | 'createdAt'> & { id?: string })[]) {
-    for (const d of data) this.items.push({ id: randomUUID(), createdAt: new Date(), ...d });
-    return data.length;
+  async createMany(
+    data: (Omit<Transaction, 'id' | 'createdAt'> & { id?: string })[],
+    opts?: { skipDuplicates?: boolean },
+  ) {
+    let created = 0;
+    for (const d of data) {
+      if (
+        opts?.skipDuplicates &&
+        d.externalId !== null &&
+        this.items.some((t) => t.userId === d.userId && t.externalId === d.externalId)
+      )
+        continue;
+      this.items.push({ id: randomUUID(), createdAt: new Date(), ...d });
+      created++;
+    }
+    return created;
+  }
+  async setInternalTransfer(userId: string, ids: string[], isInternalTransfer: boolean) {
+    const wanted = new Set(ids);
+    let changed = 0;
+    for (const t of this.items)
+      if (t.userId === userId && wanted.has(t.id)) {
+        t.isInternalTransfer = isInternalTransfer;
+        changed++;
+      }
+    return changed;
+  }
+  async categorizeUncategorized(userId: string, ids: string[], categoryId: string) {
+    const wanted = new Set(ids);
+    let changed = 0;
+    for (const t of this.items)
+      if (t.userId === userId && wanted.has(t.id) && !t.categoryId) {
+        t.categoryId = categoryId;
+        changed++;
+      }
+    return changed;
+  }
+  /** Mesma regra do Postgres (ILIKE: minúsculas, mas ACENTO conta), pra os testes valerem pros dois. */
+  async search(userId: string, f: TransactionSearchFilter): Promise<TransactionSearchResult> {
+    const hidden = new Set((this.accounts?.items ?? []).filter((a) => a.hidden).map((a) => a.id));
+    const accountName = new Map((this.accounts?.items ?? []).map((a) => [a.id, a.name.toLowerCase()]));
+    const categoryName = new Map((this.categories?.items ?? []).map((c) => [c.id, c.name.toLowerCase()]));
+    const matches = this.items
+      .filter((t) => t.userId === userId && (!f.from || t.occurredAt >= f.from) && t.occurredAt < f.to)
+      .filter((t) => !(t.accountId && hidden.has(t.accountId)))
+      .filter((t) => !f.excludeTransfers || !t.isInternalTransfer)
+      .filter((t) => !f.excludeYields || !isYieldTransaction(t))
+      .filter((t) => (f.kind === 'saida' ? t.amountInCents < 0 : f.kind === 'entrada' ? t.amountInCents > 0 : true))
+      .filter((t) => !f.categoryId || (f.categoryId === 'sem' ? !t.categoryId : t.categoryId === f.categoryId))
+      .filter((t) =>
+        f.words.every((w) =>
+          [
+            t.description.toLowerCase(),
+            t.categoryId ? (categoryName.get(t.categoryId) ?? '') : '',
+            t.accountId ? (accountName.get(t.accountId) ?? '') : '',
+          ].some((text) => text.includes(w)),
+        ),
+      )
+      .sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime() || (a.id < b.id ? 1 : -1));
+    const after = f.cursor
+      ? matches.filter(
+          (t) =>
+            t.occurredAt < f.cursor!.occurredAt ||
+            (t.occurredAt.getTime() === f.cursor!.occurredAt.getTime() && t.id < f.cursor!.id),
+        )
+      : matches;
+    const page = after.slice(0, f.limit);
+    const last = page.at(-1);
+    const counted = matches.filter((t) => !t.isInternalTransfer);
+    return {
+      transactions: page,
+      nextCursor: after.length > f.limit && last ? { occurredAt: last.occurredAt, id: last.id } : null,
+      count: matches.length,
+      outInCents: counted.filter((t) => t.amountInCents < 0).reduce((s, t) => s - t.amountInCents, 0),
+      inInCents: counted.filter((t) => t.amountInCents > 0).reduce((s, t) => s + t.amountInCents, 0),
+    };
+  }
+  async summarizeByPerson(userId: string): Promise<PersonBalance[]> {
+    const by = new Map<string, PersonBalance>();
+    for (const t of this.items) {
+      if (t.userId !== userId || !t.personId) continue;
+      const cur = by.get(t.personId) ?? { personId: t.personId, balanceInCents: 0, count: 0, lastAt: null };
+      cur.balanceInCents -= t.amountInCents;
+      cur.count++;
+      if (!cur.lastAt || t.occurredAt > cur.lastAt) cur.lastAt = t.occurredAt;
+      by.set(t.personId, cur);
+    }
+    return [...by.values()];
   }
   async clearCategory(userId: string, categoryId: string) {
     for (const t of this.items) if (t.userId === userId && t.categoryId === categoryId) t.categoryId = null;
@@ -383,6 +481,10 @@ export class InMemoryLessonProgressRepository implements LessonProgressRepositor
   items: LessonProgress[] = [];
   async listByUser(userId: string) {
     return this.items.filter((l) => l.userId === userId);
+  }
+  async listByUsers(userIds: string[]) {
+    const wanted = new Set(userIds);
+    return this.items.filter((l) => wanted.has(l.userId));
   }
   async markDone(userId: string, lessonId: string) {
     if (!this.items.some((l) => l.userId === userId && l.lessonId === lessonId))
@@ -630,6 +732,10 @@ export class InMemoryEngagementRepository implements EngagementRepository {
     if (!this.activity.some((a) => a.userId === userId && a.day === day && a.kind === kind))
       this.activity.push({ userId, day, kind });
   }
+  async listActivityForUsers(userIds: string[], sinceDay: string) {
+    const wanted = new Set(userIds);
+    return this.activity.filter((a) => wanted.has(a.userId) && a.day >= sinceDay);
+  }
   async listActivity(userId: string, sinceDay: string) {
     return this.activity
       .filter((a) => a.userId === userId && a.day >= sinceDay)
@@ -756,10 +862,20 @@ export class InMemoryTostaoAutoRepository implements TostaoAutoRepository {
   insights: TostaoInsight[] = [];
   configs = new Map<string, TostaoAutoConfig>();
 
-  async listByUser(userId: string) {
+  async listByUser(userId: string, opts: { now?: Date; limit?: number } = {}) {
+    const now = opts.now ?? new Date();
     return this.insights
-      .filter((i) => i.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .filter((i) => i.userId === userId && (!i.expiresAt || i.expiresAt > now))
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, opts.limit ?? 50);
+  }
+  async listWhatsappNotifiableUserIds({ after, limit }: { after?: string | null; limit: number }) {
+    // Em memória não há tabela de WhatsApp aqui: o aviso confere o número na hora de mandar (jobs/notifications).
+    return [...this.configs.entries()]
+      .filter(([id, c]) => c.notifyWhatsapp && (!after || id > after))
+      .map(([id]) => id)
+      .sort()
+      .slice(0, limit);
   }
 
   async findById(id: string) {
@@ -927,6 +1043,8 @@ export function makeInMemoryRepositories() {
   const transactions = new InMemoryTransactionsRepository();
   const accounts = new InMemoryAccountsRepository(transactions);
   transactions.accounts = accounts;
+  const categories = new InMemoryCategoriesRepository();
+  transactions.categories = categories;
   const refreshTokens = new InMemoryRefreshTokensRepository();
   const users = new InMemoryUsersRepository({ oauthAccounts, refreshTokens });
   const repos = {
@@ -939,7 +1057,7 @@ export function makeInMemoryRepositories() {
     oauthAccounts,
     connections: new InMemoryBankConnectionsRepository({ accounts, transactions }),
     accounts,
-    categories: new InMemoryCategoriesRepository(),
+    categories,
     rules: new InMemoryCategoryRulesRepository(),
     transactions,
     budgets: new InMemoryBudgetsRepository(),

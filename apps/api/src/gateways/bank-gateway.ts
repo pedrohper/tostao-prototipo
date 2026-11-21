@@ -54,6 +54,8 @@ export interface BankGateway {
   readonly enforcesItemOwnership: boolean;
   /** false = rejeita Item sandbox (produção). */
   readonly allowsSandbox: boolean;
+  /** true = tem widget de conexão (o Pluggy Connect); false = só o campo manual (o fake). Vai pro GET /me, pra tela de conexão não precisar pedir um token só pra descobrir isso. */
+  readonly supportsWidget: boolean;
   /** Logos das instituições. [] quando o provedor não tem (o fake). */
   listInstitutionLogos(): Promise<InstitutionLogo[]>;
   /**

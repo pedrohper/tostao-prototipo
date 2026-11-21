@@ -5,11 +5,22 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/icone';
 import { Mascot } from '@/components/mascote';
 import { getDictionary, type Locale } from '@/lib/i18n';
-import type { Module } from '@/lib/lessons';
 import { BOOK_THEMES, getStoryPageMeta } from '@/lib/story-cast';
 
+/**
+ * Só o que o carrossel desenha. O módulo completo (`modules.json`, ~80 KB com todos os textos das lições) NÃO vai pro
+ * navegador: o servidor manda este resumo (id, número, título e, por lição, id/número/título/gancho).
+ */
+export type BookModule = {
+  id: string;
+  number: number;
+  title: string;
+  optional: boolean;
+  lessons: { id: string; number: number; title: string; hook: string }[];
+};
+
 type Props = {
-  modules: Module[];
+  modules: BookModule[];
   initialBookId: string;
   currentBookId: string | null;
   done: string[];

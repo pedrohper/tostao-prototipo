@@ -475,7 +475,11 @@ export interface Dictionary {
       resultsCount: (count: number, query: string) => string;
       outLabel: string;
       inLabel: string;
-      truncatedNote: (shown: number) => string;
+      /** "Mostrando 50 de 312" abaixo da lista (e o botão que traz mais). */
+      shownOfTotal: (shown: number, total: number) => string;
+      loadMore: string;
+      loadingMore: string;
+      loadMoreError: string;
     };
     txRow: {
       notCounted: string;

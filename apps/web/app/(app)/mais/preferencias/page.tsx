@@ -5,6 +5,7 @@ import { SoundToggleCard } from '@/components/sons';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { BackLink, PageFrame } from '@/components/ui';
 import { resolveBackHref } from '@/lib/format';
+import { I18N_ENABLED } from '@/lib/i18n-flag';
 import { getI18n } from '@/lib/i18n-server';
 import { parseTheme, THEME_COOKIE } from '@/lib/theme';
 
@@ -29,7 +30,7 @@ export default async function MaisPreferenciasPage({ searchParams }: { searchPar
       <div className="flex flex-col divide-y divide-linha rounded-[22px] border border-linha bg-cartao px-[18px] py-1">
         <ThemeSwitcher initialTheme={initialTheme} locale={locale} embedded />
         <SoundToggleCard locale={locale} embedded />
-        <LanguageSwitcher locale={locale} embedded />
+        {I18N_ENABLED && <LanguageSwitcher locale={locale} embedded />}
       </div>
 
       <Link

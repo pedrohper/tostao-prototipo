@@ -1,10 +1,9 @@
-import type { ProfileResponse } from '@tostao/contracts';
-import { api } from '@/lib/api';
 import { resolveBackHref } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
 import { Mascot } from '@/components/mascote';
 import { BackLink, PageFrame } from '@/components/ui';
 import { ImportForm } from './import-form';
+import { getMe } from '@/lib/api-queries';
 
 export default async function ImportarPage({
   searchParams,
@@ -13,7 +12,7 @@ export default async function ImportarPage({
 }) {
   const [{ conta, voltar }, me, { locale, t }] = await Promise.all([
     searchParams,
-    api<ProfileResponse>('/me').catch(() => null),
+    getMe().catch(() => null),
     getI18n(),
   ]);
   const p = t.pages.importar;

@@ -143,12 +143,12 @@ export class AutoCategorizeUseCase {
         if (!group || !cat) continue;
         const sign = group[0]!.amountInCents;
         if ((sign < 0 && cat.kind !== 'saida') || (sign > 0 && cat.kind !== 'entrada')) continue;
-        for (const tx of group) {
-          const fresh = await this.repos.transactions.findById(tx.id);
-          if (!fresh || fresh.categoryId) continue; // a pessoa categorizou enquanto isso
-          await this.repos.transactions.save({ ...fresh, categoryId: cat.id });
-          categorized++;
-        }
+        // Um UPDATE por grupo, só nos que continuam sem categoria (a pessoa pode ter categorizado enquanto isso).
+        categorized += await this.repos.transactions.categorizeUncategorized(
+          userId,
+          group.map((t) => t.id),
+          cat.id,
+        );
       }
     }
     return { categorized, asked: todo.length };

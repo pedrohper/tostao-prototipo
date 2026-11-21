@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import type { MonthSummaryResponse, ProfileResponse } from '@tostao/contracts';
-import { BankBadge, CardNetworkBadge, getBankLogos } from '@/components/banco';
+import type { MonthSummaryResponse } from '@tostao/contracts';
+import { BankBadge, CardNetworkBadge } from '@/components/banco';
+import { getBankLogos } from '@/lib/api-queries';
 import { Icon } from '@/components/icone';
 import { BackLink, Eyebrow, PageFrame } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -8,13 +9,14 @@ import { currentMonth, money, resolveBackHref, updatedTimeLabel } from '@/lib/fo
 import { getI18n } from '@/lib/i18n-server';
 import { AddAccountBox } from '../add-account';
 import { HideAccountButton } from '../hide-account-button';
+import { getMe } from '@/lib/api-queries';
 
 export default async function EditarCarteiraPage({ searchParams }: { searchParams?: Promise<{ voltar?: string }> }) {
   const [{ locale, t }, sp, summary, profile, logos] = await Promise.all([
     getI18n(),
     searchParams ?? Promise.resolve<{ voltar?: string }>({}),
     api<MonthSummaryResponse>(`/summary?month=${currentMonth()}`),
-    api<ProfileResponse>('/me').catch(() => null),
+    getMe().catch(() => null),
     getBankLogos(),
   ]);
 

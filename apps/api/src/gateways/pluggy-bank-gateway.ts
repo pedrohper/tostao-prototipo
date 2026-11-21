@@ -154,6 +154,7 @@ const toLogo = (c: PluggyConnectorItem): InstitutionLogo | null => {
  * Docs: https://docs.pluggy.ai
  */
 export class PluggyBankGateway implements BankGateway {
+  readonly supportsWidget = true;
   private apiKey: string | null = null;
   private apiKeyExpiresAt = 0;
 

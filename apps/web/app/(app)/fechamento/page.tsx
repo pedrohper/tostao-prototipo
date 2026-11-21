@@ -1,11 +1,6 @@
 import { PageVisitTracker } from '@/components/visita';
 import Link from 'next/link';
-import type {
-  LessonProgressResponse,
-  MonthSummaryResponse,
-  SubscriptionsResponse,
-  TransactionDTO,
-} from '@tostao/contracts';
+import type { MonthSummaryResponse, SubscriptionsResponse, TransactionDTO } from '@tostao/contracts';
 import { api } from '@/lib/api';
 import { currentMonth, money, monthName, resolveBackHref, shiftMonth } from '@/lib/format';
 import type { Dictionary } from '@/lib/i18n';
@@ -14,6 +9,7 @@ import { Mascot } from '@/components/mascote';
 import { NO_PROGRESS, xpFrom } from '@/lib/xp';
 import { ShareButton } from './share-button';
 import { Cartas } from './cartas';
+import { getProgress } from '@/lib/api-queries';
 
 const pct = (now: number, before: number) => (before ? Math.round(((now - before) / before) * 100) : null);
 
@@ -60,7 +56,7 @@ export default async function FechamentoPage({
     api<MonthSummaryResponse>(`/summary?month=${before}`),
     api<{ transactions: TransactionDTO[] }>(`/transactions?month=${month}`),
     api<SubscriptionsResponse>('/subscriptions').catch(() => null),
-    api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
+    getProgress().catch(() => NO_PROGRESS),
   ]);
 
   const sobrou = s.incomeInCents - s.outcomeInCents;

@@ -1,6 +1,6 @@
 'use server';
+import { revalidateFinance } from '@/lib/revalidate';
 import { redirect } from 'next/navigation';
-import { revalidatePath } from 'next/cache';
 import { financialPlanBody } from '@tostao/contracts';
 import { api, ApiError } from '@/lib/api';
 import { rethrowIfRedirect } from '@/lib/rethrow';
@@ -23,6 +23,6 @@ export async function savePlan(_: PlanState, form: FormData): Promise<PlanState>
     rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
-  revalidatePath('/', 'layout');
+  revalidateFinance();
   redirect(form.get('novo') === '1' ? '/inicio' : '/previsao');
 }

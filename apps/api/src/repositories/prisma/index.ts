@@ -29,6 +29,9 @@ import type { FinancialPlan, UpdateTostaoAutoConfigBody } from '@tostao/contract
 import type {
   AccountData,
   AccountsRepository,
+  PersonBalance,
+  TransactionSearchFilter,
+  TransactionSearchResult,
   FinancialPlansRepository,
   BankConnectionsRepository,
   BudgetsRepository,
@@ -114,6 +117,10 @@ class PrismaUsersRepository implements UsersRepository {
   }
   async listAllIds() {
     return (await this.db.user.findMany({ select: { id: true } })).map((u) => u.id);
+  }
+  findManyByIds(ids: string[]) {
+    if (ids.length === 0) return Promise.resolve([]);
+    return this.db.user.findMany({ where: { id: { in: ids } } });
   }
   create(data: NewUser) {
     return this.db.user.create({ data });
@@ -284,6 +291,52 @@ class PrismaCategoryRulesRepository implements CategoryRulesRepository {
   }
 }
 
+/** Depois do cursor, na ordem (occurredAt desc, id desc): mais antigo, ou na mesma data com id menor. */
+const cursorWhere = (c: { occurredAt: Date; id: string }): Prisma.TransactionWhereInput => ({
+  OR: [{ occurredAt: { lt: c.occurredAt } }, { occurredAt: c.occurredAt, id: { lt: c.id } }],
+});
+
+const ILIKE = (value: string) => ({ contains: value, mode: 'insensitive' as const });
+
+/**
+ * Rendimento automático de conta/CDB/dividendo (entrada). É o `isYieldTransaction` do contrato em SQL: as mesmas
+ * palavras por ILIKE, e "Banco Rendimento" (o banco) nunca conta. Um teste contra o Postgres compara os dois.
+ */
+const yieldWhere: Prisma.TransactionWhereInput = {
+  amountInCents: { gt: 0n },
+  OR: [
+    ILIKE('rendimento'),
+    ILIKE('dividendo'),
+    ILIKE('juros sobre capital'),
+    ILIKE('jcp'),
+    ILIKE('remuneracao'),
+    ILIKE('remuneração'),
+  ].map((description) => ({ description })),
+  NOT: { description: ILIKE('banco rendimento') },
+};
+
+/** Todos os filtros da busca (menos a página) como um `where` do Prisma: quem filtra é o Postgres. */
+function searchWhere(userId: string, f: TransactionSearchFilter): Prisma.TransactionWhereInput {
+  const and: Prisma.TransactionWhereInput[] = [
+    // Conta oculta some das telas, e o que passa nela também.
+    { OR: [{ accountId: null }, { account: { hidden: false } }] },
+  ];
+  if (f.excludeTransfers) and.push({ isInternalTransfer: false });
+  if (f.excludeYields) and.push({ NOT: yieldWhere });
+  if (f.kind === 'saida') and.push({ amountInCents: { lt: 0n } });
+  if (f.kind === 'entrada') and.push({ amountInCents: { gt: 0n } });
+  if (f.categoryId === 'sem') and.push({ categoryId: null });
+  else if (f.categoryId) and.push({ categoryId: f.categoryId });
+  // Cada palavra em algum lugar: descrição (o GIN de trigrama acelera), nome da categoria ou nome da conta.
+  for (const w of f.words)
+    and.push({ OR: [{ description: ILIKE(w) }, { category: { name: ILIKE(w) } }, { account: { name: ILIKE(w) } }] });
+  return { userId, occurredAt: { ...(f.from ? { gte: f.from } : {}), lt: f.to }, AND: and };
+}
+
+/** Tamanhos de lote: listas IN e INSERTs grandes passam do limite de parâmetros do Postgres (32.767). */
+const IN_CHUNK = 1000;
+const INSERT_CHUNK = 1000;
+
 class PrismaTransactionsRepository implements TransactionsRepository {
   constructor(private db: Db) {}
   async findById(id: string): Promise<Transaction | null> {
@@ -293,6 +346,17 @@ class PrismaTransactionsRepository implements TransactionsRepository {
   async findByExternalId(userId: string, externalId: string): Promise<Transaction | null> {
     const row = await this.db.transaction.findUnique({ where: { userId_externalId: { userId, externalId } } });
     return row && mapTransaction(row);
+  }
+  async findByExternalIds(userId: string, externalIds: string[]): Promise<Transaction[]> {
+    const out: Transaction[] = [];
+    // Lotes: uma lista IN gigante estoura o limite de parâmetros do Postgres (arquivo com milhares de linhas).
+    for (let i = 0; i < externalIds.length; i += IN_CHUNK) {
+      const rows = await this.db.transaction.findMany({
+        where: { userId, externalId: { in: externalIds.slice(i, i + IN_CHUNK) } },
+      });
+      out.push(...rows.map(mapTransaction));
+    }
+    return out;
   }
   async findManyInRange(userId: string, from: Date, to: Date): Promise<Transaction[]> {
     const rows = await this.db.transaction.findMany({
@@ -308,9 +372,87 @@ class PrismaTransactionsRepository implements TransactionsRepository {
   async create(data: NewTransaction): Promise<Transaction> {
     return mapTransaction(await this.db.transaction.create({ data: transactionWrite(data) }));
   }
-  async createMany(data: (NewTransaction & { id?: string })[]): Promise<number> {
+  async createMany(data: (NewTransaction & { id?: string })[], opts?: { skipDuplicates?: boolean }): Promise<number> {
     if (data.length === 0) return 0;
-    return (await this.db.transaction.createMany({ data: data.map(transactionWrite) })).count;
+    if (!opts?.skipDuplicates)
+      return (await this.db.transaction.createMany({ data: data.map(transactionWrite) })).count;
+    let created = 0;
+    for (let i = 0; i < data.length; i += INSERT_CHUNK) {
+      created += (
+        await this.db.transaction.createMany({
+          data: data.slice(i, i + INSERT_CHUNK).map(transactionWrite),
+          skipDuplicates: true,
+        })
+      ).count;
+    }
+    return created;
+  }
+  async setInternalTransfer(userId: string, ids: string[], isInternalTransfer: boolean): Promise<number> {
+    let changed = 0;
+    for (let i = 0; i < ids.length; i += IN_CHUNK) {
+      changed += (
+        await this.db.transaction.updateMany({
+          where: { userId, id: { in: ids.slice(i, i + IN_CHUNK) } },
+          data: { isInternalTransfer },
+        })
+      ).count;
+    }
+    return changed;
+  }
+  async categorizeUncategorized(userId: string, ids: string[], categoryId: string): Promise<number> {
+    if (ids.length === 0) return 0;
+    return (
+      await this.db.transaction.updateMany({
+        where: { userId, id: { in: ids }, categoryId: null },
+        data: { categoryId },
+      })
+    ).count;
+  }
+  async search(userId: string, f: TransactionSearchFilter): Promise<TransactionSearchResult> {
+    const where = searchWhere(userId, f);
+    // Página: pede 1 a mais pra saber se tem próxima, sem um COUNT só pra isso.
+    const [rows, count, out, inn] = await Promise.all([
+      this.db.transaction.findMany({
+        where: f.cursor ? { AND: [where, cursorWhere(f.cursor)] } : where,
+        orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
+        take: f.limit + 1,
+      }),
+      this.db.transaction.count({ where }),
+      // Transferência interna aparece na lista mas não entra na soma.
+      this.db.transaction.aggregate({
+        where: { AND: [where, { isInternalTransfer: false, amountInCents: { lt: 0n } }] },
+        _sum: { amountInCents: true },
+      }),
+      this.db.transaction.aggregate({
+        where: { AND: [where, { isInternalTransfer: false, amountInCents: { gt: 0n } }] },
+        _sum: { amountInCents: true },
+      }),
+    ]);
+    const page = rows.slice(0, f.limit).map(mapTransaction);
+    const last = page.at(-1);
+    return {
+      transactions: page,
+      nextCursor: rows.length > f.limit && last ? { occurredAt: last.occurredAt, id: last.id } : null,
+      count,
+      outInCents: 0 - toCents(out._sum.amountInCents ?? 0n), // `0 -` e não `-`: evita -0
+      inInCents: toCents(inn._sum.amountInCents ?? 0n),
+    };
+  }
+  async summarizeByPerson(userId: string): Promise<PersonBalance[]> {
+    const rows = await this.db.transaction.groupBy({
+      by: ['personId'],
+      where: { userId, personId: { not: null } },
+      _sum: { amountInCents: true },
+      _count: true,
+      _max: { occurredAt: true },
+    });
+    return rows.map((r) => ({
+      personId: r.personId!,
+      // O saldo é o que SAIU (negativo no extrato) menos o que entrou: o sinal inverso da soma.
+      balanceInCents: 0 - toCents(r._sum.amountInCents ?? 0n), // `0 -` e não `-`: evita -0
+      count: r._count,
+      lastAt: r._max.occurredAt,
+    }));
   }
   async save({
     id,
@@ -417,6 +559,10 @@ class PrismaLessonProgressRepository implements LessonProgressRepository {
   constructor(private db: Db) {}
   listByUser(userId: string) {
     return this.db.lessonProgress.findMany({ where: { userId }, orderBy: { completedAt: 'asc' } });
+  }
+  listByUsers(userIds: string[]) {
+    if (userIds.length === 0) return Promise.resolve([]);
+    return this.db.lessonProgress.findMany({ where: { userId: { in: userIds } }, orderBy: { completedAt: 'asc' } });
   }
   async markDone(userId: string, lessonId: string) {
     await this.db.lessonProgress.upsert({
@@ -739,6 +885,14 @@ class PrismaEngagementRepository implements EngagementRepository {
     });
     return rows.map((r) => ({ day: dateToDay(r.day), kind: r.kind }));
   }
+  async listActivityForUsers(userIds: string[], sinceDay: string) {
+    if (userIds.length === 0) return [];
+    const rows = await this.db.userActivity.findMany({
+      where: { userId: { in: userIds }, day: { gte: dayToDate(sinceDay) } },
+      select: { userId: true, day: true, kind: true },
+    });
+    return rows.map((r) => ({ userId: r.userId, day: dateToDay(r.day), kind: r.kind }));
+  }
   countActivity(userId: string) {
     return this.db.userActivity.count({ where: { userId } });
   }
@@ -929,12 +1083,34 @@ const mapInsight = (row: {
   actedAt: row.actedAt,
 });
 
+/** Quantos achados a tela lê de uma vez (os mais recentes). */
+const INSIGHTS_LIMIT = 50;
+
 class PrismaTostaoAutoRepository implements TostaoAutoRepository {
   constructor(private db: Db) {}
 
-  async listByUser(userId: string) {
-    const rows = await this.db.tostaoInsight.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } });
+  async listByUser(userId: string, opts: { now?: Date; limit?: number } = {}) {
+    const now = opts.now ?? new Date();
+    // Achado vencido não aparece (e o histórico vitalício não vai inteiro pra memória): filtro e teto no SQL.
+    const rows = await this.db.tostaoInsight.findMany({
+      where: { userId, OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] },
+      orderBy: { createdAt: 'desc' },
+      take: opts.limit ?? INSIGHTS_LIMIT,
+    });
     return rows.map(mapInsight);
+  }
+  async listWhatsappNotifiableUserIds({ after, limit }: { after?: string | null; limit: number }) {
+    const rows = await this.db.tostaoAutoConfig.findMany({
+      where: {
+        notifyWhatsapp: true,
+        user: { whatsapp: { is: { phone: { not: null } } } },
+        ...(after ? { userId: { gt: after } } : {}),
+      },
+      select: { userId: true },
+      orderBy: { userId: 'asc' },
+      take: limit,
+    });
+    return rows.map((r) => r.userId);
   }
 
   async findById(id: string) {

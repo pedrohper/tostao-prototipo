@@ -520,7 +520,10 @@ export const en: Dictionary = {
       resultsCount: (count, query) => `${count} ${count === 1 ? 'transaction' : 'transactions'} matching “${query}”`,
       outLabel: 'out',
       inLabel: 'in',
-      truncatedNote: (shown) => `Showing the ${shown} most recent. Totals include all matches.`,
+      shownOfTotal: (shown, total) => `Showing ${shown} of ${total}. Totals include all matches.`,
+      loadMore: 'Load more',
+      loadingMore: 'Loading…',
+      loadMoreError: "Couldn't load more right now. Try again?",
     },
     txRow: {
       notCounted: 'Excluded',

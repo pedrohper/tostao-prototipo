@@ -3,16 +3,13 @@ import { modules, MODULE_COLORS } from '@/lib/lessons';
 import { getI18n } from '@/lib/i18n-server';
 import { Mascot } from '@/components/mascote';
 import { BackLink } from '@/components/ui';
-import type { LessonProgressResponse } from '@tostao/contracts';
-import { api } from '@/lib/api';
+
 import { getBookCoverAssets, getBookPageAssets } from '@/lib/art-assets';
 import { Trilha } from './trilha';
+import { getProgress } from '@/lib/api-queries';
 
 export default async function TrilhaPage() {
-  const [{ done }, { locale, t }] = await Promise.all([
-    api<LessonProgressResponse>('/progress').catch(() => NO_PROGRESS),
-    getI18n(),
-  ]);
+  const [{ done }, { locale, t }] = await Promise.all([getProgress().catch(() => NO_PROGRESS), getI18n()]);
   const tl = t.pages.learnExtra;
   const coverAssets = getBookCoverAssets(modules.map((m) => m.number));
   const firstPageAssets = getBookPageAssets(modules.flatMap((m) => (m.lessons[0] ? [m.lessons[0].id] : [])));

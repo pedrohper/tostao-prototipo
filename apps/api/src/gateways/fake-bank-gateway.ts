@@ -8,6 +8,7 @@ import type { BankAccountData, BankGateway, BankItemData, BankTransactionData } 
 export class FakeBankGateway implements BankGateway {
   readonly enforcesItemOwnership: boolean = false;
   readonly allowsSandbox: boolean = true;
+  readonly supportsWidget: boolean = false;
 
   constructor(private readonly now: () => Date = () => new Date()) {}
 

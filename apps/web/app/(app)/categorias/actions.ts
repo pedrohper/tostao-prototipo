@@ -1,5 +1,5 @@
 'use server';
-import { revalidatePath } from 'next/cache';
+import { revalidateFinance } from '@/lib/revalidate';
 import { createCategoryBody } from '@tostao/contracts';
 import { api, ApiError } from '@/lib/api';
 import { rethrowIfRedirect } from '@/lib/rethrow';
@@ -19,7 +19,7 @@ export async function createCategory(_: CategoryState, form: FormData): Promise<
     rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
-  revalidatePath('/', 'layout');
+  revalidateFinance();
   return { ok: `${parsed.data.name} criada.` };
 }
 
@@ -32,5 +32,5 @@ export async function deleteCategory(form: FormData) {
     rethrowIfRedirect(caught);
     /* se falhar, ela só continua na lista */
   }
-  revalidatePath('/', 'layout');
+  revalidateFinance();
 }

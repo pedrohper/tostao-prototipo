@@ -1,9 +1,10 @@
-import type { FinancialPlanResponse, IncomeSuggestionsResponse, ProfileResponse } from '@tostao/contracts';
+import type { FinancialPlanResponse, IncomeSuggestionsResponse } from '@tostao/contracts';
 import { PageFrame } from '@/components/ui';
 import { api } from '@/lib/api';
 import { resolveBackHref } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
 import { RendaForm } from './renda-form';
+import { getMe } from '@/lib/api-queries';
 
 export default async function RendaPage({
   searchParams,
@@ -14,7 +15,7 @@ export default async function RendaPage({
     searchParams,
     api<FinancialPlanResponse>('/plan').catch(() => ({ plan: null })),
     api<IncomeSuggestionsResponse>('/plan/suggestions').catch(() => ({ suggestions: [] })),
-    api<ProfileResponse>('/me'),
+    getMe(),
     getI18n(),
   ]);
   const banks = [...new Set(me.connections.map((c) => c.displayName))].filter((b) => !/importad/i.test(b));

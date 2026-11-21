@@ -206,12 +206,15 @@ export function authRoutes(
   });
 
   app.get('/me', { onRequest: verifyJwt }, async (request) => {
-    const { user, providers, connections } = await uc.getProfile.execute({ userId: request.user.sub });
+    const { user, providers, connections, pluggyEnabled } = await uc.getProfile.execute({
+      userId: request.user.sub,
+    });
     return {
       id: user.id,
       name: user.name,
       email: user.email,
       hasPassword: Boolean(user.passwordHash),
+      pluggyEnabled,
       providers,
       createdAt: user.createdAt.toISOString(),
       aiConsentAt: user.aiConsentAt?.toISOString() ?? null,

@@ -1,15 +1,16 @@
-import type { CategoryDTO, ProfileResponse } from '@tostao/contracts';
+import type { CategoryDTO } from '@tostao/contracts';
 import { api } from '@/lib/api';
 import { resolveBackHref, todayIso } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
 import Link from 'next/link';
 import { AnotarForm, type ContaOption } from './anotar-form';
+import { getMe } from '@/lib/api-queries';
 
 export default async function AnotarPage({ searchParams }: { searchParams: Promise<{ voltar?: string }> }) {
   const [{ voltar }, { categories }, me, { locale, t }] = await Promise.all([
     searchParams,
     api<{ categories: CategoryDTO[] }>('/categories'),
-    api<ProfileResponse>('/me').catch(() => null),
+    getMe().catch(() => null),
     getI18n(),
   ]);
   const a = t.pages.anotar;

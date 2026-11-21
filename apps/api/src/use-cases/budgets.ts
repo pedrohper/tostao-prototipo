@@ -1,6 +1,7 @@
 import type { Repositories } from '../repositories/types.js';
 import { monthRange } from '../lib/month.js';
 import { AppError, ResourceNotFoundError } from '../domain/errors.js';
+import type { Account, Category, CategoryBudget, Transaction } from '../domain/entities.js';
 import { canUseCategory } from './categories.js';
 
 type Deps = Pick<Repositories, 'budgets' | 'categories' | 'transactions' | 'accounts'>;
@@ -17,31 +18,46 @@ export class GetBudgetsUseCase {
       this.repos.transactions.findManyInRange(userId, from, to),
       this.repos.accounts.listByUser(userId),
     ]);
-    const hidden = new Set(accounts.filter((a) => a.hidden).map((a) => a.id));
-    const spent = new Map<string, number>();
-    for (const t of txs) {
-      if (t.isInternalTransfer || t.amountInCents >= 0 || !t.categoryId || (t.accountId && hidden.has(t.accountId)))
-        continue;
-      spent.set(t.categoryId, (spent.get(t.categoryId) ?? 0) - t.amountInCents);
-    }
-    const byId = new Map(categories.map((c) => [c.id, c]));
-    return {
-      budgets: budgets
-        .filter((b) => byId.has(b.categoryId))
-        .map((b) => {
-          const c = byId.get(b.categoryId)!;
-          return {
-            categoryId: c.id,
-            name: c.name,
-            emoji: c.emoji,
-            color: c.color,
-            limitInCents: b.limitInCents,
-            spentInCents: spent.get(c.id) ?? 0,
-          };
-        })
-        .sort((a, b) => b.spentInCents / b.limitInCents - a.spentInCents / a.limitInCents),
-    };
+    return budgetsOfMonth({ budgets, categories, txs, accounts });
   }
+}
+
+/** Limites do mês a partir de dados já carregados (`txs` só do mês: o recorte é de quem chama). */
+export function budgetsOfMonth({
+  budgets,
+  categories,
+  txs,
+  accounts,
+}: {
+  budgets: CategoryBudget[];
+  categories: Category[];
+  txs: Transaction[];
+  accounts: Account[];
+}) {
+  const hidden = new Set(accounts.filter((a) => a.hidden).map((a) => a.id));
+  const spent = new Map<string, number>();
+  for (const t of txs) {
+    if (t.isInternalTransfer || t.amountInCents >= 0 || !t.categoryId || (t.accountId && hidden.has(t.accountId)))
+      continue;
+    spent.set(t.categoryId, (spent.get(t.categoryId) ?? 0) - t.amountInCents);
+  }
+  const byId = new Map(categories.map((c) => [c.id, c]));
+  return {
+    budgets: budgets
+      .filter((b) => byId.has(b.categoryId))
+      .map((b) => {
+        const c = byId.get(b.categoryId)!;
+        return {
+          categoryId: c.id,
+          name: c.name,
+          emoji: c.emoji,
+          color: c.color,
+          limitInCents: b.limitInCents,
+          spentInCents: spent.get(c.id) ?? 0,
+        };
+      })
+      .sort((a, b) => b.spentInCents / b.limitInCents - a.spentInCents / a.limitInCents),
+  };
 }
 
 /** Define (ou tira, com null) o teto de uma categoria de gasto. */

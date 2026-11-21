@@ -1,5 +1,5 @@
 'use server';
-import { revalidatePath } from 'next/cache';
+import { revalidateFinance } from '@/lib/revalidate';
 import { importStatementBody, type ImportResponse } from '@tostao/contracts';
 import { api, ApiError } from '@/lib/api';
 import { rethrowIfRedirect } from '@/lib/rethrow';
@@ -58,7 +58,7 @@ export async function importStatement(_: ImportState, form: FormData): Promise<I
       failed.push(`${file.name} (${e instanceof ApiError ? e.message : 'algo deu errado'})`);
     }
   }
-  if (total) revalidatePath('/', 'layout');
+  if (total) revalidateFinance();
   if (!total)
     return {
       error: failed.length === 1 ? `Não consegui ler ${failed[0]}` : 'Não consegui ler nenhum arquivo.',

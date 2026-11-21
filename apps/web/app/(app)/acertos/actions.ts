@@ -1,6 +1,6 @@
 'use server';
+import { revalidateFinance } from '@/lib/revalidate';
 import { redirect } from 'next/navigation';
-import { revalidatePath } from 'next/cache';
 import { createPersonBody, linkPersonBody, personEntryBody } from '@tostao/contracts';
 import { api, ApiError } from '@/lib/api';
 import { parseMoney } from '@/lib/format';
@@ -29,7 +29,7 @@ export async function ligarPessoa(form: FormData) {
     rethrowIfRedirect(caught);
     redirect(comErro(voltar, 'falha_salvar'));
   }
-  revalidatePath('/', 'layout');
+  revalidateFinance();
   redirect(back);
 }
 
@@ -43,7 +43,7 @@ export async function desligarPessoa(form: FormData) {
       /* fica como estava */
     }
   }
-  revalidatePath('/', 'layout');
+  revalidateFinance();
   redirect(safeInternalPath(form.get('back'), '/carteira'));
 }
 
@@ -73,7 +73,7 @@ export async function anotarAcerto(form: FormData) {
     if (e instanceof ApiError) redirect(comErro(volta, 'falha_salvar'));
     throw e;
   }
-  revalidatePath('/', 'layout');
+  revalidateFinance();
   redirect(`/acertos/${safePathSegment(personId)}`);
 }
 
@@ -87,7 +87,7 @@ export async function apagarPessoa(form: FormData) {
       /* nada */
     }
   }
-  revalidatePath('/', 'layout');
+  revalidateFinance();
   redirect('/acertos');
 }
 
@@ -105,6 +105,6 @@ export async function renomearPessoa(form: FormData) {
     rethrowIfRedirect(caught);
     redirect(comErro(volta, 'falha_salvar'));
   }
-  revalidatePath('/', 'layout');
+  revalidateFinance();
   redirect(volta);
 }
