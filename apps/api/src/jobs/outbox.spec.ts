@@ -6,7 +6,10 @@ import { makeInMemoryRepositories } from '../repositories/in-memory/index.js';
 import { DeleteAccountUseCase } from '../use-cases/delete-account.js';
 import { backoffMs, processOutbox } from './outbox.js';
 
-const T0 = new Date('2026-11-21T12:00:00Z');
+// O job é enfileirado com o relógio REAL (DeleteAccountUseCase não recebe relógio); o processador usa o relógio do
+// teste. T0 precisa ficar um pouco À FRENTE do agora real, senão (como aconteceu quando uma data fixa ficou pra trás)
+// o job nasce "no futuro" do relógio do teste e nunca está vencido. Folga de 1 min: a suíte roda em milissegundos.
+const T0 = new Date(Date.now() + 60_000);
 const silent = { info: vi.fn(), error: vi.fn() };
 
 function setup() {

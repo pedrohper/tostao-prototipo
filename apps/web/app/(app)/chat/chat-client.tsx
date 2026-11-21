@@ -1,9 +1,11 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useRef, useState, useTransition } from 'react';
-import type { ChatMessageDTO, PendingActionDTO } from '@tostao/contracts';
+import { Fragment, useEffect, useRef, useState, useTransition } from 'react';
+import type { ChatCardDTO, ChatMessageDTO, PendingActionDTO } from '@tostao/contracts';
 import { useRouter } from 'next/navigation';
 import { AiConsentCard } from '@/components/ai-consent-card';
+import { ChatCards, ProposalCard } from '@/components/chat-cards';
+import { EMPTY_STREAM_VIEW, reduceStreamView, runChatStream, type StreamView } from '@/lib/chat-stream';
 import { setAiConsentAction } from '@/lib/consent-actions';
 import { getDictionary, type Locale } from '@/lib/i18n';
 import { Mascot } from '@/components/mascote';
@@ -87,28 +89,39 @@ export function ChatClient({
   initialQuery?: string;
   locale?: Locale;
 }) {
-  const t = getDictionary(locale).pages.chatExtra;
+  const dict = getDictionary(locale);
+  const t = dict.pages.chatExtra;
+  const tc = dict.growth.chat;
   const [messages, setMessages] = useState(initial);
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [showInfo, setShowInfo] = useState(false);
-  const [pending, start] = useTransition();
   const router = useRouter();
   const [proposal, setProposal] = useState<PendingActionDTO | null>(null);
   const [needsConsent, setNeedsConsent] = useState(false);
   const [resolving, startResolve] = useTransition();
+  // Resposta chegando (null = nenhuma pergunta em andamento), cartões por resposta e sugestões do último turno.
+  const [streaming, setStreaming] = useState<StreamView | null>(null);
+  const [cardsByReply, setCardsByReply] = useState<Record<string, ChatCardDTO[]>>({});
+  const [followUps, setFollowUps] = useState<string[] | null>(null);
   const bottom = useRef<HTMLDivElement>(null);
   const autoSent = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const sending = streaming !== null;
 
   useEffect(() => {
     bottom.current?.scrollIntoView({ block: 'end' });
-  }, [messages.length, pending]);
+  }, [messages.length, sending, streaming?.text.length]);
 
-  const send = (text: string) => {
+  // Saiu da tela no meio de uma resposta: cancela (o servidor para a IA e não grava nada).
+  useEffect(() => () => abortRef.current?.abort(), []);
+
+  const send = async (text: string) => {
     const message = text.trim();
-    if (!message || pending) return;
+    if (!message || sending) return;
     setError(null);
     setDraft('');
+    setFollowUps(null);
     const temp: ChatMessageDTO = {
       id: `tmp-${crypto.randomUUID()}`,
       role: 'user',
@@ -117,18 +130,59 @@ export function ChatClient({
     };
     setMessages((m) => [...m, temp]);
     setProposal(null);
-    start(async () => {
-      const r = await ask(message);
-      if (r.ok) {
-        setMessages((m) => [...m.filter((x) => x.id !== temp.id), r.data.question, r.data.reply]);
-        setProposal(r.data.pendingAction);
-      } else {
-        setMessages((m) => m.filter((x) => x.id !== temp.id));
-        setDraft(message);
+    setStreaming(EMPTY_STREAM_VIEW);
+
+    const abort = new AbortController();
+    abortRef.current = abort;
+    const outcome = await runChatStream({
+      message,
+      signal: abort.signal,
+      onEvent: (event) => setStreaming((view) => (view ? reduceStreamView(view, event) : view)),
+    });
+    setStreaming(null);
+    const undo = (problem?: string) => {
+      setMessages((m) => m.filter((x) => x.id !== temp.id));
+      setDraft(message);
+      if (problem) setError(problem);
+    };
+    const finish = (r: {
+      question: ChatMessageDTO;
+      reply: ChatMessageDTO;
+      pendingAction: PendingActionDTO | null;
+      cards?: ChatCardDTO[];
+      followUps?: string[];
+    }) => {
+      setMessages((m) => [...m.filter((x) => x.id !== temp.id), r.question, r.reply]);
+      setProposal(r.pendingAction);
+      if (r.cards?.length) setCardsByReply((c) => ({ ...c, [r.reply.id]: r.cards ?? [] }));
+      setFollowUps(r.followUps?.length ? r.followUps : null);
+    };
+
+    switch (outcome.kind) {
+      case 'done':
+        return finish(outcome.event);
+      case 'fallback': {
+        // Streaming indisponível (rede, proxy, API sem a rota): o caminho de sempre, só que sem o efeito de digitação.
+        const r = await ask(message);
+        if (r.ok) return finish(r.data);
+        undo();
         if (r.needsConsent) setNeedsConsent(true);
         else setError(r.error);
+        return;
       }
-    });
+      case 'consent':
+        undo();
+        return setNeedsConsent(true);
+      case 'unauthorized':
+        window.location.assign('/sair');
+        return;
+      case 'interrupted':
+        return undo(tc.streamInterrupted);
+      case 'error':
+        return undo(outcome.message);
+      case 'aborted':
+        return;
+    }
   };
 
   const answerProposal = (confirm: boolean) => {
@@ -161,11 +215,11 @@ export function ChatClient({
     if (!initialQuery || autoSent.current) return;
     autoSent.current = true;
     window.history.replaceState(null, '', '/tostao');
-    sendRef.current(initialQuery);
+    void sendRef.current(initialQuery);
   }, [initialQuery]);
 
   return (
-    <div className="-mb-10 flex h-[calc(100dvh-12.5rem)] min-h-[360px] w-full min-w-0 flex-col gap-3 overflow-hidden md:mb-0 md:h-[calc(100dvh-11rem)] lg:h-[calc(100dvh-10rem)]">
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-3 overflow-hidden">
       {askIncome && (
         <Link
           href="/renda?voltar=/tostao"
@@ -207,31 +261,40 @@ export function ChatClient({
             </div>
           )}
         </div>
-        <div className="h-full overflow-y-auto overscroll-contain pr-0.5" aria-live="polite">
+        <div
+          className="h-full overflow-y-auto overscroll-contain pr-0.5"
+          // Durante o streaming o leitor de tela não deve narrar cada palavra: lê a resposta inteira quando fecha.
+          aria-live={sending ? 'off' : 'polite'}
+          aria-busy={sending}
+        >
           <div className="flex min-h-full flex-col justify-end gap-2.5 py-1">
             {messages.length === 0 && (
               <div className="max-w-[85%] min-w-0 self-start break-words [overflow-wrap:anywhere] rounded-[18px_18px_18px_4px] border border-linha bg-cartao px-3.5 py-[11px] text-[15px] leading-[22px]">
                 {t.emptyGreeting(firstName)}
               </div>
             )}
-            {messages.map((m) =>
-              m.role === 'user' ? (
-                <div
-                  key={m.id}
-                  className="max-w-[85%] min-w-0 self-end break-words [overflow-wrap:anywhere] whitespace-pre-wrap rounded-[18px_18px_4px_18px] bg-tinta px-3.5 py-2.5 text-[15px] leading-[22px] text-papel"
-                >
-                  {m.content}
+            {messages.map((m) => (
+              <Fragment key={m.id}>
+                {m.role === 'user' ? (
+                  <div className="max-w-[85%] min-w-0 self-end break-words [overflow-wrap:anywhere] whitespace-pre-wrap rounded-[18px_18px_4px_18px] bg-tinta px-3.5 py-2.5 text-[15px] leading-[22px] text-papel">
+                    {m.content}
+                  </div>
+                ) : (
+                  <div className="max-w-[85%] min-w-0 self-start break-words [overflow-wrap:anywhere] rounded-[18px_18px_18px_4px] border border-linha bg-cartao px-3.5 py-[11px] text-[15px] leading-[22px]">
+                    <Rich text={m.content} />
+                  </div>
+                )}
+                {cardsByReply[m.id] && <ChatCards cards={cardsByReply[m.id] ?? []} locale={locale} />}
+              </Fragment>
+            ))}
+            {streaming &&
+              (streaming.text ? (
+                <div className="max-w-[85%] min-w-0 self-start break-words [overflow-wrap:anywhere] rounded-[18px_18px_18px_4px] border border-linha bg-cartao px-3.5 py-[11px] text-[15px] leading-[22px]">
+                  <Rich text={streaming.text} />
                 </div>
               ) : (
-                <div
-                  key={m.id}
-                  className="max-w-[85%] min-w-0 self-start break-words [overflow-wrap:anywhere] rounded-[18px_18px_18px_4px] border border-linha bg-cartao px-3.5 py-[11px] text-[15px] leading-[22px]"
-                >
-                  <Rich text={m.content} />
-                </div>
-              ),
-            )}
-            {pending && <Pensando ariaLabel={t.thinkingAria} text={t.thinkingText} />}
+                <Pensando ariaLabel={t.thinkingAria} text={streaming.status ?? tc.statusThinking} />
+              ))}
             <div ref={bottom} />
           </div>
         </div>
@@ -240,56 +303,36 @@ export function ChatClient({
       <div className="flex w-full min-w-0 shrink-0 flex-col gap-2 bg-papel pt-1">
         {needsConsent && <AiConsentCard onAccepted={() => setNeedsConsent(false)} compact />}
         {proposal && (
-          <div
-            role="group"
-            aria-label="Confirmar lançamento"
-            className="flex flex-col gap-2 rounded-2xl border-[1.5px] border-tinta bg-amarelo-claro p-3.5"
-          >
-            <p className="m-0 text-[14px] leading-[20px] text-tinta">
-              <strong>O Tostão quer anotar:</strong> {proposal.summary}. Só vale se você confirmar.
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => answerProposal(true)}
-                disabled={resolving}
-                className="rounded-full bg-tinta px-4 py-2 text-[13px] font-semibold text-papel disabled:opacity-60"
-              >
-                Confirmar
-              </button>
-              <button
-                type="button"
-                onClick={() => answerProposal(false)}
-                disabled={resolving}
-                className="rounded-full border border-linha bg-cartao px-4 py-2 text-[13px] font-semibold text-tinta disabled:opacity-60"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
+          <ProposalCard
+            proposal={proposal}
+            busy={resolving}
+            locale={locale}
+            onConfirm={() => answerProposal(true)}
+            onCancel={() => answerProposal(false)}
+          />
         )}
         {error && (
           <p role="alert" className="text-[13px] text-vermelho-texto">
             {error}
           </p>
         )}
-        <div className="flex w-full min-w-0 gap-2 overflow-x-auto pb-0.5">
-          {t.suggestions.map((s) => (
+        <div role="group" aria-label={tc.followUpsAria} className="flex w-full min-w-0 gap-2 overflow-x-auto pb-0.5">
+          {(followUps ?? t.suggestions).map((q) => (
             <button
-              key={s}
+              key={q}
               type="button"
-              disabled={pending}
-              onClick={() => send(s)}
+              disabled={sending}
+              onClick={() => void send(q)}
               className="h-9 shrink-0 rounded-full bg-papel-2 px-3.5 text-[13px] font-semibold text-tinta disabled:opacity-50"
             >
-              {s}
+              {q}
             </button>
           ))}
         </div>
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            send(draft);
+            void send(draft);
           }}
           className="flex w-full min-w-0 items-center gap-2"
         >
@@ -308,7 +351,7 @@ export function ChatClient({
           <button
             type="submit"
             aria-label={t.sendAria}
-            disabled={pending || !draft.trim()}
+            disabled={sending || !draft.trim()}
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-tinta text-papel disabled:opacity-40"
           >
             <svg

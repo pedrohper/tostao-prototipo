@@ -2,14 +2,19 @@
 import { useState } from 'react';
 import { TAXAS_REFERENCIA } from '@tostao/contracts';
 import { money } from '@/lib/format';
+import { PresetHint } from '@/components/preset-hint';
+import { Selo } from '@/components/selo';
+import { TostaoSlider } from '@/components/tostao-slider';
 import type { Locale } from '@/lib/i18n';
+import { bisturiItems, fatiasPreset, raloPreset, type LessonUserContext } from '@/lib/lesson-context';
 import { InstallmentCalculator } from '@/components/juros';
 import { SIMULATORS_M2_M5 } from './simulators-m2-m5';
 import { SIMULATORS_M6_M9 } from './simulators-m6-m9';
 
 // Simuladores interativos.
 // Cada um novo entra aqui com o id da lição.
-export type SimulatorProps = { locale: Locale };
+/** `userContext` = os números reais da pessoa (ou null: a lição fica com os valores didáticos de sempre). */
+export type SimulatorProps = { locale: Locale; userContext?: LessonUserContext | null };
 
 export const SIMULATORS: Record<string, (props: SimulatorProps) => React.ReactNode> = {
   'm1-l1': RaloDoCafezinho,
@@ -23,41 +28,30 @@ export const SIMULATORS: Record<string, (props: SimulatorProps) => React.ReactNo
 };
 
 /** Lição 1: O ralo do cafezinho */
-function RaloDoCafezinho() {
-  const [valor, setValor] = useState(20);
-  const [vezes, setVezes] = useState(4);
+function RaloDoCafezinho({ userContext = null }: SimulatorProps) {
+  const preset = raloPreset(userContext);
+  const [valor, setValor] = useState(preset.valor);
+  const [vezes, setVezes] = useState(preset.vezes);
+  const salario = preset.salarioCents ?? 130_790;
   const porSemana = valor * vezes * 100;
   const tres = Math.round(porSemana * 13);
   const ano = Math.round(porSemana * 52);
   return (
     <div className="flex flex-col gap-4">
+      {preset.hint && <PresetHint>{preset.hint}</PresetHint>}
       <label className="flex flex-col gap-1">
         <span className="flex justify-between text-sm font-semibold">
           <span>Cada gastinho</span>
           <span>{money(valor * 100)}</span>
         </span>
-        <input
-          type="range"
-          min={10}
-          max={30}
-          value={valor}
-          onChange={(e) => setValor(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={10} max={30} value={valor} onChange={(e) => setValor(+e.target.value)} />
       </label>
       <label className="flex flex-col gap-1">
         <span className="flex justify-between text-sm font-semibold">
           <span>Vezes por semana</span>
           <span>{vezes}x</span>
         </span>
-        <input
-          type="range"
-          min={1}
-          max={7}
-          value={vezes}
-          onChange={(e) => setVezes(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={1} max={7} value={vezes} onChange={(e) => setVezes(+e.target.value)} />
       </label>
       <div className="grid grid-cols-2 gap-2.5">
         <div className="rounded-2xl bg-amarelo-claro p-3">
@@ -70,17 +64,21 @@ function RaloDoCafezinho() {
         </div>
       </div>
       <p className="text-sm text-tinta-suave">
-        Isso dá {(ano / 130790).toFixed(1).replace('.', ',')} salários de R$ 1.307,90 por ano.
+        Isso dá {(ano / salario).toFixed(1).replace('.', ',')} salários de {money(salario)} por ano.
       </p>
     </div>
   );
 }
 
 /** Lição 2: Ajuste das fatias (50/30/20) */
-function AjusteDasFatias() {
-  const [renda, setRenda] = useState(2000); // R$
-  const [nec, setNec] = useState(55); // %
-  const [des, setDes] = useState(30); // %
+function AjusteDasFatias({ userContext = null }: SimulatorProps) {
+  const preset = fatiasPreset(userContext);
+  const [renda, setRenda] = useState(preset?.renda ?? 2000); // R$
+  const [nec, setNec] = useState(preset?.nec ?? 55); // %
+  const [des, setDes] = useState(preset?.des ?? 30); // %
+  // A régua cobre a renda real mesmo fora de R$ 1.200 a 6.000.
+  const rendaMin = Math.min(1200, preset?.renda ?? 1200);
+  const rendaMax = Math.max(6000, preset?.renda ?? 6000);
   const fut = Math.max(0, 100 - nec - des);
 
   const rendaCents = renda * 100;
@@ -90,19 +88,18 @@ function AjusteDasFatias() {
 
   return (
     <div className="flex flex-col gap-4">
+      {preset && <PresetHint>{preset.hint}</PresetHint>}
       <label className="flex flex-col gap-1">
         <span className="flex justify-between text-sm font-semibold">
           <span>Sua renda mensal líquida</span>
           <span className="font-display text-base font-extrabold">{money(rendaCents)}</span>
         </span>
-        <input
-          type="range"
-          min={1200}
-          max={6000}
+        <TostaoSlider
+          min={rendaMin}
+          max={rendaMax}
           step={100}
           value={renda}
           onChange={(e) => setRenda(+e.target.value)}
-          className="accent-laranja"
         />
       </label>
 
@@ -114,8 +111,7 @@ function AjusteDasFatias() {
               {nec}% ({money(necCents)})
             </span>
           </span>
-          <input
-            type="range"
+          <TostaoSlider
             min={30}
             max={85}
             value={nec}
@@ -124,7 +120,7 @@ function AjusteDasFatias() {
               setNec(val);
               if (val + des > 100) setDes(100 - val);
             }}
-            className="accent-amarelo"
+            tone="amarelo"
           />
         </label>
 
@@ -135,8 +131,7 @@ function AjusteDasFatias() {
               {des}% ({money(desCents)})
             </span>
           </span>
-          <input
-            type="range"
+          <TostaoSlider
             min={5}
             max={60}
             value={des}
@@ -145,7 +140,7 @@ function AjusteDasFatias() {
               setDes(val);
               if (val + nec > 100) setNec(100 - val);
             }}
-            className="accent-alerta"
+            tone="alerta"
           />
         </label>
       </div>
@@ -200,19 +195,22 @@ function AjusteDasFatias() {
 
       {nec > 65 && (
         <p className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
-          ⚠️ <b>Aperto no essencial:</b> quando as necessidades passam de 65%, a margem de manobra diminui. Proteja o
+          <Selo tipo="alerta" />
+          <b>Aperto no essencial:</b> quando as necessidades passam de 65%, a margem de manobra diminui. Proteja o
           futuro com ao menos 5% e enxugue os desejos para não entrar no rotativo.
         </p>
       )}
       {fut === 0 && (
         <p className="rounded-xl bg-rosa p-3 text-xs leading-relaxed text-vermelho-texto">
-          🚨 <b>Futuro zerado:</b> o básico e o lazer engoliram 100% da renda. Qualquer imprevisto vai virar dívida no
+          <Selo tipo="perigo" />
+          <b>Futuro zerado:</b> o básico e o lazer engoliram 100% da renda. Qualquer imprevisto vai virar dívida no
           cartão. Puxe um pouco dos desejos para abrir espaço para o seu colchão.
         </p>
       )}
       {nec <= 65 && fut >= 15 && (
         <p className="rounded-xl bg-menta-clara p-3 text-xs leading-relaxed text-verde-texto">
-          ✨ <b>Equilíbrio saudável:</b> você cobre o custo de vida, aproveita o momento com lazer e ainda guarda{' '}
+          <Selo tipo="brilho" />
+          <b>Equilíbrio saudável:</b> você cobre o custo de vida, aproveita o momento com lazer e ainda guarda{' '}
           {money(futCents)} todo mês para seu futuro.
         </p>
       )}
@@ -221,22 +219,19 @@ function AjusteDasFatias() {
 }
 
 /** Lição 3: O bisturi no fixo */
-function BisturiNoFixo() {
-  const [cortados, setCortados] = useState<Record<string, boolean>>({
-    celular: true,
-    academia: false,
-    streaming1: false,
-    musica: false,
-    internet: false,
-  });
+const BISTURI_GENERICOS = [
+  { id: 'celular', label: 'Plano celular pós-pago (renegociar p/ controle)', mensal: 4500 },
+  { id: 'streaming1', label: 'Streaming extra que você mal abre', mensal: 3990 },
+  { id: 'academia', label: 'Academia não utilizada no mês', mensal: 8990 },
+  { id: 'musica', label: 'Plano de música individual (mudar p/ família)', mensal: 1500 },
+  { id: 'internet', label: 'Internet em velocidade acima da necessária', mensal: 4000 },
+];
 
-  const ITENS = [
-    { id: 'celular', label: 'Plano celular pós-pago (renegociar p/ controle)', mensal: 4500 },
-    { id: 'streaming1', label: 'Streaming extra que você mal abre', mensal: 3990 },
-    { id: 'academia', label: 'Academia não utilizada no mês', mensal: 8990 },
-    { id: 'musica', label: 'Plano de música individual (mudar p/ família)', mensal: 1500 },
-    { id: 'internet', label: 'Internet em velocidade acima da necessária', mensal: 4000 },
-  ];
+function BisturiNoFixo({ userContext = null }: SimulatorProps) {
+  // Com extrato: as assinaturas que o Tostão achou. Sem: a lista didática de sempre.
+  const reais = bisturiItems(userContext);
+  const ITENS = reais ?? BISTURI_GENERICOS;
+  const [cortados, setCortados] = useState<Record<string, boolean>>(reais ? {} : { celular: true });
 
   const totalMensal = ITENS.reduce((acc, it) => acc + (cortados[it.id] ? it.mensal : 0), 0);
   const totalAnual = totalMensal * 12;
@@ -247,6 +242,7 @@ function BisturiNoFixo() {
 
   return (
     <div className="flex flex-col gap-3.5">
+      {reais && <PresetHint>Estas são as assinaturas que o Tostão achou no seu extrato.</PresetHint>}
       <p className="text-xs text-tinta-suave">
         Selecione quais gastos fixos você toparia cortar ou renegociar para passar o bisturi:
       </p>
@@ -295,7 +291,8 @@ function BisturiNoFixo() {
       <p className="text-xs leading-relaxed text-tinta-suave">
         {totalMensal > 0 ? (
           <>
-            💡 <b>Poder do fixo:</b> cancelar ou renegociar dá trabalho uma única vez, mas o alívio de{' '}
+            <Selo tipo="dica" />
+            <b>Poder do fixo:</b> cancelar ou renegociar dá trabalho uma única vez, mas o alívio de{' '}
             <b>{money(totalMensal)}</b> cai na sua conta todo mês no piloto automático.
           </>
         ) : (
@@ -338,15 +335,7 @@ function RemanejamentoEmergencia() {
             <span>Delivery & lanches</span>
             <span className="font-bold text-tinta">−{money(delivery * 100)}</span>
           </span>
-          <input
-            type="range"
-            min={0}
-            max={120}
-            step={10}
-            value={delivery}
-            onChange={(e) => setDelivery(+e.target.value)}
-            className="accent-laranja"
-          />
+          <TostaoSlider min={0} max={120} step={10} value={delivery} onChange={(e) => setDelivery(+e.target.value)} />
         </label>
 
         <label className="flex flex-col gap-1">
@@ -354,15 +343,7 @@ function RemanejamentoEmergencia() {
             <span>Rolê do fim de semana</span>
             <span className="font-bold text-tinta">−{money(role * 100)}</span>
           </span>
-          <input
-            type="range"
-            min={0}
-            max={120}
-            step={10}
-            value={role}
-            onChange={(e) => setRole(+e.target.value)}
-            className="accent-laranja"
-          />
+          <TostaoSlider min={0} max={120} step={10} value={role} onChange={(e) => setRole(+e.target.value)} />
         </label>
 
         <label className="flex flex-col gap-1">
@@ -370,15 +351,7 @@ function RemanejamentoEmergencia() {
             <span>Roupas & comprinhas</span>
             <span className="font-bold text-tinta">−{money(compras * 100)}</span>
           </span>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            step={10}
-            value={compras}
-            onChange={(e) => setCompras(+e.target.value)}
-            className="accent-laranja"
-          />
+          <TostaoSlider min={0} max={100} step={10} value={compras} onChange={(e) => setCompras(+e.target.value)} />
         </label>
 
         <label className="flex flex-col gap-1">
@@ -386,15 +359,7 @@ function RemanejamentoEmergencia() {
             <span>Uber & caronas pagas</span>
             <span className="font-bold text-tinta">−{money(uber * 100)}</span>
           </span>
-          <input
-            type="range"
-            min={0}
-            max={80}
-            step={10}
-            value={uber}
-            onChange={(e) => setUber(+e.target.value)}
-            className="accent-laranja"
-          />
+          <TostaoSlider min={0} max={80} step={10} value={uber} onChange={(e) => setUber(+e.target.value)} />
         </label>
       </div>
 
@@ -415,12 +380,14 @@ function RemanejamentoEmergencia() {
 
       {reequilibrado ? (
         <div className="rounded-xl bg-menta-clara p-3 text-xs leading-relaxed text-verde-texto">
-          🎉 <b>Mês reequilibrado!</b> Você cobriu os R$ 200 remanejando gastos flexíveis. O dinheiro saiu das suas
+          <Selo tipo="brilho" />
+          <b>Mês reequilibrado!</b> Você cobriu os R$ 200 remanejando gastos flexíveis. O dinheiro saiu das suas
           escolhas conscientes, e você não pagou um real de juros pro rotativo.
         </div>
       ) : (
         <div className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
-          ⏳ <b>Ainda faltam {money(ALVO - totalCortes)}:</b> se não compensar esse valor nas próximas semanas, ele vira
+          <Selo tipo="tempo" />
+          <b>Ainda faltam {money(ALVO - totalCortes)}:</b> se não compensar esse valor nas próximas semanas, ele vira
           fatura atrasada ou cheque especial. Aumente o corte em alguma categoria!
         </div>
       )}
@@ -482,14 +449,7 @@ function DetectorGatilhos() {
             {diasTrocados} dia{diasTrocados > 1 ? 's' : ''}/semana
           </span>
         </span>
-        <input
-          type="range"
-          min={1}
-          max={maxTrocas}
-          value={diasTrocados}
-          onChange={(e) => setTrocas(+e.target.value)}
-          className="accent-laranja"
-        />
+        <TostaoSlider min={1} max={maxTrocas} value={diasTrocados} onChange={(e) => setTrocas(+e.target.value)} />
         <span className="text-[11px] text-tinta-suave">
           Economia estimada de {money(ECONOMIA_REFEICAO)} por refeição preparada em casa.
         </span>
@@ -507,7 +467,8 @@ function DetectorGatilhos() {
       </div>
 
       <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
-        🎯 <b>A regra não é sofrer:</b> você não precisa cozinhar os 7 dias da semana. Trocar apenas{' '}
+        <Selo tipo="meta" />
+        <b>A regra não é sofrer:</b> você não precisa cozinhar os 7 dias da semana. Trocar apenas{' '}
         <b>
           {diasTrocados} refeição{diasTrocados > 1 ? 'ões' : ''}
         </b>{' '}

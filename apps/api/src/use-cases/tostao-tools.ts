@@ -5,6 +5,7 @@ import { currentMonth, monthRange } from '../lib/month.js';
 import { civilDay } from '../lib/tz.js';
 import { timezoneOf } from '../lib/user-tz.js';
 import { GetBudgetsUseCase } from './budgets.js';
+import { ForecastUseCase } from './financial-plan.js';
 
 const normalize = (s: string) =>
   s
@@ -50,6 +51,15 @@ export const TOSTAO_TOOLS: ToolDefinition[] = [
         },
         required: ['categoria'],
       },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'consultar_meta',
+      description:
+        'Consulta a meta financeira principal da pessoa: quanto já guardou, quanto falta, o prazo e quanto precisa guardar por mês. Só leitura.',
+      parameters: { type: 'object', properties: {} },
     },
   },
   {
@@ -260,6 +270,7 @@ export async function executeTostaoTool(
     const totalCents = matching.reduce((sum, t) => sum - t.amountInCents, 0);
     return JSON.stringify({
       categoria: cat.name,
+      categoria_id: cat.id,
       mes: month,
       total_gasto: brl(totalCents),
       total_centavos: totalCents,
@@ -294,6 +305,7 @@ export async function executeTostaoTool(
     if (!budget) {
       return JSON.stringify({
         categoria: cat.name,
+        categoria_id: cat.id,
         mes: month,
         tem_limite: false,
         mensagem: `Não há limite mensal definido para ${cat.name}.`,
@@ -304,13 +316,39 @@ export async function executeTostaoTool(
     const pct = Math.round((budget.spentInCents / budget.limitInCents) * 100);
     return JSON.stringify({
       categoria: cat.name,
+      categoria_id: cat.id,
       mes: month,
       tem_limite: true,
       limite: brl(budget.limitInCents),
+      limite_centavos: budget.limitInCents,
       gasto_atual: brl(budget.spentInCents),
+      gasto_centavos: budget.spentInCents,
       restante: brl(Math.max(0, remainingCents)),
       excedido_em: remainingCents < 0 ? brl(-remainingCents) : null,
       percentual_usado: pct,
+    });
+  }
+
+  if (name === 'consultar_meta') {
+    // Só leitura, sobre o que a pessoa já cadastrou: nenhum dado de extrato entra aqui.
+    const { goal } = await new ForecastUseCase(repos, () => now).execute({ userId, months: 1 });
+    if (!goal)
+      return JSON.stringify({
+        tem_meta: false,
+        mensagem: 'A pessoa ainda não definiu uma meta. Ela cria em "Meta" no app.',
+      });
+    return JSON.stringify({
+      tem_meta: true,
+      meta: goal.label,
+      valor_meta: goal.amountInCents === null ? null : brl(goal.amountInCents),
+      valor_meta_centavos: goal.amountInCents,
+      guardado: brl(goal.savedInCents),
+      guardado_centavos: goal.savedInCents,
+      prazo: goal.deadline,
+      precisa_guardar_por_mes: goal.monthlyNeededInCents === null ? null : brl(goal.monthlyNeededInCents),
+      precisa_guardar_por_mes_centavos: goal.monthlyNeededInCents,
+      cabe_no_que_sobra: goal.fits,
+      atingida: goal.reached,
     });
   }
 

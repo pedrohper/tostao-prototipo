@@ -316,3 +316,78 @@ a.rounded-\[20px\]:active {
     transform: translateY(0);
   }
 }
+
+/* TostaoSlider (T4.5): o <input type="range"> nativo (teclado e leitor de tela de graça) com a cara do Tostão.
+   `--pct` é a parte já "preenchida" (o componente atualiza). Cores: --tone, por data-tone. */
+.tostao-slider {
+  --pct: 0%;
+  --tone: var(--color-laranja);
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 28px; /* alvo de toque confortável no celular */
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y; /* arrastar na horizontal mexe no slider; vertical continua rolando a página */
+}
+.tostao-slider[data-tone='amarelo'] {
+  --tone: var(--color-amarelo);
+}
+.tostao-slider[data-tone='alerta'] {
+  --tone: var(--color-alerta);
+}
+.tostao-slider[data-tone='menta'] {
+  --tone: var(--color-menta);
+}
+.tostao-slider::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 9999px;
+  border: 1px solid var(--color-linha);
+  background: linear-gradient(to right, var(--tone) var(--pct), var(--color-papel-2) var(--pct));
+}
+.tostao-slider::-moz-range-track {
+  height: 8px;
+  border-radius: 9999px;
+  border: 1px solid var(--color-linha);
+  background: var(--color-papel-2);
+}
+.tostao-slider::-moz-range-progress {
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--tone);
+}
+.tostao-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -8px; /* centraliza no trilho de 8px + bordas */
+  border-radius: 9999px;
+  border: 3px solid var(--tone);
+  background: var(--color-cartao);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+}
+.tostao-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  border: 3px solid var(--tone);
+  background: var(--color-cartao);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+}
+.tostao-slider:focus-visible {
+  outline: none;
+}
+.tostao-slider:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--color-tinta);
+  outline-offset: 2px;
+}
+.tostao-slider:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--color-tinta);
+  outline-offset: 2px;
+}
+.tostao-slider:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

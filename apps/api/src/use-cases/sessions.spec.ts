@@ -15,18 +15,26 @@ async function setup() {
   const other = await repos.users.create({ name: 'Ana', email: 'a@x.com', passwordHash: 'x' });
   let now = new Date('2026-11-20T12:00:00Z');
   const sessions = new SessionsUseCase(repos, () => now);
-  return { repos, user, other, sessions, tick: (ms: number) => (now = new Date(now.getTime() + ms)) };
+  return {
+    repos,
+    user,
+    other,
+    sessions,
+    clock: () => now,
+    tick: (ms: number) => (now = new Date(now.getTime() + ms)),
+  };
 }
 
 describe('refresh token: rotação', () => {
   it('guarda só o hash e devolve token opaco de 256 bits', async () => {
-    const { repos, user, sessions } = await setup();
+    const { repos, user, sessions, clock } = await setup();
     const { refreshToken } = await sessions.open(user.id, { userAgent: 'Firefox', ipAddress: '1.2.3.4' });
     expect(refreshToken).toMatch(/^[A-Za-z0-9_-]{43}$/);
     const row = repos.refreshTokens.items[0]!;
     expect(row.tokenHash).toBe(hashToken(refreshToken));
     expect(JSON.stringify(row)).not.toContain(refreshToken);
-    expect(row.expiresAt.getTime() - row.createdAt.getTime()).toBeGreaterThan(29 * DAY);
+    // Contra o relógio do próprio caso de uso: `createdAt` do repositório em memória é o relógio real, que não anda junto.
+    expect(row.expiresAt.getTime() - clock().getTime()).toBeGreaterThan(29 * DAY);
     expect(row).toMatchObject({ userAgent: 'Firefox', ipAddress: '1.2.3.4', revokedAt: null });
   });
 
