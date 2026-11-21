@@ -6,7 +6,7 @@ Protótipo funcional pra testar e validar a ideia. Depois, a plataforma de verda
 
 ## O que já funciona
 
-- Criar conta, entrar e sair (JWT em cookie httpOnly)
+- Criar conta, entrar e sair (access token de 15 min + refresh token rotativo e revogável, em cookies httpOnly), confirmar e-mail e "esqueci minha senha" por e-mail (Resend)
 - Conectar banco pelo **Pluggy Connect** (widget dentro do app, com o MeuPluggy) ou com um **banco de exemplo**
 - Sincronização na hora e automática todo dia às 6h, sem duplicar transação
 - Categorização automática por regras (iFood, Spotify, Uber, mercados...)
@@ -31,7 +31,7 @@ Protótipo funcional pra testar e validar a ideia. Depois, a plataforma de verda
 - **Compensa parcelar?** (Aprender > Contas na mão, e simulador da lição 2.3): acha os juros escondidos no parcelado, compara com deixar o dinheiro rendendo no CDI e calcula parcela e juros de empréstimo
 - **Onde investir** (Aprender > Contas na mão, e na Meta): a ordem dívida cara → reserva (6 meses do que a previsão diz que você gasta) → objetivos com data → longo prazo, e quanto um valor vira na poupança, no CDI e no Tesouro Selic. Taxas (Selic, CDI, IPCA) vêm da API pública do Banco Central (SGS, sem chave), com cache de 12 h; se o BC não responde, usa as de referência em `packages/contracts/src/juros.ts`
 - Cadastro aberto; convite (Perfil → Convidar alguém) é opcional e só marca quem chamou quem
-- Sessão que renova sozinha, limite de 5 tentativas de login, backup diário (`scripts/backup-db.sh`)
+- Sessão que renova sozinha (refresh token de 30 dias, reuso derruba a sessão), limite de 5 tentativas de login, backup diário (`scripts/backup-db.sh`)
 - Ocultar conta que você não usa (ex.: poupança parada): some da Carteira e do saldo
 - Layout de celular e de desktop, e modo escuro automático
 
@@ -70,12 +70,12 @@ Plano B: se o banco já foi ligado pela Demo do dashboard ("Ir para Demo" → me
 
 ### Comandos úteis
 
-| Comando | O que faz |
-|---|---|
-| `pnpm test` | Testes da API (Vitest, sem precisar de banco) |
-| `pnpm --filter @tostao/api sync` | Roda a sincronização de todo mundo agora |
-| `pnpm content:build` | Regera as lições a partir de `content/curriculo.md` |
-| `pnpm --filter @tostao/api exec prisma studio` | Abre o banco no navegador |
+| Comando                                        | O que faz                                           |
+| ---------------------------------------------- | --------------------------------------------------- |
+| `pnpm test`                                    | Testes da API (Vitest, sem precisar de banco)       |
+| `pnpm --filter @tostao/api sync`               | Roda a sincronização de todo mundo agora            |
+| `pnpm content:build`                           | Regera as lições a partir de `content/curriculo.md` |
+| `pnpm --filter @tostao/api exec prisma studio` | Abre o banco no navegador                           |
 
 ## Mapa do código
 
@@ -105,15 +105,13 @@ O caminho de uma requisição: **controller** valida com Zod, chama o **use case
 
 ## Atalhos do protótipo (pra fazer direito na plataforma)
 
-| Atalho | Como deveria ser |
-|---|---|
-| Só o simulador da lição 1.1 existe | Um simulador por lição |
-| Compromisso da semana não é auditado | Job que confere o extrato e marca cumprido/não cumprido |
-| Cron dentro do processo da API | Worker separado ou cron do provedor |
-| Fuso fixo -03:00 (dia sem hora vindo do banco = meio-dia de Brasília) | Fuso do usuário |
-| Transferência interna por par de valores | Pode errar se alguém te mandar o mesmo valor que você mandou pra outra pessoa no mesmo dia |
-| Recuperar senha por link gerado no servidor (`pnpm --filter @tostao/api reset-link email`) | E-mail de recuperação automático |
-| Limite de login em memória, por e-mail | Redis/limite por IP na borda |
-| Chat manda um resumo pronto pra IA (sem ferramentas) | IA consultando dados por function calling |
-| Tribunal e Batalha | Ainda só no design (canvas) |
-| Assinatura detectada por padrão de descrição | Usar a categoria do Pluggy e deixar a pessoa confirmar/ignorar |
+| Atalho                                                                | Como deveria ser                                                                           |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Só o simulador da lição 1.1 existe                                    | Um simulador por lição                                                                     |
+| Compromisso da semana não é auditado                                  | Job que confere o extrato e marca cumprido/não cumprido                                    |
+| Cron dentro do processo da API                                        | Worker separado ou cron do provedor                                                        |
+| Fuso fixo -03:00 (dia sem hora vindo do banco = meio-dia de Brasília) | Fuso do usuário                                                                            |
+| Transferência interna por par de valores                              | Pode errar se alguém te mandar o mesmo valor que você mandou pra outra pessoa no mesmo dia |
+| Chat manda um resumo pronto pra IA (sem ferramentas)                  | IA consultando dados por function calling                                                  |
+| Tribunal e Batalha                                                    | Ainda só no design (canvas)                                                                |
+| Assinatura detectada por padrão de descrição                          | Usar a categoria do Pluggy e deixar a pessoa confirmar/ignorar                             |

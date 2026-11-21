@@ -13,7 +13,11 @@ describe('nextDueDate', () => {
     expect(nextDueDate(new Date('2026-11-12T03:00:00Z'), now).toISOString()).toBe('2026-11-12T03:00:00.000Z');
   });
   it('dia 31 vira o último dia do mês curto e volta pro 31 depois', () => {
-    expect(nextDueDate(new Date('2026-01-31T03:00:00Z'), new Date('2026-02-10T00:00:00Z')).toISOString()).toBe('2026-02-28T03:00:00.000Z');
-    expect(nextDueDate(new Date('2026-01-31T03:00:00Z'), new Date('2026-03-01T00:00:00Z')).toISOString()).toBe('2026-03-31T03:00:00.000Z');
+    expect(nextDueDate(new Date('2026-01-31T03:00:00Z'), new Date('2026-02-10T00:00:00Z')).toISOString()).toBe(
+      '2026-02-28T03:00:00.000Z',
+    );
+    expect(nextDueDate(new Date('2026-01-31T03:00:00Z'), new Date('2026-03-01T00:00:00Z')).toISOString()).toBe(
+      '2026-03-31T03:00:00.000Z',
+    );
   });
 });

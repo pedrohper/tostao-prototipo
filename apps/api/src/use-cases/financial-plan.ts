@@ -1,9 +1,20 @@
-import type { FinancialPlan, ForecastItem, ForecastMonth, Goal, GoalStatus, IncomeSuggestion, SpendingBase, SpendingBaseMonth, ThisMonthForecast } from '@tostao/contracts';
+import { randomUUID } from 'node:crypto';
+import type {
+  FinancialPlan,
+  ForecastItem,
+  ForecastMonth,
+  Goal,
+  GoalStatus,
+  IncomeSuggestion,
+  SpendingBase,
+  SpendingBaseMonth,
+  ThisMonthForecast,
+} from '@tostao/contracts';
 import type { Repositories } from '../repositories/types.js';
 import type { Transaction } from '../domain/entities.js';
 import { NEUTRAL_CATEGORY_ID } from '../domain/entities.js';
 import { currentMonth } from '../lib/month.js';
-import { ResourceNotFoundError } from '../domain/errors.js';
+import { AppError, ResourceNotFoundError } from '../domain/errors.js';
 import { normalizeDescription } from '../lib/text.js';
 import { patternFromDescription } from '../services/categorize.js';
 import { GetMonthSummaryUseCase } from './get-month-summary.js';
@@ -27,7 +38,8 @@ const monthsBetween = (a: string, b: string) => {
 
 /** Renda que conta: salário + outras entradas marcadas como renda. */
 export const planIncome = (p: FinancialPlan) =>
-  (p.salary?.amountInCents ?? 0) + p.otherIncomes.filter((i) => i.countsAsIncome).reduce((s, i) => s + i.amountInCents, 0);
+  (p.salary?.amountInCents ?? 0) +
+  p.otherIncomes.filter((i) => i.countsAsIncome).reduce((s, i) => s + i.amountInCents, 0);
 export const planFixed = (p: FinancialPlan) => p.fixedExpenses.reduce((s, f) => s + f.amountInCents, 0);
 
 /**
@@ -36,12 +48,17 @@ export const planFixed = (p: FinancialPlan) => p.fixedExpenses.reduce((s, f) => 
  * (sai da renda e do gasto). Aplica também no histórico, pra tela já ficar certa.
  */
 export class SaveFinancialPlanUseCase {
-  constructor(private readonly repos: Pick<Repositories, 'plans' | 'rules' | 'transactions'>, private readonly now: () => Date = () => new Date()) {}
+  constructor(
+    private readonly repos: Pick<Repositories, 'plans' | 'rules' | 'transactions'>,
+    private readonly now: () => Date = () => new Date(),
+  ) {}
 
   async execute({ userId, plan }: { userId: string; plan: FinancialPlan }) {
     const marks: { pattern: string; categoryId: string }[] = [];
     if (plan.salary?.pattern) marks.push({ pattern: plan.salary.pattern, categoryId: SALARY_CATEGORY_ID });
-    for (const i of plan.otherIncomes) if (i.pattern) marks.push({ pattern: i.pattern, categoryId: i.countsAsIncome ? SALARY_CATEGORY_ID : NEUTRAL_CATEGORY_ID });
+    for (const i of plan.otherIncomes)
+      if (i.pattern)
+        marks.push({ pattern: i.pattern, categoryId: i.countsAsIncome ? SALARY_CATEGORY_ID : NEUTRAL_CATEGORY_ID });
 
     const clean = (p: string) => patternFromDescription(p);
     const normalized = {
@@ -50,24 +67,58 @@ export class SaveFinancialPlanUseCase {
       otherIncomes: plan.otherIncomes.map((i) => ({ ...i, pattern: i.pattern ? clean(i.pattern) : null })),
     };
     // A meta guarda quanto já foi guardado: o formulário da renda não manda isso, então mantém o que tinha.
-    if (normalized.goal && normalized.goal.savedInCents === undefined) {
-      const before = await this.repos.plans.get(userId);
-      normalized.goal = { ...normalized.goal, savedInCents: before?.goal?.savedInCents ?? 0 };
-    }
-    await this.repos.plans.save(userId, normalized);
+    // mutate: lê, aplica e grava com lock otimista (não atropela um "guardei R$ 50" que chegou no meio).
+    await this.repos.plans.mutate(userId, (before) => {
+      const draft: FinancialPlan = { ...normalized };
+      const prevGoals = before ? resolveGoals(before) : [];
+      if (draft.goals !== undefined) {
+        // Meta com id casa só pelo id. Meta sem id (cliente antigo) herda a da mesma posição, se ninguém reivindicou aquele id.
+        const claimed = new Set(draft.goals.map((g) => g.id).filter(Boolean));
+        draft.goals = draft.goals.map((g, idx) => {
+          const byPosition = prevGoals[idx] && !claimed.has(prevGoals[idx].id) ? prevGoals[idx] : undefined;
+          const prev = g.id ? prevGoals.find((p) => p.id === g.id) : byPosition;
+          return {
+            ...g,
+            id: g.id ?? prev?.id ?? randomUUID(),
+            savedInCents: g.savedInCents ?? prev?.savedInCents ?? 0,
+          };
+        });
+        draft.goal = draft.goals[0] ?? null;
+      } else if (draft.goal) {
+        const primaryId = draft.goal.id ?? prevGoals[0]?.id ?? 'default';
+        const primarySaved = draft.goal.savedInCents ?? prevGoals[0]?.savedInCents ?? before?.goal?.savedInCents ?? 0;
+        const updatedPrimary = { ...draft.goal, id: primaryId, savedInCents: primarySaved };
+        draft.goal = updatedPrimary;
+        draft.goals = [updatedPrimary, ...prevGoals.slice(1)];
+      } else if (prevGoals.length > 0) {
+        // O formulário da renda só conhece a meta principal: sem meta nem lista no corpo, as metas ficam como estavam.
+        draft.goals = prevGoals;
+        draft.goal = prevGoals[0] ?? null;
+      }
+      return draft;
+    });
 
     let updated = 0;
     const rules = marks.map((m) => ({ ...m, pattern: clean(m.pattern) })).filter((m) => m.pattern.length >= 3);
     if (rules.length) {
       for (const r of rules) await this.repos.rules.upsert({ userId, pattern: r.pattern, categoryId: r.categoryId });
       const now = this.now();
-      const txs = await this.repos.transactions.findManyInRange(userId, new Date(now.getTime() - 400 * DAY), new Date(now.getTime() + DAY));
+      const txs = await this.repos.transactions.findManyInRange(
+        userId,
+        new Date(now.getTime() - 400 * DAY),
+        new Date(now.getTime() + DAY),
+      );
       for (const t of txs) {
         if (t.amountInCents <= 0) continue;
         const text = normalizeDescription(t.description);
         const r = rules.filter((x) => text.includes(x.pattern)).sort((a, b) => b.pattern.length - a.pattern.length)[0];
         if (!r || t.categoryId === r.categoryId) continue;
-        const internal = r.categoryId === NEUTRAL_CATEGORY_ID ? true : t.categoryId === NEUTRAL_CATEGORY_ID ? false : t.isInternalTransfer;
+        const internal =
+          r.categoryId === NEUTRAL_CATEGORY_ID
+            ? true
+            : t.categoryId === NEUTRAL_CATEGORY_ID
+              ? false
+              : t.isInternalTransfer;
         await this.repos.transactions.save({ ...t, categoryId: r.categoryId, isInternalTransfer: internal });
         updated++;
       }
@@ -87,11 +138,16 @@ const SALARY_SIGNAL = /SALARIO|C\/SAL\b|FOLHA|PROVENTO/;
 export function recurringMonthly(list: Transaction[], _months: number): number {
   const bands: Transaction[][] = [];
   for (const t of [...list].sort((a, b) => a.amountInCents - b.amountInCents)) {
-    const band = bands.find((b) => { const m = medianOf(b.map((x) => x.amountInCents)); return Math.abs(t.amountInCents - m) <= m * 0.12; });
-    if (band) band.push(t); else bands.push([t]);
+    const band = bands.find((b) => {
+      const m = medianOf(b.map((x) => x.amountInCents));
+      return Math.abs(t.amountInCents - m) <= m * 0.12;
+    });
+    if (band) band.push(t);
+    else bands.push([t]);
   }
   // Repete = 2+ vezes com pelo menos ~3 semanas entre a primeira e a última (o salário de setembro pode cair dia 01/10).
-  const span = (b: Transaction[]) => Math.max(...b.map((t) => t.occurredAt.getTime())) - Math.min(...b.map((t) => t.occurredAt.getTime()));
+  const span = (b: Transaction[]) =>
+    Math.max(...b.map((t) => t.occurredAt.getTime())) - Math.min(...b.map((t) => t.occurredAt.getTime()));
   const recurring = bands.filter((b) => b.length >= 2 && span(b) >= 20 * DAY);
   // Nada se repete ainda: o valor típico de uma entrada (mediana), não o total do mês, que mistura acerto e atraso.
   if (!recurring.length) return list.length ? medianOf(list.map((t) => t.amountInCents)) : 0;
@@ -100,12 +156,19 @@ export function recurringMonthly(list: Transaction[], _months: number): number {
 
 /** Entradas que se repetem nos últimos meses: o onboarding mostra pra pessoa dizer o que é salário e o que é repasse. */
 export class SuggestIncomeUseCase {
-  constructor(private readonly repos: Pick<Repositories, 'transactions' | 'accounts'>, private readonly now: () => Date = () => new Date()) {}
+  constructor(
+    private readonly repos: Pick<Repositories, 'transactions' | 'accounts'>,
+    private readonly now: () => Date = () => new Date(),
+  ) {}
 
   async execute({ userId }: { userId: string }): Promise<{ suggestions: IncomeSuggestion[] }> {
     const now = this.now();
     const [txs, accounts] = await Promise.all([
-      this.repos.transactions.findManyInRange(userId, new Date(now.getTime() - 120 * DAY), new Date(now.getTime() + DAY)),
+      this.repos.transactions.findManyInRange(
+        userId,
+        new Date(now.getTime() - 120 * DAY),
+        new Date(now.getTime() + DAY),
+      ),
       this.repos.accounts.listByUser(userId),
     ]);
     const acc = new Map(accounts.map((a) => [a.id, a]));
@@ -133,7 +196,7 @@ export class SuggestIncomeUseCase {
         pattern,
         signal,
         sample: last.description,
-        bank: last.accountId ? acc.get(last.accountId)?.name ?? null : null,
+        bank: last.accountId ? (acc.get(last.accountId)?.name ?? null) : null,
         monthlyAvgInCents: recurringMonthly(list, months),
         months,
         hits: list.slice(0, 6).map((t) => ({ date: t.occurredAt.toISOString(), amountInCents: t.amountInCents })),
@@ -145,7 +208,23 @@ export class SuggestIncomeUseCase {
   }
 }
 
-const GOAL_LABEL: Record<Goal['kind'], string> = { reserva: 'Reserva', viagem: 'Viagem', 'sair-do-vermelho': 'Sair do vermelho', outro: 'Minha meta' };
+const GOAL_LABEL: Record<Goal['kind'], string> = {
+  reserva: 'Reserva',
+  viagem: 'Viagem',
+  'sair-do-vermelho': 'Sair do vermelho',
+  outro: 'Minha meta',
+};
+
+export function resolveGoals(plan: FinancialPlan): Goal[] {
+  if (Array.isArray(plan.goals)) {
+    return plan.goals.map((g, i) => ({ ...g, id: g.id ?? (i === 0 ? 'default' : `goal-${i}`) }));
+  }
+  return plan.goal ? [{ ...plan.goal, id: plan.goal.id ?? 'default' }] : [];
+}
+
+function syncPlanGoals(base: FinancialPlan, goals: Goal[]): FinancialPlan {
+  return { ...base, goals, goal: goals[0] ?? null };
+}
 
 /** Quanto falta e quanto guardar por mês. Prazo "2027-07" = até o fim de julho: de novembro são 8 meses (dez a jul). */
 export function goalStatus(goal: Goal, cur: string, nextLeftInCents: number | null): GoalStatus {
@@ -155,6 +234,8 @@ export function goalStatus(goal: Goal, cur: string, nextLeftInCents: number | nu
   const missing = amount === null ? null : Math.max(0, amount - saved);
   const monthly = missing === null || monthsLeft === null ? null : Math.ceil(missing / monthsLeft);
   return {
+    ...(goal.id ? { id: goal.id } : {}),
+    kind: goal.kind,
     label: goal.label ?? GOAL_LABEL[goal.kind],
     amountInCents: amount,
     savedInCents: saved,
@@ -166,16 +247,81 @@ export function goalStatus(goal: Goal, cur: string, nextLeftInCents: number | nu
   };
 }
 
-/** Criar, trocar ou apagar a meta sem passar pelo formulário da renda. */
+/** Criar, editar ou apagar metas sem passar pelo formulário da renda. */
+const EMPTY_PLAN: FinancialPlan = { salary: null, otherIncomes: [], fixedExpenses: [], benefits: [], goal: null };
+
+/** Metas: cada operação lê o plano, altera e grava com lock otimista (plans.mutate), sem perder escrita concorrente. */
 export class SetGoalUseCase {
   constructor(private readonly repos: Pick<Repositories, 'plans'>) {}
 
   async execute({ userId, goal }: { userId: string; goal: Goal | null }) {
-    const plan = await this.repos.plans.get(userId);
-    const base: FinancialPlan = plan ?? { salary: null, otherIncomes: [], fixedExpenses: [], benefits: [], goal: null };
-    const next = goal ? { ...goal, savedInCents: goal.savedInCents ?? base.goal?.savedInCents ?? 0 } : null;
-    await this.repos.plans.save(userId, { ...base, goal: next });
-    return { goal: next };
+    let result!: { goal: Goal | null; goals: Goal[] };
+    await this.repos.plans.mutate(userId, (plan) => {
+      const base = plan ?? EMPTY_PLAN;
+      const existing = resolveGoals(base);
+      if (!goal) {
+        const rest = existing.slice(1);
+        result = { goal: rest[0] ?? null, goals: rest };
+        return syncPlanGoals(base, rest);
+      }
+      const primary = existing[0];
+      const nextPrimary: Goal = {
+        ...goal,
+        id: goal.id ?? primary?.id ?? 'default',
+        savedInCents: goal.savedInCents ?? primary?.savedInCents ?? 0,
+      };
+      const nextGoals = [nextPrimary, ...existing.slice(1)];
+      result = { goal: nextPrimary, goals: nextGoals };
+      return syncPlanGoals(base, nextGoals);
+    });
+    return result;
+  }
+
+  async add({ userId, goal }: { userId: string; goal: Goal }) {
+    let result!: { goal: Goal; goals: Goal[] };
+    await this.repos.plans.mutate(userId, (plan) => {
+      const base = plan ?? EMPTY_PLAN;
+      const existing = resolveGoals(base);
+      if (existing.length >= 10) throw new AppError('Limite de 10 metas atingido.', 400);
+      const created: Goal = { ...goal, id: goal.id ?? randomUUID(), savedInCents: goal.savedInCents ?? 0 };
+      const nextGoals = [...existing, created];
+      result = { goal: created, goals: nextGoals };
+      return syncPlanGoals(base, nextGoals);
+    });
+    return result;
+  }
+
+  async update({ userId, id, goal }: { userId: string; id: string; goal: Goal }) {
+    let result!: { goal: Goal; goals: Goal[] };
+    await this.repos.plans.mutate(userId, (plan) => {
+      if (!plan) throw new ResourceNotFoundError('Meta');
+      const existing = resolveGoals(plan);
+      const idx = existing.findIndex((g) => g.id === id);
+      if (idx === -1) throw new ResourceNotFoundError('Meta');
+      const prev = existing[idx]!;
+      const updated: Goal = {
+        ...goal,
+        id: prev.id ?? id,
+        savedInCents: goal.savedInCents ?? prev.savedInCents ?? 0,
+      };
+      const nextGoals = existing.map((g, i) => (i === idx ? updated : g));
+      result = { goal: updated, goals: nextGoals };
+      return syncPlanGoals(plan, nextGoals);
+    });
+    return result;
+  }
+
+  async remove({ userId, id }: { userId: string; id: string }) {
+    let result!: { goals: Goal[] };
+    await this.repos.plans.mutate(userId, (plan) => {
+      if (!plan) throw new ResourceNotFoundError('Meta');
+      const existing = resolveGoals(plan);
+      const nextGoals = existing.filter((g) => g.id !== id);
+      if (nextGoals.length === existing.length) throw new ResourceNotFoundError('Meta');
+      result = { goals: nextGoals };
+      return syncPlanGoals(plan, nextGoals);
+    });
+    return result;
   }
 }
 
@@ -183,34 +329,59 @@ export class SetGoalUseCase {
 export class GoalDepositUseCase {
   constructor(private readonly repos: Pick<Repositories, 'plans'>) {}
 
-  async execute({ userId, amountInCents }: { userId: string; amountInCents: number }) {
-    const plan = await this.repos.plans.get(userId);
-    if (!plan?.goal) throw new ResourceNotFoundError('Meta');
-    const savedInCents = Math.max(0, (plan.goal.savedInCents ?? 0) + amountInCents);
-    await this.repos.plans.save(userId, { ...plan, goal: { ...plan.goal, savedInCents } });
-    return { savedInCents };
+  async execute({ userId, amountInCents, goalId }: { userId: string; amountInCents: number; goalId?: string }) {
+    let result!: { savedInCents: number; goalId: string | undefined };
+    await this.repos.plans.mutate(userId, (plan) => {
+      if (!plan) throw new ResourceNotFoundError('Meta');
+      const existing = resolveGoals(plan);
+      if (!existing.length) throw new ResourceNotFoundError('Meta');
+      const idx = goalId ? existing.findIndex((g) => g.id === goalId) : 0;
+      if (idx === -1) throw new ResourceNotFoundError('Meta');
+      const target = existing[idx]!;
+      const savedInCents = Math.max(0, (target.savedInCents ?? 0) + amountInCents);
+      const nextGoals = existing.map((g, i) => (i === idx ? { ...g, savedInCents } : g));
+      result = { savedInCents, goalId: target.id };
+      return syncPlanGoals(plan, nextGoals);
+    });
+    return result;
   }
 }
 
 /** Parcela "3/10" na descrição da compra no cartão. */
 const INSTALLMENT = /(?:^|\D)(\d{1,2})\s*\/\s*(\d{1,2})(?:\D|$)/;
 
-export type PendingInstallment = { description: string; accountId: string; n: number; total: number; month: string; amount: number };
+export type PendingInstallment = {
+  description: string;
+  accountId: string;
+  n: number;
+  total: number;
+  month: string;
+  amount: number;
+};
 /** Compras parceladas no cartão que ainda têm parcela pra cair (fica só a ocorrência mais recente de cada uma). */
 export function pendingInstallments(txs: Transaction[], cardIds: Set<string>): PendingInstallment[] {
   const latest = new Map<string, PendingInstallment>();
   for (const t of txs) {
     // Anotado à mão como parcelado já tem as próximas parcelas lançadas: não projeta de novo.
-    if (t.amountInCents >= 0 || t.isInternalTransfer || !t.accountId || !cardIds.has(t.accountId) || t.seriesId) continue;
+    if (t.amountInCents >= 0 || t.isInternalTransfer || !t.accountId || !cardIds.has(t.accountId) || t.seriesId)
+      continue;
     const m = INSTALLMENT.exec(t.description);
     if (!m) continue;
-    const n = Number(m[1]), total = Number(m[2]);
+    const n = Number(m[1]),
+      total = Number(m[2]);
     if (total < 2 || n < 1 || n >= total || total > 48) continue;
     const key = `${patternFromDescription(t.description)}|${t.amountInCents}`;
     const month = monthOf(t.occurredAt);
     const prev = latest.get(key);
     if (!prev || monthsBetween(prev.month, month) > 0 || (month === prev.month && n > prev.n)) {
-      latest.set(key, { description: t.description, accountId: t.accountId, n, total, month, amount: -t.amountInCents });
+      latest.set(key, {
+        description: t.description,
+        accountId: t.accountId,
+        n,
+        total,
+        month,
+        amount: -t.amountInCents,
+      });
     }
   }
   return [...latest.values()];
@@ -245,11 +416,16 @@ const BIG_SPEND_FACTOR = 0.15;
  * O que sobrar acima da renda sem pote pra cobrir continua na base: aí é aperto de verdade.
  * `history` em ordem do mais antigo pro mais recente.
  */
-export function spendingBase(history: { month: string; incomeInCents: number; outcomeInCents: number; partial?: boolean }[], normalIncome: number): SpendingBase {
-  const income = normalIncome > 0 ? normalIncome : medianOf(history.filter((h) => h.incomeInCents > 0).map((h) => h.incomeInCents));
+export function spendingBase(
+  history: { month: string; incomeInCents: number; outcomeInCents: number; partial?: boolean }[],
+  normalIncome: number,
+): SpendingBase {
+  const income =
+    normalIncome > 0 ? normalIncome : medianOf(history.filter((h) => h.incomeInCents > 0).map((h) => h.incomeInCents));
   // Mês em que os dados começam no meio (conectou o banco dia 14) não diz quanto se gasta num mês inteiro.
   const full = history.some((h) => !h.partial && h.outcomeInCents > 0) ? history.filter((h) => !h.partial) : history;
-  const extraOf = (h: { incomeInCents: number }) => (income > 0 && h.incomeInCents > income * EXTRA_INCOME_FACTOR ? h.incomeInCents - income : 0);
+  const extraOf = (h: { incomeInCents: number }) =>
+    income > 0 && h.incomeInCents > income * EXTRA_INCOME_FACTOR ? h.incomeInCents - income : 0;
   // O pote é o extra da janela toda: acerto que caiu no mês seguinte também paga o excesso do mês anterior
   // (a compra no cartão de setembro é paga com o dinheiro que entrou em outubro).
   let pool = full.reduce((s, h) => s + extraOf(h), 0);
@@ -258,13 +434,25 @@ export function spendingBase(history: { month: string; incomeInCents: number; ou
     const over = income > 0 ? Math.max(0, h.outcomeInCents - income) : 0;
     const paid = Math.min(pool, over);
     pool -= paid;
-    return { month: h.month, incomeInCents: h.incomeInCents, outcomeInCents: h.outcomeInCents, extraIncomeInCents: extra, paidWithExtraInCents: paid, baseInCents: h.outcomeInCents - paid };
+    return {
+      month: h.month,
+      incomeInCents: h.incomeInCents,
+      outcomeInCents: h.outcomeInCents,
+      extraIncomeInCents: extra,
+      paidWithExtraInCents: paid,
+      baseInCents: h.outcomeInCents - paid,
+    };
   });
   const last3 = months.filter((m) => m.outcomeInCents > 0).slice(-3);
   const typical = medianOf(last3.map((m) => m.baseInCents));
   // Compara com o que entrou de renda comum naquele mês (sem o extra): se o mês rendeu mais, gastar mais cabe.
-  const overspent = income > 0 ? last3.filter((m) => m.baseInCents > Math.max(income, m.incomeInCents - m.extraIncomeInCents) * OVERSPEND_FACTOR).length : 0;
-  const status: SpendingBase['status'] = overspent >= 2 ? 'aperto' : last3.some((m) => m.paidWithExtraInCents > 0) ? 'excecao' : 'ok';
+  const overspent =
+    income > 0
+      ? last3.filter((m) => m.baseInCents > Math.max(income, m.incomeInCents - m.extraIncomeInCents) * OVERSPEND_FACTOR)
+          .length
+      : 0;
+  const status: SpendingBase['status'] =
+    overspent >= 2 ? 'aperto' : last3.some((m) => m.paidWithExtraInCents > 0) ? 'excecao' : 'ok';
   return { normalIncomeInCents: income, typicalInCents: typical, status, months: last3 };
 }
 
@@ -277,11 +465,21 @@ const brDay = (d: Date) => new Date(d.getTime() - 3 * 60 * 60 * 1000).getUTCDate
  * sem o que foi pago com dinheiro extra e já sem assinaturas, contas fixas e parcelas, pra não contar duas vezes). É estimativa, e a tela diz isso.
  */
 export class ForecastUseCase {
-  constructor(private readonly repos: Repositories, private readonly now: () => Date = () => new Date()) {}
+  constructor(
+    private readonly repos: Repositories,
+    private readonly now: () => Date = () => new Date(),
+  ) {}
 
-  async execute({ userId, months = 3 }: { userId: string; months?: number }): Promise<{ hasPlan: boolean; months: ForecastMonth[]; goal: GoalStatus | null; thisMonth: ThisMonthForecast | null; base: SpendingBase | null }> {
+  async execute({ userId, months = 3 }: { userId: string; months?: number }): Promise<{
+    hasPlan: boolean;
+    months: ForecastMonth[];
+    goal: GoalStatus | null;
+    goals: GoalStatus[];
+    thisMonth: ThisMonthForecast | null;
+    base: SpendingBase | null;
+  }> {
     const plan = await this.repos.plans.get(userId);
-    if (!plan) return { hasPlan: false, months: [], goal: null, thisMonth: null, base: null };
+    if (!plan) return { hasPlan: false, months: [], goal: null, goals: [], thisMonth: null, base: null };
     const now = this.now();
     const cur = currentMonth(now);
     const summary = new GetMonthSummaryUseCase(this.repos);
@@ -291,19 +489,28 @@ export class ForecastUseCase {
       Promise.all([6, 5, 4, 3, 2, 1].map((k) => summary.execute({ userId, month: shiftMonth(cur, -k) }))),
       new ListSubscriptionsUseCase(this.repos, () => now).execute({ userId }),
       this.repos.accounts.listByUser(userId),
-      this.repos.transactions.findManyInRange(userId, new Date(`${shiftMonth(cur, -6)}-01T03:00:00Z`), new Date(now.getTime() + DAY)),
+      this.repos.transactions.findManyInRange(
+        userId,
+        new Date(`${shiftMonth(cur, -6)}-01T03:00:00Z`),
+        new Date(now.getTime() + DAY),
+      ),
       summary.execute({ userId, month: cur }),
       this.repos.transactions.findManyInRange(userId, firstFuture, afterLast),
     ]);
 
     const recent = txWindow.filter((t) => t.occurredAt.getTime() >= now.getTime() - 62 * DAY);
     // Primeiro dia com dado: se o banco foi ligado no meio do mês, esse mês fica de fora da base.
-    const first = txWindow.reduce<Date | null>((min, t) => (t.accountId && (!min || t.occurredAt < min) ? t.occurredAt : min), null);
+    const first = txWindow.reduce<Date | null>(
+      (min, t) => (t.accountId && (!min || t.occurredAt < min) ? t.occurredAt : min),
+      null,
+    );
     const partialMonth = first && brDay(first) > 5 ? currentMonth(first) : null;
     const cardAccounts = accounts.filter((a) => a.type === 'CREDIT' && !a.hidden);
     const cards = new Set(cardAccounts.map((a) => a.id));
     // Plano anual parcelado (Prime 5/12) já entra como assinatura: não conta de novo como parcela.
-    const subKeys = new Set(subs.subscriptions.filter((x) => x.installmentsLeft !== null).map((x) => x.key.split('#')[0]));
+    const subKeys = new Set(
+      subs.subscriptions.filter((x) => x.installmentsLeft !== null).map((x) => x.key.split('#')[0]),
+    );
     const pending = pendingInstallments(recent, cards).filter((i) => !subKeys.has(subscriptionKey(i.description)));
     const installmentsIn = (month: string) => installmentsInMonth(pending, month);
 
@@ -311,7 +518,15 @@ export class ForecastUseCase {
     const fixed = planFixed(plan);
     const activeSubs = subs.subscriptions.filter((x) => x.active && x.installmentsLeft !== 0);
     const subscriptions = subs.monthlyInCents;
-    const base = spendingBase(past.map((p, i) => ({ month: shiftMonth(cur, i - past.length), incomeInCents: p.incomeInCents, outcomeInCents: p.outcomeInCents, partial: shiftMonth(cur, i - past.length) === partialMonth })), income);
+    const base = spendingBase(
+      past.map((p, i) => ({
+        month: shiftMonth(cur, i - past.length),
+        incomeInCents: p.incomeInCents,
+        outcomeInCents: p.outcomeInCents,
+        partial: shiftMonth(cur, i - past.length) === partialMonth,
+      })),
+      income,
+    );
     const daily = Math.max(0, base.typicalInCents - subscriptions - fixed - installmentsIn(cur));
     const cardOf = (accountId: string | null | undefined) => (accountId && cards.has(accountId) ? accountId : null);
 
@@ -320,29 +535,88 @@ export class ForecastUseCase {
       const month = shiftMonth(cur, k);
       const inMonth = scheduled.filter((t) => currentMonth(t.occurredAt) === month && !t.isInternalTransfer);
       const items: ForecastItem[] = [];
-      if (plan.salary?.amountInCents) items.push({ kind: 'renda', title: 'Salário', amountInCents: plan.salary.amountInCents, entrada: true, day: plan.salary.payday ?? null, cardId: null, detail: null });
-      for (const o of plan.otherIncomes.filter((i) => i.countsAsIncome)) items.push({ kind: 'renda', title: o.name, amountInCents: o.amountInCents, entrada: true, day: o.day ?? null, cardId: null, detail: null });
-      for (const f of plan.fixedExpenses) items.push({ kind: 'conta', title: f.name, amountInCents: f.amountInCents, entrada: false, day: f.day, cardId: null, detail: null });
+      if (plan.salary?.amountInCents)
+        items.push({
+          kind: 'renda',
+          title: 'Salário',
+          amountInCents: plan.salary.amountInCents,
+          entrada: true,
+          day: plan.salary.payday ?? null,
+          cardId: null,
+          detail: null,
+        });
+      for (const o of plan.otherIncomes.filter((i) => i.countsAsIncome))
+        items.push({
+          kind: 'renda',
+          title: o.name,
+          amountInCents: o.amountInCents,
+          entrada: true,
+          day: o.day ?? null,
+          cardId: null,
+          detail: null,
+        });
+      for (const f of plan.fixedExpenses)
+        items.push({
+          kind: 'conta',
+          title: f.name,
+          amountInCents: f.amountInCents,
+          entrada: false,
+          day: f.day,
+          cardId: null,
+          detail: null,
+        });
       for (const x of activeSubs) {
         // Parcelado anual (x/12) que acaba antes desse mês não cobra mais.
         if (x.installmentsLeft !== null && x.installmentsLeft < k) continue;
-        items.push({ kind: 'assinatura', title: x.name, amountInCents: x.amountInCents, entrada: false, day: brDay(x.nextChargeAt), cardId: cardOf(x.accountId), detail: null });
+        items.push({
+          kind: 'assinatura',
+          title: x.name,
+          amountInCents: x.amountInCents,
+          entrada: false,
+          day: brDay(x.nextChargeAt),
+          cardId: cardOf(x.accountId),
+          detail: null,
+        });
       }
       for (const i of installmentsOfMonth(pending, month)) {
-        items.push({ kind: 'parcela', title: i.description.replace(/\s*\(?\b\d{1,2}\s*\/\s*\d{1,2}\b\)?/, '').trim(), amountInCents: i.amount, entrada: false, day: null, cardId: i.accountId, detail: `${i.n}/${i.total}` });
+        items.push({
+          kind: 'parcela',
+          title: i.description.replace(/\s*\(?\b\d{1,2}\s*\/\s*\d{1,2}\b\)?/, '').trim(),
+          amountInCents: i.amount,
+          entrada: false,
+          day: null,
+          cardId: i.accountId,
+          detail: `${i.n}/${i.total}`,
+        });
       }
       for (const t of inMonth) {
         const m = /\((\d{1,2})\/(\d{1,2})\)$/.exec(t.description);
-        items.push({ kind: m ? 'parcela' : 'anotado', title: m ? t.description.replace(/\s*\(\d{1,2}\/\d{1,2}\)$/, '') : t.description, amountInCents: Math.abs(t.amountInCents), entrada: t.amountInCents > 0, day: brDay(t.occurredAt), cardId: cardOf(t.accountId), detail: m ? `${m[1]}/${m[2]}` : null });
+        items.push({
+          kind: m ? 'parcela' : 'anotado',
+          title: m ? t.description.replace(/\s*\(\d{1,2}\/\d{1,2}\)$/, '') : t.description,
+          amountInCents: Math.abs(t.amountInCents),
+          entrada: t.amountInCents > 0,
+          day: brDay(t.occurredAt),
+          cardId: cardOf(t.accountId),
+          detail: m ? `${m[1]}/${m[2]}` : null,
+        });
       }
-      items.sort((a, b) => Number(b.entrada) - Number(a.entrada) || (a.day ?? 99) - (b.day ?? 99) || b.amountInCents - a.amountInCents);
+      items.sort(
+        (a, b) =>
+          Number(b.entrada) - Number(a.entrada) || (a.day ?? 99) - (b.day ?? 99) || b.amountInCents - a.amountInCents,
+      );
 
       const subsTotal = items.filter((i) => i.kind === 'assinatura').reduce((s, i) => s + i.amountInCents, 0);
       const inst = installmentsIn(month);
       const scheduledOut = inMonth.filter((t) => t.amountInCents < 0).reduce((s, t) => s - t.amountInCents, 0);
       const scheduledIn = inMonth.filter((t) => t.amountInCents > 0).reduce((s, t) => s + t.amountInCents, 0);
       const cardTotals = cardAccounts
-        .map((a) => ({ id: a.id, name: a.name, dueDay: a.dueDate ? brDay(a.dueDate) : null, totalInCents: items.filter((i) => i.cardId === a.id && !i.entrada).reduce((s, i) => s + i.amountInCents, 0) }))
+        .map((a) => ({
+          id: a.id,
+          name: a.name,
+          dueDay: a.dueDate ? brDay(a.dueDate) : null,
+          totalInCents: items.filter((i) => i.cardId === a.id && !i.entrada).reduce((s, i) => s + i.amountInCents, 0),
+        }))
         .filter((c) => c.totalInCents > 0);
       out.push({
         month,
@@ -376,7 +650,14 @@ export class ForecastUseCase {
     const big = Math.max(20000, Math.round(income * BIG_SPEND_FACTOR));
     const monthStart = new Date(`${cur}-01T03:00:00Z`);
     const everyday = txWindow
-      .filter((t) => t.occurredAt >= monthStart && t.occurredAt <= now && t.amountInCents < 0 && !t.isInternalTransfer && (!t.accountId || accountIds.has(t.accountId)))
+      .filter(
+        (t) =>
+          t.occurredAt >= monthStart &&
+          t.occurredAt <= now &&
+          t.amountInCents < 0 &&
+          !t.isInternalTransfer &&
+          (!t.accountId || accountIds.has(t.accountId)),
+      )
       .filter((t) => -t.amountInCents < big && !subKeysActive.has(subscriptionKey(t.description)))
       .reduce((sum, t) => sum - t.amountInCents, 0);
     const pacePerDay = today >= 7 ? Math.round(everyday / today) : Math.round(daily / daysInMonth);
@@ -396,11 +677,14 @@ export class ForecastUseCase {
 
     // Sem salário informado (ex.: só criou a meta), a previsão não tem base: não diz se cabe.
     const hasIncome = income > 0;
+    const nextLeft = hasIncome ? (out[0]?.leftInCents ?? null) : null;
+    const goals = resolveGoals(plan).map((g) => goalStatus(g, cur, nextLeft));
     return {
       hasPlan: hasIncome || fixed > 0,
       thisMonth: hasIncome ? thisMonth : null,
       months: hasIncome || fixed > 0 ? out : [],
-      goal: plan.goal ? goalStatus(plan.goal, cur, hasIncome ? out[0]?.leftInCents ?? null : null) : null,
+      goal: goals[0] ?? null,
+      goals,
       base: hasIncome || fixed > 0 ? base : null,
     };
   }

@@ -1,7 +1,13 @@
 // Contrato com "o banco". O use case de sincronizar só conhece isso.
 // Implementações: PluggyBankGateway (de verdade) e FakeBankGateway (dados de exemplo / testes).
 
-export type BankItemData = { institution: string | null };
+export type BankItemData = {
+  institution: string | null;
+  /** Quem o provedor diz ser o dono do Item (o clientUserId que mandamos no connect token). null = sem dono marcado. */
+  clientUserId: string | null;
+  /** Item de conector de teste (sandbox). Nunca deve entrar em produção. */
+  isSandbox: boolean;
+};
 
 export type BankAccountData = {
   externalId: string;
@@ -29,12 +35,20 @@ export type BankTransactionData = {
   occurredAt: Date;
   /** Cartão: fatura já fechada a que a transação pertence. Sem isso = fatura aberta (ou o banco não informa). */
   billId?: string | null;
+  /** Nome limpo do estabelecimento quando o provedor identifica (ex.: Pluggy merchant.name). */
+  merchantName?: string | null;
+  /** Categoria da transação/estabelecimento no provedor (ex.: Pluggy category). */
+  providerCategory?: string | null;
 };
 
 /** Logo oficial de cada instituição (lista de conectores do provedor). */
 export type InstitutionLogo = { name: string; imageUrl: string; color: string | null };
 
 export interface BankGateway {
+  /** true = só aceita Item cujo clientUserId é o usuário que está conectando (impede conectar o Item de outra pessoa). */
+  readonly enforcesItemOwnership: boolean;
+  /** false = rejeita Item sandbox (produção). */
+  readonly allowsSandbox: boolean;
   /** Logos das instituições. [] quando o provedor não tem (o fake). */
   listInstitutionLogos(): Promise<InstitutionLogo[]>;
   /**

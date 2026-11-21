@@ -2,6 +2,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import type { TribunalResponse } from '@tostao/contracts';
+import { getDictionary, type Locale } from '@/lib/i18n';
 import { ErrorNote } from '@/components/ui';
 import { voteTribunal } from './actions';
 
@@ -12,7 +13,8 @@ export function Rich({ text }: { text: string }) {
 
 const BAR = ['bg-menta-clara', 'bg-azul', 'bg-amarelo-claro', 'bg-rosa'];
 
-export function Voto({ initial }: { initial: TribunalResponse }) {
+export function Voto({ initial, locale = 'pt-BR' }: { initial: TribunalResponse; locale?: Locale }) {
+  const labels = getDictionary(locale).pages.tribunal;
   const [t, setT] = useState(initial);
   const [error, setError] = useState<string>();
   const [pending, start] = useTransition();
@@ -20,7 +22,10 @@ export function Voto({ initial }: { initial: TribunalResponse }) {
   function pick(i: number) {
     start(async () => {
       const r = await voteTribunal(t.case.id, i);
-      if (r.result) { setT(r.result); setError(undefined); } else setError(r.error);
+      if (r.result) {
+        setT(r.result);
+        setError(undefined);
+      } else setError(r.error);
     });
   }
   return (
@@ -31,10 +36,23 @@ export function Voto({ initial }: { initial: TribunalResponse }) {
           const pct = t.votes && total ? Math.round(((t.votes[i] ?? 0) / total) * 100) : 0;
           const mine = t.myVote === i;
           return (
-            <button key={label} type="button" onClick={() => pick(i)} disabled={pending} aria-pressed={mine}
-              className={`relative flex min-h-[54px] items-center overflow-hidden rounded-[14px] bg-cartao px-[18px] text-left text-base font-semibold text-tinta ${mine ? 'border-2 border-tinta' : 'border-[1.5px] border-linha'}`}>
-              <span className={`bar-fill absolute inset-y-0 left-0 ${BAR[i % BAR.length]}`} style={{ width: `${t.votes ? pct : 0}%` }} aria-hidden="true" />
-              <span className="relative flex w-full justify-between gap-2"><span>{label}</span>{t.votes && <span className="tabular-nums">{pct}%</span>}</span>
+            <button
+              key={label}
+              type="button"
+              onClick={() => pick(i)}
+              disabled={pending}
+              aria-pressed={mine}
+              className={`relative flex min-h-[54px] items-center overflow-hidden rounded-[14px] bg-cartao px-[18px] text-left text-base font-semibold text-tinta ${mine ? 'border-2 border-tinta' : 'border-[1.5px] border-linha'}`}
+            >
+              <span
+                className={`bar-fill absolute inset-y-0 left-0 ${BAR[i % BAR.length]}`}
+                style={{ width: `${t.votes ? pct : 0}%` }}
+                aria-hidden="true"
+              />
+              <span className="relative flex w-full justify-between gap-2">
+                <span>{label}</span>
+                {t.votes && <span className="tabular-nums">{pct}%</span>}
+              </span>
             </button>
           );
         })}
@@ -43,14 +61,23 @@ export function Voto({ initial }: { initial: TribunalResponse }) {
       {t.verdict ? (
         <div className="flex flex-col gap-2 rounded-2xl bg-rosa px-3.5 py-3 text-tinta">
           <span className="text-[13px] font-bold">{t.verdict.title}</span>
-          <p className="text-sm leading-5"><Rich text={t.verdict.text} /></p>
+          <p className="text-sm leading-5">
+            <Rich text={t.verdict.text} />
+          </p>
         </div>
       ) : (
-        <div className="rounded-2xl bg-papel-2 px-3.5 py-3 text-sm leading-5 text-tinta-suave">Vota primeiro. Depois eu mostro a conta dos dois lados e o que o resto da galera escolheu.</div>
+        <div className="rounded-2xl bg-papel-2 px-3.5 py-3 text-sm leading-5 text-tinta-suave">
+          {labels.voteFirstHint}
+        </div>
       )}
       <div className="grow" />
       {t.myVote !== null && (
-        <Link href="/aprender" className="flex h-[54px] shrink-0 items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel no-underline">Ganhar +20 XP e voltar</Link>
+        <Link
+          href="/aprender"
+          className="flex h-[54px] shrink-0 items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel no-underline"
+        >
+          {labels.claimXpCta}
+        </Link>
       )}
     </>
   );

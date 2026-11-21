@@ -22,7 +22,12 @@ const valorPresente = (parcela: number, taxaMes: number, n: number) =>
  * Juros escondidos no parcelado: que taxa ao mês faz "n x parcela" valer o preço à vista hoje?
  * 0 se o parcelado sai pelo mesmo (ou menos) que à vista. Busca binária: sempre converge.
  */
-export function taxaImplicita(aVistaInCents: number, parcelaInCents: number, parcelas: number, entradaInCents = 0): number {
+export function taxaImplicita(
+  aVistaInCents: number,
+  parcelaInCents: number,
+  parcelas: number,
+  entradaInCents = 0,
+): number {
   const financiado = aVistaInCents - entradaInCents;
   if (parcelas <= 0 || financiado <= 0 || parcelaInCents * parcelas <= financiado) return 0;
   let lo = 0;
@@ -82,7 +87,12 @@ export type VeredictoCompra = {
  * À vista ou parcelado? Compara pagar tudo hoje com deixar o dinheiro rendendo e tirar dele cada parcela.
  * O rendimento já sai líquido de IR (alíquota pelo prazo do parcelamento).
  */
-export function compararCompra({ aVistaInCents, parcelaInCents, parcelas, rendeAnual }: CompraParcelada): VeredictoCompra {
+export function compararCompra({
+  aVistaInCents,
+  parcelaInCents,
+  parcelas,
+  rendeAnual,
+}: CompraParcelada): VeredictoCompra {
   const total = parcelaInCents * parcelas;
   const taxaMes = taxaImplicita(aVistaInCents, parcelaInCents, parcelas);
   const rendeMes = anualParaMensal(rendeAnual) * (1 - aliquotaIR(Math.round(parcelas * 30.42)));
@@ -101,7 +111,12 @@ export function compararCompra({ aVistaInCents, parcelaInCents, parcelas, rendeA
 }
 
 /** Quantos meses guardando `porMesInCents` (rendendo `rendeAnual`) até juntar `alvoInCents`. null se passa de 20 anos. */
-export function mesesParaJuntar(alvoInCents: number, porMesInCents: number, rendeAnual: number, jaTemInCents = 0): number | null {
+export function mesesParaJuntar(
+  alvoInCents: number,
+  porMesInCents: number,
+  rendeAnual: number,
+  jaTemInCents = 0,
+): number | null {
   if (jaTemInCents >= alvoInCents) return 0;
   if (porMesInCents <= 0) return null;
   const r = anualParaMensal(rendeAnual) * (1 - aliquotaIR(360));
@@ -136,4 +151,5 @@ export const TAXAS_REFERENCIA: TaxasResponse = {
 };
 
 /** 0.149 -> "14,9%" */
-export const pct = (x: number, casas = 1) => `${(x * 100).toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas })}%`;
+export const pct = (x: number, casas = 1) =>
+  `${(x * 100).toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas })}%`;

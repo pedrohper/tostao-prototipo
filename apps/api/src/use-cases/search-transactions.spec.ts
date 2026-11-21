@@ -6,8 +6,22 @@ const NOW = new Date('2026-11-12T12:00:00Z');
 
 async function setup() {
   const repos = makeInMemoryRepositories();
-  const add = (description: string, amountInCents: number, date: string, extra: { categoryId?: string; isInternalTransfer?: boolean } = {}) =>
-    repos.transactions.create({ userId: 'u1', accountId: null, externalId: null, description, amountInCents, occurredAt: new Date(`${date}T12:00:00Z`), categoryId: extra.categoryId ?? null, isInternalTransfer: extra.isInternalTransfer ?? false });
+  const add = (
+    description: string,
+    amountInCents: number,
+    date: string,
+    extra: { categoryId?: string; isInternalTransfer?: boolean } = {},
+  ) =>
+    repos.transactions.create({
+      userId: 'u1',
+      accountId: null,
+      externalId: null,
+      description,
+      amountInCents,
+      occurredAt: new Date(`${date}T12:00:00Z`),
+      categoryId: extra.categoryId ?? null,
+      isInternalTransfer: extra.isInternalTransfer ?? false,
+    });
   await add('PIX ENVIADO DANIELA SOUZA', -5000, '2026-11-01');
   await add('Pix enviado - Daniela Souza', -2500, '2026-08-01');
   await add('PIX RECEBIDO DANIELA SOUZA', 1000, '2026-10-01');
@@ -40,5 +54,52 @@ describe('Busca de transações', () => {
     const r = await uc.execute({ userId: 'u1', q: 'fatura', period: '12m', kind: 'todas' });
     expect(r.count).toBe(1);
     expect(r.outInCents).toBe(0);
+
+    const hidden = await uc.execute({
+      userId: 'u1',
+      q: 'fatura',
+      period: '12m',
+      kind: 'todas',
+      excludeTransfers: true,
+    });
+    expect(hidden.count).toBe(0);
+    expect(hidden.transactions).toHaveLength(0);
+  });
+
+  it('oculta rendimentos quando excludeYields=true sem esconder Banco Rendimento', async () => {
+    const { repos, uc } = await setup();
+    await repos.transactions.create({
+      userId: 'u1',
+      accountId: null,
+      externalId: null,
+      description: 'Rendimentos',
+      amountInCents: 17,
+      occurredAt: new Date('2026-11-10T12:00:00Z'),
+      categoryId: null,
+      isInternalTransfer: false,
+    });
+    await repos.transactions.create({
+      userId: 'u1',
+      accountId: null,
+      externalId: null,
+      description: 'PIX RECEBIDO BANCO RENDIMENTO',
+      amountInCents: 5000,
+      occurredAt: new Date('2026-11-10T12:00:00Z'),
+      categoryId: null,
+      isInternalTransfer: false,
+    });
+
+    const visible = await uc.execute({ userId: 'u1', q: 'rendimento', period: '12m', kind: 'todas' });
+    expect(visible.count).toBe(2);
+
+    const hidden = await uc.execute({
+      userId: 'u1',
+      q: 'rendimento',
+      period: '12m',
+      kind: 'todas',
+      excludeYields: true,
+    });
+    expect(hidden.count).toBe(1);
+    expect(hidden.transactions[0]!.description).toBe('PIX RECEBIDO BANCO RENDIMENTO');
   });
 });

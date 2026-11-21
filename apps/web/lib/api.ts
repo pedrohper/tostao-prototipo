@@ -1,17 +1,39 @@
 // Cliente da API, usado só no servidor (server components e server actions).
 // O navegador nunca fala direto com a API: passa sempre pelo Next, que anexa o token do cookie.
+import { headers as requestHeaders } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { clientIpFromHeaders, forwardedForHeader } from './client-ip';
 import { getToken } from './session';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:3333';
 
 export class ApiError extends Error {
-  constructor(message: string, public status: number) { super(message); }
+  constructor(
+    message: string,
+    public status: number,
+    /** Código estável vindo da API (ex.: AI_CONSENT_REQUIRED). */
+    public code?: string,
+  ) {
+    super(message);
+  }
 }
 
-export async function api<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+/** IP de quem fez o pedido ao site (a API usa pra limitar abuso por IP). Fora de um pedido (scripts), é null. */
+async function currentClientIp(): Promise<string | null> {
+  try {
+    const h = await requestHeaders();
+    return clientIpFromHeaders((name) => h.get(name));
+  } catch {
+    return null;
+  }
+}
+
+export async function api<T>(
+  path: string,
+  init: { method?: string; body?: unknown; skipAuthRedirect?: boolean } = {},
+): Promise<T> {
   const token = await getToken();
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { ...forwardedForHeader(await currentClientIp()) };
   if (init.body !== undefined) headers['content-type'] = 'application/json';
   if (token) headers.authorization = `Bearer ${token}`;
 
@@ -27,8 +49,16 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
     throw new ApiError('A API tá fora do ar. Ela tá rodando? (pnpm dev na raiz)', 503);
   }
 
-  if (res.status === 401 && token) redirect('/sair');
+  // skipAuthRedirect (ex.: o próprio login) vem ANTES de olhar o cookie: 401 ali é "senha errada", não "sessão vencida".
+  // Um cookie velho no navegador não pode transformar senha errada em redirect (e muito menos em redirect engolido).
+  if (res.status === 401 && !init.skipAuthRedirect) {
+    // Com token: o proxy já tentou renovar e não deu. /sair limpa os cookies. Sem token: é só entrar.
+    redirect(token ? '/sair' : '/entrar');
+  }
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError((data as { message?: string }).message ?? 'Algo deu errado.', res.status);
+  if (!res.ok) {
+    const body = data as { message?: string; code?: string };
+    throw new ApiError(body.message ?? 'Algo deu errado.', res.status, body.code);
+  }
   return data as T;
 }

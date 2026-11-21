@@ -1,0 +1,302 @@
+import { createHmac } from 'node:crypto';
+import { describe, expect, it } from 'vitest';
+import { buildApp } from '../app.js';
+import { FakeBankGateway } from '../gateways/fake-bank-gateway.js';
+import { FakeEmailGateway } from '../gateways/email-gateway.js';
+import { InvalidRefreshTokenError } from '../domain/errors.js';
+import { makeInMemoryRepositories } from '../repositories/in-memory/index.js';
+import { hashToken, SessionsUseCase } from './sessions.js';
+
+const DAY = 24 * 3600_000;
+
+async function setup() {
+  const repos = makeInMemoryRepositories();
+  const user = await repos.users.create({ name: 'Pedro', email: 'p@x.com', passwordHash: 'x' });
+  const other = await repos.users.create({ name: 'Ana', email: 'a@x.com', passwordHash: 'x' });
+  let now = new Date('2026-11-20T12:00:00Z');
+  const sessions = new SessionsUseCase(repos, () => now);
+  return { repos, user, other, sessions, tick: (ms: number) => (now = new Date(now.getTime() + ms)) };
+}
+
+describe('refresh token: rotação', () => {
+  it('guarda só o hash e devolve token opaco de 256 bits', async () => {
+    const { repos, user, sessions } = await setup();
+    const { refreshToken } = await sessions.open(user.id, { userAgent: 'Firefox', ipAddress: '1.2.3.4' });
+    expect(refreshToken).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    const row = repos.refreshTokens.items[0]!;
+    expect(row.tokenHash).toBe(hashToken(refreshToken));
+    expect(JSON.stringify(row)).not.toContain(refreshToken);
+    expect(row.expiresAt.getTime() - row.createdAt.getTime()).toBeGreaterThan(29 * DAY);
+    expect(row).toMatchObject({ userAgent: 'Firefox', ipAddress: '1.2.3.4', revokedAt: null });
+  });
+
+  it('cada renovação troca o token: o anterior é revogado, aponta pro novo e a família é a mesma', async () => {
+    const { repos, user, sessions } = await setup();
+    const { refreshToken: r1 } = await sessions.open(user.id);
+    const second = await sessions.rotate(r1);
+    expect(second.userId).toBe(user.id);
+    expect(second.refreshToken).not.toBe(r1);
+    const [old, fresh] = repos.refreshTokens.items;
+    expect(old!.revokedAt).not.toBeNull();
+    expect(old!.replacedById).toBe(fresh!.id);
+    expect(fresh!.revokedAt).toBeNull();
+    expect(fresh!.familyId).toBe(old!.familyId);
+
+    // e o novo também renova
+    const third = await sessions.rotate(second.refreshToken);
+    expect(third.refreshToken).not.toBe(second.refreshToken);
+  });
+
+  it('reuso de token já trocado revoga a família inteira (inclusive o token legítimo mais novo)', async () => {
+    const { repos, user, sessions } = await setup();
+    const { refreshToken: r1 } = await sessions.open(user.id);
+    const { refreshToken: r2 } = await sessions.rotate(r1); // o dono renovou
+    // o ladrão apresenta o r1 roubado
+    await expect(sessions.rotate(r1)).rejects.toBeInstanceOf(InvalidRefreshTokenError);
+    expect(repos.refreshTokens.items.every((t) => t.revokedAt !== null)).toBe(true);
+    // o dono legítimo perde a sessão também: precisa entrar de novo
+    await expect(sessions.rotate(r2)).rejects.toBeInstanceOf(InvalidRefreshTokenError);
+  });
+
+  it('reuso numa família não mexe nas sessões de outros aparelhos', async () => {
+    const { repos, user, sessions } = await setup();
+    const { refreshToken: a1 } = await sessions.open(user.id); // aparelho A
+    const { refreshToken: b1 } = await sessions.open(user.id); // aparelho B
+    await sessions.rotate(a1);
+    await expect(sessions.rotate(a1)).rejects.toBeInstanceOf(InvalidRefreshTokenError);
+    await expect(sessions.rotate(b1)).resolves.toHaveProperty('refreshToken');
+    expect(repos.refreshTokens.items.filter((t) => !t.revokedAt)).toHaveLength(1);
+  });
+
+  it('token desconhecido, vencido ou de outra forma inválida → 401 sem efeito colateral', async () => {
+    const { repos, user, sessions, tick } = await setup();
+    await expect(sessions.rotate('x'.repeat(43))).rejects.toBeInstanceOf(InvalidRefreshTokenError);
+    const { refreshToken } = await sessions.open(user.id);
+    tick(31 * DAY);
+    await expect(sessions.rotate(refreshToken)).rejects.toBeInstanceOf(InvalidRefreshTokenError);
+    // vencido não é "reuso": não derruba nada além dele mesmo
+    expect(repos.refreshTokens.items).toHaveLength(1);
+    expect(repos.refreshTokens.items[0]!.revokedAt).toBeNull();
+  });
+
+  it('dois refresh simultâneos com o mesmo token: só um recebe o par novo', async () => {
+    const { user, sessions } = await setup();
+    const { refreshToken } = await sessions.open(user.id);
+    const results = await Promise.allSettled([sessions.rotate(refreshToken), sessions.rotate(refreshToken)]);
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter((r) => r.status === 'rejected')).toHaveLength(1);
+  });
+});
+
+describe('logout', () => {
+  it('logout revoga a família do token e é idempotente', async () => {
+    const { repos, user, sessions } = await setup();
+    const { refreshToken: a1 } = await sessions.open(user.id);
+    const { refreshToken: b1 } = await sessions.open(user.id);
+    const { refreshToken: a2 } = await sessions.rotate(a1);
+    await sessions.logout(a2);
+    await sessions.logout(a2);
+    await sessions.logout('desconhecido'.repeat(4));
+    await expect(sessions.rotate(a2)).rejects.toBeInstanceOf(InvalidRefreshTokenError);
+    await expect(sessions.rotate(b1)).resolves.toHaveProperty('userId'); // o outro aparelho segue
+    expect(
+      repos.refreshTokens.items
+        .filter((t) => t.familyId === repos.refreshTokens.items[0]!.familyId)
+        .every((t) => t.revokedAt),
+    ).toBe(true);
+  });
+
+  it('logout-all revoga todas as sessões da pessoa e só dela', async () => {
+    const { repos, user, other, sessions } = await setup();
+    const { refreshToken: a } = await sessions.open(user.id);
+    const { refreshToken: b } = await sessions.open(user.id);
+    const { refreshToken: o } = await sessions.open(other.id);
+    await sessions.logoutAll(user.id);
+    await expect(sessions.rotate(a)).rejects.toBeInstanceOf(InvalidRefreshTokenError);
+    await expect(sessions.rotate(b)).rejects.toBeInstanceOf(InvalidRefreshTokenError);
+    await expect(sessions.rotate(o)).resolves.toHaveProperty('userId');
+    expect(repos.refreshTokens.items.filter((t) => t.userId === other.id && !t.revokedAt)).toHaveLength(1);
+  });
+});
+
+describe('sessão pela API (HTTP)', () => {
+  async function bootApi() {
+    const repos = makeInMemoryRepositories();
+    const email = new FakeEmailGateway();
+    const app = await buildApp({
+      repos,
+      bank: new FakeBankGateway(),
+      jwtSecret: 'segredo-de-teste-com-32-caracteres!!',
+      webOrigin: 'https://tostao.test',
+      email,
+    });
+    const reg = await app.inject({
+      method: 'POST',
+      url: '/users',
+      headers: { 'user-agent': 'Vitest/1' },
+      payload: { name: 'Pedro', email: 'p@x.com', password: '12345678', acceptedTerms: true },
+    });
+    return { app, repos, email, reg: reg.json() as { accessToken: string; refreshToken: string } };
+  }
+  const bearer = (t: string) => ({ authorization: `Bearer ${t}` });
+
+  it('cadastro e login devolvem { accessToken, refreshToken }; o access token dura 15 min e leva iss/aud/HS256', async () => {
+    const { app, reg } = await bootApi();
+    expect(Object.keys(reg).sort()).toEqual(['accessToken', 'refreshToken']);
+    const [h, p] = reg.accessToken.split('.');
+    const header = JSON.parse(Buffer.from(h!, 'base64url').toString()) as { alg: string };
+    const payload = JSON.parse(Buffer.from(p!, 'base64url').toString()) as {
+      iss: string;
+      aud: string;
+      exp: number;
+      iat: number;
+    };
+    expect(header.alg).toBe('HS256');
+    expect(payload).toMatchObject({ iss: 'tostao-api', aud: 'tostao-web' });
+    expect(payload.exp - payload.iat).toBe(15 * 60);
+
+    const login = await app.inject({
+      method: 'POST',
+      url: '/sessions',
+      payload: { email: 'p@x.com', password: '12345678' },
+    });
+    expect(login.statusCode).toBe(200);
+    expect(Object.keys(login.json()).sort()).toEqual(['accessToken', 'refreshToken']);
+  });
+
+  it('JWT de outro emissor, outro público, sem iss/aud, outro algoritmo ou alg=none não entra', async () => {
+    const { app, reg } = await bootApi();
+    const secret = 'segredo-de-teste-com-32-caracteres!!';
+    const b64 = (o: object) => Buffer.from(JSON.stringify(o)).toString('base64url');
+    const forge = (claims: Record<string, unknown>, alg: 'HS256' | 'HS512' = 'HS256') => {
+      const data = `${b64({ alg, typ: 'JWT' })}.${b64({ sub: 'x', iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 600, ...claims })}`;
+      const sig = createHmac(alg === 'HS256' ? 'sha256' : 'sha512', secret)
+        .update(data)
+        .digest('base64url');
+      return `${data}.${sig}`;
+    };
+    const valid = { iss: 'tostao-api', aud: 'tostao-web' };
+    const me = (t: string) => app.inject({ method: 'GET', url: '/me', headers: bearer(t) });
+
+    // sanidade: o forjador com claims certos é aceito (404 = passou da assinatura, só não existe usuário "x")
+    expect((await me(forge(valid))).statusCode).toBe(404);
+    expect((await me(forge({ aud: 'tostao-web' }))).statusCode).toBe(401); // sem iss
+    expect((await me(forge({ iss: 'tostao-api' }))).statusCode).toBe(401); // sem aud
+    expect((await me(forge({ ...valid, aud: 'outro-site' }))).statusCode).toBe(401);
+    expect((await me(forge({ ...valid, iss: 'outro' }))).statusCode).toBe(401);
+    expect((await me(forge(valid, 'HS512'))).statusCode).toBe(401); // algoritmo fora da lista
+    expect((await me(forge({ ...valid, exp: 1 }))).statusCode).toBe(401); // vencido
+    const none = `${b64({ alg: 'none', typ: 'JWT' })}.${b64({ sub: 'x', ...valid })}.`;
+    expect((await me(none)).statusCode).toBe(401);
+    expect((await me(reg.accessToken)).statusCode).toBe(200);
+  });
+
+  it('POST /sessions/refresh não exige JWT; troca o par e o refresh antigo vira reuso (401)', async () => {
+    const { app, reg } = await bootApi();
+    const r = await app.inject({
+      method: 'POST',
+      url: '/sessions/refresh',
+      payload: { refreshToken: reg.refreshToken },
+    });
+    expect(r.statusCode).toBe(200);
+    const next = r.json();
+    expect((await app.inject({ method: 'GET', url: '/me', headers: bearer(next.accessToken) })).statusCode).toBe(200);
+
+    const replay = await app.inject({
+      method: 'POST',
+      url: '/sessions/refresh',
+      payload: { refreshToken: reg.refreshToken },
+    });
+    expect(replay.statusCode).toBe(401);
+    // a família caiu: o par novo também não renova
+    const after = await app.inject({
+      method: 'POST',
+      url: '/sessions/refresh',
+      payload: { refreshToken: next.refreshToken },
+    });
+    expect(after.statusCode).toBe(401);
+    // refresh token não é access token, e access token não é refresh token
+    expect((await app.inject({ method: 'GET', url: '/me', headers: bearer(reg.refreshToken) })).statusCode).toBe(401);
+    expect(
+      (await app.inject({ method: 'POST', url: '/sessions/refresh', payload: { refreshToken: next.accessToken } }))
+        .statusCode,
+    ).toBe(401);
+  });
+
+  it('POST /sessions/logout revoga o refresh token (204, idempotente)', async () => {
+    const { app, reg } = await bootApi();
+    const out = await app.inject({
+      method: 'POST',
+      url: '/sessions/logout',
+      payload: { refreshToken: reg.refreshToken },
+    });
+    expect(out.statusCode).toBe(204);
+    expect(
+      (await app.inject({ method: 'POST', url: '/sessions/logout', payload: { refreshToken: reg.refreshToken } }))
+        .statusCode,
+    ).toBe(204);
+    expect(
+      (await app.inject({ method: 'POST', url: '/sessions/refresh', payload: { refreshToken: reg.refreshToken } }))
+        .statusCode,
+    ).toBe(401);
+    expect((await app.inject({ method: 'POST', url: '/sessions/logout', payload: {} })).statusCode).toBe(400);
+  });
+
+  it('POST /sessions/logout-all exige login e revoga todos os aparelhos', async () => {
+    const { app, reg } = await bootApi();
+    const second = (
+      await app.inject({ method: 'POST', url: '/sessions', payload: { email: 'p@x.com', password: '12345678' } })
+    ).json();
+    expect((await app.inject({ method: 'POST', url: '/sessions/logout-all' })).statusCode).toBe(401);
+    expect(
+      (await app.inject({ method: 'POST', url: '/sessions/logout-all', headers: bearer(reg.accessToken) })).statusCode,
+    ).toBe(204);
+    for (const rt of [reg.refreshToken, second.refreshToken]) {
+      expect(
+        (await app.inject({ method: 'POST', url: '/sessions/refresh', payload: { refreshToken: rt } })).statusCode,
+      ).toBe(401);
+    }
+  });
+
+  it('redefinir a senha revoga todas as sessões antigas e já entra com sessão nova', async () => {
+    const { app, email, reg } = await bootApi();
+    await app.inject({ method: 'POST', url: '/password-resets', payload: { email: 'p@x.com' } });
+    const url = (email.sent.find((e) => e.kind === 'password-reset') as { url: string }).url;
+    const token = new URL(url).searchParams.get('token')!;
+    const done = await app.inject({
+      method: 'POST',
+      url: '/password-resets/redeem',
+      payload: { token, password: 'senha-nova-1' },
+    });
+    expect(done.statusCode).toBe(200);
+    expect(
+      (await app.inject({ method: 'POST', url: '/sessions/refresh', payload: { refreshToken: reg.refreshToken } }))
+        .statusCode,
+    ).toBe(401);
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url: '/sessions/refresh',
+          payload: { refreshToken: done.json().refreshToken },
+        })
+      ).statusCode,
+    ).toBe(200);
+  });
+
+  it('apagar a conta revoga os refresh tokens', async () => {
+    const { app, repos, reg } = await bootApi();
+    const del = await app.inject({
+      method: 'POST',
+      url: '/me/delete',
+      headers: bearer(reg.accessToken),
+      payload: { password: '12345678' },
+    });
+    expect(del.statusCode).toBe(200);
+    expect(repos.refreshTokens.items.filter((t) => !t.revokedAt)).toHaveLength(0);
+    expect(
+      (await app.inject({ method: 'POST', url: '/sessions/refresh', payload: { refreshToken: reg.refreshToken } }))
+        .statusCode,
+    ).toBe(401);
+  });
+});

@@ -9,7 +9,11 @@ const resposta = (valores: Record<number, { data: string; valor: string }>) =>
 
 describe('taxas do Banco Central', () => {
   it('lê Selic, CDI e IPCA e calcula a poupança', async () => {
-    const fetch = resposta({ 432: { data: '10/12/2025', valor: '15.00' }, 4389: { data: '12/12/2025', valor: '14.90' }, 13522: { data: '01/11/2025', valor: '4.68' } });
+    const fetch = resposta({
+      432: { data: '10/12/2025', valor: '15.00' },
+      4389: { data: '12/12/2025', valor: '14.90' },
+      13522: { data: '01/11/2025', valor: '4.68' },
+    });
     const t = await new BcbRatesGateway(fetch).taxas();
     expect(t).toMatchObject({ atualizadoEm: '2025-12-12', fonte: 'bcb' });
     expect(t.selic).toBeCloseTo(0.15, 10);
@@ -20,7 +24,11 @@ describe('taxas do Banco Central', () => {
 
   it('guarda por 12 horas', async () => {
     let now = 0;
-    const fetch = resposta({ 432: { data: '10/12/2025', valor: '15' }, 4389: { data: '10/12/2025', valor: '14.9' }, 13522: { data: '01/11/2025', valor: '4.6' } });
+    const fetch = resposta({
+      432: { data: '10/12/2025', valor: '15' },
+      4389: { data: '10/12/2025', valor: '14.9' },
+      13522: { data: '01/11/2025', valor: '4.6' },
+    });
     const g = new BcbRatesGateway(fetch, () => now);
     await g.taxas();
     now = 11 * 3600_000;

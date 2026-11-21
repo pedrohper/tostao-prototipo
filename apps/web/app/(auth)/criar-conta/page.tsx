@@ -1,25 +1,37 @@
-import { Mascote } from '@/components/mascote';
+import { Mascot } from '@/components/mascote';
 import { BackLink } from '@/components/ui';
+import { getI18n } from '@/lib/i18n-server';
 import { AuthForm } from '../auth-form';
+import { SocialAuthButtons } from '../social-buttons';
 
-export default async function CriarContaPage({ searchParams }: { searchParams: Promise<{ convite?: string }> }) {
-  const { convite } = await searchParams;
+export default async function CriarContaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ convite?: string; oauthError?: string }>;
+}) {
+  const [{ convite, oauthError }, { t }] = await Promise.all([searchParams, getI18n()]);
+  const p = t.authPages;
   return (
     <>
       <div className="flex items-center gap-3">
-        <BackLink href="/entrar" />
-        <div className="h-2 grow overflow-hidden rounded-full border border-linha bg-papel-2" role="img" aria-label="Passo 1 de 2">
-          <div className="h-full w-1/2 rounded-full bg-tinta" />
+        <BackLink href="/entrar" label={t.common.back} />
+        <div
+          className="h-2 grow overflow-hidden rounded-full border border-linha bg-papel-2"
+          role="img"
+          aria-label={p.signupStepAria}
+        >
+          <div className="h-full w-1/3 rounded-full bg-tinta" />
         </div>
       </div>
       <div className="flex items-center justify-between gap-2">
         <div className="flex flex-col gap-1">
-          <h1 className="font-display text-[30px] leading-[34px] font-extrabold">Crie sua conta</h1>
-          <p className="text-sm text-tinta-suave">Pra eu guardar seu progresso e suas metas.</p>
+          <h1 className="font-display text-[30px] leading-[34px] font-extrabold">{p.signupTitle}</h1>
+          <p className="text-sm text-tinta-suave">{p.signupSubtitle}</p>
         </div>
-        <Mascote pose="dupla" size={92} alt="Tostão e Caramelo" />
+        <Mascot pose="dupla" size={92} alt={p.signupMascotAlt} className="lg:hidden" />
       </div>
-      <AuthForm mode="criar" invite={convite} />
+      <SocialAuthButtons mode="criar" invite={convite} oauthError={oauthError} social={p.social} form={p.form} />
+      <AuthForm mode="criar" invite={convite} t={p.form} />
     </>
   );
 }

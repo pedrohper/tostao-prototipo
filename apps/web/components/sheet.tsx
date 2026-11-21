@@ -1,8 +1,22 @@
 import { SwipeSheet } from './sheet-swipe';
 
 /** Folha que sobe de baixo (Categorizar): fundo escurecido que fecha ao tocar, e fecha arrastando a alça pra baixo. */
-export function Sheet({ back, top = 112, children }: { back: string; top?: number; children: React.ReactNode }) {
-  return <SwipeSheet back={back} top={top}>{children}</SwipeSheet>;
+export function Sheet({
+  back,
+  top = 112,
+  closeLabel,
+  children,
+}: {
+  back: string;
+  top?: number;
+  closeLabel?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <SwipeSheet back={back} top={top} closeLabel={closeLabel}>
+      {children}
+    </SwipeSheet>
+  );
 }
 
 export const pill = (on: boolean) =>

@@ -2,6 +2,7 @@
 import { revalidatePath } from 'next/cache';
 import { addFriendBody } from '@tostao/contracts';
 import { api, ApiError } from '@/lib/api';
+import { orFallback, rethrowIfRedirect } from '@/lib/rethrow';
 
 export type AmigoState = { error?: string; message?: string };
 
@@ -11,6 +12,7 @@ export async function addFriend(_: AmigoState, form: FormData): Promise<AmigoSta
   try {
     await api('/friends', { method: 'POST', body: parsed.data });
   } catch (e) {
+    rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Não deu agora. Tenta de novo?' };
   }
   revalidatePath('/amigos');
@@ -18,6 +20,6 @@ export async function addFriend(_: AmigoState, form: FormData): Promise<AmigoSta
 }
 
 export async function removeFriend(id: string) {
-  await api(`/friends/${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {});
+  await api(`/friends/${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(orFallback(undefined));
   revalidatePath('/amigos');
 }

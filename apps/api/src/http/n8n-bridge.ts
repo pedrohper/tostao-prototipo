@@ -1,19 +1,13 @@
 // Porta extra só com POST /whatsapp/n8n, escutando no IP da ponte do Docker (no servidor, 172.18.0.1 da rede homelab_default).
 // Assim o n8n (em container) alcança o Tostão sem a API inteira sair do 127.0.0.1.
 import Fastify, { type FastifyInstance } from 'fastify';
+import { errorHandler } from './error-handler.js';
 
 export function buildN8nBridge(app: FastifyInstance) {
   const bridge = Fastify({ logger: false, bodyLimit: 256 * 1024 });
-  bridge.post('/whatsapp/n8n', async (request, reply) => {
-    const secret = request.headers['x-tostao-secret'];
-    const r = await app.inject({
-      method: 'POST',
-      url: '/whatsapp/n8n',
-      headers: { 'content-type': 'application/json', ...(typeof secret === 'string' ? { 'x-tostao-secret': secret } : {}) },
-      payload: JSON.stringify(request.body ?? {}),
-    });
-    return reply.status(r.statusCode).header('content-type', 'application/json').send(r.body);
-  });
+  bridge.setErrorHandler(errorHandler);
+  // A rota mora SÓ aqui. O app principal (127.0.0.1) não a expõe mais.
+  app.registerN8nRoute(bridge);
   return bridge;
 }
 

@@ -1,4 +1,9 @@
-import type { AccountsRepository, BankConnectionsRepository, UsersRepository } from '../repositories/types.js';
+import type {
+  AccountsRepository,
+  BankConnectionsRepository,
+  OAuthAccountsRepository,
+  UsersRepository,
+} from '../repositories/types.js';
 import type { Account, BankConnection } from '../domain/entities.js';
 import { ResourceNotFoundError } from '../domain/errors.js';
 
@@ -7,14 +12,20 @@ export class GetProfileUseCase {
     private readonly users: UsersRepository,
     private readonly connections: BankConnectionsRepository,
     private readonly accounts: AccountsRepository,
+    private readonly oauthAccounts: OAuthAccountsRepository,
   ) {}
 
   async execute({ userId }: { userId: string }) {
     const user = await this.users.findById(userId);
     if (!user) throw new ResourceNotFoundError('Usuário');
-    const [connections, accounts] = await Promise.all([this.connections.listByUser(userId), this.accounts.listByUser(userId)]);
+    const [connections, accounts, oauthAccounts] = await Promise.all([
+      this.connections.listByUser(userId),
+      this.accounts.listByUser(userId),
+      this.oauthAccounts.listByUser(userId),
+    ]);
     return {
       user,
+      providers: oauthAccounts.map((o) => o.provider),
       connections: connections.map((c) => {
         const mine = accounts.filter((a) => a.connectionId === c.id);
         return { ...c, displayName: connectionName(c, mine), accounts: mine };

@@ -1,18 +1,26 @@
 import { cardIdentity } from './card-identity.js';
 import type { Repositories } from '../repositories/types.js';
-import { monthRange } from '../lib/month.js';
+import { currentMonth, monthRange } from '../lib/month.js';
 
 /**
  * Resumo do mês pra tela de Início.
  * Regra de ouro: transferência interna não é gasto nem renda.
  */
 export class GetMonthSummaryUseCase {
-  constructor(private readonly repos: Pick<Repositories, 'transactions' | 'categories' | 'accounts'>) {}
+  constructor(
+    private readonly repos: Pick<Repositories, 'transactions' | 'categories' | 'accounts'>,
+    private readonly now: () => Date = () => new Date(),
+  ) {}
 
   async execute({ userId, month }: { userId: string; month: string }) {
+    const now = this.now();
     const { from, to } = monthRange(month);
-    const [txs, categories, accounts] = await Promise.all([
+    const isPastMonth = month < currentMonth(now) && to <= now;
+    const [txs, afterTxs, categories, accounts] = await Promise.all([
       this.repos.transactions.findManyInRange(userId, from, to),
+      isPastMonth
+        ? this.repos.transactions.findManyInRange(userId, to, new Date(now.getTime() + 1))
+        : Promise.resolve([]),
       this.repos.categories.list(userId),
       this.repos.accounts.listByUser(userId),
     ]);
@@ -31,24 +39,46 @@ export class GetMonthSummaryUseCase {
     const byCategory = [...totals.entries()]
       .map(([categoryId, totalInCents]) => ({
         categoryId,
-        name: categoryId ? byId.get(categoryId)?.name ?? categoryId : 'Sem categoria',
-        color: categoryId ? byId.get(categoryId)?.color ?? '#F6EFE4' : '#F6EFE4',
+        name: categoryId ? (byId.get(categoryId)?.name ?? categoryId) : 'Sem categoria',
+        color: categoryId ? (byId.get(categoryId)?.color ?? '#F6EFE4') : '#F6EFE4',
         totalInCents,
       }))
       .sort((a, b) => b.totalInCents - a.totalInCents);
 
-    // Saldo = soma das contas correntes. Fatura de cartão fica de fora (ainda não saiu da conta).
+    // Saldo = soma das contas correntes. Em meses passados, desfaz as movimentações posteriores na conta BANK.
     const bankAccounts = visible.filter((a) => a.type === 'BANK');
+    const bankIds = new Set(bankAccounts.map((a) => a.id));
+    const deltaAfterByAccount = new Map<string, number>();
+    if (isPastMonth && bankIds.size > 0) {
+      for (const t of afterTxs) {
+        if (!t.accountId || !bankIds.has(t.accountId)) continue;
+        deltaAfterByAccount.set(t.accountId, (deltaAfterByAccount.get(t.accountId) ?? 0) + t.amountInCents);
+      }
+    }
+    const balanceAtMonthEnd = (accountId: string, currentBalance: number, type: string) =>
+      type === 'BANK' && isPastMonth ? currentBalance - (deltaAfterByAccount.get(accountId) ?? 0) : currentBalance;
+
     return {
       month,
-      balanceInCents: bankAccounts.length ? bankAccounts.reduce((s, a) => s + a.balanceInCents, 0) : null,
+      balanceInCents: bankAccounts.length
+        ? bankAccounts.reduce((s, a) => s + balanceAtMonthEnd(a.id, a.balanceInCents, a.type), 0)
+        : null,
       incomeInCents,
       outcomeInCents,
       uncategorizedCount: real.filter((t) => t.categoryId === null).length,
       byCategory,
-      accounts: visible.map((a) => ({ id: a.id, name: a.name, type: a.type === 'CREDIT' ? 'CREDIT' as const : 'BANK' as const, balanceInCents: a.balanceInCents,
-        creditLimitInCents: a.creditLimitInCents ?? null, dueDate: a.dueDate ? nextDueDate(a.dueDate, new Date()).toISOString() : null, ...cardIdentity(a.fingerprint) })),
-      hiddenAccounts: accounts.filter((a) => a.hidden).map((a) => ({ id: a.id, name: a.name, balanceInCents: a.balanceInCents })),
+      accounts: visible.map((a) => ({
+        id: a.id,
+        name: a.name,
+        type: a.type === 'CREDIT' ? ('CREDIT' as const) : ('BANK' as const),
+        balanceInCents: balanceAtMonthEnd(a.id, a.balanceInCents, a.type),
+        creditLimitInCents: a.creditLimitInCents ?? null,
+        dueDate: a.dueDate ? nextDueDate(a.dueDate, now).toISOString() : null,
+        ...cardIdentity(a.fingerprint),
+      })),
+      hiddenAccounts: accounts
+        .filter((a) => a.hidden)
+        .map((a) => ({ id: a.id, name: a.name, balanceInCents: a.balanceInCents })),
     };
   }
 }

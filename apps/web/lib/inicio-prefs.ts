@@ -1,41 +1,44 @@
 import { cookies } from 'next/headers';
 
-/** O que a pessoa escondeu do Início (blocos) e os avisos que ela já fechou. Fica num cookie, por aparelho. */
+/** Cookie storing hidden Home sections and dismissed alerts per device. */
 export const PREFS_COOKIE = 'tostao-inicio';
-export type InicioPrefs = { ordem: string[]; ocultos: string[]; fechados: string[] };
+export type HomePrefs = { ordem: string[]; ocultos: string[]; fechados: string[] };
 
-/** Blocos do Início que dá pra esconder e reordenar, na ordem padrão. O saldo fica sempre no topo. */
-export const SECOES = [
+/** Home sections that can be hidden and reordered, in default order. Balance stays on top. */
+export const HOME_SECTIONS = [
+  { id: 'atalhos', nome: 'Atalhos do Planejar', dica: 'Anotar, Acertos, Limites, Meta e mais' },
+  { id: 'aula', nome: 'Aula do Tostão', dica: 'Continuar a lição do módulo atual' },
   { id: 'sobra', nome: 'Quanto sobra no mês', dica: 'Previsão até o fim do mês' },
-  { id: 'missoes', nome: 'Missões de hoje', dica: 'E a sua ofensiva' },
   { id: 'vence', nome: 'Vence logo', dica: 'Contas, assinaturas e faturas' },
   { id: 'avisos', nome: 'Avisos do Tostão e do Caramelo', dica: 'Dicas e gastos sem categoria' },
-  { id: 'pra-onde-foi', nome: 'Pra onde foi', dica: 'Gastos por categoria' },
-  { id: 'semana', nome: 'Sua semana', dica: 'Últimos 7 dias' },
+  { id: 'pra-onde-foi', nome: 'Gastos por categoria', dica: 'Resumo do mês por categoria' },
+  { id: 'semana', nome: 'Sua semana', dica: 'Comparativo semanal' },
   { id: 'meta', nome: 'Meta', dica: 'Quanto falta pra sua meta' },
   { id: 'acertos', nome: 'Acertos', dica: 'Quem te deve e pra quem você deve' },
   { id: 'cartoes', nome: 'Cartões de crédito', dica: 'Fatura e limite' },
   { id: 'limites', nome: 'Limites', dica: 'Teto por categoria' },
 ] as const;
-export type SecaoId = (typeof SECOES)[number]['id'];
 
-export function parsePrefs(raw: string | undefined): InicioPrefs {
+export type HomeSectionId = (typeof HOME_SECTIONS)[number]['id'];
+
+export function parsePrefs(raw: string | undefined): HomePrefs {
   try {
-    const p = JSON.parse(raw ?? '{}') as Partial<InicioPrefs>;
-    const list = (x: unknown) => (Array.isArray(x) ? x.filter((v): v is string => typeof v === 'string').slice(-80) : []);
-    return { ordem: list(p.ordem), ocultos: list(p.ocultos), fechados: list(p.fechados) };
+    const parsed = JSON.parse(raw ?? '{}') as Partial<HomePrefs>;
+    const toList = (val: unknown) =>
+      Array.isArray(val) ? val.filter((v): v is string => typeof v === 'string').slice(-80) : [];
+    return { ordem: toList(parsed.ordem), ocultos: toList(parsed.ocultos), fechados: toList(parsed.fechados) };
   } catch {
     return { ordem: [], ocultos: [], fechados: [] };
   }
 }
 
-export async function lerPrefs() {
+export async function readHomePrefs(): Promise<HomePrefs> {
   return parsePrefs((await cookies()).get(PREFS_COOKIE)?.value);
 }
 
-/** Ordem final: a que a pessoa escolheu, com blocos novos no fim. */
-export function ordemDe(p: InicioPrefs): SecaoId[] {
-  const ids = SECOES.map((x) => x.id) as SecaoId[];
-  const escolhidos = p.ordem.filter((id): id is SecaoId => (ids as string[]).includes(id));
-  return [...escolhidos, ...ids.filter((id) => !escolhidos.includes(id))];
+/** Returns user's chosen section order with any newly added sections appended at the end. */
+export function resolveSectionOrder(prefs: HomePrefs): HomeSectionId[] {
+  const allIds = HOME_SECTIONS.map((s) => s.id) as HomeSectionId[];
+  const selected = prefs.ordem.filter((id): id is HomeSectionId => (allIds as string[]).includes(id));
+  return [...selected, ...allIds.filter((id) => !selected.includes(id))];
 }

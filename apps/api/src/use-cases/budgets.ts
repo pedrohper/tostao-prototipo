@@ -20,7 +20,8 @@ export class GetBudgetsUseCase {
     const hidden = new Set(accounts.filter((a) => a.hidden).map((a) => a.id));
     const spent = new Map<string, number>();
     for (const t of txs) {
-      if (t.isInternalTransfer || t.amountInCents >= 0 || !t.categoryId || (t.accountId && hidden.has(t.accountId))) continue;
+      if (t.isInternalTransfer || t.amountInCents >= 0 || !t.categoryId || (t.accountId && hidden.has(t.accountId)))
+        continue;
       spent.set(t.categoryId, (spent.get(t.categoryId) ?? 0) - t.amountInCents);
     }
     const byId = new Map(categories.map((c) => [c.id, c]));
@@ -29,7 +30,14 @@ export class GetBudgetsUseCase {
         .filter((b) => byId.has(b.categoryId))
         .map((b) => {
           const c = byId.get(b.categoryId)!;
-          return { categoryId: c.id, name: c.name, emoji: c.emoji, color: c.color, limitInCents: b.limitInCents, spentInCents: spent.get(c.id) ?? 0 };
+          return {
+            categoryId: c.id,
+            name: c.name,
+            emoji: c.emoji,
+            color: c.color,
+            limitInCents: b.limitInCents,
+            spentInCents: spent.get(c.id) ?? 0,
+          };
         })
         .sort((a, b) => b.spentInCents / b.limitInCents - a.spentInCents / a.limitInCents),
     };
@@ -40,7 +48,15 @@ export class GetBudgetsUseCase {
 export class SetBudgetUseCase {
   constructor(private readonly repos: Pick<Repositories, 'budgets' | 'categories'>) {}
 
-  async execute({ userId, categoryId, limitInCents }: { userId: string; categoryId: string; limitInCents: number | null }) {
+  async execute({
+    userId,
+    categoryId,
+    limitInCents,
+  }: {
+    userId: string;
+    categoryId: string;
+    limitInCents: number | null;
+  }) {
     const category = await this.repos.categories.findById(categoryId);
     if (!canUseCategory(category, userId)) throw new ResourceNotFoundError('Categoria');
     if (category.kind !== 'saida') throw new AppError('Limite só faz sentido pra categoria de gasto.', 400);

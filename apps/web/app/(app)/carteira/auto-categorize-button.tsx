@@ -1,20 +1,41 @@
 'use client';
-import { CatIcon, Icone } from '@/components/icone';
+import { Icon } from '@/components/icone';
 import { useActionState } from 'react';
+import { getDictionary, type Dictionary } from '@/lib/i18n';
+import { AiConsentCard } from '@/components/ai-consent-card';
 import { autoCategorize, type AutoState } from './actions';
 
 /** Botão na aba "sem categoria": a IA tenta categorizar o que as regras não pegaram. */
-export function AutoCategorizeButton() {
+export function AutoCategorizeButton({ t }: { t?: Dictionary['walletExtra']['autoCategorize'] }) {
+  const labels = t ?? getDictionary('pt-BR').walletExtra.autoCategorize;
   const [state, action, pending] = useActionState<AutoState>(autoCategorize, {});
+  // Sem aceite LGPD: mostra o aviso. Depois do aceite, a página recarrega e o botão volta ao normal.
+  if (state.needsConsent) return <AiConsentCard compact />;
   return (
     <form action={action} className="flex flex-col gap-1.5 rounded-2xl bg-amarelo-claro p-3.5">
       <p className="text-[14px] leading-snug text-tinta">
-        <strong>Deixa que eu tento?</strong> Eu reconheço loja, app e serviço. Pix pra pessoa fica com você.
+        <strong>{labels.introBold}</strong>
+        {labels.introBody}
       </p>
-      <button type="submit" disabled={pending} className="self-start rounded-full bg-tinta px-4 py-2 text-[13px] font-semibold text-papel disabled:opacity-60">
-        {pending ? 'Categorizando…' : <span className="flex items-center gap-1.5"><Icone src="ui/categorizar-ia" size={18} />Categorizar pra mim</span>}
+      <button
+        type="submit"
+        disabled={pending}
+        className="self-start rounded-full bg-tinta px-4 py-2 text-[13px] font-semibold text-papel disabled:opacity-60"
+      >
+        {pending ? (
+          labels.pending
+        ) : (
+          <span className="flex items-center gap-1.5">
+            <Icon src="ui/categorizar-ia" size={18} />
+            {labels.cta}
+          </span>
+        )}
       </button>
-      {state.message && <p role="status" className="text-[13px] text-tinta-suave">{state.message}</p>}
+      {state.message && (
+        <p role="status" className="text-[13px] text-tinta-suave">
+          {state.message}
+        </p>
+      )}
     </form>
   );
 }

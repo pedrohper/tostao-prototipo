@@ -22,7 +22,8 @@ export class CreateInviteUseCase {
 
   async execute({ userId }: { userId: string }) {
     const mine = await this.repos.invites.listByCreator(userId);
-    if (mine.filter((i) => !i.usedById).length >= MAX_OPEN) throw new AppError(`Você já tem ${MAX_OPEN} convites sem uso.`, 400);
+    if (mine.filter((i) => !i.usedById).length >= MAX_OPEN)
+      throw new AppError(`Você já tem ${MAX_OPEN} convites sem uso.`, 400);
     return { invite: await this.repos.invites.create({ code: newCode(), createdById: userId }) };
   }
 }
@@ -33,12 +34,14 @@ export class ListInvitesUseCase {
   async execute({ userId }: { userId: string }) {
     const invites = await this.repos.invites.listByCreator(userId);
     return {
-      invites: await Promise.all(invites.map(async (i) => ({
-        code: i.code,
-        createdAt: i.createdAt,
-        usedAt: i.usedAt,
-        usedBy: i.usedById ? (await this.repos.users.findById(i.usedById))?.name ?? null : null,
-      }))),
+      invites: await Promise.all(
+        invites.map(async (i) => ({
+          code: i.code,
+          createdAt: i.createdAt,
+          usedAt: i.usedAt,
+          usedBy: i.usedById ? ((await this.repos.users.findById(i.usedById))?.name ?? null) : null,
+        })),
+      ),
     };
   }
 }

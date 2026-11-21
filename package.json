@@ -4,14 +4,28 @@
   "packageManager": "pnpm@10.28.0",
   "scripts": {
     "dev": "pnpm --parallel --filter @tostao/api --filter @tostao/web dev",
-    "test": "pnpm --filter @tostao/api test",
+    "test": "pnpm --filter @tostao/api test && pnpm --filter @tostao/web test",
     "db:up": "docker compose up -d db",
     "db:migrate": "pnpm --filter @tostao/api db:migrate",
     "db:seed": "pnpm --filter @tostao/api db:seed",
     "content:build": "node scripts/build-lessons.mjs",
+    "assets:sync": "node scripts/sync-art-manifest.mjs",
     "db:deploy": "pnpm --filter @tostao/api db:deploy",
     "build": "pnpm --filter @tostao/web build",
+    "typecheck": "pnpm --filter @tostao/api typecheck && pnpm --filter @tostao/web typecheck && apps/api/node_modules/.bin/tsc -p packages/contracts/tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "start:api": "pnpm --filter @tostao/api start",
     "start:web": "pnpm --filter @tostao/web start"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@next/eslint-plugin-next": "^16.4.6",
+    "eslint": "^10.15.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "prettier": "^3.10.1",
+    "typescript-eslint": "^8.72.2"
   }
 }

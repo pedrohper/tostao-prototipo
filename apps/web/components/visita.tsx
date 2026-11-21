@@ -1,9 +1,11 @@
 'use client';
 import { useEffect } from 'react';
-import { registrarVisita } from '@/lib/activity-actions';
+import { trackVisit } from '@/lib/activity-actions';
 
-/** Abriu a tela = missão do dia feita (quando a missão de hoje é essa). */
-export function Visita({ kind }: { kind: Parameters<typeof registrarVisita>[0] }) {
-  useEffect(() => { void registrarVisita(kind); }, [kind]);
+/** Opening the page marks the corresponding daily mission as completed. */
+export function PageVisitTracker({ kind }: { kind: Parameters<typeof trackVisit>[0] }) {
+  useEffect(() => {
+    void trackVisit(kind);
+  }, [kind]);
   return null;
 }

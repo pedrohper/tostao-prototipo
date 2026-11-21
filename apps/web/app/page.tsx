@@ -5,7 +5,8 @@ import { Landing } from './(site)/landing';
 
 export const metadata: Metadata = {
   title: 'Tostão: grana explicada, de tostão em tostão',
-  description: 'Conecte seu banco, veja pra onde o dinheiro foi e aprenda com os seus próprios gastos, em lições de 2 minutos. Sem sermão. Grátis pra começar.',
+  description:
+    'Conecte seu banco, veja pra onde o dinheiro foi e aprenda com os seus próprios gastos, em lições de 2 minutos. Sem sermão. Grátis pra começar.',
   openGraph: {
     title: 'Tostão: grana explicada, de tostão em tostão',
     description: 'Finanças pessoais e educação financeira pra quem tem de 18 a 25 anos. Sem sermão.',
@@ -16,8 +17,8 @@ export const metadata: Metadata = {
 };
 
 // Quem já tem sessão vai direto pro app; quem não tem vê a landing.
-export default async function Root({ searchParams }: { searchParams: Promise<{ conta?: string }> }) {
+export default async function Root({ searchParams }: { searchParams: Promise<{ conta?: string; bancos?: string }> }) {
   if (await getToken()) redirect('/inicio');
-  const { conta } = await searchParams;
-  return <Landing contaApagada={conta === 'apagada'} />;
+  const { conta, bancos } = await searchParams;
+  return <Landing contaApagada={conta === 'apagada'} revogarBancos={conta === 'apagada' && bancos === 'revogar'} />;
 }

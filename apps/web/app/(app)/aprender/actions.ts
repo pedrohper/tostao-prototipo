@@ -1,15 +1,26 @@
 'use server';
+import type { MissionsResponse } from '@tostao/contracts';
 import { revalidatePath } from 'next/cache';
 import { api } from '@/lib/api';
+import { orFallback, rethrowIfRedirect } from '@/lib/rethrow';
 
-/** Marca a lição como feita no servidor. Falhar aqui não pode travar a lição: só não salva. */
-export async function markLessonDone(lessonId: string) {
+/** Marca a lição como feita no servidor e retorna ofensiva + semana atualizadas. */
+export async function markLessonDone(lessonId: string): Promise<MissionsResponse | null> {
   try {
     await api(`/progress/${encodeURIComponent(lessonId)}`, { method: 'POST' });
+    const missions = await api<MissionsResponse>('/missions').catch(orFallback(null));
     revalidatePath('/aprender');
     revalidatePath('/aprender/trilha');
+    revalidatePath('/mais');
     revalidatePath('/perfil');
-  } catch { /* segue sem salvar */ }
+    revalidatePath('/tostao');
+    revalidatePath('/inicio');
+    revalidatePath('/ofensiva');
+    return missions;
+  } catch (caught) {
+    rethrowIfRedirect(caught);
+    return null;
+  }
 }
 
 /** Uma vez só: sobe o que ficou salvo no navegador (versão antiga do protótipo) pro servidor. */

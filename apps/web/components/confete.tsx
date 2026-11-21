@@ -1,17 +1,36 @@
-// Chuva de confete de uma vez (meta batida, lição fechada). Só CSS; some com "reduzir movimento".
-import { SomAoAparecer } from './sons';
-const CORES = ['#FF5A36', '#FFC233', '#3DD6A0', '#DCEBFF', '#FFE1E7'];
+// One-shot CSS confetti burst (goal reached, lesson completed). Disabled under prefers-reduced-motion.
+import { SoundOnMount } from './sons';
 
-export function Confete({ n = 28 }: { n?: number }) {
+const CONFETTI_COLORS = [
+  'var(--color-laranja)',
+  'var(--color-amarelo)',
+  'var(--color-menta)',
+  'var(--color-azul)',
+  'var(--color-rosa)',
+];
+
+export function Confetti({ count = 28, n }: { count?: number; n?: number }) {
+  const total = n ?? count;
   return (
     <div className="confete" aria-hidden="true">
-      <SomAoAparecer som="festa" />
-      {Array.from({ length: n }, (_, i) => {
-        // Determinístico (sem Math.random) pra servidor e cliente desenharem igual.
+      <SoundOnMount som="festa" />
+      {Array.from({ length: total }, (_, i) => {
+        // Deterministic positions so server and client render identically.
         const left = (i * 37) % 100;
-        const dx = (((i * 53) % 120) - 60);
+        const dx = ((i * 53) % 120) - 60;
         const rot = ((i * 97) % 720) - 360;
-        return <i key={i} style={{ left: `${left}%`, background: CORES[i % CORES.length], animationDelay: `${(i % 7) * 0.06}s`, ['--dx' as string]: `${dx}px`, ['--rot' as string]: `${rot}deg` }} />;
+        return (
+          <i
+            key={i}
+            style={{
+              left: `${left}%`,
+              background: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+              animationDelay: `${(i % 7) * 0.06}s`,
+              ['--dx' as string]: `${dx}px`,
+              ['--rot' as string]: `${rot}deg`,
+            }}
+          />
+        );
       })}
     </div>
   );

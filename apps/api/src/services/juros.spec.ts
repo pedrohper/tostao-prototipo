@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { aliquotaIR, anualParaMensal, compararCompra, mensalParaAnual, mesesParaJuntar, parcelaPrice, poupancaAnual, rendimento, taxaImplicita } from '@tostao/contracts';
+import {
+  aliquotaIR,
+  anualParaMensal,
+  compararCompra,
+  mensalParaAnual,
+  mesesParaJuntar,
+  parcelaPrice,
+  poupancaAnual,
+  rendimento,
+  taxaImplicita,
+} from '@tostao/contracts';
 
 describe('contas de juros', () => {
   it('converte taxa anual em mensal e volta', () => {

@@ -1,11 +1,27 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { financialPlanBody, goalBody, goalDepositBody, lessonIdParam, monthQuery, setBudgetBody, type BudgetsResponse, type FinancialPlanResponse, type ForecastResponse, type IncomeSuggestionsResponse, type LessonProgressResponse } from '@tostao/contracts';
+import {
+  financialPlanBody,
+  goalBody,
+  goalDepositBody,
+  lessonIdParam,
+  monthQuery,
+  setBudgetBody,
+  type BudgetsResponse,
+  type FinancialPlanResponse,
+  type ForecastResponse,
+  type IncomeSuggestionsResponse,
+  type LessonProgressResponse,
+} from '@tostao/contracts';
 import type { UseCases } from '../../use-cases/factories.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
 
 // Limites por categoria e progresso da trilha
 export function planningRoutes(app: FastifyInstance, uc: UseCases) {
+  const checkLater = (userId: string) => {
+    void uc.runTostaoChecks.execute({ userId }).catch((err) => app.log.warn({ err }, 'rotina automática falhou'));
+  };
+
   app.get('/budgets', { onRequest: verifyJwt }, async (request) => {
     const { month } = monthQuery.parse(request.query);
     return (await uc.getBudgets.execute({ userId: request.user.sub, month })) satisfies BudgetsResponse;
@@ -14,7 +30,9 @@ export function planningRoutes(app: FastifyInstance, uc: UseCases) {
   app.put('/budgets/:categoryId', { onRequest: verifyJwt }, async (request) => {
     const { categoryId } = z.object({ categoryId: z.string().min(1) }).parse(request.params);
     const { limitInCents } = setBudgetBody.parse(request.body);
-    return uc.setBudget.execute({ userId: request.user.sub, categoryId, limitInCents });
+    const r = await uc.setBudget.execute({ userId: request.user.sub, categoryId, limitInCents });
+    checkLater(request.user.sub);
+    return r;
   });
 
   app.get('/progress', { onRequest: verifyJwt }, async (request) => {
@@ -35,6 +53,7 @@ export function planningRoutes(app: FastifyInstance, uc: UseCases) {
   app.put('/plan', { onRequest: verifyJwt }, async (request) => {
     const plan = financialPlanBody.parse(request.body);
     const r = await uc.savePlan.execute({ userId: request.user.sub, plan });
+    checkLater(request.user.sub);
     return { plan: r.plan, updated: r.updated };
   });
 
@@ -46,14 +65,40 @@ export function planningRoutes(app: FastifyInstance, uc: UseCases) {
     return (await uc.forecast.execute({ userId: request.user.sub })) satisfies ForecastResponse;
   });
 
-  // Meta: criar/trocar (body = meta) ou apagar (body = null), e "Guardei"/"Tirei"
+  // Metas: criar/trocar/apagar e "Guardei"/"Tirei"
   app.put('/goal', { onRequest: verifyJwt }, async (request) => {
     const goal = goalBody.nullable().parse(request.body ?? null);
-    return uc.setGoal.execute({ userId: request.user.sub, goal });
+    const r = await uc.setGoal.execute({ userId: request.user.sub, goal });
+    checkLater(request.user.sub);
+    return r;
+  });
+
+  app.post('/goals', { onRequest: verifyJwt }, async (request) => {
+    const goal = goalBody.parse(request.body);
+    const r = await uc.setGoal.add({ userId: request.user.sub, goal });
+    checkLater(request.user.sub);
+    return r;
+  });
+
+  app.put('/goals/:id', { onRequest: verifyJwt }, async (request) => {
+    const { id } = z.object({ id: z.string().min(1).max(64) }).parse(request.params); // meta legada tem id 'default'
+    const goal = goalBody.parse(request.body);
+    const r = await uc.setGoal.update({ userId: request.user.sub, id, goal });
+    checkLater(request.user.sub);
+    return r;
+  });
+
+  app.delete('/goals/:id', { onRequest: verifyJwt }, async (request) => {
+    const { id } = z.object({ id: z.string().min(1).max(64) }).parse(request.params);
+    const r = await uc.setGoal.remove({ userId: request.user.sub, id });
+    checkLater(request.user.sub);
+    return r;
   });
 
   app.post('/goal/deposits', { onRequest: verifyJwt }, async (request) => {
-    const { amountInCents } = goalDepositBody.parse(request.body);
-    return uc.goalDeposit.execute({ userId: request.user.sub, amountInCents });
+    const { amountInCents, goalId } = goalDepositBody.parse(request.body);
+    const r = await uc.goalDeposit.execute({ userId: request.user.sub, amountInCents, goalId });
+    checkLater(request.user.sub);
+    return r;
   });
 }

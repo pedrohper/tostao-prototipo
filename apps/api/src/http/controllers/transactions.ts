@@ -1,13 +1,46 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { type AutoCategorizeResponse, searchQuery, type SearchResponse, categorizeBody, manualTransactionBody, monthQuery, type CategoryDTO, type MonthSummaryResponse, type SubscriptionsResponse, ignoreSubscriptionBody, createCategoryBody } from '@tostao/contracts';
+import {
+  type AutoCategorizeResponse,
+  searchQuery,
+  type SearchResponse,
+  type NotesResponse,
+  categorizeBody,
+  manualTransactionBody,
+  updateTransactionBody,
+  monthQuery,
+  type CategoryDTO,
+  type MonthSummaryResponse,
+  type SubscriptionsResponse,
+  ignoreSubscriptionBody,
+  createCategoryBody,
+  idParam,
+} from '@tostao/contracts';
 import type { UseCases } from '../../use-cases/factories.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
 import { presentTransaction } from '../presenters.js';
+import type { Limiters } from '../rate-limits.js';
 
-export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
-  const categoryDto = ({ id, name, emoji, color, kind, userId }: { id: string; name: string; emoji: string; color: string; kind: CategoryDTO['kind']; userId?: string | null }) =>
-    ({ id, name, emoji, color, kind, custom: !!userId }) satisfies CategoryDTO;
+export function transactionRoutes(app: FastifyInstance, uc: UseCases, limits: Limiters) {
+  const checkLater = (userId: string) => {
+    void uc.runTostaoChecks.execute({ userId }).catch((err) => app.log.warn({ err }, 'rotina automática falhou'));
+  };
+
+  const categoryDto = ({
+    id,
+    name,
+    emoji,
+    color,
+    kind,
+    userId,
+  }: {
+    id: string;
+    name: string;
+    emoji: string;
+    color: string;
+    kind: CategoryDTO['kind'];
+    userId?: string | null;
+  }) => ({ id, name, emoji, color, kind, custom: !!userId }) satisfies CategoryDTO;
 
   // Do sistema + as que a pessoa criou
   app.get('/categories', { onRequest: verifyJwt }, async (request) => {
@@ -22,7 +55,7 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
   });
 
   app.delete('/categories/:id', { onRequest: verifyJwt }, async (request, reply) => {
-    const { id } = z.object({ id: z.string().min(1) }).parse(request.params);
+    const { id } = idParam.parse(request.params);
     await uc.deleteCategory.execute({ userId: request.user.sub, categoryId: id });
     return reply.status(204).send();
   });
@@ -34,8 +67,16 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
 
   app.get('/subscriptions', { onRequest: verifyJwt }, async (request) => {
     const r = await uc.listSubscriptions.execute({ userId: request.user.sub });
-    const dto = (s: (typeof r.subscriptions)[number]) => ({ ...s, lastChargedAt: s.lastChargedAt.toISOString(), nextChargeAt: s.nextChargeAt.toISOString() });
-    return { ...r, subscriptions: r.subscriptions.map(dto), ignored: r.ignored.map(dto) } satisfies SubscriptionsResponse;
+    const dto = (s: (typeof r.subscriptions)[number]) => ({
+      ...s,
+      lastChargedAt: s.lastChargedAt.toISOString(),
+      nextChargeAt: s.nextChargeAt.toISOString(),
+    });
+    return {
+      ...r,
+      subscriptions: r.subscriptions.map(dto),
+      ignored: r.ignored.map(dto),
+    } satisfies SubscriptionsResponse;
   });
 
   // "Isso não é assinatura" (ou desfazer)
@@ -52,6 +93,11 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
   });
 
   // Busca (vem antes do /:id pra "search" não virar id)
+  // Tela Anotações: o que foi anotado à mão + histórico do que o app apagou sozinho.
+  app.get('/notes', { onRequest: verifyJwt }, async (request): Promise<NotesResponse> => {
+    return uc.listNotes.execute({ userId: request.user.sub });
+  });
+
   app.get('/transactions/search', { onRequest: verifyJwt }, async (request) => {
     const query = searchQuery.parse(request.query);
     const r = await uc.searchTransactions.execute({ ...query, userId: request.user.sub });
@@ -59,8 +105,11 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
   });
 
   app.get('/transactions/:id', { onRequest: verifyJwt }, async (request) => {
-    const { id } = z.object({ id: z.string() }).parse(request.params);
-    const { transaction, rulePattern } = await uc.getTransaction.execute({ userId: request.user.sub, transactionId: id });
+    const { id } = idParam.parse(request.params);
+    const { transaction, rulePattern } = await uc.getTransaction.execute({
+      userId: request.user.sub,
+      transactionId: id,
+    });
     return { transaction: presentTransaction(transaction), rulePattern };
   });
 
@@ -71,24 +120,49 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases) {
       userId: request.user.sub,
       occurredAt: new Date(`${body.occurredAt}T12:00:00-03:00`),
     });
+    checkLater(request.user.sub);
     return reply.status(201).send({ id: transaction.id });
   });
 
   // Apaga um lançamento anotado (com ?serie=1, também os próximos do "todo mês"/parcelado)
   app.delete('/transactions/:id', { onRequest: verifyJwt }, async (request) => {
-    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const { id } = idParam.parse(request.params);
     const { serie } = z.object({ serie: z.enum(['0', '1']).optional() }).parse(request.query);
     return uc.deleteTransaction.execute({ userId: request.user.sub, transactionId: id, series: serie === '1' });
   });
 
+  app.patch('/transactions/:id', { onRequest: verifyJwt }, async (request) => {
+    const { id } = idParam.parse(request.params);
+    const body = updateTransactionBody.parse(request.body);
+    const { transaction } = await uc.updateTransaction.execute({
+      ...body,
+      userId: request.user.sub,
+      transactionId: id,
+    });
+    checkLater(request.user.sub);
+    return { id: transaction.id, isInternalTransfer: transaction.isInternalTransfer };
+  });
+
   app.patch('/transactions/:id/category', { onRequest: verifyJwt }, async (request) => {
-    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const { id } = idParam.parse(request.params);
     const body = categorizeBody.parse(request.body);
-    return uc.categorizeTransaction.execute({ ...body, userId: request.user.sub, transactionId: id });
+    const r = await uc.categorizeTransaction.execute({ ...body, userId: request.user.sub, transactionId: id });
+    checkLater(request.user.sub);
+    return r;
   });
 
   // "Deixa o Tostão categorizar": a IA tenta as pendentes agora (as que ela não souber continuam pendentes)
-  app.post('/transactions/auto-categorize', { onRequest: verifyJwt }, async (request) => {
-    return (await uc.autoCategorize.execute({ userId: request.user.sub })) satisfies AutoCategorizeResponse;
-  });
+  app.post(
+    '/transactions/auto-categorize',
+    { onRequest: verifyJwt, preHandler: limits.autoCategorizeByUser },
+    async (request) => {
+      const r = (await uc.autoCategorize.execute({
+        userId: request.user.sub,
+        source: 'user',
+        requireConsent: true,
+      })) satisfies AutoCategorizeResponse;
+      checkLater(request.user.sub);
+      return r;
+    },
+  );
 }

@@ -16,7 +16,16 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = new URL(event.notification.data?.url ?? '/inicio', self.location.origin).href;
+  // data.url vem do payload do push: só abre se for da nossa origem (nunca uma URL externa).
+  const raw = event.notification.data?.url ?? '/inicio';
+  let parsed;
+  try {
+    parsed = new URL(raw, self.location.origin);
+  } catch {
+    parsed = null;
+  }
+  const url =
+    parsed && parsed.origin === self.location.origin ? parsed.href : new URL('/inicio', self.location.origin).href;
   event.waitUntil((async () => {
     const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     const open = all.find((c) => c.url.startsWith(self.location.origin));

@@ -1,70 +1,169 @@
 'use client';
 import { useActionState, useEffect, useState } from 'react';
-import { tocar } from '@/lib/sons';
+import { playSound } from '@/lib/sons';
 import { useFormStatus } from 'react-dom';
 import type { GoalStatus } from '@tostao/contracts';
+import { getDictionary, type Dictionary } from '@/lib/i18n';
 import { deposit, saveGoal, type GoalState } from './actions';
 
-const field = 'h-12 min-w-0 rounded-xl border-[1.5px] border-linha bg-cartao px-4 text-base text-tinta outline-none focus:border-tinta';
-const pill = (on: boolean) => `rounded-full px-3.5 py-2 text-sm font-semibold ${on ? 'bg-tinta text-papel' : 'bg-papel-2 text-tinta'}`;
-const KINDS = [['reserva', 'Montar reserva'], ['viagem', 'Viajar'], ['sair-do-vermelho', 'Sair do vermelho'], ['outro', 'Outra coisa']] as const;
-const toMoney = (c: number) => (c / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const field =
+  'h-12 min-w-0 rounded-xl border-[1.5px] border-linha bg-cartao px-4 text-base text-tinta outline-none focus:border-tinta';
+const pill = (on: boolean) =>
+  `rounded-full px-3.5 py-2 text-sm font-semibold ${on ? 'bg-tinta text-papel' : 'bg-papel-2 text-tinta'}`;
+const toMoney = (c: number) =>
+  (c / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function Submit({ children, className }: { children: React.ReactNode; className: string }) {
   const { pending } = useFormStatus();
-  return <button type="submit" disabled={pending} className={`${className} disabled:opacity-60`}>{pending ? '…' : children}</button>;
+  return (
+    <button type="submit" disabled={pending} className={`${className} disabled:opacity-60`}>
+      {pending ? '…' : children}
+    </button>
+  );
 }
 
-/** Criar ou editar a meta. */
-export function GoalForm({ goal, kind: initialKind }: { goal: GoalStatus | null; kind?: string }) {
+/** Criar ou editar uma meta. */
+export function GoalForm({
+  goal,
+  goalId,
+  voltar,
+  kind: initialKind,
+  t,
+}: {
+  goal: GoalStatus | null;
+  goalId?: string;
+  voltar?: string;
+  kind?: string;
+  t?: Dictionary['pages']['meta']['form'];
+}) {
+  const labels = t ?? getDictionary('pt-BR').pages.meta.form;
+  const KINDS = [
+    ['reserva', labels.kinds.reserva],
+    ['viagem', labels.kinds.viagem],
+    ['sair-do-vermelho', labels.kinds['sair-do-vermelho']],
+    ['outro', labels.kinds.outro],
+  ] as const;
   const [state, action] = useActionState<GoalState, FormData>(saveGoal, {});
-  const [kind, setKind] = useState(initialKind ?? 'viagem');
+  const [kind, setKind] = useState(initialKind ?? goal?.kind ?? 'viagem');
   return (
     <form action={action} className="flex flex-col gap-3.5">
+      {goalId && <input type="hidden" name="id" value={goalId} />}
+      {voltar && <input type="hidden" name="voltar" value={voltar} />}
       <input type="hidden" name="kind" value={kind} />
       <fieldset className="flex flex-wrap gap-2">
-        <legend className="mb-2 text-sm font-semibold">Pra quê?</legend>
-        {KINDS.map(([k, l]) => <button key={k} type="button" aria-pressed={kind === k} onClick={() => setKind(k)} className={pill(kind === k)}>{l}</button>)}
+        <legend className="mb-2 text-sm font-semibold">{labels.purposeLegend}</legend>
+        {KINDS.map(([k, l]) => (
+          <button
+            key={k}
+            type="button"
+            aria-pressed={kind === k}
+            onClick={() => setKind(k)}
+            className={pill(kind === k)}
+          >
+            {l}
+          </button>
+        ))}
       </fieldset>
-      <label className="flex flex-col gap-1.5 text-sm font-semibold">Nome da meta
-        <input name="label" defaultValue={goal?.label ?? ''} maxLength={60} placeholder="Ex.: Praia em julho" className={field} />
+      <label className="flex flex-col gap-1.5 text-sm font-semibold">
+        {labels.nameLabel}
+        <input
+          name="label"
+          defaultValue={goal?.label ?? ''}
+          maxLength={60}
+          placeholder={labels.namePlaceholder}
+          className={field}
+        />
       </label>
       <div className="grid grid-cols-2 gap-2.5">
-        <label className="flex flex-col gap-1.5 text-sm font-semibold">Quanto
-          <input name="amount" inputMode="decimal" defaultValue={goal?.amountInCents ? toMoney(goal.amountInCents) : ''} placeholder="R$ 0,00" className={field} />
+        <label className="flex flex-col gap-1.5 text-sm font-semibold">
+          {labels.amountLabel}
+          <input
+            name="amount"
+            inputMode="decimal"
+            defaultValue={goal?.amountInCents ? toMoney(goal.amountInCents) : ''}
+            placeholder="R$ 0,00"
+            className={field}
+          />
         </label>
-        <label className="flex flex-col gap-1.5 text-sm font-semibold">Até quando
+        <label className="flex flex-col gap-1.5 text-sm font-semibold">
+          {labels.deadlineLabel}
           <input name="deadline" type="month" defaultValue={goal?.deadline ?? ''} className={`${field} px-2.5`} />
         </label>
       </div>
-      {state.error && <p role="alert" className="text-sm font-semibold text-vermelho-texto">{state.error}</p>}
-      <Submit className="h-[50px] rounded-full bg-tinta text-[15px] font-semibold text-papel">{goal ? 'Salvar meta' : 'Criar meta'}</Submit>
+      {state.error && (
+        <p role="alert" className="text-sm font-semibold text-vermelho-texto">
+          {state.error}
+        </p>
+      )}
+      <Submit className="h-[50px] rounded-full bg-tinta text-[15px] font-semibold text-papel">
+        {goal ? labels.saveGoal : labels.createGoal}
+      </Submit>
     </form>
   );
 }
 
-/** "Guardei" (ou "Tirei") um valor da meta. */
-export function DepositForm() {
+/** "Guardei" (ou "Tirei") um valor da meta selecionada. */
+export function DepositForm({ goalId, t }: { goalId?: string; t?: Dictionary['pages']['meta']['form'] }) {
+  const labels = t ?? getDictionary('pt-BR').pages.meta.form;
   const [state, action] = useActionState<GoalState, FormData>(deposit, {});
   const [dir, setDir] = useState<'guardei' | 'tirei'>('guardei');
   const [amount, setAmount] = useState('');
-  useEffect(() => { if (state.message) tocar('moeda'); else if (state.error) tocar('erro'); }, [state]);
+  useEffect(() => {
+    if (state.message) playSound('moeda');
+    else if (state.error) playSound('erro');
+  }, [state]);
   return (
-    <form action={async (f) => { await action(f); setAmount(''); }} className="flex flex-col gap-2.5 rounded-2xl border border-linha bg-cartao p-3.5">
+    <form
+      action={async (f) => {
+        await action(f);
+        setAmount('');
+      }}
+      className="flex flex-col gap-2.5 rounded-2xl border border-linha bg-cartao p-3.5"
+    >
+      {goalId && <input type="hidden" name="goalId" value={goalId} />}
       <input type="hidden" name="dir" value={dir} />
       <div className="grid grid-cols-2 gap-1 rounded-full bg-papel-2 p-1">
         {(['guardei', 'tirei'] as const).map((d) => (
-          <button key={d} type="button" aria-pressed={dir === d} onClick={() => setDir(d)} className={`h-[38px] rounded-full text-sm font-semibold ${dir === d ? 'bg-tinta text-papel' : 'text-tinta'}`}>{d === 'guardei' ? 'Guardei' : 'Tirei'}</button>
+          <button
+            key={d}
+            type="button"
+            aria-pressed={dir === d}
+            onClick={() => setDir(d)}
+            className={`h-[38px] rounded-full text-sm font-semibold ${dir === d ? 'bg-tinta text-papel' : 'text-tinta'}`}
+          >
+            {d === 'guardei' ? labels.savedBtn : labels.withdrewBtn}
+          </button>
         ))}
       </div>
       <div className="flex gap-2">
-        {[20, 50, 100].map((v) => <button key={v} type="button" onClick={() => setAmount(`${v},00`)} className={pill(amount === `${v},00`)}>R$ {v}</button>)}
+        {[20, 50, 100].map((v) => (
+          <button key={v} type="button" onClick={() => setAmount(`${v},00`)} className={pill(amount === `${v},00`)}>
+            R$ {v}
+          </button>
+        ))}
       </div>
       <div className="flex gap-2">
-        <input name="amount" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="R$ outro valor" aria-label="Valor" className={`${field} grow`} />
-        <Submit className="h-12 shrink-0 rounded-xl bg-tinta px-5 text-[15px] font-semibold text-papel">Anotar</Submit>
+        <input
+          name="amount"
+          inputMode="decimal"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder={labels.otherAmountPlaceholder}
+          aria-label={labels.amountAria}
+          className={`${field} grow`}
+        />
+        <Submit className="h-12 shrink-0 rounded-xl bg-tinta px-5 text-[15px] font-semibold text-papel">
+          {labels.logBtn}
+        </Submit>
       </div>
-      {(state.error || state.message) && <p role="status" className={`text-sm ${state.error ? 'font-semibold text-vermelho-texto' : 'text-tinta-suave'}`}>{state.error ?? state.message}</p>}
+      {(state.error || state.message) && (
+        <p
+          role="status"
+          className={`text-sm ${state.error ? 'font-semibold text-vermelho-texto' : 'text-tinta-suave'}`}
+        >
+          {state.error ?? state.message}
+        </p>
+      )}
     </form>
   );
 }

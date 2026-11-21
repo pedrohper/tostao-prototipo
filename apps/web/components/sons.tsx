@@ -1,13 +1,14 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { setSons, sonsLigados, tocar, type Som } from '@/lib/sons';
+import { useEffect, useState, useSyncExternalStore } from 'react';
+import { areSoundsEnabled, playSound, setSoundsEnabled, subscribeSounds, type SoundEffect } from '@/lib/sons';
+import { getDictionary, type Locale } from '@/lib/i18n';
 
-/** Toque curtinho em botão e aba. Fica no layout do app. */
-export function SonsDoToque() {
+/** Plays a short tap sound on buttons and navigation links. Mounted in the app layout. */
+export function TapSoundListener() {
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       const el = (e.target as HTMLElement | null)?.closest('button, nav a, [role="switch"]');
-      if (el && !(el as HTMLButtonElement).disabled) tocar('toque');
+      if (el && !(el as HTMLButtonElement).disabled) playSound('toque');
     };
     document.addEventListener('click', onClick, { capture: true });
     return () => document.removeEventListener('click', onClick, { capture: true });
@@ -15,52 +16,103 @@ export function SonsDoToque() {
   return null;
 }
 
-/** Toca uma vez quando aparece (ex.: confete de lição concluída, meta batida). */
-export function SomAoAparecer({ som }: { som: Som }) {
-  useEffect(() => { tocar(som); }, [som]);
+/** Plays a sound once when mounted (e.g. lesson completed, goal reached). */
+export function SoundOnMount({ som }: { som: SoundEffect }) {
+  useEffect(() => {
+    playSound(som);
+  }, [som]);
   return null;
 }
 
 /**
- * Comemora missão nova: compara com o que a pessoa já tinha visto hoje.
- * Primeira missão do dia = som da ofensiva; as outras = som de missão. Mostra um aviso curtinho.
+ * Celebrates newly completed missions compared against what the user last saw today.
+ * First mission of the day plays the streak sound; subsequent ones play the mission sound.
  */
-export function SomDasMissoes({ day, done, streak }: { day: string; done: number; streak: number }) {
-  const [msg, setMsg] = useState<string | null>(null);
+export function MissionCompletionToast({
+  day,
+  done,
+  streak,
+  locale = 'pt-BR',
+}: {
+  day: string;
+  done: number;
+  streak: number;
+  locale?: Locale;
+}) {
+  const [message, setMessage] = useState<string | null>(null);
+  const t = getDictionary(locale);
+
   useEffect(() => {
-    const key = `tostao-missoes-${day}`;
-    let before = -1;
-    try { before = Number(localStorage.getItem(key) ?? '-1'); localStorage.setItem(key, String(done)); } catch { return; }
-    if (before < 0 || done <= before) return;
-    const first = before === 0;
-    tocar(first ? 'ofensiva' : 'missao');
-    setMsg(first ? `Ofensiva garantida: ${streak} ${streak === 1 ? 'dia' : 'dias'}!` : 'Missão feita!');
-    const t = setTimeout(() => setMsg(null), 2800);
-    return () => clearTimeout(t);
-  }, [day, done, streak]);
-  if (!msg) return null;
+    const storageKey = `tostao-missoes-${day}`;
+    let previousDone: number;
+    try {
+      previousDone = Number(localStorage.getItem(storageKey) ?? '-1');
+      localStorage.setItem(storageKey, String(done));
+    } catch {
+      return;
+    }
+    if (previousDone < 0 || done <= previousDone) return;
+    const isFirstToday = previousDone === 0;
+    playSound(isFirstToday ? 'ofensiva' : 'missao');
+    const showTimer = setTimeout(
+      () => setMessage(isFirstToday ? t.profile.streakToast(streak) : t.profile.missionDoneToast),
+      0,
+    );
+    const hideTimer = setTimeout(() => setMessage(null), 2800);
+    return () => {
+      clearTimeout(showTimer);
+      clearTimeout(hideTimer);
+    };
+  }, [day, done, streak, t.profile]);
+
+  if (!message) return null;
   return (
-    <div role="status" className="fixed inset-x-0 top-4 z-30 mx-auto w-fit rounded-full bg-tinta px-4 py-2 text-sm font-semibold text-papel shadow-lg">{msg}</div>
+    <div
+      role="status"
+      className="fixed inset-x-0 top-4 z-30 mx-auto w-fit rounded-full bg-tinta px-4 py-2 text-sm font-semibold text-papel shadow-lg"
+    >
+      {message}
+    </div>
   );
 }
 
-/** Liga/desliga os sons no Perfil. */
-export function SonsSwitch() {
-  const [on, setOn] = useState<boolean | null>(null);
-  useEffect(() => setOn(sonsLigados()), []);
+/** Sound effects toggle card in Profile. */
+export function SoundToggleCard({ locale = 'pt-BR', embedded = false }: { locale?: Locale; embedded?: boolean }) {
+  const enabled = useSyncExternalStore(subscribeSounds, areSoundsEnabled, () => null);
+  const t = getDictionary(locale);
+
   return (
-    <section className="flex flex-col gap-2.5 rounded-2xl border border-linha bg-cartao p-3.5">
+    <section
+      className={
+        embedded
+          ? 'flex flex-col gap-1.5 py-3.5'
+          : 'flex flex-col gap-2.5 rounded-[22px] border border-linha bg-cartao p-4'
+      }
+    >
       <div className="flex items-center justify-between gap-3">
-        <span className="text-[15px] font-bold">Sons</span>
-        {on !== null && (
-          <button type="button" role="switch" aria-checked={on} aria-label="Sons"
-            onClick={() => { setSons(!on); setOn(!on); if (!on) setTimeout(() => tocar('moeda'), 0); }}
-            className={`relative h-8 w-[52px] shrink-0 rounded-full transition-colors ${on ? 'bg-menta' : 'bg-papel-2 ring-1 ring-linha'}`}>
-            <span className={`absolute top-1 h-6 w-6 rounded-full bg-cartao shadow transition-all ${on ? 'left-[24px]' : 'left-1'}`} />
+        <span className="text-[15px] font-semibold text-tinta">{t.profile.soundsTitle}</span>
+        {enabled !== null && (
+          <button
+            type="button"
+            role="switch"
+            aria-checked={enabled}
+            aria-label={t.profile.soundsTitle}
+            onClick={() => {
+              const next = !enabled;
+              setSoundsEnabled(next);
+              if (next) setTimeout(() => playSound('moeda'), 0);
+            }}
+            className={`relative h-8 w-[52px] shrink-0 rounded-full transition-colors ${enabled ? 'bg-menta' : 'bg-papel-2 ring-1 ring-linha'}`}
+          >
+            <span
+              className={`absolute top-1 h-6 w-6 rounded-full bg-cartao shadow ring-1 ring-black/5 transition-all ${
+                enabled ? 'left-[24px]' : 'left-1'
+              }`}
+            />
           </button>
         )}
       </div>
-      <p className="text-[13px] leading-[19px] text-tinta-suave">Toque nos botões, missão feita, ofensiva e meta batida. Seguem o volume de mídia do celular.</p>
+      <p className="text-[13px] leading-[19px] text-tinta-suave">{t.profile.soundsDescription}</p>
     </section>
   );
 }

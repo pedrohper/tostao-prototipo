@@ -1,15 +1,56 @@
-// Poses do Tostão, Caramelo e vilões. Arquivos em public/elenco.
-export type Pose =
-  | 'acenando' | 'avatar' | 'chocado' | 'comemorando' | 'conectando' | 'dormindo' | 'investigando'
-  | 'orgulhoso' | 'pensando' | 'preocupado' | 'professor' | 'sem-graca' | 'triste'
-  | 'caramelo' | 'caramelo-acenando' | 'caramelo-bravo' | 'caramelo-dormindo' | 'caramelo-farejando' | 'caramelo-feliz' | 'caramelo-moeda'
-  | 'tigrinho' | 'urubu' | 'urubu-pix' | 'urubu-fugindo' | 'dupla';
+// Tostão, Caramelo, and villain character poses. Assets live in public/elenco.
+export type MascotPose =
+  | 'acenando'
+  | 'avatar'
+  | 'chocado'
+  | 'comemorando'
+  | 'conectando'
+  | 'dormindo'
+  | 'investigando'
+  | 'orgulhoso'
+  | 'pensando'
+  | 'preocupado'
+  | 'professor'
+  | 'sem-graca'
+  | 'triste'
+  | 'caramelo'
+  | 'caramelo-acenando'
+  | 'caramelo-bravo'
+  | 'caramelo-dormindo'
+  | 'caramelo-farejando'
+  | 'caramelo-feliz'
+  | 'caramelo-moeda'
+  | 'tigrinho'
+  | 'urubu'
+  | 'urubu-pix'
+  | 'urubu-fugindo'
+  | 'dupla';
 
-const FESTA: Pose[] = ['comemorando', 'orgulhoso', 'caramelo-feliz', 'dupla'];
+const CELEBRATION_POSES: MascotPose[] = ['comemorando', 'orgulhoso', 'caramelo-feliz', 'dupla'];
 
-/** Por padrão o personagem "respira" (bem leve). still = parado (ex.: avatar pequeno). */
-export function Mascote({ pose, size = 120, alt = '', className = '', still = false }: { pose: Pose; size?: number; alt?: string; className?: string; still?: boolean }) {
-  const motion = still || size < 48 ? '' : FESTA.includes(pose) ? 'mascote-pula' : 'mascote';
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={`/elenco/${pose}.webp`} alt={alt} width={size} height={size} className={`shrink-0 select-none ${motion} ${className}`} draggable={false} />;
+/** By default the character gently breathes. Set `still` for static avatars. */
+export function Mascot({
+  pose,
+  size = 120,
+  alt = '',
+  className = '',
+  still = false,
+}: {
+  pose: MascotPose;
+  size?: number;
+  alt?: string;
+  className?: string;
+  still?: boolean;
+}) {
+  const motionClass = still || size < 48 ? '' : CELEBRATION_POSES.includes(pose) ? 'mascote-pula' : 'mascote';
+  return (
+    <img
+      src={`/elenco/${pose}.webp`}
+      alt={alt}
+      width={size}
+      height={size}
+      className={`shrink-0 select-none ${motionClass} ${className}`}
+      draggable={false}
+    />
+  );
 }

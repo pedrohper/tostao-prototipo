@@ -17,7 +17,9 @@ for (const { id } of users) {
     if (!categoryId) continue;
     all[i] = { ...t, categoryId };
     await repos.transactions.save(all[i]!);
-    console.log(`${t.occurredAt.toISOString().slice(0, 10)}  ${(t.amountInCents / 100).toFixed(2)}  ${t.description}  -> categoria ${categoryId}`);
+    console.log(
+      `${t.occurredAt.toISOString().slice(0, 10)}  ${(t.amountInCents / 100).toFixed(2)}  ${t.description}  -> categoria ${categoryId}`,
+    );
     changed++;
   }
   const internal = detectInternalTransfers(all);
@@ -25,7 +27,9 @@ for (const { id } of users) {
     const shouldBe = internal.has(t.id);
     if (t.accountId && t.isInternalTransfer !== shouldBe) {
       await repos.transactions.save({ ...t, isInternalTransfer: shouldBe });
-      console.log(`${t.occurredAt.toISOString().slice(0, 10)}  ${(t.amountInCents / 100).toFixed(2)}  ${t.description}  -> ${shouldBe ? 'interna' : 'gasto/renda'}`);
+      console.log(
+        `${t.occurredAt.toISOString().slice(0, 10)}  ${(t.amountInCents / 100).toFixed(2)}  ${t.description}  -> ${shouldBe ? 'interna' : 'gasto/renda'}`,
+      );
       changed++;
     }
   }

@@ -3,26 +3,44 @@
 import { createHash } from 'node:crypto';
 
 export type ParsedTransaction = { externalId: string; occurredAt: Date; amountInCents: number; description: string };
-export type ParsedStatement = { format: 'ofx' | 'csv'; kind: 'BANK' | 'CREDIT'; balanceInCents: number | null; transactions: ParsedTransaction[] };
+export type ParsedStatement = {
+  format: 'ofx' | 'csv';
+  kind: 'BANK' | 'CREDIT';
+  balanceInCents: number | null;
+  transactions: ParsedTransaction[];
+};
 
 export class StatementParseError extends Error {}
 
-const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+const norm = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
 
 /** Meio-dia de Brasília: extrato só tem o dia, e assim ele não pula pro dia anterior. */
-const noonBr = (y: string, m: string, d: string) => new Date(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T12:00:00-03:00`);
+const noonBr = (y: string, m: string, d: string) =>
+  new Date(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T12:00:00-03:00`);
 
 /** "1.234,56", "-12.50", "R$ 9,90", "(10,00)" → centavos */
 export function parseAmount(raw: string): number | null {
   let s = raw.replace(/R\$|\s/g, '').trim();
   if (!s) return null;
   let negative = false;
-  if (/^\(.*\)$/.test(s)) { negative = true; s = s.slice(1, -1); }
-  if (s.startsWith('-')) { negative = !negative; s = s.slice(1); }
+  if (/^\(.*\)$/.test(s)) {
+    negative = true;
+    s = s.slice(1, -1);
+  }
+  if (s.startsWith('-')) {
+    negative = !negative;
+    s = s.slice(1);
+  }
   if (s.startsWith('+')) s = s.slice(1);
   const lastComma = s.lastIndexOf(',');
   const lastDot = s.lastIndexOf('.');
-  if (lastComma > lastDot) s = s.replace(/\./g, '').replace(',', '.'); // formato BR
+  if (lastComma > lastDot)
+    s = s.replace(/\./g, '').replace(',', '.'); // formato BR
   else s = s.replace(/,/g, '');
   if (!/^\d+(\.\d+)?$/.test(s)) return null;
   const cents = Math.round(Number(s) * 100);
@@ -43,17 +61,23 @@ function parseDate(raw: string): Date | null {
 }
 
 /** Linha de saldo no meio do extrato (BB, Itaú, Bradesco põem) não é transação. */
-const isBalanceLine = (desc: string) => /^\s*(s\s*a\s*l\s*d\s*o|saldo (anterior|do dia|final|disponivel|em conta)|saldo$)/i.test(norm(desc));
+const isBalanceLine = (desc: string) =>
+  /^\s*(s\s*a\s*l\s*d\s*o|saldo (anterior|do dia|final|disponivel|em conta)|saldo$)/i.test(norm(desc));
 
 const hashId = (parts: string[]) => createHash('sha256').update(parts.join('|')).digest('hex').slice(0, 24);
 
 /** Mesma data+valor+descrição duas vezes no mesmo arquivo (dois cafés iguais) = transações diferentes. */
-function withStableIds(rows: Omit<ParsedTransaction, 'externalId'>[], idOf: (r: Omit<ParsedTransaction, 'externalId'>, i: number) => string | null) {
+function withStableIds(
+  rows: Omit<ParsedTransaction, 'externalId'>[],
+  idOf: (r: Omit<ParsedTransaction, 'externalId'>, i: number) => string | null,
+) {
   const seen = new Map<string, number>();
   return rows.map((r, i) => {
     const given = idOf(r, i);
     if (given) return { ...r, externalId: given };
-    const base = [r.occurredAt.toISOString().slice(0, 10), String(r.amountInCents), r.description.toUpperCase()].join('|');
+    const base = [r.occurredAt.toISOString().slice(0, 10), String(r.amountInCents), r.description.toUpperCase()].join(
+      '|',
+    );
     const n = (seen.get(base) ?? 0) + 1;
     seen.set(base, n);
     return { ...r, externalId: `h:${hashId([base, String(n)])}` };
@@ -61,8 +85,12 @@ function withStableIds(rows: Omit<ParsedTransaction, 'externalId'>[], idOf: (r: 
 }
 
 function parseOfx(text: string): ParsedStatement {
-  const tag = (block: string, name: string) => block.match(new RegExp(`<${name}>([^<\\r\\n]*)`, 'i'))?.[1]?.trim() ?? '';
-  const blocks = text.split(/<STMTTRN>/i).slice(1).map((b) => b.split(/<\/STMTTRN>/i)[0]!);
+  const tag = (block: string, name: string) =>
+    block.match(new RegExp(`<${name}>([^<\\r\\n]*)`, 'i'))?.[1]?.trim() ?? '';
+  const blocks = text
+    .split(/<STMTTRN>/i)
+    .slice(1)
+    .map((b) => b.split(/<\/STMTTRN>/i)[0]!);
   const isCard = /<CCSTMTRS>/i.test(text);
   const fitids: (string | null)[] = [];
   const rows: Omit<ParsedTransaction, 'externalId'>[] = [];
@@ -90,13 +118,18 @@ function splitCsvLine(line: string, sep: string): string[] {
   for (let i = 0; i < line.length; i++) {
     const c = line[i]!;
     if (c === '"') {
-      if (quoted && line[i + 1] === '"') { cur += '"'; i++; } else quoted = !quoted;
-    } else if (c === sep && !quoted) { out.push(cur); cur = ''; } else cur += c;
+      if (quoted && line[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else quoted = !quoted;
+    } else if (c === sep && !quoted) {
+      out.push(cur);
+      cur = '';
+    } else cur += c;
   }
   out.push(cur);
   return out.map((s) => s.trim());
 }
-
 
 const DATE_COL = /(^|[\s_])(data|date|dt)([\s_.]|$)|^data/;
 const AMOUNT_COL = /(valor|amount|quantia|montante)/;
@@ -132,7 +165,11 @@ function parseCsv(text: string, isCardHint: boolean | undefined): ParsedStatemen
   const iDebit = iAmount < 0 ? find(DEBIT_COL, /saldo/) : -1;
   // Descrição: junta "Histórico" + "Descrição" quando os dois existem (Inter, Bradesco, C6)
   const descCols = header
-    .map((h, i) => (/(descri|title|titulo|hist|memo|estabelecimento|lancamento|transaction_type|tipo)/.test(h) && !DATE_COL.test(h) ? i : -1))
+    .map((h, i) =>
+      /(descri|title|titulo|hist|memo|estabelecimento|lancamento|transaction_type|tipo)/.test(h) && !DATE_COL.test(h)
+        ? i
+        : -1,
+    )
     .filter((i) => i >= 0)
     .slice(0, 2);
   const iId = find(/^(identificador|id|reference_id|id da transacao)$/);
@@ -159,11 +196,16 @@ function parseCsv(text: string, isCardHint: boolean | undefined): ParsedStatemen
     rows.push({ occurredAt, amountInCents: isCard ? -amount : amount, description });
     ids.push(iId >= 0 && cols[iId] ? `csv:${cols[iId]}` : null);
   }
-  return { format: 'csv', kind: isCard ? 'CREDIT' : 'BANK', balanceInCents: null, transactions: withStableIds(rows, (_, i) => ids[i] ?? null) };
+  return {
+    format: 'csv',
+    kind: isCard ? 'CREDIT' : 'BANK',
+    balanceInCents: null,
+    transactions: withStableIds(rows, (_, i) => ids[i] ?? null),
+  };
 }
 
 export function parseStatement(content: string, fileName: string, opts: { isCard?: boolean } = {}): ParsedStatement {
-  const text = content.replace(/^﻿/, '');
+  const text = content.replace(/^\uFEFF/, '');
   const looksOfx = /\.ofx$/i.test(fileName) || /<OFX>/i.test(text) || /OFXHEADER/i.test(text);
   const parsed = looksOfx ? parseOfx(text) : parseCsv(text, opts.isCard);
   if (looksOfx && opts.isCard !== undefined) parsed.kind = opts.isCard ? 'CREDIT' : 'BANK';

@@ -9,7 +9,7 @@ export async function syncAllConnections(repos: Repositories, sync: SyncBankConn
   for (const c of connections) {
     try {
       const r = await sync.execute({ connectionId: c.id });
-      log.info(`[sync] ${c.id}: ${r.importedCount} novas`);
+      log.info(`[sync] ${c.id}: ${r.importedCount} novas, ${r.reconciledCount ?? 0} anotações confirmadas`);
     } catch (err) {
       log.error(`[sync] ${c.id} falhou:`, (err as Error).message);
     }
@@ -24,7 +24,11 @@ export async function syncAllConnections(repos: Repositories, sync: SyncBankConn
 export function scheduleDailySync(pattern: string, run: () => Promise<unknown>, log = console) {
   const job = new Cron(pattern, { timezone: 'America/Sao_Paulo', protect: true }, async () => {
     log.info(`[sync] início (${new Date().toISOString()})`);
-    try { await run(); } catch (err) { log.error('[sync] falhou:', (err as Error).message); }
+    try {
+      await run();
+    } catch (err) {
+      log.error('[sync] falhou:', (err as Error).message);
+    }
     log.info(`[sync] fim. Próximo: ${job.nextRun()?.toISOString() ?? '?'}`);
   });
   scheduled.push(job);

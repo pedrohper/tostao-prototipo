@@ -1,44 +1,45 @@
-// Sessão que renova sozinha. O token vale 7 dias; quando passa de 1 dia de idade,
-// trocamos por um novo em segundo plano. Quem usa o app toda semana nunca cai pro login.
+// Sessão que renova sozinha. O access token dura 15 min; quando falta pouco (ou o cookie já expirou), trocamos o
+// refresh token por um par novo em segundo plano. Quem usa o app nunca cai pro login enquanto a sessão de 30 dias valer.
 import { NextResponse, type NextRequest } from 'next/server';
-import { TOKEN_COOKIE } from './lib/session-constants';
-
-const API_URL = process.env.API_URL ?? 'http://localhost:3333';
-const ONE_DAY = 24 * 60 * 60;
-
-function issuedAt(token: string): number | null {
-  try {
-    const payload = JSON.parse(Buffer.from(token.split('.')[1] ?? '', 'base64url').toString());
-    return typeof payload.iat === 'number' ? payload.iat : null;
-  } catch {
-    return null;
-  }
-}
+import {
+  ACCESS_MAX_AGE_SECONDS,
+  REFRESH_COOKIE,
+  REFRESH_MAX_AGE_SECONDS,
+  TOKEN_COOKIE,
+  sessionCookieOptions,
+} from './lib/session-constants';
+import { refreshSession } from './lib/refresh-session';
+import { shouldRefresh } from './lib/token-expiry';
+import { clientIpFromHeaders } from './lib/client-ip';
 
 export async function proxy(request: NextRequest) {
-  const token = request.cookies.get(TOKEN_COOKIE)?.value;
-  const iat = token ? issuedAt(token) : null;
-  if (!token || iat === null || Date.now() / 1000 - iat < ONE_DAY) return NextResponse.next();
+  const access = request.cookies.get(TOKEN_COOKIE)?.value;
+  const refresh = request.cookies.get(REFRESH_COOKIE)?.value;
+  if (!shouldRefresh({ access, refresh, nowSeconds: Math.floor(Date.now() / 1000) })) return NextResponse.next();
 
-  try {
-    const res = await fetch(`${API_URL}/sessions/refresh`, { method: 'POST', headers: { authorization: `Bearer ${token}` } });
-    if (!res.ok) return NextResponse.next(); // expirado: a página manda pro login como sempre
-    const { token: fresh } = (await res.json()) as { token: string };
-    request.cookies.set(TOKEN_COOKIE, fresh); // a página desta requisição já usa o novo
+  const result = await refreshSession(refresh!, { clientIp: clientIpFromHeaders((n) => request.headers.get(n)) });
+  if (result.status === 'unavailable') return NextResponse.next(); // API fora: a página decide (sem apagar nada)
+
+  if (result.status === 'invalid') {
+    // Refresh recusado (vencido, revogado, reusado): a sessão acabou. Limpa pra não tentar de novo a cada requisição.
+    request.cookies.delete(TOKEN_COOKIE);
+    request.cookies.delete(REFRESH_COOKIE);
     const response = NextResponse.next({ request });
-    response.cookies.set(TOKEN_COOKIE, fresh, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      maxAge: 7 * ONE_DAY,
-    });
+    response.cookies.delete(TOKEN_COOKIE);
+    response.cookies.delete(REFRESH_COOKIE);
     return response;
-  } catch {
-    return NextResponse.next();
   }
+
+  request.cookies.set(TOKEN_COOKIE, result.accessToken); // a página desta requisição já usa o novo
+  request.cookies.set(REFRESH_COOKIE, result.refreshToken);
+  const response = NextResponse.next({ request });
+  response.cookies.set(TOKEN_COOKIE, result.accessToken, sessionCookieOptions(ACCESS_MAX_AGE_SECONDS));
+  response.cookies.set(REFRESH_COOKIE, result.refreshToken, sessionCookieOptions(REFRESH_MAX_AGE_SECONDS));
+  return response;
 }
 
 export const config = {
-  matcher: ['/((?!_next/|elenco/|icones/|favicon|manifest|.*\\.(?:png|webp|svg|ico|json)$).*)'],
+  matcher: [
+    '/((?!_next/|api/auth/|sair$|sw\\.js$|elenco/|icones/|favicon|manifest|.*\\.(?:png|webp|svg|ico|json)$).*)',
+  ],
 };

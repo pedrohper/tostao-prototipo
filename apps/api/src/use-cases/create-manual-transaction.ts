@@ -14,6 +14,7 @@ type Input = {
   accountId?: string | null;
   repeat?: 'nao' | 'mensal' | 'parcelado';
   times?: number;
+  note?: string;
 };
 
 /** Quantos meses o "todo mês" já deixa lançado. Dá pra apagar a série inteira depois. */
@@ -21,21 +22,26 @@ export const MONTHLY_AHEAD = 12;
 
 /** Mesmo dia nos meses seguintes; dia 31 vira o último dia do mês quando ele não existe. */
 export function addMonths(d: Date, k: number): Date {
-  const y = d.getUTCFullYear(), m = d.getUTCMonth() + k;
+  const y = d.getUTCFullYear(),
+    m = d.getUTCMonth() + k;
   const last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
   return new Date(Date.UTC(y, m, Math.min(d.getUTCDate(), last), d.getUTCHours(), d.getUTCMinutes()));
 }
 
 /** "Anotar gasto": pra dinheiro vivo ou pra quem não conectou banco. */
 export class CreateManualTransactionUseCase {
-  constructor(private readonly repos: Pick<Repositories, 'transactions' | 'categories' | 'rules' | 'accounts'>) {}
+  constructor(
+    private readonly repos: Pick<Repositories, 'transactions' | 'categories' | 'rules' | 'accounts' | 'tx'>,
+  ) {}
 
   async execute(input: Input) {
-    const { transactions, categories, rules } = this.repos;
+    const { categories, rules } = this.repos;
     let categoryId = input.categoryId ?? null;
-    if (categoryId && !canUseCategory(await categories.findById(categoryId), input.userId)) throw new ResourceNotFoundError('Categoria');
+    if (categoryId && !canUseCategory(await categories.findById(categoryId), input.userId))
+      throw new ResourceNotFoundError('Categoria');
     const accountId = input.accountId ?? null;
-    if (accountId && !(await this.repos.accounts.listByUser(input.userId)).some((a) => a.id === accountId)) throw new ResourceNotFoundError('Conta');
+    if (accountId && !(await this.repos.accounts.listByUser(input.userId)).some((a) => a.id === accountId))
+      throw new ResourceNotFoundError('Conta');
     if (!categoryId) categoryId = categorizeByRules(input.description, await rules.listForUser(input.userId));
 
     const sign = input.kind === 'saida' ? -1 : 1;
@@ -47,20 +53,24 @@ export class CreateManualTransactionUseCase {
     const parcel = repeat === 'parcelado' ? Math.floor(total / n) : total;
     const first = repeat === 'parcelado' ? total - parcel * (n - 1) : total;
 
-    const created = [];
-    for (let i = 0; i < n; i++) {
-      created.push(await transactions.create({
-        userId: input.userId,
-        accountId,
-        externalId: null,
-        description: repeat === 'parcelado' ? `${input.description} (${i + 1}/${n})` : input.description,
-        amountInCents: sign * (i === 0 ? first : parcel),
-        occurredAt: addMonths(input.occurredAt, i),
-        categoryId,
-        isInternalTransfer: isNeutral(categoryId),
-        seriesId,
-      }));
-    }
-    return { transaction: created[0]!, count: n };
+    // Todas as parcelas/meses entram juntas (createMany numa transação): nunca fica meia série lançada.
+    const rows = Array.from({ length: n }, (_, i) => ({
+      id: randomUUID(),
+      userId: input.userId,
+      accountId,
+      externalId: null,
+      description: repeat === 'parcelado' ? `${input.description} (${i + 1}/${n})` : input.description,
+      amountInCents: sign * (i === 0 ? first : parcel),
+      occurredAt: addMonths(input.occurredAt, i),
+      categoryId,
+      isInternalTransfer: isNeutral(categoryId),
+      seriesId,
+      note: input.note || null,
+    }));
+    const transaction = await this.repos.tx(async (r) => {
+      await r.transactions.createMany(rows);
+      return (await r.transactions.findById(rows[0]!.id))!;
+    });
+    return { transaction, count: n };
   }
 }

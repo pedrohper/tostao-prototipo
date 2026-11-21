@@ -5,6 +5,7 @@ import { prisma } from '../lib/prisma.js';
 const fixed = await prisma.$executeRaw`
   UPDATE transactions
   SET occurred_at = occurred_at + interval '15 hours'
-  WHERE account_id IS NOT NULL AND occurred_at = date_trunc('day', occurred_at)`;
+  WHERE account_id IS NOT NULL
+    AND occurred_at = date_trunc('day', occurred_at AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'`;
 console.log(`Pronto: ${fixed} transações com a data corrigida.`);
 await prisma.$disconnect();
