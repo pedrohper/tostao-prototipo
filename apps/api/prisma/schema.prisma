@@ -183,6 +183,9 @@ model Transaction {
   personId               String?  @map("person_id")
   // Anotação livre da pessoa ("pago pro João, devolve dia 10"). Pode existir mesmo em transação do banco.
   note                   String?
+  // Apelido que a pessoa dá ("Mercado da esquina" em vez de "PIX ENVIADO 12.345.678/0001-90"). A descrição original do
+  // banco (`description`) não muda: ela é a base da conciliação, das regras de categoria e da busca.
+  customDescription      String?  @map("custom_description")
   createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)

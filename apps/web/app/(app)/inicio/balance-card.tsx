@@ -141,6 +141,38 @@ export interface BalanceCardProps {
   hideBalanceAria: string;
   showBalanceAria: string;
   accountsPreview: { name: string; balanceInCents: number }[];
+  /** "Gastos +12% vs mês anterior" (ou "Já gastou 64% do que gastou em outubro" no mês corrente). null = sem base. */
+  changeLabel?: string | null;
+  /** "Faturas abertas: R$ 1.200,00" (soma dos cartões). null = sem fatura. */
+  openBillsLabel?: string | null;
+  /** Sem conta conectada: botão direto pra /conectar no lugar do texto cinza. */
+  connectCta?: { label: string; href: string } | null;
+}
+
+/** Linha de contexto sob os números: variação do mês e faturas abertas. */
+function ContextLine({ changeLabel, openBillsLabel }: Pick<BalanceCardProps, 'changeLabel' | 'openBillsLabel'>) {
+  if (!changeLabel && !openBillsLabel) return null;
+  return (
+    <div className="relative z-[1] flex flex-wrap gap-x-3 gap-y-0.5 text-[12px] font-semibold text-tinta-suave tabular-nums">
+      {changeLabel && <span>{changeLabel}</span>}
+      {openBillsLabel && (
+        <Link href="/carteira?aba=contas" className="text-tinta-suave no-underline hover:text-tinta">
+          {openBillsLabel}
+        </Link>
+      )}
+    </div>
+  );
+}
+
+function ConnectCta({ cta, className = '' }: { cta: { label: string; href: string }; className?: string }) {
+  return (
+    <Link
+      href={cta.href}
+      className={`relative z-[2] inline-flex min-h-11 items-center self-start rounded-full bg-laranja px-4 text-[14px] font-semibold text-tinta-fixa no-underline ${className}`}
+    >
+      {cta.label}
+    </Link>
+  );
 }
 
 function buildWalletHref(month: string | undefined, filtro?: 'entradas' | 'saidas') {
@@ -164,6 +196,9 @@ export function MobileBalanceCard({
   outcomeLabel,
   hideBalanceAria,
   showBalanceAria,
+  changeLabel,
+  openBillsLabel,
+  connectCta,
 }: BalanceCardProps) {
   const hidden = useHiddenBalance();
   const walletHref = buildWalletHref(month);
@@ -182,7 +217,10 @@ export function MobileBalanceCard({
             </span>
           </div>
         ) : (
-          <span className="text-[13px] font-semibold text-tinta-suave">{noConnectedBankHint}</span>
+          <div className="flex min-w-0 flex-col gap-2">
+            <span className="text-[13px] font-semibold text-tinta-suave">{noConnectedBankHint}</span>
+            {connectCta && <ConnectCta cta={connectCta} />}
+          </div>
         )}
         <EyeButton
           hidden={hidden}
@@ -223,6 +261,7 @@ export function MobileBalanceCard({
           </span>
         </Link>
       </div>
+      <ContextLine changeLabel={changeLabel} openBillsLabel={openBillsLabel} />
     </div>
   );
 }
@@ -241,6 +280,9 @@ export function DesktopBalanceRow({
   hideBalanceAria,
   showBalanceAria,
   accountsPreview,
+  changeLabel,
+  openBillsLabel,
+  connectCta,
 }: BalanceCardProps) {
   const hidden = useHiddenBalance();
   const walletHref = buildWalletHref(month);
@@ -269,8 +311,12 @@ export function DesktopBalanceRow({
             {accountsPreview.map((a) => `${a.name} ${hidden ? `R$ ${MASKED}` : money(a.balanceInCents)}`).join(' · ')}
           </span>
         ) : balanceInCents === null ? (
-          <span className="text-[13px] leading-[18px] text-tinta-suave">{noConnectedBankHint}</span>
+          <span className="flex flex-col gap-2 text-[13px] leading-[18px] text-tinta-suave">
+            {noConnectedBankHint}
+            {connectCta && <ConnectCta cta={connectCta} />}
+          </span>
         ) : null}
+        <ContextLine changeLabel={changeLabel} openBillsLabel={openBillsLabel} />
       </div>
 
       <Link

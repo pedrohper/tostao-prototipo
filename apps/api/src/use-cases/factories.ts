@@ -47,6 +47,7 @@ import { UpdateTransactionUseCase } from './update-transaction.js';
 import { CreateManualAccountUseCase } from './create-manual-account.js';
 import { ListTransactionsUseCase } from './list-transactions.js';
 import { GetMonthSummaryUseCase } from './get-month-summary.js';
+import { GetSummaryHistoryUseCase } from './get-summary-history.js';
 import { AccountDetailUseCase } from './account-detail.js';
 import { GetTransactionUseCase } from './get-transaction.js';
 import { ListSubscriptionsUseCase } from './list-subscriptions.js';
@@ -148,6 +149,7 @@ export function makeUseCases({
     searchTransactions: new SearchTransactionsUseCase(repos),
     listNotes: new ListNotesUseCase(repos),
     getMonthSummary: new GetMonthSummaryUseCase(repos),
+    getSummaryHistory: new GetSummaryHistoryUseCase(repos),
     accountDetail: new AccountDetailUseCase(repos),
     getTransaction: new GetTransactionUseCase(repos),
     listSubscriptions: new ListSubscriptionsUseCase(repos),

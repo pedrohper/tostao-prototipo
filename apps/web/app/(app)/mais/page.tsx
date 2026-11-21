@@ -4,6 +4,7 @@ import { Eyebrow } from '@/components/ui';
 import { Icon } from '@/components/icone';
 import { DesktopSplitShell } from '@/components/lateral';
 import { Mascot } from '@/components/mascote';
+import { PwaInstallBanner } from '@/components/pwa-install-banner';
 import { api } from '@/lib/api';
 import { getI18n } from '@/lib/i18n-server';
 import { NO_PROGRESS, xpFrom } from '@/lib/xp';
@@ -111,6 +112,8 @@ export default async function MaisPage() {
         {t.profile.title}
       </h1>
 
+      <PwaInstallBanner locale={locale} />
+
       {/* 1) Perfil + Alerta Open Finance só se houver erro */}
       <section className="flex flex-col gap-3">
         <Link
@@ -155,7 +158,7 @@ export default async function MaisPage() {
         className="flex flex-col divide-y divide-linha rounded-[22px] border border-linha bg-cartao px-4 py-1"
       >
         <Link
-          href="/carteira/editar?voltar=/mais"
+          href="/carteira?aba=contas"
           className="flex min-h-[68px] items-center gap-3.5 py-3 text-tinta no-underline transition-opacity hover:opacity-80"
         >
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-papel-2 text-tinta">

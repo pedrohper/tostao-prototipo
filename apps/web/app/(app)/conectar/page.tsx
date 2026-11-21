@@ -5,6 +5,7 @@ import { BackLink, Card, Eyebrow, PageFrame } from '@/components/ui';
 import { resolveBackHref, updatedTimeLabel } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
 import { ConnectPanel, DisconnectButton, SyncButton } from './forms';
+import { getDictionary } from '@/lib/i18n';
 import { getMe } from '@/lib/api-queries';
 
 export default async function ConectarPage({
@@ -81,22 +82,179 @@ export default async function ConectarPage({
     },
   ];
 
+  const showDevNotes = process.env.NODE_ENV !== 'production';
+  const connectedBanks =
+    me.connections.length > 0 ? (
+      <section className="flex flex-col gap-2.5 pt-1">
+        <Eyebrow>{p.connectedBanks}</Eyebrow>
+        {me.connections.map((c) => {
+          const imported = c.isImport;
+          return (
+            <Card key={c.id} className="flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="min-w-0 truncate font-semibold text-tinta">{c.displayName}</span>
+                <span
+                  className={`shrink-0 text-xs font-bold ${
+                    imported ? 'text-tinta-suave' : c.status === 'ACTIVE' ? 'text-verde-texto' : 'text-vermelho-texto'
+                  }`}
+                >
+                  {imported
+                    ? p.importedTag
+                    : c.status === 'ACTIVE'
+                      ? p.activeTag
+                      : c.status === 'RECONNECT_REQUIRED'
+                        ? p.reconnectTag
+                        : p.errorTag}
+                </span>
+              </div>
+              <span className="text-xs text-tinta-suave">
+                {c.lastSyncedAt
+                  ? imported
+                    ? `${p.lastFile} · ${updatedTimeLabel(c.lastSyncedAt, locale)}`
+                    : updatedTimeLabel(c.lastSyncedAt, locale)
+                  : `${imported ? p.lastFile : p.lastSync}: ${p.never}`}
+              </span>
+              {!imported && c.status === 'ERROR' && <p className="text-[13px] text-vermelho-texto">{p.errorHelp}</p>}
+              {/* 3 falhas seguidas: o servidor para de tentar sozinho e a pessoa precisa reconectar o banco. */}
+              {!imported && c.status === 'RECONNECT_REQUIRED' && (
+                <p className="text-[13px] font-semibold text-vermelho-texto">{p.reconnectHelp}</p>
+              )}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                {imported ? (
+                  <Link
+                    href={`/importar?conta=${encodeURIComponent(c.institution ?? '')}&voltar=${encodeURIComponent(selfBack)}`}
+                    className="text-sm font-semibold underline"
+                  >
+                    {p.importMore}
+                  </Link>
+                ) : (
+                  <SyncButton id={c.id} locale={locale} />
+                )}
+                <DisconnectButton id={c.id} name={c.displayName} locale={locale} />
+              </div>
+            </Card>
+          );
+        })}
+      </section>
+    ) : null;
+
+  // Onboarding (?novo=1): três cartões de escolha imediata; Item ID, passo a passo do Pluggy e notas técnicas
+  // ficam num bloco recolhido. A Nav some e o progresso/"Fazer depois" vêm do OnboardingShell (layout).
+  if (novo) {
+    const t3 = getDictionary(locale).growth.onboarding;
+    const [bank, ...others] = caminhos;
+    const cardClass =
+      'flex items-center gap-3 rounded-2xl border border-linha bg-cartao p-3.5 text-tinta no-underline transition-colors hover:bg-papel-2';
+    return (
+      <PageFrame size="analytics">
+        <div className="flex items-center gap-3">
+          <Mascot pose="conectando" size={96} alt={p.mascotAlt} />
+          <div className="flex min-w-0 flex-col gap-1">
+            <h1 className="font-display text-[26px] leading-[30px] font-extrabold lg:text-[32px] lg:leading-[36px]">
+              {p.title}
+            </h1>
+            <p className="text-[14px] leading-[20px] text-tinta-suave">{p.subtitle}</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2.5">
+          {widget && (
+            <ConnectPanel
+              widget
+              novo
+              locale={locale}
+              layout="card"
+              card={{ icon: bank.icon, bg: bank.bg, title: bank.t, tag: bank.tag, desc: bank.d }}
+            />
+          )}
+          {others.map((c) => (
+            <Link key={c.href} href={c.href === '/importar' ? importarHref : c.href} className={cardClass}>
+              <span
+                aria-hidden="true"
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${c.bg}`}
+              >
+                <Icon src={c.icon} size={30} />
+              </span>
+              <span className="flex min-w-0 grow flex-col gap-0.5">
+                <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[15px] font-bold">
+                  {c.t}
+                  {c.tag && (
+                    <span className="rounded-full bg-amarelo-claro px-2 py-0.5 text-[11px] font-semibold text-tinta">
+                      {c.tag}
+                    </span>
+                  )}
+                </span>
+                <span className="text-[13px] leading-[18px] text-tinta-suave">{c.d}</span>
+              </span>
+              <span className="shrink-0 text-tinta-suave" aria-hidden="true">
+                ›
+              </span>
+            </Link>
+          ))}
+        </div>
+
+        {connectedBanks}
+
+        <Link
+          href="/renda?novo=1"
+          className="flex h-[54px] items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel no-underline"
+        >
+          {p.continueOnboarding}
+        </Link>
+
+        <details open={!widget} className="rounded-2xl border border-linha bg-papel-2 p-3.5">
+          <summary className="cursor-pointer text-[14px] font-semibold text-tinta-suave">{t3.advancedTitle}</summary>
+          <div className="mt-3 flex flex-col gap-4">
+            <p className="text-[13px] leading-[18px] text-tinta-suave">{t3.advancedHint}</p>
+            {widget ? (
+              <>
+                <ol className="list-decimal space-y-1 pl-5 text-[13px] leading-relaxed text-tinta">
+                  <li>{p.howSteps[0]}</li>
+                  <li>
+                    {p.howSteps[1]}
+                    <b>MeuPluggy</b>
+                    {p.howSteps[2]}
+                    <a
+                      href="https://meu.pluggy.ai"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-semibold underline"
+                    >
+                      meu.pluggy.ai
+                    </a>
+                  </li>
+                  <li>{p.howSteps[3]}</li>
+                </ol>
+                <ConnectPanel widget novo locale={locale} layout="manual" />
+              </>
+            ) : (
+              <>
+                {showDevNotes && (
+                  <p className="text-[13px] leading-relaxed text-tinta-suave">
+                    {p.fakeBodyBefore}
+                    <code>BANK_GATEWAY=fake</code>
+                    {p.fakeBodyAfter}
+                  </p>
+                )}
+                <ConnectPanel widget={false} novo locale={locale} />
+              </>
+            )}
+            <ul className="flex flex-col gap-2">
+              {pontos.map((pt) => (
+                <li key={pt.b} className="text-[13px] leading-[18px] text-tinta">
+                  <b>{pt.b}</b> {pt.t}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </details>
+      </PageFrame>
+    );
+  }
+
   return (
     <PageFrame size="analytics">
       {!novo && <BackLink href={backHref} label={t.common.back} />}
-      {novo && (
-        <div className="flex flex-col gap-1">
-          <div
-            className="h-2 overflow-hidden rounded-full border border-linha bg-papel-2"
-            role="img"
-            aria-label={p.stepAria}
-          >
-            <div className="h-full w-2/3 rounded-full bg-tinta" />
-          </div>
-          <span className="text-xs font-semibold text-tinta-suave">{p.stepBadge}</span>
-        </div>
-      )}
-
       <div className="flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
         <div className="flex flex-col gap-5">
           <div className="flex items-center gap-3">
@@ -169,119 +327,46 @@ export default async function ConectarPage({
         <div id="banco" className="flex scroll-mt-6 flex-col gap-4">
           <h2 className="pt-2 font-display text-xl font-extrabold lg:pt-0 lg:text-2xl">{p.sectionTitle}</h2>
 
-          <div className="flex flex-col gap-2.5 rounded-[20px] border border-linha bg-papel-2 p-4">
-            {widget ? (
-              <>
-                <Eyebrow>{p.howTitle}</Eyebrow>
-                <ol className="list-decimal space-y-1 pl-5 text-[14px] leading-relaxed text-tinta">
-                  <li>{p.howSteps[0]}</li>
-                  <li>
-                    {p.howSteps[1]}
-                    <b>MeuPluggy</b>
-                    {p.howSteps[2]}
-                    <a
-                      href="https://meu.pluggy.ai"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-semibold underline"
-                    >
-                      meu.pluggy.ai
-                    </a>
-                    {p.howSteps[3] ? '' : ''}
-                  </li>
-                  <li>{p.howSteps[3]}</li>
-                </ol>
-              </>
-            ) : (
-              <>
-                <h3 className="font-display text-lg font-extrabold">{p.fakeTitle}</h3>
-                <p className="text-[14px] leading-relaxed text-tinta-suave">
-                  {p.fakeBodyBefore}
-                  <code>BANK_GATEWAY=fake</code>
-                  {p.fakeBodyAfter}
-                </p>
-              </>
-            )}
-          </div>
+          {(widget || showDevNotes) && (
+            <div className="flex flex-col gap-2.5 rounded-[20px] border border-linha bg-papel-2 p-4">
+              {widget ? (
+                <>
+                  <Eyebrow>{p.howTitle}</Eyebrow>
+                  <ol className="list-decimal space-y-1 pl-5 text-[14px] leading-relaxed text-tinta">
+                    <li>{p.howSteps[0]}</li>
+                    <li>
+                      {p.howSteps[1]}
+                      <b>MeuPluggy</b>
+                      {p.howSteps[2]}
+                      <a
+                        href="https://meu.pluggy.ai"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-semibold underline"
+                      >
+                        meu.pluggy.ai
+                      </a>
+                      {p.howSteps[3] ? '' : ''}
+                    </li>
+                    <li>{p.howSteps[3]}</li>
+                  </ol>
+                </>
+              ) : (
+                <>
+                  <h3 className="font-display text-lg font-extrabold">{p.fakeTitle}</h3>
+                  <p className="text-[14px] leading-relaxed text-tinta-suave">
+                    {p.fakeBodyBefore}
+                    <code>BANK_GATEWAY=fake</code>
+                    {p.fakeBodyAfter}
+                  </p>
+                </>
+              )}
+            </div>
+          )}
 
           <ConnectPanel widget={widget} novo={Boolean(novo)} locale={locale} />
 
-          {me.connections.length > 0 && (
-            <section className="flex flex-col gap-2.5 pt-1">
-              <Eyebrow>{p.connectedBanks}</Eyebrow>
-              {me.connections.map((c) => {
-                const imported = c.isImport;
-                return (
-                  <Card key={c.id} className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="min-w-0 truncate font-semibold text-tinta">{c.displayName}</span>
-                      <span
-                        className={`shrink-0 text-xs font-bold ${
-                          imported
-                            ? 'text-tinta-suave'
-                            : c.status === 'ACTIVE'
-                              ? 'text-verde-texto'
-                              : 'text-vermelho-texto'
-                        }`}
-                      >
-                        {imported
-                          ? p.importedTag
-                          : c.status === 'ACTIVE'
-                            ? p.activeTag
-                            : c.status === 'RECONNECT_REQUIRED'
-                              ? p.reconnectTag
-                              : p.errorTag}
-                      </span>
-                    </div>
-                    <span className="text-xs text-tinta-suave">
-                      {c.lastSyncedAt
-                        ? imported
-                          ? `${p.lastFile} · ${updatedTimeLabel(c.lastSyncedAt, locale)}`
-                          : updatedTimeLabel(c.lastSyncedAt, locale)
-                        : `${imported ? p.lastFile : p.lastSync}: ${p.never}`}
-                    </span>
-                    {!imported && c.status === 'ERROR' && (
-                      <p className="text-[13px] text-vermelho-texto">{p.errorHelp}</p>
-                    )}
-                    {/* 3 falhas seguidas: o servidor para de tentar sozinho e a pessoa precisa reconectar o banco. */}
-                    {!imported && c.status === 'RECONNECT_REQUIRED' && (
-                      <p className="text-[13px] font-semibold text-vermelho-texto">{p.reconnectHelp}</p>
-                    )}
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      {imported ? (
-                        <Link
-                          href={`/importar?conta=${encodeURIComponent(c.institution ?? '')}&voltar=${encodeURIComponent(selfBack)}`}
-                          className="text-sm font-semibold underline"
-                        >
-                          {p.importMore}
-                        </Link>
-                      ) : (
-                        <SyncButton id={c.id} locale={locale} />
-                      )}
-                      <DisconnectButton id={c.id} name={c.displayName} locale={locale} />
-                    </div>
-                  </Card>
-                );
-              })}
-            </section>
-          )}
-
-          {novo && (
-            <div className="flex flex-col gap-2 pt-2">
-              <Link
-                href="/renda?novo=1"
-                className="flex h-[54px] items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel no-underline"
-              >
-                {p.continueOnboarding}
-              </Link>
-              <Link
-                href="/inicio"
-                className="flex h-11 items-center justify-center text-sm font-semibold text-tinta-suave no-underline"
-              >
-                {p.skipOnboarding}
-              </Link>
-            </div>
-          )}
+          {connectedBanks}
         </div>
       </div>
     </PageFrame>

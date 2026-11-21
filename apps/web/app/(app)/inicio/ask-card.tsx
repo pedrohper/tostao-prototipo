@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import { Mascot } from '@/components/mascote';
 import { getDictionary, type Locale } from '@/lib/i18n';
 
-/** Quick-ask card on desktop Home: chips and input route directly to /tostao with ?q=. */
-export function AskTostaoCard({ locale = 'pt-BR' }: { locale?: Locale }) {
+/** Quick-ask card on the Home (`compact` = mobile: chips em uma linha rolável, sem título grande): chips and input route directly to /tostao with ?q=. */
+export function AskTostaoCard({ locale = 'pt-BR', compact = false }: { locale?: Locale; compact?: boolean }) {
   const t = getDictionary(locale);
   const router = useRouter();
   const inputId = useId();
@@ -20,17 +20,23 @@ export function AskTostaoCard({ locale = 'pt-BR' }: { locale?: Locale }) {
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-[22px] border border-linha bg-cartao p-[18px_20px]">
+    <section
+      className={`flex flex-col gap-3 rounded-[22px] border border-linha bg-cartao ${compact ? 'p-3.5' : 'p-[18px_20px]'}`}
+    >
       <div className="flex items-center gap-2.5">
-        <Mascot pose="avatar" size={36} still />
-        <h2 className="font-display text-[18px] leading-6 font-extrabold text-tinta">{t.home.askTostao}</h2>
+        <Mascot pose="avatar" size={compact ? 28 : 36} still />
+        <h2
+          className={`font-display font-extrabold text-tinta ${compact ? 'text-[16px] leading-5' : 'text-[18px] leading-6'}`}
+        >
+          {t.home.askTostao}
+        </h2>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className={compact ? '-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5' : 'flex flex-wrap gap-2'}>
         {t.home.askChips.map((chip) => (
           <Link
             key={chip}
             href={`/tostao?q=${encodeURIComponent(chip)}`}
-            className="flex min-h-9 items-center rounded-full bg-papel-2 px-3.5 py-1.5 text-[13px] font-semibold text-tinta no-underline hover:bg-linha/50"
+            className="flex min-h-9 shrink-0 items-center rounded-full bg-papel-2 px-3.5 py-1.5 text-[13px] whitespace-nowrap font-semibold text-tinta no-underline hover:bg-linha/50"
           >
             {chip}
           </Link>
@@ -47,7 +53,7 @@ export function AskTostaoCard({ locale = 'pt-BR' }: { locale?: Locale }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t.home.askPlaceholder}
-          className="h-12 min-w-0 flex-1 rounded-full border-[1.5px] border-linha bg-papel px-4 text-[15px] text-tinta outline-none placeholder:text-tinta-suave focus:border-tinta"
+          className={`${compact ? 'h-11' : 'h-12'} min-w-0 flex-1 rounded-full border-[1.5px] border-linha bg-papel px-4 text-[15px] text-tinta outline-none placeholder:text-tinta-suave focus:border-tinta`}
         />
         <button
           type="submit"

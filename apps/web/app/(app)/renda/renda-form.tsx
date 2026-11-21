@@ -7,6 +7,7 @@ import { ErrorNote, Eyebrow } from '@/components/ui';
 import { pill } from '@/components/sheet';
 import { money, parseMoney } from '@/lib/format';
 import { getDictionary, type Dictionary, type Locale } from '@/lib/i18n';
+import { canAdvanceIncome } from '@/lib/onboarding';
 import { savePlan, type PlanState } from './actions';
 
 const field =
@@ -45,13 +46,6 @@ function Steps({ n, t }: { n: number; t: Dictionary['pages']['renda'] }) {
 function OnboardingSteps({ part, t }: { part: 1 | 2; t: Dictionary['pages']['renda'] }) {
   return (
     <div className="flex grow flex-col gap-1.5">
-      <div
-        className="h-2 overflow-hidden rounded-full border border-linha bg-papel-2"
-        role="img"
-        aria-label={t.onboardingAria(part)}
-      >
-        <div className={`h-full rounded-full bg-tinta transition-all ${part === 1 ? 'w-5/6' : 'w-full'}`} />
-      </div>
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-tinta-suave">
         <span>{t.onboardingLabel}</span>
         <span className="flex items-center gap-1.5">
@@ -127,6 +121,8 @@ export function RendaForm({
 
   const [state, action, pending] = useActionState<PlanState, FormData>(savePlan, {});
   const [step, setStep] = useState(1);
+  // "Minha renda varia / prefiro preencher depois": deixa o onboarding avançar sem salário fixo.
+  const [deferIncome, setDeferIncome] = useState(false);
   const firstSalary =
     plan?.salary?.pattern ?? suggestions.find((s) => /SAL|FOLHA|PROVENTO/.test(s.pattern))?.pattern ?? null;
   const [salaryPattern, setSalaryPattern] = useState<string | null>(firstSalary);
@@ -205,6 +201,7 @@ export function RendaForm({
   );
   const fixedTotalCents = fixed.reduce((sum, f) => (f.name.trim() ? sum + (parseMoney(f.amount) ?? 0) : sum), 0);
   const totalInCents = (salaryCents ?? 0) + extraIncomeCents;
+  const canAdvance = canAdvanceIncome({ novo, salaryCents, deferIncome, otherIncomesCents: extraIncomeCents });
 
   const payload: FinancialPlan = {
     salary: salaryCents
@@ -472,18 +469,28 @@ export function RendaForm({
             <button
               type="button"
               onClick={() => setStep(2)}
-              disabled={!salaryCents}
+              disabled={!canAdvance}
               className="flex h-[54px] shrink-0 items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel disabled:opacity-50"
             >
               {t.continueCta}
             </button>
-            {novo && (
-              <Link
-                href="/inicio"
-                className="flex h-11 items-center justify-center text-sm font-semibold text-tinta-suave no-underline"
-              >
-                {t.skipNow}
-              </Link>
+            {novo && !salaryCents && (
+              <div className="flex flex-col gap-1.5">
+                <button
+                  type="button"
+                  aria-pressed={deferIncome}
+                  onClick={() => {
+                    setDeferIncome(true);
+                    setStep(2);
+                  }}
+                  className="flex min-h-12 items-center justify-center rounded-full border-[1.5px] border-tinta px-4 text-center text-[15px] font-semibold text-tinta"
+                >
+                  {dict.growth.onboarding.incomeVaries}
+                </button>
+                <p className="text-center text-xs leading-[18px] text-tinta-suave">
+                  {dict.growth.onboarding.incomeVariesHint}
+                </p>
+              </div>
             )}
           </div>
         </div>

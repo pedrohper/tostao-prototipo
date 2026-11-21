@@ -170,6 +170,18 @@ export const monthQuery = z.object({
   month: z.string().regex(MONTH_PATTERN, 'Use AAAA-MM (mês de 01 a 12)'),
 });
 
+/** Evolução mensal (GET /summary/history): os últimos `months` meses terminando em `month`. */
+export const HISTORY_DEFAULT_MONTHS = 6;
+export const HISTORY_MAX_MONTHS = 12;
+export const summaryHistoryQuery = z.object({
+  month: z.string().regex(MONTH_PATTERN, 'Use AAAA-MM (mês de 01 a 12)'),
+  months: z.coerce.number().int().min(2).max(HISTORY_MAX_MONTHS).default(HISTORY_DEFAULT_MONTHS),
+});
+export type SummaryHistoryResponse = {
+  /** Do mês mais antigo para o pedido. Transferência interna e conta oculta não entram (mesma regra do resumo). */
+  months: { month: string; incomeInCents: number; outcomeInCents: number }[];
+};
+
 /** Busca na Carteira: texto livre (loja, pessoa, categoria, banco) + filtros. */
 export const SEARCH_DEFAULT_LIMIT = 50;
 export const SEARCH_MAX_LIMIT = 200;
@@ -242,6 +254,8 @@ export const updateTransactionBody = z.object({
   occurredAt: z.iso.date().optional(),
   /** Texto vazio ou null apaga a anotação. Pode ser editada também em transação do banco. */
   note: z.string().trim().max(NOTE_MAX, `Anotação até ${NOTE_MAX} caracteres`).nullable().optional(),
+  /** Apelido do lançamento (vale também pra transação do banco). Vazio ou null volta pra descrição original. */
+  customDescription: z.string().trim().max(80, 'Apelido até 80 caracteres').nullable().optional(),
 });
 export type UpdateTransactionBody = z.infer<typeof updateTransactionBody>;
 
@@ -270,6 +284,8 @@ export type TransactionDTO = {
   personId: string | null;
   /** Anotação livre da pessoa sobre o lançamento. */
   note: string | null;
+  /** Apelido dado pela pessoa. `description` segue sendo o texto original (do banco), usado na conciliação. */
+  customDescription: string | null;
 };
 
 // ---------- Anotações ----------

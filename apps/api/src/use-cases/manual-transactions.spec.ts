@@ -145,6 +145,54 @@ describe('transferência: a palavra da pessoa fica registrada', () => {
   });
 });
 
+describe('T4.4 · apelido (customDescription) não toca na descrição original', () => {
+  it('em lançamento do banco: grava só o apelido, a descrição do banco e o externalId ficam intactos', async () => {
+    const s = await setup();
+    const bank = await s.repos.transactions.create({
+      userId: 'u1',
+      accountId: null,
+      externalId: 'pluggy-1',
+      description: 'PIX ENVIADO 12.345.678/0001-90',
+      amountInCents: -42_00,
+      occurredAt: TODAY,
+      categoryId: null,
+      isInternalTransfer: false,
+    });
+    await s.update.execute({ userId: 'u1', transactionId: bank.id, customDescription: '  Mercado da esquina  ' });
+    expect(await s.repos.transactions.findById(bank.id)).toMatchObject({
+      description: 'PIX ENVIADO 12.345.678/0001-90',
+      customDescription: 'Mercado da esquina',
+      externalId: 'pluggy-1',
+    });
+    // Editar a descrição de lançamento do banco continua proibido (é a base da conciliação).
+    await expect(
+      s.update.execute({ userId: 'u1', transactionId: bank.id, description: 'outra' }),
+    ).rejects.toMatchObject({
+      statusCode: 400,
+    });
+  });
+
+  it('vazio ou null apaga o apelido; limite de 80 caracteres no contrato', async () => {
+    const s = await setup();
+    const { transaction } = await s.create.execute(spend({}));
+    await s.update.execute({ userId: 'u1', transactionId: transaction.id, customDescription: 'Apelido' });
+    expect((await s.repos.transactions.findById(transaction.id))!.customDescription).toBe('Apelido');
+    await s.update.execute({ userId: 'u1', transactionId: transaction.id, customDescription: '' });
+    expect((await s.repos.transactions.findById(transaction.id))!.customDescription).toBeNull();
+    const { updateTransactionBody } = await import('@tostao/contracts');
+    expect(updateTransactionBody.safeParse({ customDescription: 'x'.repeat(81) }).success).toBe(false);
+    expect(updateTransactionBody.safeParse({ customDescription: 'x'.repeat(80) }).success).toBe(true);
+  });
+
+  it('não dá pra apelidar o lançamento de outra pessoa', async () => {
+    const s = await setup();
+    const { transaction } = await s.create.execute(spend({}));
+    await expect(
+      s.update.execute({ userId: 'outra', transactionId: transaction.id, customDescription: 'meu' }),
+    ).rejects.toMatchObject({ statusCode: 404 });
+  });
+});
+
 describe('acerto com pessoa nunca vira gasto', () => {
   it('sair de "Não conta" preserva isInternalTransfer quando há personId; sem pessoa, volta a ser gasto', async () => {
     const s = await setup();

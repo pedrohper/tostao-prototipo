@@ -130,7 +130,7 @@ export default async function ContaPage({
               )}
             </div>
             {card && a.creditLimitInCents ? (
-              <BudgetProgressBar usado={fatura + parcelasFuturas} limite={a.creditLimitInCents} t={dLabels} />
+              <BudgetProgressBar usado={fatura + parcelasFuturas} limite={a.creditLimitInCents} locale={locale} />
             ) : null}
             {card && parcelasFuturas > 0 && (
               <span className="text-[13px] text-tinta-suave">
@@ -168,13 +168,25 @@ export default async function ContaPage({
                 </span>
               )}
             </div>
-            <MonthlyBars data={d.history} atual={month} entrada={!card} locale={locale} t={dLabels} />
+            <MonthlyBars
+              data={d.history}
+              atual={month}
+              entrada={!card}
+              locale={locale}
+              monthBasePath={`/carteira/conta/${safePathSegment(id)}`}
+            />
           </section>
 
           {d.byCategory.length > 0 && (
             <section className="flex flex-col gap-2.5 rounded-2xl border border-linha bg-cartao p-3.5 lg:rounded-[20px] lg:p-4">
               <Eyebrow>{dLabels.whereItWent}</Eyebrow>
-              <CategoryBars items={d.byCategory} otherLabel={t.common.other} />
+              <CategoryBars
+                items={d.byCategory}
+                otherLabel={t.common.other}
+                locale={locale}
+                hrefBase="/carteira"
+                hrefParams={{ mes: month }}
+              />
             </section>
           )}
 

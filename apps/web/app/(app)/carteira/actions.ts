@@ -7,13 +7,17 @@ import {
   manualTransactionBody,
   updateTransactionBody,
   type AutoCategorizeResponse,
+  type CategoryDTO,
+  type TransactionDTO,
 } from '@tostao/contracts';
 import { api, ApiError } from '@/lib/api';
-import { parseMoney } from '@/lib/format';
+import { currentMonth, parseMoney, shiftMonth, todayIso } from '@/lib/format';
 import { isSafePathSegment, safeInternalPath, safePathSegment } from '@/lib/safe-redirect';
 import { rethrowIfRedirect } from '@/lib/rethrow';
+import { flashToast } from '@/lib/flash-toast-server';
+import { recentDescriptions } from '@/lib/quick-add';
 
-export type ActionState = { error?: string };
+export type ActionState = { error?: string; saved?: boolean };
 
 export async function categorize(_: ActionState, form: FormData): Promise<ActionState> {
   const id = safePathSegment(form.get('id'));
@@ -29,7 +33,29 @@ export async function categorize(_: ActionState, form: FormData): Promise<Action
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
   revalidateFinance();
+  // "Desfazer" só quando havia categoria antes (a API não tem "tirar categoria"): volta pra anterior.
+  const previous = String(form.get('previousCategoryId') ?? '');
+  await flashToast(
+    'Categoria salva.',
+    'success',
+    previous && previous !== parsed.data.categoryId ? { kind: 'categorize', id, categoryId: previous } : undefined,
+  );
   redirect(safeInternalPath(form.get('back'), '/carteira'));
+}
+
+/** Categoriza UMA transação sem redirecionar (modo "Categorizar pendentes": a pessoa segue pra próxima na mesma tela). */
+export async function categorizeInline(id: string, categoryId: string, remember: boolean): Promise<ActionState> {
+  if (!isSafePathSegment(id)) return { error: 'Não encontrei esse lançamento.' };
+  const parsed = categorizeBody.safeParse({ categoryId, remember });
+  if (!parsed.success) return { error: 'Escolhe uma categoria.' };
+  try {
+    await api(`/transactions/${safePathSegment(id)}/category`, { method: 'PATCH', body: parsed.data });
+  } catch (e) {
+    rethrowIfRedirect(e);
+    return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
+  }
+  revalidateFinance();
+  return { saved: true };
 }
 
 export async function createManual(_: ActionState, form: FormData): Promise<ActionState> {
@@ -53,6 +79,10 @@ export async function createManual(_: ActionState, form: FormData): Promise<Acti
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
   revalidateFinance();
+  // "Salvar e anotar outro" / folha rápida: fica na tela (sem redirect) e quem chamou mostra o toast e limpa o formulário.
+  const intent = form.get('intent');
+  if (intent === 'another' || intent === 'stay') return { saved: true };
+  await flashToast(parsed.data.kind === 'entrada' ? 'Entrada anotada.' : 'Gasto anotado.');
   // Veio de outra tela (ex.: Anotações)? Volta pra ela. Senão, mostra o mês na Carteira.
   const back = safeInternalPath(form.get('back'), '/carteira');
   if (back !== '/carteira') redirect(back);
@@ -103,31 +133,57 @@ export async function apagarLancamento(form: FormData) {
   const id = form.get('id');
   const serie = form.get('serie') === '1';
   const back = safeInternalPath(form.get('back'), '/carteira');
+  let failed = !isSafePathSegment(id);
   if (isSafePathSegment(id)) {
     try {
       await api(`/transactions/${safePathSegment(id)}${serie ? '?serie=1' : ''}`, { method: 'DELETE' });
     } catch (caught) {
       rethrowIfRedirect(caught);
-      /* se falhar, o lançamento continua lá */
+      failed = true; // o lançamento continua lá
     }
   }
   revalidateFinance();
+  await (failed
+    ? flashToast('Não consegui apagar agora. Tenta de novo?', 'error')
+    : flashToast(serie ? 'Lançamentos apagados.' : 'Lançamento apagado.'));
   redirect(back);
+}
+
+/** Apelido do lançamento (vale também pra transação do banco). Vazio volta pro nome original. */
+export async function saveNickname(_: ActionState, form: FormData): Promise<ActionState> {
+  const id = form.get('id');
+  if (!isSafePathSegment(id)) return { error: 'Não encontrei esse lançamento.' };
+  const parsed = updateTransactionBody.safeParse({ customDescription: String(form.get('customDescription') ?? '') });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Apelido inválido.' };
+  try {
+    await api(`/transactions/${safePathSegment(id)}`, { method: 'PATCH', body: parsed.data });
+  } catch (e) {
+    rethrowIfRedirect(e);
+    return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
+  }
+  revalidateFinance();
+  return { saved: true };
 }
 
 export async function toggleInternalTransfer(form: FormData) {
   const id = form.get('id');
   const isInternalTransfer = form.get('isInternalTransfer') === 'true';
   const back = safeInternalPath(form.get('back'), '/carteira');
+  let failed = !isSafePathSegment(id);
   if (isSafePathSegment(id)) {
     try {
       await api(`/transactions/${safePathSegment(id)}`, { method: 'PATCH', body: { isInternalTransfer } });
     } catch (caught) {
       rethrowIfRedirect(caught);
-      /* se falhar, mantém o estado atual */
+      failed = true; // mantém o estado atual
     }
   }
   revalidateFinance();
+  await (failed
+    ? flashToast('Não consegui mudar agora. Tenta de novo?', 'error')
+    : flashToast(
+        isInternalTransfer ? 'Marcado como transferência: não conta como gasto.' : 'Voltou a contar como gasto.',
+      ));
   redirect(back);
 }
 
@@ -151,6 +207,7 @@ export async function updateManualTransaction(_: ActionState, form: FormData): P
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
   revalidateFinance();
+  await flashToast('Lançamento atualizado.');
   redirect(back);
 }
 
@@ -191,4 +248,35 @@ export async function createManualAccount(_: ActionState, form: FormData): Promi
   }
   revalidateFinance();
   return {};
+}
+
+export type QuickAddData = {
+  categories: CategoryDTO[];
+  recents: string[];
+  today: string;
+};
+
+/**
+ * Dados da folha "Anotar rápido", pedidos só quando ela abre (não pesam o carregamento da Home nem da Carteira):
+ * categorias e as últimas descrições que a pessoa usou (mês atual e o anterior).
+ */
+export async function loadQuickAddData(): Promise<{ data?: QuickAddData; error?: true }> {
+  try {
+    const month = currentMonth();
+    const [{ categories }, now, before] = await Promise.all([
+      api<{ categories: CategoryDTO[] }>('/categories'),
+      api<{ transactions: TransactionDTO[] }>(`/transactions?month=${month}`),
+      api<{ transactions: TransactionDTO[] }>(`/transactions?month=${shiftMonth(month, -1)}`),
+    ]);
+    return {
+      data: {
+        categories: categories.filter((c) => c.kind !== 'neutra'),
+        recents: recentDescriptions([...now.transactions, ...before.transactions]),
+        today: todayIso(),
+      },
+    };
+  } catch (caught) {
+    rethrowIfRedirect(caught);
+    return { error: true };
+  }
 }

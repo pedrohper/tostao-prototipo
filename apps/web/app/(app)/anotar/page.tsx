@@ -1,18 +1,24 @@
-import type { CategoryDTO } from '@tostao/contracts';
+import type { CategoryDTO, TransactionDTO } from '@tostao/contracts';
 import { api } from '@/lib/api';
-import { resolveBackHref, todayIso } from '@/lib/format';
+import { currentMonth, resolveBackHref, shiftMonth, todayIso } from '@/lib/format';
+import { recentDescriptions } from '@/lib/quick-add';
 import { getI18n } from '@/lib/i18n-server';
 import Link from 'next/link';
 import { AnotarForm, type ContaOption } from './anotar-form';
 import { getMe } from '@/lib/api-queries';
 
 export default async function AnotarPage({ searchParams }: { searchParams: Promise<{ voltar?: string }> }) {
-  const [{ voltar }, { categories }, me, { locale, t }] = await Promise.all([
+  const month = currentMonth();
+  const [{ voltar }, { categories }, me, { locale, t }, recentNow, recentBefore] = await Promise.all([
     searchParams,
     api<{ categories: CategoryDTO[] }>('/categories'),
     getMe().catch(() => null),
     getI18n(),
+    // Só pra sugerir descrições: se falhar, o formulário funciona igual, sem sugestões.
+    api<{ transactions: TransactionDTO[] }>(`/transactions?month=${month}`).catch(() => null),
+    api<{ transactions: TransactionDTO[] }>(`/transactions?month=${shiftMonth(month, -1)}`).catch(() => null),
   ]);
+  const recents = recentDescriptions([...(recentNow?.transactions ?? []), ...(recentBefore?.transactions ?? [])]);
   const a = t.pages.anotar;
   const backHref = resolveBackHref(voltar, '/carteira');
   // "Pago com" / "Recebido em": contas visíveis. As que vêm do banco atualizam sozinhas, então avisamos do risco de duplicar.
@@ -52,7 +58,14 @@ export default async function AnotarPage({ searchParams }: { searchParams: Promi
           <span className="text-[13px] font-semibold text-tinta-suave">{a.headerTitle}</span>
           <span className="w-11" aria-hidden="true" />
         </div>
-        <AnotarForm categories={categories} contas={contas} today={todayIso()} back={backHref} locale={locale} />
+        <AnotarForm
+          categories={categories}
+          contas={contas}
+          today={todayIso()}
+          recents={recents}
+          back={backHref}
+          locale={locale}
+        />
       </div>
     </div>
   );

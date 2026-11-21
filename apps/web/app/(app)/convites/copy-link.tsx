@@ -1,16 +1,37 @@
 'use client';
 import { useState } from 'react';
+import { useToast } from '@/components/toast';
+import { getDictionary, type Locale } from '@/lib/i18n';
 
 /** Copia o link de cadastro já com o código preenchido. */
-export function CopyLink({ code, copyLabel, copiedLabel }: { code: string; copyLabel: string; copiedLabel: string }) {
+export function CopyLink({
+  code,
+  copyLabel,
+  copiedLabel,
+  locale = 'pt-BR',
+}: {
+  code: string;
+  copyLabel: string;
+  copiedLabel: string;
+  locale?: Locale;
+}) {
   const [done, setDone] = useState(false);
+  const toast = useToast();
+  const t = getDictionary(locale).growth.toast;
   return (
     <button
       type="button"
       className="text-[13px] font-semibold text-laranja-texto underline"
       onClick={async () => {
-        await navigator.clipboard.writeText(`${location.origin}/criar-conta?convite=${code}`);
+        try {
+          await navigator.clipboard.writeText(`${location.origin}/criar-conta?convite=${code}`);
+        } catch {
+          // Sem permissão de área de transferência (http, iframe...): avisa em vez de fingir que copiou.
+          toast.error(t.copyFailed);
+          return;
+        }
         setDone(true);
+        toast.success(t.linkCopied);
         setTimeout(() => setDone(false), 2000);
       }}
     >

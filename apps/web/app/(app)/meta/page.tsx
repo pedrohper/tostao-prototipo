@@ -64,7 +64,7 @@ export default async function MetaPage({
               <p className="text-[15px] leading-[21px]">{p.emptyTip}</p>
             </div>
           )}
-          <GoalForm goal={null} voltar={voltarParam} t={p.form} />
+          <GoalForm goal={null} voltar={voltarParam} t={p.form} locale={locale} showPresets={!active} />
         </div>
       </PageFrame>
     );
@@ -78,7 +78,14 @@ export default async function MetaPage({
           {p.editTitle}
         </h1>
         <div className="flex max-w-[560px] flex-col gap-4">
-          <GoalForm goal={active} goalId={active.id} voltar={voltarParam} kind={active.kind} t={p.form} />
+          <GoalForm
+            goal={active}
+            goalId={active.id}
+            voltar={voltarParam}
+            kind={active.kind}
+            t={p.form}
+            locale={locale}
+          />
           <form action={deleteGoal}>
             {active.id && <input type="hidden" name="id" value={active.id} />}
             {voltarParam && <input type="hidden" name="voltar" value={voltarParam} />}
@@ -218,7 +225,7 @@ export default async function MetaPage({
         </div>
 
         <div className="flex min-w-0 flex-col gap-4">
-          <DepositForm goalId={active.id} t={p.form} />
+          <DepositForm goalId={active.id} t={p.form} locale={locale} />
           <Link
             href={`/investir?de=meta&voltar=${encodeURIComponent(selfHref)}${falta ? `&centavos=${Math.min(falta, active.monthlyNeededInCents ?? falta)}` : ''}`}
             className="flex items-center gap-3 rounded-2xl border border-linha bg-cartao p-3.5 text-tinta no-underline"
