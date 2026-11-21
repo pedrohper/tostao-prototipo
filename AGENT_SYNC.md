@@ -45,7 +45,7 @@ Relatório do que foi feito. Modelo:
 
 ### 2026-11-21 · Claude · branch feat/fase2-t21-t23 (Fase 2: T2.1 índices e queries em lote + T2.2 busca paginada no SQL + T2.3 Next.js)
 
-**Sem commit, sem push, sem deploy.** A branch saiu de `feat/fase1-t15-t16` (`24cc1a1`). Os checkboxes de T2.1, T2.2 e T2.3 estão marcados em `docs/producao/03-FASE-2-...md`. `00-INDICE.md` (modificado) e `05-FASE-4-...md` (novo) já estavam soltos antes e **não são desta entrega**.
+**Commitado (`8fddeaa`) e com merge na `main` local (fast-forward); sem push, sem deploy.** A branch saiu de `feat/fase1-t15-t16` (`24cc1a1`). Os checkboxes de T2.1, T2.2 e T2.3 estão marcados em `docs/producao/03-FASE-2-...md`. `00-INDICE.md` (modificado) e `05-FASE-4-...md` (novo) já estavam soltos antes e **não são desta entrega**; foram commitados à parte (`605ce2c`) e formatados com o Prettier.
 
 - **T2.1 · índices e N+1.**
   - **Migration `20261123100000_t21_indexes`:** os 16 `@@index` do doc (FKs e filtros: `bank_connections.status`, `categories.user_id`, `accounts.connection_id`, 5 em `transactions`, `category_rules`/`category_budgets.category_id`, `password_resets` x2, `friendships.friend_id`, `chat_messages(user_id, role, created_at)`, `sent_notifications.sent_at`, `tostao_insights.expires_at`) + SQL: `pg_trgm`, índice GIN `transactions(description gin_trgm_ops)` (declarado também no `schema.prisma`, senão o `migrate diff` quer apagá-lo) e os 2 parciais (`... WHERE category_id IS NULL AND is_internal_transfer = false` e `... WHERE external_id IS NULL`; o Prisma não modela parcial e o diff os ignora). **Sem `CONCURRENTLY`** (a migration roda em transação): lock de escrita curto por índice, tabelas pequenas. Aplicadas as 17 do zero + `migrate diff --exit-code` = "No difference detected".
