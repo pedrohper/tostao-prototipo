@@ -1,9 +1,12 @@
 import type { Repositories } from '../repositories/types.js';
 import type { Battle, Transaction } from '../domain/entities.js';
-import { AppError } from '../domain/errors.js';
+import { AppError, ConflictError } from '../domain/errors.js';
+import { civilDay, diffCivilDays, startOfCivilDay } from '../lib/tz.js';
+import { timezoneOf } from '../lib/user-tz.js';
+import { isBetTransaction } from '../services/bets.js';
+import { weekStart } from './engagement.js';
 import { caseOfWeek, TRIBUNAL_CASES } from '../lib/tribunal-cases.js';
 
-const DAY = 24 * 60 * 60 * 1000;
 export const TIGRINHO_DAYS = 30;
 export const XP_PER_VOTE = 20;
 export const XP_PER_BATTLE = 100;
@@ -14,37 +17,43 @@ export const URUBU_STEPS = [
   { id: 'palavra-senha', label: 'Combinar uma palavra-senha com a família pra pedido de dinheiro por mensagem' },
 ] as const;
 
-/** Aposta = categoria "apostas" (regras: BET365, BLAZE, PIXBET...). Só saída conta. */
-const isBet = (t: Transaction) => t.categoryId === 'apostas' && t.amountInCents < 0 && !t.isInternalTransfer;
-
 /**
  * Batalha contra o Tigrinho: 30 dias sem aposta, conferido no extrato.
  * Função pura: recebe a batalha e as transações desde o início e devolve o estado atual.
  */
-export function tigrinhoState(b: Battle, txs: Transaction[], now: Date) {
+export function tigrinhoState(b: Battle, txs: Transaction[], now: Date, tz?: string) {
+  // O Dia 1 vale o dia civil INTEIRO: uma aposta feita de manhã, antes da pessoa abrir a batalha à tarde, já conta.
+  const startDay = civilDay(b.startedAt, tz);
+  const from = startOfCivilDay(startDay, tz);
   const bets = txs
-    .filter((t) => isBet(t) && t.occurredAt >= b.startedAt)
+    .filter((t) => isBetTransaction(t) && t.occurredAt >= from)
     .sort((a, c) => a.occurredAt.getTime() - c.occurredAt.getTime());
-  const day = Math.min(TIGRINHO_DAYS, Math.floor((now.getTime() - b.startedAt.getTime()) / DAY) + 1);
-  if (b.status === 'perdida' || b.status === 'vencida')
-    return { status: b.status, day, lostAt: bets[0]?.occurredAt ?? b.endedAt };
-  if (bets.length) return { status: 'perdida' as const, day, lostAt: bets[0]!.occurredAt };
-  if (now.getTime() - b.startedAt.getTime() >= TIGRINHO_DAYS * DAY)
+  const dayAt = (at: Date) => Math.min(TIGRINHO_DAYS, diffCivilDays(startDay, civilDay(at, tz)) + 1);
+  const finished = b.status === 'perdida' || b.status === 'vencida';
+  const lostAt = bets[0]?.occurredAt ?? b.endedAt;
+  // Perdida: o contador PARA no dia da aposta (não segue subindo enquanto a pessoa abre o app).
+  if (finished || bets.length) {
+    const status = finished ? b.status : ('perdida' as const);
+    if (status === 'vencida') return { status, day: TIGRINHO_DAYS, lostAt: null };
+    return { status, day: dayAt(lostAt ?? now), lostAt: lostAt ?? null };
+  }
+  if (diffCivilDays(startDay, civilDay(now, tz)) >= TIGRINHO_DAYS)
     return { status: 'vencida' as const, day: TIGRINHO_DAYS, lostAt: null };
-  return { status: 'ativa' as const, day, lostAt: null };
+  return { status: 'ativa' as const, day: dayAt(now), lostAt: null };
 }
 
 export class GamesUseCase {
   constructor(
-    private readonly repos: Pick<Repositories, 'games' | 'transactions' | 'connections'>,
+    private readonly repos: Pick<Repositories, 'games' | 'transactions' | 'connections' | 'users'>,
     private readonly now: () => Date = () => new Date(),
   ) {}
 
   async tribunal(userId: string) {
     const { case: c, endsAt } = caseOfWeek(this.now());
+    const weekKey = await this.weekKey(userId);
     const [mine, counts] = await Promise.all([
-      this.repos.games.findVote(userId, c.id),
-      this.repos.games.countVotes(c.id),
+      this.repos.games.findVote(userId, c.id, weekKey),
+      this.repos.games.countVotes(c.id, weekKey),
     ]);
     const votes = c.options.map((_, i) => counts[i] ?? 0);
     const voted = mine !== null;
@@ -59,13 +68,20 @@ export class GamesUseCase {
     };
   }
 
+  /** Segunda-feira (dia civil, fuso da pessoa) da semana de hoje: a chave do voto. */
+  private async weekKey(userId: string) {
+    return weekStart(civilDay(this.now(), await timezoneOf(this.repos.users, userId)));
+  }
+
   async vote(userId: string, caseId: string, choice: number) {
     const { case: current } = caseOfWeek(this.now());
     const c = TRIBUNAL_CASES.find((x) => x.id === caseId);
     if (!c || c.id !== current.id) throw new AppError('Esse caso já encerrou. Tem um novo essa semana.', 400);
     if (!Number.isInteger(choice) || choice < 0 || choice >= c.options.length)
       throw new AppError('Opção inválida.', 400);
-    await this.repos.games.vote(userId, caseId, choice);
+    // Voto dado não se troca (senão dá pra ver o placar e votar de novo no lado que ganha).
+    const created = await this.repos.games.vote(userId, caseId, await this.weekKey(userId), choice);
+    if (!created) throw new ConflictError('Você já votou nesse caso essa semana.');
     return this.tribunal(userId);
   }
 
@@ -79,8 +95,9 @@ export class GamesUseCase {
     ]);
     let tigrinho = null;
     if (tig) {
-      const txs = await transactions.findManyInRange(userId, tig.startedAt, now);
-      const st = tigrinhoState(tig, txs, now);
+      const tz = await timezoneOf(this.repos.users, userId);
+      const txs = await transactions.findManyInRange(userId, startOfCivilDay(civilDay(tig.startedAt, tz), tz), now);
+      const st = tigrinhoState(tig, txs, now, tz);
       if (st.status !== tig.status)
         await games.saveBattle({
           ...tig,
@@ -113,8 +130,11 @@ export class GamesUseCase {
   }
 
   async startTigrinho(userId: string) {
+    // battles() primeiro: ele atualiza o status (uma batalha que já passou de 30 dias é "vencida", não "ativa").
+    await this.battles(userId);
     const current = await this.repos.games.findBattle(userId, 'tigrinho');
-    if (current?.status === 'ativa') return this.battles(userId);
+    // Só recomeça quem perdeu. Batalha ativa segue e batalha VENCIDA nunca é sobrescrita (a conquista é da pessoa).
+    if (current && current.status !== 'perdida') return this.battles(userId);
     await this.repos.games.saveBattle({
       userId,
       kind: 'tigrinho',

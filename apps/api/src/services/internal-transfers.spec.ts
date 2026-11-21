@@ -27,8 +27,9 @@ describe('detectInternalTransfers', () => {
   it('não pareia na mesma conta', () => {
     expect(detectInternalTransfers([tx('nubank', -10000, 4), tx('nubank', 10000, 4)]).size).toBe(0);
   });
-  it('não pareia com mais de 1 dia de distância', () => {
-    expect(detectInternalTransfers([tx('nubank', -10000, 4), tx('mp', 10000, 7)]).size).toBe(0);
+  it('pareia até 3 dias de distância (compensação de boleto/TED) e não passa disso', () => {
+    expect(detectInternalTransfers([tx('nubank', -10000, 4), tx('mp', 10000, 7)]).size).toBe(2); // 3 dias: pareia
+    expect(detectInternalTransfers([tx('nubank', -10000, 4), tx('mp', 10000, 8)]).size).toBe(0); // 4 dias: não
   });
   it('não pareia gasto anotado na mão', () => {
     expect(detectInternalTransfers([tx(null, -10000, 4), tx('mp', 10000, 4)]).size).toBe(0);

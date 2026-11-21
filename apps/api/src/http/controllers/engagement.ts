@@ -70,6 +70,15 @@ export function engagementRoutes(
     const { code } = addFriendBody.parse(request.body);
     return (await uc.engagement.addFriend(request.user.sub, code)) satisfies FriendsResponse;
   });
+  // Aceitar ou recusar um pedido recebido (o :id é o do PEDIDO, não o da pessoa).
+  app.post('/friends/requests/:id/accept', { onRequest: verifyJwt }, async (request) => {
+    const { id } = idParam.parse(request.params);
+    return (await uc.engagement.respondRequest(request.user.sub, id, true)) satisfies FriendsResponse;
+  });
+  app.post('/friends/requests/:id/decline', { onRequest: verifyJwt }, async (request) => {
+    const { id } = idParam.parse(request.params);
+    return (await uc.engagement.respondRequest(request.user.sub, id, false)) satisfies FriendsResponse;
+  });
   app.delete('/friends/:id', { onRequest: verifyJwt }, async (request) => {
     const { id } = idParam.parse(request.params);
     return (await uc.engagement.removeFriend(request.user.sub, id)) satisfies FriendsResponse;

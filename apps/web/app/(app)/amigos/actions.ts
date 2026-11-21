@@ -16,10 +16,25 @@ export async function addFriend(_: AmigoState, form: FormData): Promise<AmigoSta
     return { error: e instanceof ApiError ? e.message : 'Não deu agora. Tenta de novo?' };
   }
   revalidatePath('/amigos');
-  return { message: 'Pronto, agora vocês tão no mesmo desafio.' };
+  // Usar o código manda um PEDIDO: a outra pessoa precisa aceitar pra entrar no desafio.
+  return { message: 'Pedido enviado! Quando a pessoa aceitar, vocês entram no mesmo desafio.' };
 }
 
 export async function removeFriend(id: string) {
   await api(`/friends/${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(orFallback(undefined));
+  revalidatePath('/amigos');
+}
+
+/** Aceitar ou recusar um pedido de amizade recebido (o id é o do PEDIDO). */
+export async function respondFriendRequest(id: string, accept: boolean) {
+  try {
+    await api(`/friends/requests/${encodeURIComponent(id)}/${accept ? 'accept' : 'decline'}`, {
+      method: 'POST',
+      body: {},
+    });
+  } catch (e) {
+    rethrowIfRedirect(e);
+    // Pedido que já não existe (cancelado, já respondido): a tela só recarrega.
+  }
   revalidatePath('/amigos');
 }

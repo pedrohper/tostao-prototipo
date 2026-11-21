@@ -1,7 +1,7 @@
 'use client';
 import { useActionState, useState } from 'react';
 import { getDictionary, type Locale } from '@/lib/i18n';
-import { addFriend, removeFriend, type AmigoState } from './actions';
+import { addFriend, removeFriend, respondFriendRequest, type AmigoState } from './actions';
 
 /** Compartilha o link (ou copia, se o celular não tiver o menu de compartilhar). */
 export function Compartilhar({ code, locale = 'pt-BR' }: { code: string; locale?: Locale }) {
@@ -88,5 +88,29 @@ export function Remover({ id, name, locale = 'pt-BR' }: { id: string; name: stri
         <path d="M18 6L6 18M6 6l12 12" />
       </svg>
     </button>
+  );
+}
+
+/** Pedido de amizade recebido: aceitar entra no ranking dos dois; recusar some. */
+export function PedidoRecebido({ id, name, locale = 'pt-BR' }: { id: string; name: string; locale?: Locale }) {
+  const labels = getDictionary(locale).pages.amigos.client;
+  return (
+    <div className="flex min-h-[58px] items-center gap-3 border-b border-linha last:border-b-0">
+      <span className="grow text-[15px]">{labels.incomingText(name)}</span>
+      <button
+        type="button"
+        className="h-9 shrink-0 rounded-full bg-tinta px-4 text-sm font-semibold text-papel"
+        onClick={() => void respondFriendRequest(id, true)}
+      >
+        {labels.acceptBtn}
+      </button>
+      <button
+        type="button"
+        className="h-9 shrink-0 rounded-full border-[1.5px] border-linha px-4 text-sm font-semibold text-tinta-suave"
+        onClick={() => void respondFriendRequest(id, false)}
+      >
+        {labels.declineBtn}
+      </button>
+    </div>
   );
 }

@@ -24,7 +24,22 @@ export function parseAmountToCents(raw: string): number {
   return Math.round(Number(s) * 100);
 }
 
+/**
+ * Pergunta não é despesa: "gastei 25 no ifood?" ou "tá muito caro gastar 300 no mercado, compensa?" são dúvidas
+ * pro chat, não pra anotar. Termina em "?" ou tem palavra de pergunta (sem acento, pra "será" e "sera" valerem igual).
+ */
+const QUESTION_WORDS = /\b(ta muito|quanto|quantos|quantas|sera|posso|compensa|devo|vale a pena)\b/;
+export function looksLikeQuestion(message: string): boolean {
+  if (/\?\s*$/.test(message.trim()) || message.includes('?')) return true;
+  const plain = message
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  return QUESTION_WORDS.test(plain);
+}
+
 export function parseExpense(message: string): ParsedExpense | null {
+  if (looksLikeQuestion(message)) return null;
   const text = message.trim().replace(/\s+/g, ' ');
   const m = RE.exec(text);
   if (!m) return null;

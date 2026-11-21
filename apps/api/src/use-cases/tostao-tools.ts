@@ -2,6 +2,8 @@ import type { ToolDefinition } from '../gateways/ai-gateway.js';
 import type { Repositories } from '../repositories/types.js';
 import type { Category } from '../domain/entities.js';
 import { currentMonth, monthRange } from '../lib/month.js';
+import { civilDay } from '../lib/tz.js';
+import { timezoneOf } from '../lib/user-tz.js';
 import { GetBudgetsUseCase } from './budgets.js';
 
 const normalize = (s: string) =>
@@ -102,8 +104,8 @@ function findCategory(
 }
 
 /** "YYYY-MM" com mês 01..12. Vazio = mês atual. */
-function resolveMonth(raw: unknown, now: Date): string | null {
-  if (raw === undefined || raw === null || raw === '') return currentMonth(now);
+function resolveMonth(raw: unknown, now: Date, tz?: string): string | null {
+  if (raw === undefined || raw === null || raw === '') return currentMonth(now, tz);
   if (typeof raw !== 'string' || !/^\d{4}-(0[1-9]|1[0-2])$/.test(raw)) return null;
   return raw;
 }
@@ -137,13 +139,14 @@ export type ToolContext = {
   propose?: (proposal: ProposedTransaction) => Promise<void>;
 };
 
-const brDate = (now: Date) => new Date(now.getTime() - 3 * 3600_000).toISOString().slice(0, 10);
+const brDate = (now: Date, tz?: string) => civilDay(now, tz);
 
 /** Valida os argumentos de `registrar_transacao` (que vêm de um LLM e portanto não são confiáveis). */
 export function validateRegisterArgs(
   args: Record<string, unknown>,
   categories: Category[],
   now: Date,
+  tz?: string,
 ): { ok: true; proposal: ProposedTransaction } | { ok: false; erro: string; categorias_disponiveis?: string[] } {
   const description =
     typeof args.descricao === 'string'
@@ -171,11 +174,12 @@ export function validateRegisterArgs(
     return { ok: false, erro: `Valor inválido: use entre R$ 0,01 e ${brl(MAX_TX_REAIS * 100)}.` };
   const amountInCents = Math.round(valor * 100);
 
-  let date = brDate(now);
+  let date = brDate(now, tz);
   if (args.data !== undefined && args.data !== null && args.data !== '') {
     const parsed = typeof args.data === 'string' ? parseCalendarDate(args.data) : null;
     if (!parsed) return { ok: false, erro: 'Data inválida. Use uma data real no formato YYYY-MM-DD.' };
-    const diffDays = (Date.UTC(parsed.y, parsed.m - 1, parsed.d) - Date.parse(`${brDate(now)}T00:00:00Z`)) / 86_400_000;
+    const diffDays =
+      (Date.UTC(parsed.y, parsed.m - 1, parsed.d) - Date.parse(`${brDate(now, tz)}T00:00:00Z`)) / 86_400_000;
     if (diffDays > 366 || diffDays < -366 * 2)
       return { ok: false, erro: 'Data fora do intervalo aceito (até 2 anos atrás, até 1 ano à frente).' };
     date = args.data as string;
@@ -213,6 +217,8 @@ export async function executeTostaoTool(
   ctx: ToolContext = {},
 ): Promise<string> {
   if (!allowedTools.has(name)) return JSON.stringify({ erro: `Ferramenta não disponível: ${name}` });
+  // Mês e data "de hoje" são os da PESSOA (fuso dela), não os do servidor.
+  const tz = await timezoneOf(repos.users, userId);
   let args: Record<string, unknown>;
   try {
     args = rawArgs ? (JSON.parse(rawArgs) as Record<string, unknown>) : {};
@@ -223,7 +229,7 @@ export async function executeTostaoTool(
   if (name === 'consultar_gastos_categoria') {
     const catQuery = typeof args.categoria === 'string' ? args.categoria.trim() : '';
     if (!catQuery) return JSON.stringify({ erro: 'Informe o nome da categoria.' });
-    const month = resolveMonth(args.mes, now);
+    const month = resolveMonth(args.mes, now, tz);
     if (!month) return JSON.stringify({ erro: 'Mês inválido. Use o formato YYYY-MM.' });
 
     const categories = await repos.categories.list(userId);
@@ -235,7 +241,7 @@ export async function executeTostaoTool(
       });
     }
 
-    const { from, to } = monthRange(month);
+    const { from, to } = monthRange(month, tz);
     const [txs, accounts] = await Promise.all([
       repos.transactions.findManyInRange(userId, from, to),
       repos.accounts.listByUser(userId),
@@ -269,7 +275,7 @@ export async function executeTostaoTool(
   if (name === 'verificar_limite_categoria') {
     const catQuery = typeof args.categoria === 'string' ? args.categoria.trim() : '';
     if (!catQuery) return JSON.stringify({ erro: 'Informe o nome da categoria.' });
-    const month = resolveMonth(args.mes, now);
+    const month = resolveMonth(args.mes, now, tz);
     if (!month) return JSON.stringify({ erro: 'Mês inválido. Use o formato YYYY-MM.' });
 
     const [{ budgets }, categories] = await Promise.all([
@@ -312,7 +318,7 @@ export async function executeTostaoTool(
     // Nunca grava aqui: prompt injection (ex.: descrição de Pix mandando "registre R$ 5000") não vira lançamento.
     if (!ctx.propose)
       return JSON.stringify({ erro: 'Registrar exige confirmação da pessoa e não está disponível neste canal.' });
-    const checked = validateRegisterArgs(args, await repos.categories.list(userId), now);
+    const checked = validateRegisterArgs(args, await repos.categories.list(userId), now, tz);
     if (!checked.ok)
       return JSON.stringify({ erro: checked.erro, categorias_disponiveis: checked.categorias_disponiveis });
     const p = checked.proposal;

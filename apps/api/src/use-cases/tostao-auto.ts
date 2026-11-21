@@ -11,6 +11,7 @@ import type { TostaoAutoConfig, TostaoInsight, Transaction } from '../domain/ent
 import { NEUTRAL_CATEGORY_ID } from '../domain/entities.js';
 import { ResourceNotFoundError } from '../domain/errors.js';
 import { currentMonth, monthRange } from '../lib/month.js';
+import { timezoneOf } from '../lib/user-tz.js';
 import type { Repositories, UpsertTostaoInsight } from '../repositories/types.js';
 import type { AutoCategorizeUseCase } from './auto-categorize.js';
 import { GetBudgetsUseCase } from './budgets.js';
@@ -18,14 +19,14 @@ import { EngagementUseCase } from './engagement.js';
 import { ForecastUseCase } from './financial-plan.js';
 import { ListSubscriptionsUseCase } from './list-subscriptions.js';
 import { findManualDuplicates } from '../services/reconcile-manual.js';
+import { BET_HINT } from '../services/bets.js';
+import { looksInternalByDescription } from '../services/internal-transfers.js';
+import { normalizeDescription } from '../lib/text.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const SEVERITY_RANK = { urgent: 0, warning: 1, info: 2 } as const;
 
-const INTERNAL_HINT = /pagamento (de |da )?fatura|pgto fatura|pagto fatura|mesma titularidade/i;
 const SPLIT_HINT = /\b(racha|rachamos|divid\w*|emprest\w*|acerto|reembolso|vaquinha)\b/i;
-const BET_HINT =
-  /\b(bet365|betano|pixbet|sportingbet|blaze|tigrinho|fortune tiger|superbet|kto|estrelabet|novibet|esportes da sorte)\b/i;
 
 const money = (cents: number) => (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -156,8 +157,9 @@ export class RunTostaoChecksUseCase {
 
   async execute({ userId }: { userId: string }): Promise<RunTostaoCheckResponse> {
     const now = this.now();
-    const month = currentMonth(now);
-    const { from, to } = monthRange(month);
+    const tz = await timezoneOf(this.repos.users, userId);
+    const month = currentMonth(now, tz);
+    const { from, to } = monthRange(month, tz);
     const lookbackFrom = new Date(now.getTime() - 35 * DAY);
     const config = await this.repos.tostaoAuto.getConfig(userId);
 
@@ -232,7 +234,13 @@ export class RunTostaoChecksUseCase {
         severity: uncat.length >= 5 ? 'warning' : 'info',
         title: `Caramelo achou ${uncat.length} ${uncat.length === 1 ? 'gasto sem categoria' : 'gastos sem categoria'}`,
         body: 'Posso tentar organizar seu extrato automaticamente com um clique.',
-        payload: { count: uncat.length, latestTxId: uncat[0]!.id, month },
+        payload: {
+          count: uncat.length,
+          latestTxId: uncat[0]!.id,
+          // Quando chegou a mais nova pendente: é o que decide se o aviso reabre (ver services/insight-reopen.ts).
+          latestCreatedAt: uncat[0]!.createdAt.toISOString(),
+          month,
+        },
         dedupeKey: `caramelo:uncat:${month}`,
       });
     }
@@ -258,7 +266,14 @@ export class RunTostaoChecksUseCase {
     }
 
     const transferCandidates = recentTxs
-      .filter((t) => t.accountId !== null && !t.isInternalTransfer && !t.personId && INTERNAL_HINT.test(t.description))
+      .filter(
+        (t) =>
+          t.accountId !== null &&
+          !t.isInternalTransfer &&
+          t.internalTransferManual == null && // a pessoa já decidiu sobre este: não sugere de novo
+          !t.personId &&
+          looksInternalByDescription(normalizeDescription(t.description)),
+      )
       .slice(0, 2);
     for (const tx of transferCandidates) {
       out.push({
@@ -362,8 +377,9 @@ export class RunTostaoChecksUseCase {
       });
     }
 
-    const goal = forecast?.goal;
-    if (goal && !goal.reached && goal.fits === false) {
+    // TODAS as metas (antes só a principal): cada uma que não cabe na sobra prevista vira um aviso próprio.
+    for (const [i, goal] of (forecast?.goals ?? []).entries()) {
+      if (goal.reached || goal.fits !== false) continue;
       out.push({
         userId,
         routine: 'guardiao_limites',
@@ -371,8 +387,9 @@ export class RunTostaoChecksUseCase {
         severity: 'warning',
         title: `Sua meta "${goal.label}" pede ajuste`,
         body: `Guardar ${money(goal.monthlyNeededInCents ?? 0)}/mês não cabe na sobra prevista. Você pode ajustar o prazo ou valor.`,
-        payload: { monthlyNeededInCents: goal.monthlyNeededInCents ?? 0 },
-        dedupeKey: `guardiao:goal-tight:${month}`,
+        payload: { monthlyNeededInCents: goal.monthlyNeededInCents ?? 0, goalId: goal.id ?? null },
+        // A meta principal mantém a chave de antes (não duplica o aviso que já existe); as outras levam o id.
+        dedupeKey: i === 0 ? `guardiao:goal-tight:${month}` : `guardiao:goal-tight:${month}:${goal.id ?? i}`,
       });
     }
 
@@ -460,7 +477,8 @@ export class ApplyTostaoInsightUseCase {
       const txId = typeof found.payload.transactionId === 'string' ? found.payload.transactionId : null;
       if (txId) {
         const tx = await this.repos.transactions.findById(txId);
-        if (tx && tx.userId === userId) await this.repos.transactions.save({ ...tx, isInternalTransfer: true });
+        if (tx && tx.userId === userId)
+          await this.repos.transactions.save({ ...tx, isInternalTransfer: true, internalTransferManual: true });
       }
       appliedSummary = 'Lançamento marcado como transferência entre suas contas.';
       redirectTo = null;

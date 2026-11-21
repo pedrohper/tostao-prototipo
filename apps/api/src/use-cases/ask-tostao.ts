@@ -2,6 +2,7 @@ import type { Repositories } from '../repositories/types.js';
 import { AiUnavailableError, type AiGateway, type ChatTurn } from '../gateways/ai-gateway.js';
 import { AppError } from '../domain/errors.js';
 import { currentMonth } from '../lib/month.js';
+import { timezoneOf } from '../lib/user-tz.js';
 import { testOnlyKeyValueStore, type KeyValueStore } from '../lib/redis.js';
 import { firstName, scrubFinancialText } from '../services/pii-scrubber.js';
 import { PendingActionStore, type PendingAction } from '../services/pending-actions.js';
@@ -155,8 +156,10 @@ export class AskTostaoUseCase {
 
   /** O que a IA enxerga: números já calculados pelo app, em texto curto (barato e sem inventar). */
   private async snapshot(userId: string, now: Date) {
-    const month = currentMonth(now);
-    const summary = new GetMonthSummaryUseCase(this.repos);
+    const tz = await timezoneOf(this.repos.users, userId);
+    const month = currentMonth(now, tz);
+    // Mesmo relógio (now) do resto do turno: o resumo não pode olhar "agora" por conta própria.
+    const summary = new GetMonthSummaryUseCase(this.repos, () => now);
     const [cur, prev, subs, budgets, categories, recent, plan, forecast, accounts] = await Promise.all([
       summary.execute({ userId, month }),
       summary.execute({ userId, month: prevMonth(month) }),

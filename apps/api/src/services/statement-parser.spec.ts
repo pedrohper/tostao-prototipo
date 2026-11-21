@@ -112,4 +112,114 @@ describe('extrato importado', () => {
   it('arquivo sem nada útil dá erro amigável', () => {
     expect(() => parseStatement('oi', 'x.csv')).toThrow('colunas de data e valor');
   });
+
+  describe('T1.5 · sinal, milhar, data, FITID e saldo', () => {
+    it('milhar BR sem decimais: "1.500" = R$ 1.500 e "1.200.000" = R$ 1.200.000; decimal de verdade continua decimal', () => {
+      expect(parseAmount('1.500')).toBe(150000);
+      expect(parseAmount('1.200.000')).toBe(120000000);
+      expect(parseAmount('-2.500')).toBe(-250000);
+      expect(parseAmount('12.50')).toBe(1250);
+      expect(parseAmount('0.500')).toBe(50); // 0,5 (não é milhar: grupo inicial 0)
+      expect(parseAmount('1.234,56')).toBe(123456);
+      expect(parseAmount('1,234.56')).toBe(123456);
+    });
+
+    it('data inexistente é recusada: 99/99/2026, 31/02/2026, mês 13, ano 1850', () => {
+      const csv = (date: string) => `Data;Valor;Descrição\n${date};-10,00;Teste\n15/11/2026;-5,00;Outro`;
+      for (const bad of ['99/99/2026', '31/02/2026', '10/13/2026', '00/11/2026', '15/11/1850']) {
+        const s = parseStatement(csv(bad), 'x.csv');
+        expect(
+          s.transactions.map((t) => t.description),
+          bad,
+        ).toEqual(['Outro']); // só a linha boa sobrevive
+      }
+      // e arquivo cujas datas são TODAS inválidas dá erro amigável, em vez de data inválida no banco
+      expect(() => parseStatement('Data;Valor;Descrição\n99/99/2026;-10,00;Teste', 'x.csv')).toThrow(
+        /nenhuma transação/i,
+      );
+    });
+
+    it('data válida vira meio-dia de Brasília (não pula pro dia anterior)', () => {
+      const s = parseStatement('Data;Valor;Descrição\n29/02/2028;-10,00;Bissexto', 'x.csv');
+      expect(s.transactions[0]!.occurredAt.toISOString()).toBe('2028-02-29T15:00:00.000Z');
+    });
+
+    it('cartão com colunas Crédito/Débito separadas NÃO inverte o sinal (débito já é negativo)', () => {
+      const csv =
+        'Data;Histórico;Crédito;Débito\n10/11/2026;COMPRA MERCADO;;250,00\n11/11/2026;PAGAMENTO FATURA;1000,00;';
+      const s = parseStatement(csv, 'f.csv', { isCard: true });
+      expect(s.kind).toBe('CREDIT');
+      expect(s.transactions.map((t) => t.amountInCents)).toEqual([-25000, 100000]);
+    });
+
+    it('fatura de cartão que JÁ vem com compra negativa não é invertida (auto) — e a convenção pode ser forçada', () => {
+      const negativas =
+        'Data;Descrição;Valor\n10/11/2026;LOJA A;-50,00\n11/11/2026;LOJA B;-30,00\n12/11/2026;ESTORNO;10,00';
+      expect(parseStatement(negativas, 'f.csv', { isCard: true }).transactions.map((t) => t.amountInCents)).toEqual([
+        -5000, -3000, 1000,
+      ]);
+      const positivas =
+        'Data;Descrição;Valor\n10/11/2026;LOJA A;50,00\n11/11/2026;LOJA B;30,00\n12/11/2026;PAGAMENTO;-80,00';
+      expect(parseStatement(positivas, 'f.csv', { isCard: true }).transactions.map((t) => t.amountInCents)).toEqual([
+        -5000, -3000, 8000,
+      ]);
+      // forçando: "compras-positivas" inverte; "compras-negativas" deixa como está
+      expect(
+        parseStatement(negativas, 'f.csv', { isCard: true, signConvention: 'compras-positivas' }).transactions[0]!
+          .amountInCents,
+      ).toBe(5000);
+      expect(
+        parseStatement(positivas, 'f.csv', { isCard: true, signConvention: 'compras-negativas' }).transactions[0]!
+          .amountInCents,
+      ).toBe(5000);
+    });
+
+    it('Nubank (title,amount): empate de sinais cai no formato conhecido (inverte)', () => {
+      const s = parseStatement('date,title,amount\n2026-11-10,Uber,25.90\n2026-11-11,Pagamento,-25.90', 'nu.csv');
+      expect(s.transactions.map((t) => t.amountInCents)).toEqual([-2590, 2590]);
+    });
+
+    it('conta corrente nunca inverte, mesmo com isCard desligado e maioria positiva', () => {
+      const s = parseStatement('Data;Descrição;Valor\n10/11/2026;SALARIO;3000,00\n11/11/2026;PIX;100,00', 'c.csv', {
+        isCard: false,
+      });
+      expect(s.transactions.map((t) => t.amountInCents)).toEqual([300000, 10000]);
+    });
+
+    it('coluna "Valor Débito/Crédito" (uma só) é o valor com sinal e não casa nas duas buscas', () => {
+      const s = parseStatement(
+        'Data;Histórico;Valor Débito/Crédito\n10/11/2026;COMPRA;-45,00\n11/11/2026;DEPOSITO;100,00',
+        'x.csv',
+      );
+      expect(s.transactions.map((t) => t.amountInCents)).toEqual([-4500, 10000]);
+    });
+
+    it('OFX com FITID repetido (BB/Caixa mandam FITID=0 em tudo): cada lançamento mantém identidade própria e estável', () => {
+      const ofx = (v: string) => `<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS><BANKTRANLIST>
+<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20261110<TRNAMT>-10.00<FITID>0<MEMO>CAFE
+</STMTTRN>
+<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20261110<TRNAMT>-10.00<FITID>0<MEMO>CAFE
+</STMTTRN>
+<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20261111<TRNAMT>-${v}<FITID>0<MEMO>PADARIA
+</STMTTRN>
+</BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>`;
+      const a = parseStatement(ofx('7.00'), 'bb.ofx').transactions.map((t) => t.externalId);
+      expect(new Set(a).size).toBe(3); // nada de 3 lançamentos com o mesmo id (o import os trataria como duplicados)
+      expect(a.every((id) => !id.startsWith('ofx:0'))).toBe(true);
+      // importar o MESMO arquivo de novo dá os mesmos ids (não duplica)
+      expect(parseStatement(ofx('7.00'), 'bb.ofx').transactions.map((t) => t.externalId)).toEqual(a);
+      // FITID único segue valendo como identidade
+      expect(parseStatement(OFX, 'extrato.ofx').transactions[0]!.externalId).toBe('ofx:abc1');
+    });
+
+    it('OFX de cartão: BALAMT vira "quanto devo" (negativo), venha positivo ou negativo do banco', () => {
+      const card = (bal: string) => `<OFX><CREDITCARDMSGSRSV1><CCSTMTTRNRS><CCSTMTRS><BANKTRANLIST>
+<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20261110<TRNAMT>-50.00<FITID>1<MEMO>LOJA
+</STMTTRN></BANKTRANLIST><LEDGERBAL><BALAMT>${bal}<DTASOF>20261112</LEDGERBAL></CCSTMTRS></CCSTMTTRNRS></CREDITCARDMSGSRSV1></OFX>`;
+      expect(parseStatement(card('1234.56'), 'c.ofx').balanceInCents).toBe(-123456);
+      expect(parseStatement(card('-1234.56'), 'c.ofx').balanceInCents).toBe(-123456);
+      // conta corrente mantém o sinal que o banco mandou
+      expect(parseStatement(OFX, 'extrato.ofx').balanceInCents).toBe(84230);
+    });
+  });
 });

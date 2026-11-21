@@ -819,6 +819,8 @@ export const en: Dictionary = {
       importedTag: 'Imported statement',
       activeTag: 'Active',
       errorTag: 'Sync paused',
+      reconnectTag: 'Reconnect needed',
+      reconnectHelp: 'The bank failed several times in a row. Disconnect and connect it again to resume updates.',
       lastFile: 'Last file',
       lastSync: 'Last sync',
       never: 'never',
@@ -1336,7 +1338,13 @@ export const en: Dictionary = {
       yourCode: 'Your code',
       privacyNote:
         'Friends only see your first name, streak, and completed missions. Balances, spending, and banks stay private.',
+      incomingTitle: 'Friend requests',
+      outgoingTitle: (n) => `Waiting for ${n} to accept your request.`,
       client: {
+        requestSent: 'Request sent! When they accept, you will be in the same challenge.',
+        acceptBtn: 'Accept',
+        declineBtn: 'Decline',
+        incomingText: (n) => `${n} wants to join your challenge.`,
         shareText: (url) => `Want to see who manages money better this week? Join Tostão with my link: ${url}`,
         copied: 'Link copied!',
         shareBtn: 'Invite a friend',

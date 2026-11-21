@@ -105,13 +105,13 @@ O caminho de uma requisição: **controller** valida com Zod, chama o **use case
 
 ## Atalhos do protótipo (pra fazer direito na plataforma)
 
-| Atalho                                                                | Como deveria ser                                                                           |
-| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Só o simulador da lição 1.1 existe                                    | Um simulador por lição                                                                     |
-| Compromisso da semana não é auditado                                  | Job que confere o extrato e marca cumprido/não cumprido                                    |
-| Cron dentro do processo da API                                        | Worker separado ou cron do provedor                                                        |
-| Fuso fixo -03:00 (dia sem hora vindo do banco = meio-dia de Brasília) | Fuso do usuário                                                                            |
-| Transferência interna por par de valores                              | Pode errar se alguém te mandar o mesmo valor que você mandou pra outra pessoa no mesmo dia |
-| Chat manda um resumo pronto pra IA (sem ferramentas)                  | IA consultando dados por function calling                                                  |
-| Tribunal e Batalha                                                    | Ainda só no design (canvas)                                                                |
-| Assinatura detectada por padrão de descrição                          | Usar a categoria do Pluggy e deixar a pessoa confirmar/ignorar                             |
+| Atalho                                                                                                                         | Como deveria ser                                                                           |
+| ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| Só o simulador da lição 1.1 existe                                                                                             | Um simulador por lição                                                                     |
+| Compromisso da semana não é auditado                                                                                           | Job que confere o extrato e marca cumprido/não cumprido                                    |
+| Cron dentro do processo da API                                                                                                 | Worker separado ou cron do provedor                                                        |
+| Dia sem hora vindo do banco = meio-dia de Brasília (o resto usa o fuso do usuário, `User.timezone`, ainda sem tela pra trocar) | Pedir o fuso no cadastro e na tela de perfil                                               |
+| Transferência interna por par de valores                                                                                       | Pode errar se alguém te mandar o mesmo valor que você mandou pra outra pessoa no mesmo dia |
+| Chat manda um resumo pronto pra IA (sem ferramentas)                                                                           | IA consultando dados por function calling                                                  |
+| Tribunal e Batalha                                                                                                             | Ainda só no design (canvas)                                                                |
+| Assinatura detectada por padrão de descrição                                                                                   | Usar a categoria do Pluggy e deixar a pessoa confirmar/ignorar                             |

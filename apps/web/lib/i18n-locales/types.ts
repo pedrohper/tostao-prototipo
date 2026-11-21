@@ -727,6 +727,8 @@ export interface Dictionary {
       importedTag: string;
       activeTag: string;
       errorTag: string;
+      reconnectTag: string;
+      reconnectHelp: string;
       lastFile: string;
       lastSync: string;
       never: string;
@@ -1152,7 +1154,13 @@ export interface Dictionary {
       aloneNote: string;
       yourCode: string;
       privacyNote: string;
+      incomingTitle: string;
+      outgoingTitle: (names: string) => string;
       client: {
+        requestSent: string;
+        acceptBtn: string;
+        declineBtn: string;
+        incomingText: (name: string) => string;
         shareText: (url: string) => string;
         copied: string;
         shareBtn: string;

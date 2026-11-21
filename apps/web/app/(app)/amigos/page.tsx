@@ -5,7 +5,7 @@ import { getI18n } from '@/lib/i18n-server';
 import { Mascot } from '@/components/mascote';
 import { Icon } from '@/components/icone';
 import { BackLink, Eyebrow, PageFrame } from '@/components/ui';
-import { AdicionarAmigo, Compartilhar, Remover } from './client';
+import { AdicionarAmigo, Compartilhar, PedidoRecebido, Remover } from './client';
 
 const MEDALHA = ['bg-amarelo text-tinta-fixa', 'bg-papel-2 text-tinta', 'bg-bronze text-tinta-fixa'];
 
@@ -30,6 +30,17 @@ export default async function AmigosPage({ searchParams }: { searchParams: Promi
         </div>
         <Mascot pose="dupla" size={92} alt="Tostão e Caramelo" />
       </div>
+
+      {f.requests.incoming.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <Eyebrow>{am.incomingTitle}</Eyebrow>
+          <div className="flex flex-col rounded-2xl border border-linha bg-cartao px-3.5">
+            {f.requests.incoming.map((r) => (
+              <PedidoRecebido key={r.id} id={r.id} name={r.name} locale={locale} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="flex flex-col gap-2">
         <Eyebrow>{am.rankingTitle}</Eyebrow>
@@ -59,6 +70,11 @@ export default async function AmigosPage({ searchParams }: { searchParams: Promi
           ))}
         </div>
         {sozinho && <p className="text-[13px] text-tinta-suave">{am.aloneNote}</p>}
+        {f.requests.outgoing.length > 0 && (
+          <p className="text-[13px] text-tinta-suave">
+            {am.outgoingTitle(f.requests.outgoing.map((r) => r.name).join(', '))}
+          </p>
+        )}
       </section>
 
       <section className="flex flex-col gap-3 rounded-2xl bg-amarelo-claro p-3.5 text-tinta">

@@ -169,7 +169,8 @@ describe('API', () => {
       done: ['m1-l2'],
       streakDays: 1,
       doneToday: 1,
-      bonusXp: 5,
+      // 0: o PUT /budgets marcou "limites", mas a 3ª missão de hoje NÃO é essa (antes valia 5 XP por qualquer linha).
+      bonusXp: 0,
     }); // +5 da missão de conferir limites;
   });
 });

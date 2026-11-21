@@ -4,8 +4,20 @@ import { Cron } from 'croner';
 import type { Repositories } from '../repositories/types.js';
 import type { SyncBankConnectionUseCase } from '../use-cases/sync-bank-connection.js';
 
+/** Espera mínima entre uma falha e a próxima tentativa automática. */
+export const RETRY_AFTER_MS = 24 * 60 * 60 * 1000;
+
+/** Só Item de verdade (Open Finance) tem o que sincronizar. */
+const hasProvider = (itemId: string) => !itemId.startsWith('import:') && !itemId.startsWith('manual:');
+
 export async function syncAllConnections(repos: Repositories, sync: SyncBankConnectionUseCase, log = console) {
-  const connections = (await repos.connections.listActive()).filter((c) => !c.itemId.startsWith('import:'));
+  // Conexões saudáveis + as que deram erro há 24 h ou mais (3 falhas seguidas viram RECONNECT_REQUIRED e saem da fila).
+  // Import e conta manual não têm provedor: nunca entram (antes um restart disparava sync de "conexões" que não existem).
+  const retryBefore = new Date(Date.now() - RETRY_AFTER_MS);
+  const connections = [
+    ...(await repos.connections.listActive()),
+    ...(await repos.connections.listRetryable(retryBefore)),
+  ].filter((c) => hasProvider(c.itemId));
   for (const c of connections) {
     try {
       const r = await sync.execute({ connectionId: c.id });
@@ -40,7 +52,7 @@ const scheduled: Cron[] = [];
 /** Quem não sincroniza há mais que `maxAgeMs` (ex.: o servidor ficou desligado na hora do cron). */
 export async function isSyncStale(repos: Repositories, maxAgeMs: number, now = new Date()) {
   const last = (await repos.connections.listActive())
-    .filter((c) => !c.itemId.startsWith('import:'))
+    .filter((c) => hasProvider(c.itemId))
     .map((c) => c.lastSyncedAt?.getTime() ?? 0);
   return last.length > 0 && Math.min(...last) < now.getTime() - maxAgeMs;
 }

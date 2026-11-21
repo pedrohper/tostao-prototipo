@@ -16,6 +16,7 @@ import type {
   EmailVerificationToken,
   ChatMessage,
   TribunalVote,
+  FriendRequest,
   Battle,
   BattleKind,
   Person,
@@ -70,6 +71,7 @@ import type {
   NewAuditLog,
 } from '../types.js';
 import { DEFAULT_CATEGORIES, DEFAULT_RULES } from '../../lib/defaults.js';
+import { shouldReopenInsight } from '../../services/insight-reopen.js';
 
 export class InMemoryOAuthAccountsRepository implements OAuthAccountsRepository {
   items: OAuthAccount[] = [];
@@ -172,11 +174,16 @@ export class InMemoryBankConnectionsRepository implements BankConnectionsReposit
       id: randomUUID(),
       status: 'ACTIVE',
       lastSyncedAt: null,
+      errorCount: 0,
+      lastErrorAt: null,
       createdAt: new Date(),
       ...data,
     };
     this.items.push(c);
     return c;
+  }
+  async listRetryable(before: Date) {
+    return this.items.filter((c) => c.status === 'ERROR' && (!c.lastErrorAt || c.lastErrorAt <= before));
   }
   async save(connection: BankConnection) {
     const i = this.items.findIndex((c) => c.id === connection.id);
@@ -205,6 +212,10 @@ export class InMemoryAccountsRepository implements AccountsRepository {
   async setHidden(id: string, hidden: boolean) {
     const a = this.items.find((x) => x.id === id);
     if (a) a.hidden = hidden;
+  }
+  async adjustBalance(id: string, deltaInCents: number) {
+    const a = this.items.find((x) => x.id === id);
+    if (a) a.balanceInCents += deltaInCents;
   }
   async upsertByExternalId(data: AccountData) {
     const found = this.items.find((a) => a.userId === data.userId && a.externalId === data.externalId);
@@ -382,16 +393,19 @@ export class InMemoryLessonProgressRepository implements LessonProgressRepositor
 export class InMemoryGamesRepository implements GamesRepository {
   votes: TribunalVote[] = [];
   battles: Battle[] = [];
-  async vote(userId: string, caseId: string, choice: number) {
-    this.votes = this.votes.filter((v) => !(v.userId === userId && v.caseId === caseId));
-    this.votes.push({ userId, caseId, choice, votedAt: new Date() });
+  async vote(userId: string, caseId: string, weekKey: string, choice: number) {
+    // Sem await entre checar e gravar: atômico em JS. Voto já dado nessa semana nunca é trocado.
+    if (this.votes.some((v) => v.userId === userId && v.caseId === caseId && v.weekKey === weekKey)) return false;
+    this.votes.push({ userId, caseId, weekKey, choice, votedAt: new Date() });
+    return true;
   }
-  async findVote(userId: string, caseId: string) {
-    return this.votes.find((v) => v.userId === userId && v.caseId === caseId) ?? null;
+  async findVote(userId: string, caseId: string, weekKey: string) {
+    return this.votes.find((v) => v.userId === userId && v.caseId === caseId && v.weekKey === weekKey) ?? null;
   }
-  async countVotes(caseId: string) {
+  async countVotes(caseId: string, weekKey: string) {
     const counts: number[] = [];
-    for (const v of this.votes.filter((x) => x.caseId === caseId)) counts[v.choice] = (counts[v.choice] ?? 0) + 1;
+    for (const v of this.votes.filter((x) => x.caseId === caseId && x.weekKey === weekKey))
+      counts[v.choice] = (counts[v.choice] ?? 0) + 1;
     return Array.from(counts, (c) => c ?? 0);
   }
   async countUserVotes(userId: string) {
@@ -633,6 +647,47 @@ export class InMemoryEngagementRepository implements EngagementRepository {
   async findUserByFriendCode(code: string) {
     return [...this.codes].find(([, c]) => c === code)?.[0] ?? null;
   }
+  requests: FriendRequest[] = [];
+  async createFriendRequest(requesterId: string, addresseeId: string) {
+    const existing = this.requests.find((r) => r.requesterId === requesterId && r.addresseeId === addresseeId);
+    if (existing) {
+      if (existing.status === 'PENDING') return { request: existing, created: false };
+      // Recusado (ou amizade desfeita): dá pra pedir de novo.
+      Object.assign(existing, { status: 'PENDING', createdAt: new Date(), respondedAt: null });
+      return { request: existing, created: true };
+    }
+    const request: FriendRequest = {
+      id: randomUUID(),
+      requesterId,
+      addresseeId,
+      status: 'PENDING',
+      createdAt: new Date(),
+      respondedAt: null,
+    };
+    this.requests.push(request);
+    return { request, created: true };
+  }
+  async findFriendRequest(a: string, b: string) {
+    return (
+      this.requests.find(
+        (r) => (r.requesterId === a && r.addresseeId === b) || (r.requesterId === b && r.addresseeId === a),
+      ) ?? null
+    );
+  }
+  async listIncomingFriendRequests(userId: string) {
+    return this.requests.filter((r) => r.addresseeId === userId && r.status === 'PENDING');
+  }
+  async listOutgoingFriendRequests(userId: string) {
+    return this.requests.filter((r) => r.requesterId === userId && r.status === 'PENDING');
+  }
+  async respondFriendRequest(id: string, userId: string, accept: boolean, at: Date) {
+    const r = this.requests.find((x) => x.id === id);
+    if (!r || r.addresseeId !== userId || r.status !== 'PENDING') return null;
+    r.status = accept ? 'ACCEPTED' : 'DECLINED';
+    r.respondedAt = at;
+    if (accept) await this.addFriend(r.requesterId, r.addresseeId);
+    return r;
+  }
   async addFriend(a: string, b: string) {
     for (const [x, y] of [
       [a, b],
@@ -732,11 +787,7 @@ export class InMemoryTostaoAutoRepository implements TostaoAutoRepository {
       this.insights.push(created);
       return { insight: created, created: true };
     }
-    const reopenUncat =
-      existing.status === 'APPLIED' &&
-      data.kind === 'uncategorized_batch' &&
-      typeof data.payload.latestTxId === 'string' &&
-      data.payload.latestTxId !== existing.payload.latestTxId;
+    const reopenUncat = shouldReopenInsight(existing, data);
 
     if (existing.status === 'PENDING' || reopenUncat) {
       existing.title = data.title;

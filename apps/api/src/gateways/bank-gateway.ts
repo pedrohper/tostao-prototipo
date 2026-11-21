@@ -33,6 +33,11 @@ export type BankTransactionData = {
   /** Já com sinal do Tostão: negativo = saiu. */
   amountInCents: number;
   occurredAt: Date;
+  /**
+   * O banco só informou o DIA (sem hora). A hora que guardamos (meio-dia de Brasília) é inventada, então comparar
+   * com "agora" descarta, de manhã, o que aconteceu hoje. Date-only vale até o FIM do dia civil.
+   */
+  dateOnly?: boolean;
   /** Cartão: fatura já fechada a que a transação pertence. Sem isso = fatura aberta (ou o banco não informa). */
   billId?: string | null;
   /** Nome limpo do estabelecimento quando o provedor identifica (ex.: Pluggy merchant.name). */

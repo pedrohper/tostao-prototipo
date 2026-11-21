@@ -17,8 +17,15 @@ const NETFLIX_DAY = new Date(Date.UTC(2026, 10, 9, 15));
 describe('descriptionsLookAlike', () => {
   it('casa palavra em comum, sem acento nem caixa', () => {
     expect(descriptionsLookAlike('Netflix', 'NETFLIX.COM')).toBe(true);
-    expect(descriptionsLookAlike('Pizza', 'IFOOD *PIZZARIA BELLA')).toBe(true);
-    expect(descriptionsLookAlike('Açaí do Zé', 'IFD*ACAI DO ZE')).toBe(true);
+    expect(descriptionsLookAlike('Pizza Bella', 'IFOOD *PIZZARIA BELLA')).toBe(true); // 2 palavras em comum
+    expect(descriptionsLookAlike('Spotify Premium', 'SPOTIFY PREMIUM BR')).toBe(true);
+  });
+  it('correspondência fraca não casa: uma palavra só curta (até 5 letras) ou genérica', () => {
+    expect(descriptionsLookAlike('Pizza', 'IFOOD *PIZZARIA BELLA')).toBe(false); // 5 letras só
+    expect(descriptionsLookAlike('Açaí do Zé', 'IFD*ACAI DO ZE')).toBe(false); // só "acai"
+    for (const generic of ['Mercado', 'Casa', 'Loja', 'Pago', 'Pix'])
+      expect(descriptionsLookAlike(generic, `${generic.toUpperCase()} CENTRAL DO BAIRRO`)).toBe(false);
+    expect(descriptionsLookAlike('Mercado Livre', 'MERCADO LIVRE SP')).toBe(true); // 2 palavras
   });
   it('ignora ruído de extrato e parcelas', () => {
     expect(descriptionsLookAlike('Pix', 'PIX ENVIADO')).toBe(false);

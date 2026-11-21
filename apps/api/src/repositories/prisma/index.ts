@@ -2,6 +2,7 @@
 // Repare que a assinatura é a mesma dos em memória: o use case nem percebe a troca.
 import type { Prisma, PrismaClient } from '@prisma/client';
 import { toBigCents, toCents, toCentsOrNull } from '../../lib/money.js';
+import { shouldReopenInsight } from '../../services/insight-reopen.js';
 import { ConflictError, ForbiddenError } from '../../domain/errors.js';
 import type {
   Account,
@@ -22,6 +23,7 @@ import type {
   OAuthProvider,
   OutboxJob,
   UserConsent,
+  FriendRequest,
 } from '../../domain/entities.js';
 import type { FinancialPlan, UpdateTostaoAutoConfigBody } from '@tostao/contracts';
 import type {
@@ -173,6 +175,11 @@ class PrismaBankConnectionsRepository implements BankConnectionsRepository {
   async listActive() {
     return (await this.db.bankConnection.findMany({ where: { status: 'ACTIVE' } })) as BankConnection[];
   }
+  async listRetryable(before: Date) {
+    return (await this.db.bankConnection.findMany({
+      where: { status: 'ERROR', OR: [{ lastErrorAt: null }, { lastErrorAt: { lte: before } }] },
+    })) as BankConnection[];
+  }
   async create(data: Pick<BankConnection, 'userId' | 'itemId' | 'institution'>) {
     try {
       return (await this.db.bankConnection.create({ data })) as BankConnection;
@@ -182,8 +189,11 @@ class PrismaBankConnectionsRepository implements BankConnectionsRepository {
       throw err;
     }
   }
-  async save({ id, status, lastSyncedAt, institution }: BankConnection) {
-    await this.db.bankConnection.update({ where: { id }, data: { status, lastSyncedAt, institution } });
+  async save({ id, status, lastSyncedAt, institution, errorCount, lastErrorAt }: BankConnection) {
+    await this.db.bankConnection.update({
+      where: { id },
+      data: { status, lastSyncedAt, institution, errorCount, lastErrorAt },
+    });
   }
   // onDelete: Cascade no schema leva junto contas e transações dessa conexão
   async delete(id: string) {
@@ -222,6 +232,10 @@ class PrismaAccountsRepository implements AccountsRepository {
   }
   async setHidden(id: string, hidden: boolean) {
     await this.db.account.update({ where: { id }, data: { hidden } });
+  }
+  async adjustBalance(id: string, deltaInCents: number) {
+    // increment: o Postgres faz balance = balance + delta numa instrução só (sem ler e regravar).
+    await this.db.account.update({ where: { id }, data: { balanceInCents: { increment: toBigCents(deltaInCents) } } });
   }
 }
 
@@ -302,6 +316,7 @@ class PrismaTransactionsRepository implements TransactionsRepository {
     id,
     categoryId,
     isInternalTransfer,
+    internalTransferManual,
     description,
     amountInCents,
     occurredAt,
@@ -313,6 +328,7 @@ class PrismaTransactionsRepository implements TransactionsRepository {
       data: {
         categoryId,
         isInternalTransfer,
+        ...(internalTransferManual !== undefined ? { internalTransferManual } : {}),
         description,
         amountInCents: toBigCents(amountInCents),
         occurredAt,
@@ -416,18 +432,23 @@ const MAX_VERSION_RETRIES = 3;
 
 class PrismaGamesRepository implements GamesRepository {
   constructor(private db: Db) {}
-  async vote(userId: string, caseId: string, choice: number) {
-    await this.db.tribunalVote.upsert({
-      where: { userId_caseId: { userId, caseId } },
-      create: { userId, caseId, choice },
-      update: { choice, votedAt: new Date() },
+  async vote(userId: string, caseId: string, weekKey: string, choice: number) {
+    // INSERT ... ON CONFLICT DO NOTHING na PK (user, caso, semana): voto já dado nunca é trocado, nem numa corrida.
+    const r = await this.db.tribunalVote.createMany({
+      data: [{ userId, caseId, weekKey, choice }],
+      skipDuplicates: true,
     });
+    return r.count === 1;
   }
-  findVote(userId: string, caseId: string) {
-    return this.db.tribunalVote.findUnique({ where: { userId_caseId: { userId, caseId } } });
+  findVote(userId: string, caseId: string, weekKey: string) {
+    return this.db.tribunalVote.findUnique({ where: { userId_caseId_weekKey: { userId, caseId, weekKey } } });
   }
-  async countVotes(caseId: string) {
-    const rows = await this.db.tribunalVote.groupBy({ by: ['choice'], where: { caseId }, _count: { _all: true } });
+  async countVotes(caseId: string, weekKey: string) {
+    const rows = await this.db.tribunalVote.groupBy({
+      by: ['choice'],
+      where: { caseId, weekKey },
+      _count: { _all: true },
+    });
     const counts: number[] = [];
     for (const r of rows) counts[r.choice] = r._count._all;
     return Array.from(counts, (c) => c ?? 0);
@@ -730,6 +751,70 @@ class PrismaEngagementRepository implements EngagementRepository {
   async findUserByFriendCode(code: string) {
     return (await this.db.friendCode.findUnique({ where: { code } }))?.userId ?? null;
   }
+  async createFriendRequest(requesterId: string, addresseeId: string) {
+    const inserted = await this.db.friendRequest.createMany({
+      data: [{ requesterId, addresseeId }],
+      skipDuplicates: true,
+    });
+    if (inserted.count === 0) {
+      // Já existia: se foi respondido (recusado/aceito e depois desfeito), reabre; pendente fica como está.
+      const reopened = await this.db.friendRequest.updateMany({
+        where: { requesterId, addresseeId, status: { not: 'PENDING' } },
+        data: { status: 'PENDING', createdAt: new Date(), respondedAt: null },
+      });
+      const request = await this.db.friendRequest.findUniqueOrThrow({
+        where: { requesterId_addresseeId: { requesterId, addresseeId } },
+      });
+      return { request: request as FriendRequest, created: reopened.count === 1 };
+    }
+    const request = await this.db.friendRequest.findUniqueOrThrow({
+      where: { requesterId_addresseeId: { requesterId, addresseeId } },
+    });
+    return { request: request as FriendRequest, created: true };
+  }
+  async findFriendRequest(a: string, b: string) {
+    return (await this.db.friendRequest.findFirst({
+      where: {
+        OR: [
+          { requesterId: a, addresseeId: b },
+          { requesterId: b, addresseeId: a },
+        ],
+      },
+    })) as FriendRequest | null;
+  }
+  async listIncomingFriendRequests(userId: string) {
+    return (await this.db.friendRequest.findMany({
+      where: { addresseeId: userId, status: 'PENDING' },
+      orderBy: { createdAt: 'asc' },
+    })) as FriendRequest[];
+  }
+  async listOutgoingFriendRequests(userId: string) {
+    return (await this.db.friendRequest.findMany({
+      where: { requesterId: userId, status: 'PENDING' },
+      orderBy: { createdAt: 'asc' },
+    })) as FriendRequest[];
+  }
+  async respondFriendRequest(id: string, userId: string, accept: boolean, at: Date) {
+    return inTx(this.db, async (tx) => {
+      // UPDATE condicional: só um "aceitar/recusar" ganha, e só quem recebeu o pedido.
+      const won = await tx.friendRequest.updateMany({
+        where: { id, addresseeId: userId, status: 'PENDING' },
+        data: { status: accept ? 'ACCEPTED' : 'DECLINED', respondedAt: at },
+      });
+      if (won.count !== 1) return null;
+      const request = await tx.friendRequest.findUniqueOrThrow({ where: { id } });
+      if (accept) {
+        await tx.friendship.createMany({
+          data: [
+            { userId: request.requesterId, friendId: request.addresseeId },
+            { userId: request.addresseeId, friendId: request.requesterId },
+          ],
+          skipDuplicates: true,
+        });
+      }
+      return request as FriendRequest;
+    });
+  }
   async addFriend(a: string, b: string) {
     await this.db.friendship.createMany({
       data: [
@@ -885,11 +970,7 @@ class PrismaTostaoAutoRepository implements TostaoAutoRepository {
       if (inserted.count === 1) return { insight: mapInsight(existing), created: true };
 
       const prevPayload = (existing.payload ?? {}) as Record<string, unknown>;
-      const reopenUncat =
-        existing.status === 'APPLIED' &&
-        data.kind === 'uncategorized_batch' &&
-        typeof data.payload.latestTxId === 'string' &&
-        data.payload.latestTxId !== prevPayload.latestTxId;
+      const reopenUncat = shouldReopenInsight({ status: existing.status, payload: prevPayload }, data);
 
       if (existing.status === 'PENDING' || reopenUncat) {
         const updated = await tx.tostaoInsight.update({
