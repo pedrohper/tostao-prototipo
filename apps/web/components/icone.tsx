@@ -1,5 +1,6 @@
 import React from 'react';
 import iconOverrides from '@/lib/icon-overrides.json';
+import { ImgWithFallback } from './img-with-fallback';
 
 const OVERRIDES = iconOverrides as Record<string, string>;
 
@@ -476,18 +477,15 @@ export function Icon({ src, size = 24, alt = '', className = '' }: IconProps) {
     );
   }
   return (
-    <img
+    <ImgWithFallback
       src={`/icones/${src}.svg`}
+      fallbackSrc={`/icones/${src}.png`}
       width={size}
       height={size}
       alt={alt}
       aria-hidden={alt ? undefined : true}
       className={`shrink-0 ${className}`}
       draggable={false}
-      onError={(e) => {
-        // Fallback pro PNG se o SVG falhar
-        e.currentTarget.src = `/icones/${src}.png`;
-      }}
     />
   );
 }

@@ -7,5 +7,5 @@ export default defineConfig({
   resolve: { alias: { '@': fileURLToPath(new URL('./', import.meta.url)) } },
   // O tsconfig do Next usa jsx: preserve; no vitest o esbuild precisa transformar o JSX dos .spec.tsx.
   esbuild: { jsx: 'automatic' },
-  test: { include: ['lib/**/*.spec.ts', 'components/**/*.spec.tsx'], environment: 'node' },
+  test: { include: ['lib/**/*.spec.{ts,tsx}', 'components/**/*.spec.tsx'], environment: 'node' },
 });

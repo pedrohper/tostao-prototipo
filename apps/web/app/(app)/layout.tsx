@@ -6,6 +6,7 @@ import { SidebarFooter } from '@/components/lateral';
 import { OnboardingShell } from '@/components/onboarding-shell';
 import { ToastProvider } from '@/components/toast';
 import { FlashToastBridge } from '@/components/flash-toast-bridge';
+import { ServiceWorkerRegister } from '@/components/sw-register';
 
 import { NO_PROGRESS, xpFrom } from '@/lib/xp';
 
@@ -48,6 +49,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </OnboardingShell>
       <TapSoundListener />
       <FlashToastBridge locale={locale} />
+      <ServiceWorkerRegister />
     </ToastProvider>
   );
 }

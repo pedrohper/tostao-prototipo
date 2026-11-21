@@ -1,5 +1,5 @@
 // Sincronização automática: todo dia de manhã, puxa o extrato de todo mundo.
-// Atalho do protótipo: roda dentro do próprio processo da API (croner). Em produção, vira um worker separado ou um cron do provedor.
+// Atalho de desenvolvimento: roda dentro do próprio processo da API (croner). Em produção, vira um worker separado ou um cron do provedor.
 import { Cron } from 'croner';
 import type { Repositories } from '../repositories/types.js';
 import type { SyncBankConnectionUseCase } from '../use-cases/sync-bank-connection.js';

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { BattlesResponse } from '@tostao/contracts';
+import { ExportDataButton } from '@/components/export-data-button';
 import { Mascot } from '@/components/mascote';
 import { BackLink, Eyebrow, PageFrame } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -121,6 +122,13 @@ export default async function PerfilPage({ searchParams }: { searchParams?: Prom
             ›
           </span>
         </Link>
+        <ExportDataButton
+          label={t.profile.exportData}
+          busyLabel={t.profile.exportDataBusy}
+          successMessage={t.profile.exportDataDone}
+          errorMessage={t.profile.exportDataError}
+          className="flex min-h-12 w-full cursor-pointer items-center justify-between gap-3 text-left text-[15px] font-semibold text-tinta hover:opacity-80 disabled:opacity-60"
+        />
         <Link
           href="/perfil/apagar-conta?voltar=/perfil"
           className="flex min-h-12 items-center justify-between gap-3 text-[15px] font-semibold text-vermelho-texto no-underline hover:underline"

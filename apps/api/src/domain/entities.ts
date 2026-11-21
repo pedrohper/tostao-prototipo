@@ -223,7 +223,8 @@ export type UserConsent = {
 };
 
 /** Evento de segurança. userId vira null se a conta for apagada. */
-export type AuditAction = 'password_reset' | 'account_deleted' | 'consent_changed' | 'refresh_reuse_detected';
+export type AuditAction =
+  'password_reset' | 'account_deleted' | 'consent_changed' | 'refresh_reuse_detected' | 'data_exported';
 export type AuditLog = {
   id: string;
   userId: string | null;

@@ -82,7 +82,6 @@ export default async function ConectarPage({
     },
   ];
 
-  const showDevNotes = process.env.NODE_ENV !== 'production';
   const connectedBanks =
     me.connections.length > 0 ? (
       <section className="flex flex-col gap-2.5 pt-1">
@@ -229,13 +228,6 @@ export default async function ConectarPage({
               </>
             ) : (
               <>
-                {showDevNotes && (
-                  <p className="text-[13px] leading-relaxed text-tinta-suave">
-                    {p.fakeBodyBefore}
-                    <code>BANK_GATEWAY=fake</code>
-                    {p.fakeBodyAfter}
-                  </p>
-                )}
                 <ConnectPanel widget={false} novo locale={locale} />
               </>
             )}
@@ -327,40 +319,29 @@ export default async function ConectarPage({
         <div id="banco" className="flex scroll-mt-6 flex-col gap-4">
           <h2 className="pt-2 font-display text-xl font-extrabold lg:pt-0 lg:text-2xl">{p.sectionTitle}</h2>
 
-          {(widget || showDevNotes) && (
+          {widget && (
             <div className="flex flex-col gap-2.5 rounded-[20px] border border-linha bg-papel-2 p-4">
-              {widget ? (
-                <>
-                  <Eyebrow>{p.howTitle}</Eyebrow>
-                  <ol className="list-decimal space-y-1 pl-5 text-[14px] leading-relaxed text-tinta">
-                    <li>{p.howSteps[0]}</li>
-                    <li>
-                      {p.howSteps[1]}
-                      <b>MeuPluggy</b>
-                      {p.howSteps[2]}
-                      <a
-                        href="https://meu.pluggy.ai"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-semibold underline"
-                      >
-                        meu.pluggy.ai
-                      </a>
-                      {p.howSteps[3] ? '' : ''}
-                    </li>
-                    <li>{p.howSteps[3]}</li>
-                  </ol>
-                </>
-              ) : (
-                <>
-                  <h3 className="font-display text-lg font-extrabold">{p.fakeTitle}</h3>
-                  <p className="text-[14px] leading-relaxed text-tinta-suave">
-                    {p.fakeBodyBefore}
-                    <code>BANK_GATEWAY=fake</code>
-                    {p.fakeBodyAfter}
-                  </p>
-                </>
-              )}
+              <>
+                <Eyebrow>{p.howTitle}</Eyebrow>
+                <ol className="list-decimal space-y-1 pl-5 text-[14px] leading-relaxed text-tinta">
+                  <li>{p.howSteps[0]}</li>
+                  <li>
+                    {p.howSteps[1]}
+                    <b>MeuPluggy</b>
+                    {p.howSteps[2]}
+                    <a
+                      href="https://meu.pluggy.ai"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-semibold underline"
+                    >
+                      meu.pluggy.ai
+                    </a>
+                    {p.howSteps[3] ? '' : ''}
+                  </li>
+                  <li>{p.howSteps[3]}</li>
+                </ol>
+              </>
             </div>
           )}
 

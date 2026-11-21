@@ -13,6 +13,17 @@ export function accountRoutes(app: FastifyInstance, uc: UseCases, limits: Limite
     return reply.send({ deleted: true, providerFailures } satisfies DeleteAccountResponse);
   });
 
+  // Portabilidade LGPD (art. 18, V): baixa tudo que o Tostão guarda da pessoa, num JSON. 2 por dia, com AuditLog.
+  // Só olha o `sub` do token: não existe parâmetro de id, então não há como pedir os dados de outra pessoa.
+  app.get('/me/export', { onRequest: verifyJwt, preHandler: limits.exportByUser }, async (request, reply) => {
+    const { fileName, data } = await uc.exportUserData.execute({ userId: request.user.sub, ipAddress: request.ip });
+    return reply
+      .header('content-disposition', `attachment; filename="${fileName}"`)
+      .header('cache-control', 'no-store, private')
+      .type('application/json; charset=utf-8')
+      .send(JSON.stringify(data, null, 2));
+  });
+
   // Consentimento LGPD pra usar IA. Sem ele, /chat, /transactions/auto-categorize e a IA do WhatsApp respondem 403.
   app.patch('/me/consents', { onRequest: verifyJwt }, async (request) => {
     const { aiConsent } = consentsBody.parse(request.body);

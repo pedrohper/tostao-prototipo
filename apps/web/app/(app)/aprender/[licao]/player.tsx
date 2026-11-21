@@ -1,5 +1,4 @@
 'use client';
-import { Icon } from '@/components/icone';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -16,6 +15,7 @@ import { markLessonDone } from '../actions';
 import { Mascot, type MascotPose } from '@/components/mascote';
 import { Selo } from '@/components/selo';
 import { Button } from '@/components/ui';
+import { useToast } from '@/components/toast';
 import { Confetti } from '@/components/confete';
 import { SIMULATORS } from './simulators';
 
@@ -84,6 +84,7 @@ export function LessonPlayer({
   userContext = null,
 }: Props) {
   const router = useRouter();
+  const toast = useToast();
   const dict = getDictionary(locale);
   const t = dict.pages.learnExtra;
   const tl = dict.growth.learn;
@@ -113,9 +114,12 @@ export function LessonPlayer({
   const advance = () => {
     if (step === 3) {
       playSound('festa');
-      void markLessonDone(lesson.id).then((updated) => {
-        if (updated) setMissions(updated);
-      });
+      markLessonDone(lesson.id)
+        .then((updated) => {
+          if (updated) setMissions(updated);
+        })
+        // Sem isto a falha (API fora, sessão) sumia em silêncio e a pessoa achava que o XP tinha sido dado.
+        .catch(() => toast.error(dict.system.actionFailed));
     }
     setStep(step + 1);
   };
@@ -127,7 +131,8 @@ export function LessonPlayer({
       saved[lesson.id] = new Date().toISOString();
       localStorage.setItem(key, JSON.stringify(saved));
     } catch {
-      /* segue sem persistência local */
+      // Armazenamento bloqueado (aba anônima, cota cheia): o desafio segue, mas a pessoa sabe que não ficou salvo.
+      toast.error(dict.system.actionFailed);
     }
     playSound('missao');
     setChallengeAccepted(true);
@@ -207,15 +212,10 @@ export function LessonPlayer({
               {Sim ? (
                 <Sim locale={locale} userContext={userContext} />
               ) : (
-                <>
-                  <p className="text-[15px]">
-                    {lesson.simulator.description.charAt(0).toUpperCase() + lesson.simulator.description.slice(1)}
-                  </p>
-                  <p className="flex items-center gap-2 rounded-xl bg-papel-2 p-3 text-sm text-tinta-suave">
-                    <Icon src="ui/em-construcao" size={28} />
-                    {t.simulatorWip}
-                  </p>
-                </>
+                // Toda lição tem simulador (simulators.spec garante); este é só o seguro contra um id novo sem simulador.
+                <p className="text-[15px]">
+                  {lesson.simulator.description.charAt(0).toUpperCase() + lesson.simulator.description.slice(1)}
+                </p>
               )}
             </div>
           )}

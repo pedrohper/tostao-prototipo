@@ -53,7 +53,7 @@ export async function api<T>(
       ...(init.revalidate !== undefined ? { next: { revalidate: init.revalidate } } : { cache: 'no-store' as const }),
     });
   } catch {
-    throw new ApiError('A API tá fora do ar. Ela tá rodando? (pnpm dev na raiz)', 503);
+    throw new ApiError('Não consegui falar com o servidor agora. Tenta de novo em instantes.', 503);
   }
 
   // skipAuthRedirect (ex.: o próprio login) vem ANTES de olhar o cookie: 401 ali é "senha errada", não "sessão vencida".

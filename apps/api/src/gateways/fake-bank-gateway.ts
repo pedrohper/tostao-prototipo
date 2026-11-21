@@ -1,7 +1,7 @@
 import type { BankAccountData, BankGateway, BankItemData, BankTransactionData } from './bank-gateway.js';
 
 /**
- * Banco de mentira com os números das telas do protótipo.
+ * Banco de mentira com números de exemplo (desenvolvimento e testes).
  * Usa o mês atual, então sempre tem dado "de agora". Serve pra testar sem Pluggy.
  * Qualquer Item ID funciona.
  */

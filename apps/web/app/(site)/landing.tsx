@@ -11,6 +11,7 @@ import s from './site.module.css';
 const MODULOS = [
   'Saindo da neblina',
   'Cartão sem armadilha',
+  'Batalha contra a dívida',
   'Construindo o muro',
   'Investir em você',
   'Primeiro salário',
@@ -219,7 +220,7 @@ export function Landing({
             </h2>
             <p className={s.lead}>
               Do primeiro salário ao primeiro investimento, em 9 módulos. Você vê o conceito, brinca com os números e
-              sai com um desafio que o app confere no extrato.
+              sai com um desafio pra colocar em prática.
             </p>
             <div className={s.mods}>
               {MODULOS.map((m, i) => (
