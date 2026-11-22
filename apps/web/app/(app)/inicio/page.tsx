@@ -696,6 +696,10 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     changeLabel: spendingChangeLabel,
     openBillsLabel: openBillsInCents > 0 ? t.growth.home.openBills(money(openBillsInCents)) : null,
     connectCta: noAccounts ? { label: t.growth.home.connectCta, href: '/conectar?voltar=/inicio' } : null,
+    monthStatus: {
+      label: isMonthInGreen ? t.home.monthInGreen : t.home.monthTight,
+      inGreen: isMonthInGreen,
+    },
   };
 
   const balanceCard = <MobileBalanceCard {...balanceProps} />;
@@ -1138,9 +1142,9 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
               locale={locale}
               label={t.nav.streakDays(missions?.streakDays ?? progress.streakDays)}
             />
-            {/* Mobile: pílula compacta (sem saudação, o espaço é do seletor de mês + ofensiva + status). */}
+            {/* Desktop: status fica no topo; no mobile ele desce pro cartão de saldo (evita aperto/scroll no header). */}
             <span
-              className={`flex h-8 items-center rounded-full px-2.5 text-xs font-bold whitespace-nowrap lg:h-10 lg:px-4 lg:text-sm ${
+              className={`hidden h-10 items-center rounded-full px-4 text-sm font-bold whitespace-nowrap lg:flex ${
                 isMonthInGreen ? 'bg-menta-clara text-verde-texto' : 'bg-rosa text-vermelho-texto'
               }`}
             >
@@ -1178,7 +1182,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
             )}
 
             {/* Mobile & Tablet (< lg) */}
-            <div className="flex flex-col gap-6 lg:hidden">
+            <div className="flex min-w-0 flex-col gap-6 lg:hidden">
               {visibleSections.map((id) => (
                 <Fragment key={id}>{sectionsById[id]}</Fragment>
               ))}

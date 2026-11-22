@@ -18,14 +18,26 @@ describe('Home mobile (inicio/page.tsx)', () => {
     expect(page).not.toContain('firstName');
   });
 
-  it('mantém seletor de mês, ofensiva e o badge do mês no cabeçalho, em tamanho compacto no mobile', () => {
-    const header = page.slice(page.indexOf('<header className="flex items-center justify-between'));
+  it('mantém seletor de mês e ofensiva no cabeçalho mobile, e move o badge do mês pra baixo do saldo centralizado', () => {
+    const header = page.slice(
+      page.indexOf('<header className="flex items-center justify-between'),
+      page.indexOf('</header>'),
+    );
+    const balanceCard = read('app/(app)/inicio/balance-card.tsx');
     expect(header).toContain('{monthSelector}');
     expect(header).toContain('<StreakModalButton');
-    expect(header).toContain('t.home.monthInGreen');
-    expect(header).toContain('t.home.monthTight');
-    expect(header).toMatch(/flex h-8 items-center[^`]*lg:h-10/); // visível no mobile (antes: hidden lg:flex)
-    expect(header).not.toMatch(/hidden h-10 items-center[^`]*lg:flex/);
+    expect(header).toContain('hidden h-10 items-center'); // status só fica no header no desktop (lg:flex)
+    expect(header).toContain('lg:flex');
+    expect(page).toContain('monthStatus:');
+    expect(balanceCard).toContain('flex-col items-center gap-2 text-center');
+    expect(balanceCard).toContain('{monthStatus && (');
+  });
+
+  it('carrossel PlanejarAtalhos inclui anotar, anotações e importar', () => {
+    const carousel = read('app/(app)/inicio/planejar-atalhos.tsx');
+    expect(carousel).toContain('/anotar');
+    expect(carousel).toContain('/anotacoes');
+    expect(carousel).toContain('/importar');
   });
 
   it('o Tostão compacto saiu da Home mobile e continua no desktop', () => {

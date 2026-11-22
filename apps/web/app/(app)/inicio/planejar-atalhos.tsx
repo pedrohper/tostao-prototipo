@@ -27,6 +27,20 @@ export function PlanejarAtalhos({ t }: { t: Dictionary }) {
       tone: 'bg-laranja text-papel',
       label: t.home.shortcutAnnotate,
     },
+    {
+      id: 'anotacoes',
+      href: `/anotacoes${back}`,
+      icon: 'cat/taxas',
+      tone: 'bg-amarelo-claro text-tinta',
+      label: titles.notes,
+    },
+    {
+      id: 'importar',
+      href: `/importar${back}`,
+      icon: 'conectar/extrato',
+      tone: 'bg-menta-clara text-verde-texto',
+      label: t.pages.importar.title,
+    },
     { id: 'acertos', href: `/acertos${back}`, icon: 'cat/role', tone: 'bg-azul text-tinta', label: titles.splits },
     {
       id: 'assinaturas',
