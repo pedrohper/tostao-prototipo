@@ -18,7 +18,7 @@ describe('Home mobile (inicio/page.tsx)', () => {
     expect(page).not.toContain('firstName');
   });
 
-  it('mantém seletor de mês e ofensiva no cabeçalho mobile, e move o badge do mês pra baixo do saldo centralizado', () => {
+  it('mantém seletor de mês e ofensiva no cabeçalho sem a pílula de status do mês e centraliza o saldo mobile', () => {
     const header = page.slice(
       page.indexOf('<header className="flex items-center justify-between'),
       page.indexOf('</header>'),
@@ -26,11 +26,10 @@ describe('Home mobile (inicio/page.tsx)', () => {
     const balanceCard = read('app/(app)/inicio/balance-card.tsx');
     expect(header).toContain('{monthSelector}');
     expect(header).toContain('<StreakModalButton');
-    expect(header).toContain('hidden h-10 items-center'); // status só fica no header no desktop (lg:flex)
-    expect(header).toContain('lg:flex');
-    expect(page).toContain('monthStatus:');
+    expect(page).not.toContain('t.home.monthInGreen');
+    expect(page).not.toContain('monthStatus');
     expect(balanceCard).toContain('flex-col items-center gap-2 text-center');
-    expect(balanceCard).toContain('{monthStatus && (');
+    expect(balanceCard).not.toContain('monthStatus');
   });
 
   it('carrossel PlanejarAtalhos inclui anotar, anotações e importar', () => {
@@ -46,16 +45,20 @@ describe('Home mobile (inicio/page.tsx)', () => {
     expect(page).toContain('<AskTostaoCard locale={locale} />'); // desktop (2 colunas)
   });
 
-  it('anotar vira botão flutuante (fab), não mais a pílula inline', () => {
-    expect(page).toContain('<QuickAddButton variant="fab"');
+  it('anotar vira botão flutuante (fab) sem "+" duplicado e aparece na Carteira também', () => {
+    expect(page).toContain('<QuickAddButton variant="fab" label={t.nav.addExpense}');
     expect(page).not.toContain('<QuickAddButton variant="inline"');
+    const carteira = read('app/(app)/carteira/page.tsx');
+    expect(carteira).toContain('<QuickAddButton variant="fab" label={t.nav.addExpense}');
+    expect(carteira).not.toContain("aba === 'extrato' && <QuickAddButton");
   });
 });
 
 describe('QuickAddButton fab', () => {
   const sheet = read('components/quick-add-sheet.tsx');
   const fab = sheet.slice(sheet.indexOf("variant === 'fab'"), sheet.indexOf(": 'flex h-11"));
-  it('laranja (bg-laranja text-tinta-fixa), acima da tab bar, e some no desktop', () => {
+  it('laranja (bg-laranja text-tinta-fixa), acima da tab bar, sem "+" duplicado e some no desktop', () => {
+    expect(sheet).toContain("label.replace(/^\\+\\s*/, '')");
     expect(fab).toContain('bg-laranja');
     expect(fab).toContain('text-tinta-fixa');
     expect(fab).toContain('fixed');
