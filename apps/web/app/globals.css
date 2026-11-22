@@ -201,9 +201,11 @@
   }
 }
 
-/* Cada tela entra em cascata: os blocos de cima primeiro (template.tsx remonta a cada navegação). */
+/* Cada tela entra em cascata: os blocos de cima primeiro (template.tsx remonta a cada navegação).
+   Usa `backwards` (e não `both`/`forwards`) para não manter containing block de `transform` após 0.38s,
+   o que quebraria `position: fixed` (FAB "+ Anotar gasto" e modais) no Chrome Android e Safari iOS. */
 .tela > * > * {
-  animation: sobe 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: sobe 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 .tela > * > :nth-child(2) {
   animation-delay: 0.04s;
@@ -223,8 +225,9 @@
 .tela > * > :nth-child(n + 7) {
   animation-delay: 0.24s;
 }
-/* O botão flutuante "Anotar gasto" é sticky: transform nele quebraria o sticky no Safari antigo. */
-.tela > * > .sticky {
+/* Elementos sticky/fixed não entram na animação de transform para não perderem a referência da viewport. */
+.tela > * > .sticky,
+.tela > * > .fixed {
   animation-name: none;
 }
 
