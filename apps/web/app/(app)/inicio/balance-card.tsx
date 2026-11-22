@@ -147,8 +147,6 @@ export interface BalanceCardProps {
   openBillsLabel?: string | null;
   /** Sem conta conectada: botão direto pra /conectar no lugar do texto cinza. */
   connectCta?: { label: string; href: string } | null;
-  /** Pílula "Mês no azul" / "Mês no aperto" exibida centralizada abaixo do saldo no mobile. */
-  monthStatus?: { label: string; inGreen: boolean } | null;
 }
 
 /** Linha de contexto sob os números: variação do mês e faturas abertas. */
@@ -209,7 +207,6 @@ export function MobileBalanceCard({
   changeLabel,
   openBillsLabel,
   connectCta,
-  monthStatus,
 }: BalanceCardProps) {
   const hidden = useHiddenBalance();
   const walletHref = buildWalletHref(month);
@@ -239,15 +236,6 @@ export function MobileBalanceCard({
             <span className="text-[13px] font-semibold text-tinta-suave">{noConnectedBankHint}</span>
             {connectCta && <ConnectCta cta={connectCta} centered />}
           </div>
-        )}
-        {monthStatus && (
-          <span
-            className={`relative z-[1] inline-flex h-7 items-center rounded-full px-3 text-xs font-bold whitespace-nowrap ${
-              monthStatus.inGreen ? 'bg-menta-clara text-verde-texto' : 'bg-rosa text-vermelho-texto'
-            }`}
-          >
-            {monthStatus.label}
-          </span>
         )}
       </div>
 

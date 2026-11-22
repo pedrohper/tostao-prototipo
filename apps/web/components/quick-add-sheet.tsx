@@ -270,6 +270,7 @@ export function QuickAddButton({
   locale?: Locale;
 }) {
   const [open, setOpen] = useState(false);
+  const cleanLabel = variant === 'fab' ? label.replace(/^\+\s*/, '') : label;
   const className =
     variant === 'fab'
       ? 'fixed right-5 bottom-[calc(86px+env(safe-area-inset-bottom))] z-20 flex h-13 items-center gap-2 rounded-full bg-laranja pr-5 pl-4 text-[15px] font-bold text-tinta-fixa shadow-[0_4px_16px_rgba(30,27,24,0.28)] md:bottom-6 lg:hidden'
@@ -291,7 +292,7 @@ export function QuickAddButton({
             <path d="M12 5v14M5 12h14" />
           </svg>
         )}
-        {label}
+        {cleanLabel}
       </button>
       <QuickAddSheet open={open} onClose={() => setOpen(false)} locale={locale} />
     </>

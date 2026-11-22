@@ -930,7 +930,7 @@ export default async function CarteiraPage({
         />
       )}
 
-      {aba === 'extrato' && <QuickAddButton variant="fab" label={t.nav.addExpense} locale={locale} />}
+      <QuickAddButton variant="fab" label={t.nav.addExpense} locale={locale} />
     </DesktopSplitShell>
   );
 }

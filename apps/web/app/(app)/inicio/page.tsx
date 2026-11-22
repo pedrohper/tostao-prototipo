@@ -140,7 +140,6 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     .sort()
     .at(-1);
   const isEmptyState = summary.balanceInCents === null && summary.outcomeInCents === 0 && summary.incomeInCents === 0;
-  const isMonthInGreen = summary.incomeInCents >= summary.outcomeInCents;
   const outcomePct =
     summary.incomeInCents > 0 ? Math.round((summary.outcomeInCents / summary.incomeInCents) * 100) : null;
 
@@ -696,10 +695,6 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     changeLabel: spendingChangeLabel,
     openBillsLabel: openBillsInCents > 0 ? t.growth.home.openBills(money(openBillsInCents)) : null,
     connectCta: noAccounts ? { label: t.growth.home.connectCta, href: '/conectar?voltar=/inicio' } : null,
-    monthStatus: {
-      label: isMonthInGreen ? t.home.monthInGreen : t.home.monthTight,
-      inGreen: isMonthInGreen,
-    },
   };
 
   const balanceCard = <MobileBalanceCard {...balanceProps} />;
@@ -1142,14 +1137,6 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
               locale={locale}
               label={t.nav.streakDays(missions?.streakDays ?? progress.streakDays)}
             />
-            {/* Desktop: status fica no topo; no mobile ele desce pro cartão de saldo (evita aperto/scroll no header). */}
-            <span
-              className={`hidden h-10 items-center rounded-full px-4 text-sm font-bold whitespace-nowrap lg:flex ${
-                isMonthInGreen ? 'bg-menta-clara text-verde-texto' : 'bg-rosa text-vermelho-texto'
-              }`}
-            >
-              {isMonthInGreen ? t.home.monthInGreen : t.home.monthTight}
-            </span>
           </div>
         </header>
 
@@ -1166,7 +1153,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
           <>
             <div className="flex flex-col gap-3 lg:hidden">{balanceCard}</div>
             {/* Mobile: anotar vira botão flutuante (a aba Tostão da barra de baixo já cobre o "perguntar pro Tostão"). */}
-            <QuickAddButton variant="fab" label={t.growth.home.quickAdd} locale={locale} />
+            <QuickAddButton variant="fab" label={t.nav.addExpense} locale={locale} />
             <div className="hidden lg:block">
               <DesktopBalanceRow {...balanceProps} />
             </div>
@@ -1182,7 +1169,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
             )}
 
             {/* Mobile & Tablet (< lg) */}
-            <div className="flex min-w-0 flex-col gap-6 lg:hidden">
+            <div className="flex min-w-0 flex-col gap-6 pb-16 lg:hidden">
               {visibleSections.map((id) => (
                 <Fragment key={id}>{sectionsById[id]}</Fragment>
               ))}
