@@ -1,3 +1,4 @@
+import { isBankSourced } from '../services/app-entries.js';
 import { cardIdentity } from './card-identity.js';
 import type { AccountDetailResponse } from '@tostao/contracts';
 import type { Repositories } from '../repositories/types.js';
@@ -78,12 +79,15 @@ export class AccountDetailUseCase {
           categoryEmoji: c?.emoji ?? null,
           categoryColor: c?.color ?? null,
           accountName: account.name,
+          accountId: account.id,
           isInternalTransfer: t.isInternalTransfer,
-          source: t.externalId ? ('bank' as const) : ('manual' as const),
+          source: isBankSourced(t.externalId) ? ('bank' as const) : ('manual' as const),
           seriesId: t.seriesId ?? null,
           personId: t.personId ?? null,
           note: t.note ?? null,
           customDescription: t.customDescription ?? null,
+          linkedAccountId: t.linkedAccountId ?? null,
+          linkKind: t.linkKind ?? null,
         };
       });
 

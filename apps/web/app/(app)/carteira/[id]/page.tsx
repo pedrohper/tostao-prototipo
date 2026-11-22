@@ -14,6 +14,8 @@ import { NicknameForm } from './nickname-form';
 import { EditManualForm } from './edit-manual-form';
 import { NOTE_MAX } from '@tostao/contracts';
 import { apagarLancamento, saveTransactionNote, toggleInternalTransfer } from '../actions';
+import { getMe } from '@/lib/api-queries';
+import { TransferLinkForms, hasLinkContent, type LinkAccount } from './transfer-link';
 
 /** Bloco com título: separa o que o detalhe tem de formulário (categoria, apelido, nota...) em seções claras. */
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -36,11 +38,16 @@ export default async function CategorizarPage({
   if (!isSafePathSegment(id)) notFound();
   const d = dict.walletExtra.txDetail;
   const back = safeInternalPath(voltar, '/carteira');
-  const [{ transaction: t, rulePattern }, { categories }, { people }] = await Promise.all([
+  const [{ transaction: t, rulePattern }, { categories }, { people }, me] = await Promise.all([
     api<TransactionDetailResponse>(`/transactions/${safePathSegment(id)}`),
     api<{ categories: CategoryDTO[] }>('/categories'),
     api<PeopleResponse>('/people').catch((): PeopleResponse => ({ people: [], owedToYouInCents: 0, youOweInCents: 0 })),
+    getMe().catch(() => null),
   ]);
+  // Contas visíveis da pessoa: destino do "É pagamento de fatura" / "Transferi pra outra conta minha" (T5.2).
+  const linkAccounts: LinkAccount[] = (me?.connections ?? []).flatMap((c) =>
+    c.accounts.filter((a) => !a.hidden).map((a) => ({ id: a.id, name: a.name, type: a.type })),
+  );
   const kind = t.amountInCents > 0 ? 'entrada' : 'saida';
   // Saída mostra categorias de gasto, entrada mostra as de renda. "Não conta" serve pros dois.
   const options = categories.filter((c) => c.kind === kind || c.kind === 'neutra');
@@ -72,17 +79,25 @@ export default async function CategorizarPage({
             <Mascot pose="investigando" size={40} alt="" />
             <p className="text-sm leading-5">{d.transferNotice}</p>
           </div>
-          <form action={toggleInternalTransfer}>
-            <input type="hidden" name="id" value={t.id} />
-            <input type="hidden" name="isInternalTransfer" value="false" />
-            <input type="hidden" name="back" value={back} />
-            <button
-              type="submit"
-              className="flex h-11 w-full items-center justify-center rounded-full border border-linha bg-cartao text-sm font-semibold text-tinta transition-colors hover:bg-papel-2"
-            >
-              {d.undoTransfer}
-            </button>
-          </form>
+          {/* Ligada a uma conta: quem desfaz é o "Desfazer vínculo" (devolve também a contrapartida e o saldo). */}
+          {!t.linkKind && (
+            <form action={toggleInternalTransfer}>
+              <input type="hidden" name="id" value={t.id} />
+              <input type="hidden" name="isInternalTransfer" value="false" />
+              <input type="hidden" name="back" value={back} />
+              <button
+                type="submit"
+                className="flex h-11 w-full items-center justify-center rounded-full border border-linha bg-cartao text-sm font-semibold text-tinta transition-colors hover:bg-papel-2"
+              >
+                {d.undoTransfer}
+              </button>
+            </form>
+          )}
+          {hasLinkContent(t, linkAccounts) && (
+            <Section title="Ligar a outra conta">
+              <TransferLinkForms t={t} accounts={linkAccounts} back={back} />
+            </Section>
+          )}
         </div>
       ) : (
         <>
@@ -129,6 +144,11 @@ export default async function CategorizarPage({
               </button>
             </form>
           </Section>
+          {hasLinkContent(t, linkAccounts) && (
+            <Section title="Ligar a outra conta">
+              <TransferLinkForms t={t} accounts={linkAccounts} back={back} />
+            </Section>
+          )}
           <Acerto
             t={t}
             people={people}

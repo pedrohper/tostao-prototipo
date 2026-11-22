@@ -18,6 +18,7 @@ import { chatRoutes } from './http/controllers/chat.js';
 import { registerN8nRoute, whatsappRoutes } from './http/controllers/whatsapp.js';
 import { DisabledAudioTranscriber, FakeWhatsAppGateway, type AudioTranscriber } from './gateways/whatsapp-gateway.js';
 import { engagementRoutes } from './http/controllers/engagement.js';
+import { automationRoutes } from './http/controllers/automation.js';
 import { investRoutes } from './http/controllers/invest.js';
 import { tostaoAutoRoutes } from './http/controllers/tostao-auto.js';
 import { ReferenceRatesGateway, type RatesGateway } from './gateways/rates-gateway.js';
@@ -185,6 +186,7 @@ export async function buildApp({
   // Entrega o handler do n8n à ponte isolada (http/n8n-bridge.ts); no app principal essa rota não existe.
   app.decorate('registerN8nRoute', (instance: FastifyInstance) => registerN8nRoute(instance, uc, n8nWhatsAppSecret));
   tostaoAutoRoutes(app, uc, limits);
+  automationRoutes(app, uc, limits);
   investRoutes(app, rates);
   return app;
 }

@@ -32,3 +32,13 @@ export function shouldRefresh({
   if (exp === null) return true;
   return exp - nowSeconds <= REFRESH_SKEW_SECONDS;
 }
+
+/** O `sub` (id da pessoa) do access token, SEM validar a assinatura. Só pra amarrar dado temporário à pessoa; nunca pra autorizar. */
+export function accessTokenSub(token: string): string | null {
+  try {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1] ?? '', 'base64url').toString());
+    return typeof payload.sub === 'string' && payload.sub.length > 0 && payload.sub.length <= 64 ? payload.sub : null;
+  } catch {
+    return null;
+  }
+}

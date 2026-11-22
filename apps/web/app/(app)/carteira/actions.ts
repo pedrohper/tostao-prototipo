@@ -16,6 +16,13 @@ import { isSafePathSegment, safeInternalPath, safePathSegment } from '@/lib/safe
 import { rethrowIfRedirect } from '@/lib/rethrow';
 import { flashToast } from '@/lib/flash-toast-server';
 import { recentDescriptions } from '@/lib/quick-add';
+import { recurringBodyFrom } from '@/lib/recurring-form';
+import {
+  reconcileBalanceBody,
+  transferLinkBody,
+  type ReconcileBalanceResponse,
+  type RecurringRulesResponse,
+} from '@tostao/contracts';
 
 export type ActionState = { error?: string; saved?: boolean };
 
@@ -72,8 +79,22 @@ export async function createManual(_: ActionState, form: FormData): Promise<Acti
     note: String(form.get('note') ?? ''),
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
+  // "Lançar sozinho" (T5.2): em vez de pré-lançar 12 meses/parcelas, cria uma REGRA e o app lança cada vencimento no dia.
+  const rule = recurringBodyFrom({
+    cents: parsed.data.amountInCents,
+    kind: parsed.data.kind,
+    repeat: parsed.data.repeat,
+    times: parsed.data.times ?? 2,
+    date: parsed.data.occurredAt,
+    description: parsed.data.description,
+    accountId: parsed.data.accountId ?? null,
+    categoryId: parsed.data.categoryId ?? null,
+    automatic: form.get('automatic') === 'on',
+  });
+  if (rule && !rule.success) return { error: rule.error.issues[0]?.message };
   try {
-    await api('/transactions', { method: 'POST', body: parsed.data });
+    if (rule?.success) await api<RecurringRulesResponse>('/recurring-rules', { method: 'POST', body: rule.data });
+    else await api('/transactions', { method: 'POST', body: parsed.data });
   } catch (e) {
     rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
@@ -278,5 +299,69 @@ export async function loadQuickAddData(): Promise<{ data?: QuickAddData; error?:
   } catch (caught) {
     rethrowIfRedirect(caught);
     return { error: true };
+  }
+}
+
+/**
+ * "É pagamento de fatura" / "Transferi pra outra conta minha" (detalhe do lançamento). `kind=none` desfaz.
+ * Sai dos gastos do mês e, se a outra ponta é conta manual, o app lança a contrapartida e acerta o saldo.
+ */
+export async function linkTransfer(form: FormData) {
+  const id = safePathSegment(form.get('id'));
+  const back = safeInternalPath(form.get('back'), '/carteira');
+  const kind = String(form.get('kind') ?? '');
+  const parsed = transferLinkBody.safeParse({
+    kind,
+    targetAccountId: kind === 'none' ? undefined : String(form.get('targetAccountId') ?? '') || undefined,
+  });
+  if (!parsed.success) {
+    await flashToast(parsed.error.issues[0]?.message ?? 'Escolhe a conta.', 'error');
+    redirect(back);
+  }
+  try {
+    await api(`/transactions/${id}/transfer-link`, { method: 'PATCH', body: parsed.data });
+  } catch (e) {
+    rethrowIfRedirect(e);
+    await flashToast(e instanceof ApiError ? e.message : 'Não consegui ligar agora.', 'error');
+    redirect(back);
+  }
+  revalidateFinance();
+  await flashToast(
+    parsed.data.kind === 'none'
+      ? 'Vínculo desfeito.'
+      : parsed.data.kind === 'card_payment'
+        ? 'Pagamento de fatura ligado. Não conta como gasto.'
+        : 'Transferência ligada. Não conta como gasto.',
+  );
+  redirect(back);
+}
+
+export type ReconcileState = { error?: string; done?: { deltaInCents: number; balanceInCents: number } };
+
+/**
+ * "Conferir / Ajustar saldo atual": a pessoa digita o que o banco mostra. Cartão: o campo é o valor da FATURA
+ * (positivo); por baixo o saldo do cartão é negativo.
+ */
+export async function reconcileBalance(_: ReconcileState, form: FormData): Promise<ReconcileState> {
+  const id = form.get('accountId');
+  if (!isSafePathSegment(id)) return { error: 'Escolhe a conta.' };
+  const cents = parseMoney(String(form.get('balance') ?? ''));
+  if (cents === null) return { error: 'Não entendi o valor. Digita assim: 1.234,56' };
+  const isCard = form.get('isCard') === '1';
+  const parsed = reconcileBalanceBody.safeParse({
+    targetBalanceInCents: isCard ? -Math.abs(cents) : cents,
+    note: String(form.get('note') ?? '') || undefined,
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message };
+  try {
+    const r = await api<ReconcileBalanceResponse>(`/accounts/${safePathSegment(id)}/reconcile-balance`, {
+      method: 'POST',
+      body: parsed.data,
+    });
+    revalidateFinance();
+    return { done: { deltaInCents: r.deltaInCents, balanceInCents: r.balanceInCents } };
+  } catch (e) {
+    rethrowIfRedirect(e);
+    return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
   }
 }

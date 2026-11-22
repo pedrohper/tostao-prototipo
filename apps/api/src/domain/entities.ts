@@ -101,7 +101,47 @@ export type Transaction = {
   note?: string | null;
   /** Apelido dado pela pessoa; a `description` (do banco) fica como está. */
   customDescription?: string | null;
+  /** Conta MANUAL: quando o lançamento passou a pesar no saldo (null = ainda não: data futura). Trava contra aplicar 2x. */
+  balanceAppliedAt?: Date | null;
+  /** Vínculo explícito: o outro lado ("pagamento de fatura" → o cartão; "transferi pra outra conta minha" → a conta). */
+  linkedAccountId?: string | null;
+  linkKind?: 'card_payment' | 'transfer' | null;
   currency?: string;
+  createdAt: Date;
+};
+
+/** Regra de lançamento automático (salário, aluguel, assinatura, parcela). O job diário vira cada vencimento num lançamento. */
+export type RecurringRule = {
+  id: string;
+  userId: string;
+  accountId: string | null;
+  categoryId: string | null;
+  kind: 'saida' | 'entrada';
+  description: string;
+  /** Sempre positivo; `kind` dá o sinal. */
+  amountInCents: number;
+  frequency: 'MONTHLY' | 'WEEKLY' | 'BIWEEKLY';
+  dayOfMonth: number;
+  /** null = sem fim. */
+  totalInstallments: number | null;
+  postedInstallments: number;
+  /** false = só alimenta a previsão; o job não lança. */
+  autoPost: boolean;
+  /** Próximo vencimento (meio-dia do dia civil da pessoa). */
+  nextRunAt: Date;
+  active: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+/** Token de automação (Atalhos do iOS). Só o hash SHA-256 existe no banco. */
+export type AutomationToken = {
+  id: string;
+  userId: string;
+  label: string;
+  tokenHash: string;
+  lastUsedAt: Date | null;
+  revokedAt: Date | null;
   createdAt: Date;
 };
 

@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Repositories } from '../repositories/types.js';
 import { AppError, ResourceNotFoundError } from '../domain/errors.js';
 import { categorizeByRules } from '../services/categorize.js';
-import { balanceEffect, isManualAccount } from '../services/manual-balance.js';
+import { balanceEffect, isDue, isManualAccount } from '../services/manual-balance.js';
 import { canUseCategory, isNeutral } from './categories.js';
 
 type Input = {
@@ -16,6 +16,8 @@ type Input = {
   repeat?: 'nao' | 'mensal' | 'parcelado';
   times?: number;
   note?: string;
+  /** Só lançamento único: identidade gerada pelo app (ex.: `shortcut:<token>:<evento>`) pra nunca duplicar. */
+  externalId?: string;
 };
 
 /** Quantos meses o "todo mês" já deixa lançado. Dá pra apagar a série inteira depois. */
@@ -63,12 +65,14 @@ export class CreateManualTransactionUseCase {
     const parcel = repeat === 'parcelado' ? Math.floor(total / n) : total;
     const first = repeat === 'parcelado' ? total - parcel * (n - 1) : total;
 
+    const now = this.now();
+    const manual = !!account && isManualAccount(account);
     // Todas as parcelas/meses entram juntas (createMany numa transação): nunca fica meia série lançada.
     const rows = Array.from({ length: n }, (_, i) => ({
       id: randomUUID(),
       userId: input.userId,
       accountId,
-      externalId: null,
+      externalId: n === 1 ? (input.externalId ?? null) : null,
       description: repeat === 'parcelado' ? `${input.description} (${i + 1}/${n})` : input.description,
       amountInCents: sign * (i === 0 ? first : parcel),
       occurredAt: addMonths(input.occurredAt, i),
@@ -76,13 +80,14 @@ export class CreateManualTransactionUseCase {
       isInternalTransfer: isNeutral(categoryId),
       seriesId,
       note: input.note || null,
+      // Conta manual: o que já aconteceu pesa no saldo agora (e fica marcado); o futuro espera o job de materialização.
+      balanceAppliedAt: manual && isDue({ occurredAt: addMonths(input.occurredAt, i) }, now) ? now : null,
     }));
-    const now = this.now();
     const transaction = await this.repos.tx(async (r) => {
       await r.transactions.createMany(rows);
       // Conta manual: o saldo acompanha o que já aconteceu (junto, na mesma transação).
-      if (account && isManualAccount(account)) {
-        const delta = rows.reduce((sum, row) => sum + balanceEffect(row, now), 0);
+      if (account && manual) {
+        const delta = rows.reduce((sum, row) => sum + balanceEffect(row), 0);
         if (delta !== 0) await r.accounts.adjustBalance(account.id, delta);
       }
       return (await r.transactions.findById(rows[0]!.id))!;

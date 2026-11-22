@@ -73,6 +73,8 @@ describe.skipIf(!url)('T1.4 no Postgres real', () => {
           'OAuthProvider',
           'OutboxStatus',
           'FriendRequestStatus',
+          'RecurringKind',
+          'RecurringFrequency',
         ].sort(),
       );
     });

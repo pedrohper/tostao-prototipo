@@ -4,6 +4,7 @@
 //
 // A API fica atrás do Next: o IP que ela vê é o que a web repassa em X-Forwarded-For (ver TRUST_PROXY no env.ts).
 // Sem isso todo mundo chegaria como 127.0.0.1 e o limite por IP derrubaria o site inteiro.
+import { createHash } from 'node:crypto';
 import { normalizeIP } from '@fastify/rate-limit';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { RateLimitedError } from '../domain/errors.js';
@@ -21,6 +22,12 @@ const ipAndEmail: Identity = (r) => {
   const email = (r.body as { email?: unknown } | null)?.email;
   return `${normalizeIP(r.ip)}|${typeof email === 'string' ? email.trim().toLowerCase().slice(0, 254) : ''}`;
 };
+/** Por token de automação: a identidade é o hash do cabeçalho (o token em claro nunca vira chave nem log). */
+const bearerHash: Identity = (r) =>
+  createHash('sha256')
+    .update(String(r.headers.authorization ?? ''))
+    .digest('hex')
+    .slice(0, 32);
 const bodyEmail: Identity = (r) => {
   const email = (r.body as { email?: unknown } | null)?.email;
   return typeof email === 'string' ? email.trim().toLowerCase().slice(0, 254) : '';
@@ -74,6 +81,11 @@ export function makeLimiters(app: FastifyInstance) {
     syncByUser: make('sync:user', 10, FIFTEEN_MINUTES, user),
     autoCheckByUser: make('auto-check:user', 10, FIFTEEN_MINUTES, user),
     whatsappWebhookByIp: make('whatsapp-webhook:ip', 60, MINUTE, ip),
+    /** Atalhos do iOS: por IP (barra quem testa tokens ao acaso) e por token (um atalho em loop não derruba nada). */
+    shortcutsByIp: make('shortcuts:ip', 60, MINUTE, ip),
+    shortcutsByToken: make('shortcuts:token', 30, MINUTE, bearerHash),
+    /** Leitura de PDF: abre uma thread por arquivo, então 10 por 15 min por pessoa (como o /imports). */
+    pdfPreviewByUser: make('pdf-preview:user', 10, FIFTEEN_MINUTES, user),
   };
 }
 export type Limiters = ReturnType<typeof makeLimiters>;

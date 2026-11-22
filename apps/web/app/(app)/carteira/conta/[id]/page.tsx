@@ -7,7 +7,8 @@ import { ago, currentMonth, dayLabel, money, monthName, nowMs, shiftMonth, short
 import { getI18n } from '@/lib/i18n-server';
 import { BackLink, Eyebrow } from '@/components/ui';
 import { CardNetworkBadge, BankBadge } from '@/components/banco';
-import { getBankLogos } from '@/lib/api-queries';
+import { getBankLogos, getMe } from '@/lib/api-queries';
+import { ReconcileBalanceCard } from '@/components/reconcile-balance-card';
 import { Mascot } from '@/components/mascote';
 import { MonthlyBars, CategoryBars, BudgetProgressBar } from '@/components/graficos';
 import { Chevron, Row } from '../../transaction-row';
@@ -28,12 +29,17 @@ export default async function ContaPage({
   const month = /^\d{4}-\d{2}$/.test(sp.mes ?? '') && sp.mes! <= hoje ? sp.mes! : hoje;
   const hideTransfers = sp.semEntreContas === '1';
   const hideYields = sp.semRendimentos === '1';
-  const [d, logos] = await Promise.all([
+  const [d, logos, me] = await Promise.all([
     api<AccountDetailResponse>(`/accounts/${safePathSegment(id)}?month=${month}`),
     getBankLogos(),
+    getMe().catch(() => null),
   ]);
   const a = d.account;
   const card = a.type === 'CREDIT';
+  // "Conferir saldo" (T5.2): só conta manual ou importada.
+  const reconcileConn = me?.connections.find(
+    (c) => (c.isImport || c.isManual) && c.accounts.some((x) => x.id === a.id),
+  );
   const fatura = Math.max(0, -a.balanceInCents);
   const parcelasFuturas = d.installments.reduce((s, i) => s + i.amountInCents * i.left, 0);
   const self = (m: string, overrides?: { hideTransfers?: boolean; hideYields?: boolean }) => {
@@ -138,6 +144,12 @@ export default async function ContaPage({
               </span>
             )}
           </section>
+
+          {reconcileConn && (
+            <ReconcileBalanceCard
+              accounts={[{ id: a.id, name: a.name, type: a.type, balanceInCents: a.balanceInCents }]}
+            />
+          )}
 
           {monthSelector('lg:hidden')}
 

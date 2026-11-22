@@ -1,3 +1,4 @@
+import { isBankSourced } from './app-entries.js';
 import type { Transaction } from '../domain/entities.js';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -51,9 +52,9 @@ export function descriptionsLookAlike(a: string, b: string): boolean {
 }
 
 /** Anotado à mão e ainda não confirmado pelo banco. Acerto com pessoa e transferência ficam de fora. */
-const isManualEntry = (t: Transaction) => t.externalId === null && !t.personId && !t.isInternalTransfer;
+const isManualEntry = (t: Transaction) => !isBankSourced(t.externalId) && !t.personId && !t.isInternalTransfer;
 /** Cobrança de verdade do banco. Transferência interna (pagar a própria fatura, Pix entre contas) não é gasto: não confirma nada. */
-const isBankEntry = (t: Transaction) => t.externalId !== null && t.accountId !== null && !t.isInternalTransfer;
+const isBankEntry = (t: Transaction) => isBankSourced(t.externalId) && t.accountId !== null && !t.isInternalTransfer;
 
 function sameCharge(manual: Transaction, bank: Transaction): boolean {
   return (
