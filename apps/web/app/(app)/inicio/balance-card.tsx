@@ -147,6 +147,8 @@ export interface BalanceCardProps {
   openBillsLabel?: string | null;
   /** Sem conta conectada: botão direto pra /conectar no lugar do texto cinza. */
   connectCta?: { label: string; href: string } | null;
+  /** Pílula "Mês no azul" / "Mês no aperto" exibida centralizada abaixo do saldo no mobile. */
+  monthStatus?: { label: string; inGreen: boolean } | null;
 }
 
 /** Linha de contexto sob os números: variação do mês e faturas abertas. */
@@ -164,11 +166,19 @@ function ContextLine({ changeLabel, openBillsLabel }: Pick<BalanceCardProps, 'ch
   );
 }
 
-function ConnectCta({ cta, className = '' }: { cta: { label: string; href: string }; className?: string }) {
+function ConnectCta({
+  cta,
+  centered = false,
+  className = '',
+}: {
+  cta: { label: string; href: string };
+  centered?: boolean;
+  className?: string;
+}) {
   return (
     <Link
       href={cta.href}
-      className={`relative z-[2] inline-flex min-h-11 items-center self-start rounded-full bg-laranja px-4 text-[14px] font-semibold text-tinta-fixa no-underline ${className}`}
+      className={`relative z-[2] inline-flex min-h-11 items-center ${centered ? 'self-center' : 'self-start'} rounded-full bg-laranja px-4 text-[14px] font-semibold text-tinta-fixa no-underline ${className}`}
     >
       {cta.label}
     </Link>
@@ -199,6 +209,7 @@ export function MobileBalanceCard({
   changeLabel,
   openBillsLabel,
   connectCta,
+  monthStatus,
 }: BalanceCardProps) {
   const hidden = useHiddenBalance();
   const walletHref = buildWalletHref(month);
@@ -208,27 +219,36 @@ export function MobileBalanceCard({
   return (
     <div className="relative flex flex-col gap-3.5 rounded-[22px] border border-linha bg-cartao p-[18px]">
       <Link href={walletHref} aria-label={walletLabel} className="absolute inset-0 rounded-[22px]" />
-      <div className="flex items-start justify-between gap-2">
+      <div className="relative flex flex-col items-center gap-2 text-center">
+        <EyeButton
+          hidden={hidden}
+          onToggle={toggleHiddenBalance}
+          hideLabel={hideBalanceAria}
+          showLabel={showBalanceAria}
+          className="absolute -top-1 -right-1"
+        />
         {balanceInCents !== null ? (
-          <div className="flex min-w-0 flex-col gap-0.5">
+          <div className="flex min-w-0 flex-col items-center gap-0.5 px-8">
             <span className="text-[13px] font-semibold text-tinta-suave">{balanceLabel}</span>
             <span className="font-display text-[40px] leading-[44px] font-extrabold tracking-[-0.5px] tabular-nums">
               {hidden ? `R$ ${MASKED}` : money(balanceInCents)}
             </span>
           </div>
         ) : (
-          <div className="flex min-w-0 flex-col gap-2">
+          <div className="flex min-w-0 flex-col items-center gap-2 px-8">
             <span className="text-[13px] font-semibold text-tinta-suave">{noConnectedBankHint}</span>
-            {connectCta && <ConnectCta cta={connectCta} />}
+            {connectCta && <ConnectCta cta={connectCta} centered />}
           </div>
         )}
-        <EyeButton
-          hidden={hidden}
-          onToggle={toggleHiddenBalance}
-          hideLabel={hideBalanceAria}
-          showLabel={showBalanceAria}
-          className="-mt-1 -mr-1"
-        />
+        {monthStatus && (
+          <span
+            className={`relative z-[1] inline-flex h-7 items-center rounded-full px-3 text-xs font-bold whitespace-nowrap ${
+              monthStatus.inGreen ? 'bg-menta-clara text-verde-texto' : 'bg-rosa text-vermelho-texto'
+            }`}
+          >
+            {monthStatus.label}
+          </span>
+        )}
       </div>
 
       <div className="relative z-[1] grid grid-cols-2 gap-2.5 border-t border-linha pt-3.5">

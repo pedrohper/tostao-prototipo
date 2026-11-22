@@ -8,11 +8,11 @@ import { DEFAULT_HIDDEN_SECTIONS, HOME_SECTIONS, parsePrefs, resolveSectionOrder
 const visibleByDefault = HOME_SECTIONS.filter((s) => !(DEFAULT_HIDDEN_SECTIONS as readonly string[]).includes(s.id));
 
 describe('padrão enxuto', () => {
-  it('liga só 7 seções (5–6 blocos do doc: evolução, avisos, pra onde foi, limites, previsão, meta e aula)', () => {
+  it('liga 8 seções padrão com o carrossel de atalhos visível no topo', () => {
     expect(visibleByDefault.map((s) => s.id).sort()).toEqual(
-      ['avisos', 'aula', 'evolucao', 'limites', 'meta', 'pra-onde-foi', 'sobra'].sort(),
+      ['atalhos', 'avisos', 'aula', 'evolucao', 'limites', 'meta', 'pra-onde-foi', 'sobra'].sort(),
     );
-    expect(visibleByDefault.length).toBeLessThanOrEqual(7);
+    expect(HOME_SECTIONS[0]?.id).toBe('atalhos');
     expect(HOME_SECTIONS.length - visibleByDefault.length).toBe(DEFAULT_HIDDEN_SECTIONS.length);
   });
 
@@ -32,6 +32,23 @@ describe('parsePrefs()', () => {
     const p = parsePrefs(JSON.stringify({ fechados: ['pendentes:2026-11:3'] }));
     expect(p.ocultos).toEqual([...DEFAULT_HIDDEN_SECTIONS]);
     expect(p.fechados).toEqual(['pendentes:2026-11:3']);
+  });
+
+  it('recupera os atalhos se o cookie antigo congelou o padrão T4.3 sem escolha explícita (sem v: 2)', () => {
+    const p = parsePrefs(
+      JSON.stringify({
+        ordem: [],
+        ocultos: ['atalhos', 'vence', 'semana', 'acertos', 'cartoes'],
+        fechados: ['dica:2026-11'],
+      }),
+    );
+    expect(p.ocultos).not.toContain('atalhos');
+    expect(p.ocultos).toEqual([...DEFAULT_HIDDEN_SECTIONS]);
+  });
+
+  it('quem personalizou (v: 2) mantendo atalhos escondidos continua respeitado', () => {
+    const p = parsePrefs(JSON.stringify({ v: 2, ocultos: ['atalhos', 'vence', 'semana', 'acertos', 'cartoes'] }));
+    expect(p.ocultos).toContain('atalhos');
   });
 
   it('quem personalizou mantém a escolha, mesmo que seja "nada escondido"', () => {

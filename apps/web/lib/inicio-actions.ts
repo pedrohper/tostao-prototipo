@@ -22,6 +22,7 @@ export async function saveHomePrefs(order: string[], hidden: string[]) {
   const validIds = new Set<string>(HOME_SECTIONS.map((s) => s.id));
   await updatePrefsCookie((prefs) => ({
     ...prefs,
+    v: 2,
     ordem: order.filter((id) => validIds.has(id)),
     ocultos: hidden.filter((id) => validIds.has(id)),
   }));
