@@ -2,53 +2,53 @@
 import { Icon } from '@/components/icone';
 import { useActionState, useState } from 'react';
 import type { CategoryDTO } from '@tostao/contracts';
+import { CategoryPicker } from '@/components/category-picker';
 import { ErrorNote } from '@/components/ui';
-import { pill } from '@/components/sheet';
 import { getDictionary, type Locale } from '@/lib/i18n';
 import { categorize, type ActionState } from '../actions';
 
 type Props = {
   id: string;
   back: string;
+  /** Categorias que servem pra este lançamento (do tipo dele + "Não conta"). */
   options: CategoryDTO[];
+  /** Tipo do lançamento: define a lista e o tipo que "+ Criar categoria" já vem marcado. */
+  kind: 'saida' | 'entrada';
   current: string | null;
   rulePattern: string;
   locale?: Locale;
 };
 
-export function CategorizeForm({ id, back, options, current, rulePattern, locale = 'pt-BR' }: Props) {
+export function CategorizeForm({ id, back, options, kind, current, rulePattern, locale = 'pt-BR' }: Props) {
   const dict = getDictionary(locale);
   const labels = dict.walletExtra.txDetail;
   const saveLabel = dict.common.save;
   const savingLabel = dict.common.saving;
   const [state, action, pending] = useActionState<ActionState, FormData>(categorize, {});
   const [picked, setPicked] = useState(current);
-  const pickedName = options.find((o) => o.id === picked)?.name;
+  // Nome da escolhida: vem da lista, ou da própria categoria quando acabou de ser criada aqui (ainda não está em `options`).
+  const [pickedCat, setPickedCat] = useState<CategoryDTO | null>(options.find((o) => o.id === current) ?? null);
+  const pickedName = pickedCat?.id === picked ? pickedCat.name : options.find((o) => o.id === picked)?.name;
   return (
     <form action={action} className="flex grow flex-col gap-4">
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="back" value={back} />
       {current && <input type="hidden" name="previousCategoryId" value={current} />}
-      <fieldset className="flex flex-col gap-2.5">
+      <fieldset className="flex min-w-0 flex-col gap-2.5">
         <legend className="mb-2.5 text-[13px] font-semibold text-tinta-suave">{labels.categorizeLabel}</legend>
-        <div className="flex flex-wrap gap-2">
-          {options.map((c) => (
-            <label
-              key={c.id}
-              className={`${pill(picked === c.id)} h-11 shrink-0 cursor-pointer px-4 whitespace-nowrap`}
-            >
-              <input
-                type="radio"
-                name="categoryId"
-                value={c.id}
-                checked={picked === c.id}
-                onChange={() => setPicked(c.id)}
-                className="sr-only"
-              />
-              <span>{c.name}</span>
-            </label>
-          ))}
-        </div>
+        <CategoryPicker
+          categories={options}
+          kind={kind}
+          includeNeutral
+          value={picked}
+          onChange={(next, category) => {
+            setPicked(next);
+            setPickedCat(category ?? null);
+          }}
+          name="categoryId"
+          label={labels.categorizeLabel}
+          locale={locale}
+        />
       </fieldset>
       {picked === 'nao-conta' && (
         <p className="flex gap-2 text-sm text-tinta-suave">
@@ -64,13 +64,19 @@ export function CategorizeForm({ id, back, options, current, rulePattern, locale
       )}
       <ErrorNote message={state.error} />
       <div className="grow" />
-      <button
-        type="submit"
-        disabled={!picked || pending}
-        className="flex h-[54px] shrink-0 items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel disabled:opacity-50"
-      >
-        {pending ? savingLabel : saveLabel}
-      </button>
+      {/*
+        Rodapé fixo: o corpo da folha rola e o Salvar fica colado embaixo (sticky dentro da área rolável), com respiro
+        pra barra de gestos/navegação do Android (safe-area). Os -mx anulam o padding horizontal da folha.
+      */}
+      <div className="sticky bottom-0 z-10 -mx-5 border-t border-linha bg-papel px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] md:-mx-6 md:px-6">
+        <button
+          type="submit"
+          disabled={!picked || pending}
+          className="flex h-[54px] w-full shrink-0 items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel disabled:opacity-50"
+        >
+          {pending ? savingLabel : saveLabel}
+        </button>
+      </div>
     </form>
   );
 }

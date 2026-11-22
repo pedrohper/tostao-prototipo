@@ -5,7 +5,7 @@ import { ErrorNote, CardIcon, BankIcon } from '@/components/ui';
 import { Mascot } from '@/components/mascote';
 import { pill } from '@/components/sheet';
 import { useToast } from '@/components/toast';
-import { AmountInput, CategoryPills, DateChips, DescriptionInput, NoteField } from '@/components/quick-add-fields';
+import { AmountInput, CategoryField, DateChips, DescriptionInput, NoteField } from '@/components/quick-add-fields';
 import { centsFromMasked } from '@/lib/money-mask';
 import { canSaveQuickAdd } from '@/lib/quick-add';
 import { getDictionary, type Locale } from '@/lib/i18n';
@@ -66,7 +66,6 @@ export function AnotarForm({
     return result;
   }, {});
   const [kind, setKind] = useState<'saida' | 'entrada'>('saida');
-  const [todas, setTodas] = useState(false);
   const [conta, setConta] = useState<string | null>(null);
   const [repete, setRepete] = useState<'nao' | 'mensal' | 'parcelado'>('nao');
   const [vezes, setVezes] = useState(2);
@@ -192,19 +191,17 @@ export function AnotarForm({
                 : labels.repeatInstallmentHint(vezes)}
           </p>
         </fieldset>
-        <CategoryPills
+        <CategoryField
           categories={categories}
           kind={kind}
           value={cat}
           onChange={setCat}
-          showAll={todas}
-          onShowAll={() => setTodas(true)}
+          locale={locale}
           legend={
             <>
               {labels.categoryLegend} <span className="font-normal text-tinta-suave">{labels.categoryOptional}</span>
             </>
           }
-          moreLabel={labels.moreCategories}
         />
         {contas.length > 0 && (
           <fieldset className="flex flex-col gap-2">

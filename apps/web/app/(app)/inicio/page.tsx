@@ -140,7 +140,6 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     .sort()
     .at(-1);
   const isEmptyState = summary.balanceInCents === null && summary.outcomeInCents === 0 && summary.incomeInCents === 0;
-  const firstName = profile.name.trim().split(/\s+/)[0] || profile.name;
   const isMonthInGreen = summary.incomeInCents >= summary.outcomeInCents;
   const outcomePct =
     summary.incomeInCents > 0 ? Math.round((summary.outcomeInCents / summary.incomeInCents) * 100) : null;
@@ -1130,20 +1129,6 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         corpo da página) fica em dois blocos exibidos por CSS (`lg:`).
       */}
       <div className="flex flex-col gap-6 lg:gap-7">
-        {/* Mobile: saudação personalizada + badge do mês (no desktop o badge fica no cabeçalho, ao lado da ofensiva). */}
-        <div className="flex items-center justify-between gap-3 lg:hidden">
-          <p className="min-w-0 truncate font-display text-[22px] leading-[28px] font-extrabold">
-            {t.home.greeting(firstName)}
-          </p>
-          <span
-            className={`flex h-8 shrink-0 items-center rounded-full px-3 text-xs font-bold ${
-              isMonthInGreen ? 'bg-menta-clara text-verde-texto' : 'bg-rosa text-vermelho-texto'
-            }`}
-          >
-            {isMonthInGreen ? t.home.monthInGreen : t.home.monthTight}
-          </span>
-        </div>
-
         <header className="flex items-center justify-between gap-2 lg:gap-4">
           {monthSelector}
           <div className="flex shrink-0 items-center gap-2">
@@ -1153,8 +1138,9 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
               locale={locale}
               label={t.nav.streakDays(missions?.streakDays ?? progress.streakDays)}
             />
+            {/* Mobile: pílula compacta (sem saudação, o espaço é do seletor de mês + ofensiva + status). */}
             <span
-              className={`hidden h-10 items-center rounded-full px-4 text-sm font-bold lg:flex ${
+              className={`flex h-8 items-center rounded-full px-2.5 text-xs font-bold whitespace-nowrap lg:h-10 lg:px-4 lg:text-sm ${
                 isMonthInGreen ? 'bg-menta-clara text-verde-texto' : 'bg-rosa text-vermelho-texto'
               }`}
             >
@@ -1174,11 +1160,9 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
           </>
         ) : (
           <>
-            <div className="flex flex-col gap-3 lg:hidden">
-              {balanceCard}
-              <QuickAddButton variant="inline" label={t.growth.home.quickAdd} locale={locale} />
-              <AskTostaoCard locale={locale} compact />
-            </div>
+            <div className="flex flex-col gap-3 lg:hidden">{balanceCard}</div>
+            {/* Mobile: anotar vira botão flutuante (a aba Tostão da barra de baixo já cobre o "perguntar pro Tostão"). */}
+            <QuickAddButton variant="fab" label={t.growth.home.quickAdd} locale={locale} />
             <div className="hidden lg:block">
               <DesktopBalanceRow {...balanceProps} />
             </div>

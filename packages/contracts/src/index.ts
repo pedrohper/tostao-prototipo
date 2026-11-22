@@ -358,6 +358,12 @@ export const createCategoryBody = z.object({
   name: z.string().trim().min(2, 'Nome curto demais').max(30, 'Nome longo demais'),
   emoji: z.string().trim().max(16).default('🏷️'),
   kind: z.enum(['saida', 'entrada']),
+  /** Cor do selo (#RRGGBB). Sem ela, a API usa o tom padrão do tipo. */
+  color: z
+    .string()
+    .trim()
+    .regex(/^#[0-9a-fA-F]{6}$/, 'Cor inválida')
+    .optional(),
 });
 export type CreateCategoryBody = z.infer<typeof createCategoryBody>;
 
