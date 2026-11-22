@@ -27,13 +27,16 @@ export default async function CriarContaPage({
       </div>
       <div className="flex items-center justify-between gap-2">
         <div className="flex flex-col gap-1">
-          <h1 className="font-display text-[30px] leading-[34px] font-extrabold">{p.signupTitle}</h1>
+          <h1 className="font-display text-[30px] leading-[34px] font-extrabold lg:text-[36px] lg:leading-[40px]">
+            {p.signupTitle}
+          </h1>
           <p className="text-sm text-tinta-suave">{p.signupSubtitle}</p>
         </div>
         <Mascot pose="dupla" size={92} alt={p.signupMascotAlt} className="lg:hidden" />
       </div>
-      <SocialAuthButtons mode="criar" invite={convite} oauthError={oauthError} social={p.social} form={p.form} />
-      <AuthForm mode="criar" invite={convite} t={p.form} />
+      <AuthForm mode="criar" invite={convite} t={p.form}>
+        <SocialAuthButtons mode="criar" invite={convite} oauthError={oauthError} social={p.social} form={p.form} />
+      </AuthForm>
     </>
   );
 }

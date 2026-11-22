@@ -256,12 +256,6 @@ export const es: Dictionary = {
     whatsappConnectedBadge: 'Conectado',
     whatsappOffBadge: 'Apagado',
   },
-  auth: {
-    splitSlogan: 'Tu dinero explicado, centavo a centavo',
-    splitHighlight1: 'Open Finance regulado por el Banco Central, solo lectura',
-    splitHighlight2: 'Lecciones de 2 minutos usando tu propio extracto',
-    splitHighlight3: 'Sin sermones, sin hojas de cálculo complicadas',
-  },
   auto: {
     hubTitle: 'Tostão',
     tabConversation: 'Conversación',
@@ -397,6 +391,7 @@ export const es: Dictionary = {
       continueGoogle: 'Continuar con Google',
       continueApple: 'Continuar con Apple',
       orEmail: 'o con correo',
+      orContinueWith: 'o continúa con',
       signupTermsPrefix: 'Al continuar con Google o Apple, confirmas tener 18+ y aceptas los ',
       errors: {
         unconfiguredGoogle: 'El acceso con Google aún no está activado en este servidor. Usa correo por ahora.',

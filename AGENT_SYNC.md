@@ -40,6 +40,24 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-22 · Claude · branch feat/fase5-t52-t53 (redesign desktop de autenticação: painel ilustrado + formulário limpo)
+
+**Só web, só desktop (`lg:`). Commit local, sem push e sem PR.** Entrou na branch `feat/fase5-t52-t53` porque era a checada no servidor; o commit só tem os arquivos desta entrega, o WIP da T5.2/T5.3 (`apps/api`, `contracts`, `pnpm-lock`) ficou de fora. Se preferir, dá pra `cherry-pick` pra outra branch.
+
+- **`app/(auth)/layout.tsx`**: no `lg:` vira `grid-cols-2`, com o painel ilustrado à esquerda (`lg:order-first`, `m-6 min-h-[calc(100dvh-3rem)] overflow-hidden rounded-[28px] bg-[#FFF1E6]`, cor fixa nos dois temas). Dentro: wordmark `tostão` no canto superior esquerdo (em `text-tinta-fixa`, senão sumiria no tema escuro), `acenando.webp` grande cortado pela borda de baixo e doodles SVG (folha com gráfico de barras, moedas e brilhos) no topo direito. Saíram o slogan, o card de bullets (incluindo "Open Finance regulado…") e o `async`/`getI18n` do layout. `public/elenco/auth-hero.webp` **não existe**, por isso o fallback com `acenando.webp`; se a arte for criada, basta trocar a `pose`/`src` no layout. O `<aside>` fica depois do `<main>` no DOM (leitor de tela lê o formulário primeiro) e é visual só no `lg:`.
+- **`auth-form.tsx`**: ganhou `children` (slot do login social). Botão principal de `bg-tinta` para `bg-laranja` com `text-tinta-fixa` (contraste ~5,5:1; o branco sobre `#FF5A36` dá ~3:1), em todos os breakpoints. O slot usa `order-first lg:order-none`: no mobile o social continua em cima do formulário (igual a antes); no desktop desce pra depois do botão principal e antes do "Não tem conta?".
+- **`social-buttons.tsx`**: links `/api/auth/{google,apple}/start?…`, `oauthError` e aviso de Termos/Privacidade do cadastro **intactos**. O divisor ganhou duas versões: "ou com e-mail" no mobile (fecha o bloco social) e "ou continue com" no desktop (abre o bloco, abaixo do botão).
+- **`entrar/page.tsx` e `criar-conta/page.tsx`**: `SocialAuthButtons` passa a ser filho de `AuthForm`; `redirectIfAuthenticated()` mantido; título `lg:text-[36px]`.
+- **i18n** (`pt-br`, `en`, `es`, `types`): novo `authPages.social.orContinueWith`; removido o bloco `auth.split*`, que ficou órfão.
+- `/esqueci-senha`, `/redefinir-senha`, `/verificar-email` herdam o painel pelo layout, sem mudança nas páginas.
+- Migration? Não. Variável de ambiente? Não.
+- **Como validei**: `pnpm typecheck` e `pnpm lint` (repo inteiro) ok; `pnpm --filter ./apps/web test` 53 arquivos / 598 testes ok (inclui `auth-redirect`, `auth-actions`, `legal-pages`, `no-prototype-traces`, `t24-sources`); `pnpm build` ok. O `.next` foi salvo antes e restaurado depois (BUILD_ID original), e o PM2 **não** foi reiniciado (mesmos PIDs; `/entrar` responde 200).
+- **O que ficou de fora / riscos**:
+  - **Visual não conferido num navegador**: o Chromium do servidor não tem `libatk` e não pedi o preview do T3. Falta o Pedro olhar `/entrar` e `/criar-conta` em ~1440 px (claro e escuro) e em ~390 px, e ajustar tamanho/posição do mascote (`w-[min(86%,520px)]`, `translate-y-[14%]`) e dos doodles se precisar.
+  - `acenando.webp` tem 479 px, então a 520 px sofre um leve upscale; `auth-hero.webp` em alta resolução resolveria.
+  - `pnpm format:check` **falha** por arquivos do WIP da T5.2/T5.3 (`apps/api/src/jobs/recurring.ts`, `services/recurrence.ts`, `services/recurring-materializer.ts`, `repositories/*`, `use-cases/delete-transaction.ts`, `services/reconcile-manual.ts`, `packages/contracts/src/index.ts`); os arquivos desta entrega estão formatados.
+  - `pnpm test` completo: **1 falha na API**, `src/app.spec.ts > limites por categoria e progresso das lições` (`bonusXp` veio 5, esperado 0). Não é do web; `apps/api` tem alterações não commitadas de outro agente (T5.2/T5.3), e eu não investiguei a causa. Achado aberto pra quem está nessa frente.
+
 ### 2026-11-21 · Claude · branch feat/fase2-t24-t25 (Fase 2: T2.4 error boundaries, a11y, ConfirmDialog e PWA offline + T2.5 limpeza comercial, textos legais e exportação LGPD)
 
 **Commit local, sem push e sem PR.** **Base: `feat/fase4-t45` (PR #37, ainda aberto), não a `main`**: a `main` (`fbb1274`) tem #35 e #36 mas não a T4.5, e esta entrega mexe em arquivos dela (`landing.tsx`, `player.tsx`, `i18n-locales`). Abrir o PR contra a `feat/fase4-t45`, ou esperar o #37 entrar na `main`. **Sem migration** (só um comentário em `AuditLog.action`, sem efeito no SQL), sem dependência nova. Checkboxes de T2.4 e T2.5 marcados em `docs/producao/03-FASE-2-...md`.
