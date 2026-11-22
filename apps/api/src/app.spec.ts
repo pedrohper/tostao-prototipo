@@ -1,4 +1,6 @@
 // Teste de ponta a ponta da API inteira, com repositórios em memória (sem Postgres).
+import { missionsFor } from './use-cases/engagement.js';
+import { civilDay } from './lib/tz.js';
 import { describe, expect, it } from 'vitest';
 import { buildApp } from './app.js';
 import { makeInMemoryRepositories } from './repositories/in-memory/index.js';
@@ -169,9 +171,11 @@ describe('API', () => {
       done: ['m1-l2'],
       streakDays: 1,
       doneToday: 1,
-      // 0: o PUT /budgets marcou "limites", mas a 3ª missão de hoje NÃO é essa (antes valia 5 XP por qualquer linha).
-      bonusXp: 0,
-    }); // +5 da missão de conferir limites;
+      // O PUT /budgets marcou "limites": só rende 5 XP nos dias em que "conferir limites" é a missão do dia (ela gira por
+      // dia da semana; antes valia 5 XP por qualquer linha). Esperado calculado pela MESMA tabela, pra o teste não
+      // virar bomba-relógio num dia em que a missão muda.
+      bonusXp: missionsFor(civilDay(new Date())).some((m) => m.kinds.includes('limites')) ? 5 : 0,
+    });
   });
 });
 

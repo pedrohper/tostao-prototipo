@@ -2,7 +2,7 @@
 import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { CategoryDTO } from '@tostao/contracts';
-import { AmountInput, CategoryPills, DateChips, DescriptionInput, NoteField } from './quick-add-fields';
+import { AmountInput, CategoryField, DateChips, DescriptionInput, NoteField } from './quick-add-fields';
 
 const noop = () => {};
 const cat = (id: string, kind: CategoryDTO['kind'] = 'saida'): CategoryDTO => ({
@@ -71,58 +71,36 @@ describe('DescriptionInput', () => {
   });
 });
 
-describe('CategoryPills', () => {
+describe('CategoryField', () => {
   const categories = ['delivery', 'comer-fora', 'mercado', 'transporte', 'extra-rara'].map((id) => cat(id));
 
-  it('mostra as principais com ícone e esconde as raras atrás do "Mais"', () => {
+  it('lista todas as categorias do tipo com ícone (sem esconder atrás de "Mais")', () => {
     const html = renderToString(
-      <CategoryPills
-        categories={categories}
-        kind="saida"
-        value={null}
-        onChange={noop}
-        showAll={false}
-        onShowAll={noop}
-        legend="Categoria"
-        moreLabel="Mais"
-      />,
+      <CategoryField categories={categories} kind="saida" value={null} onChange={noop} legend="Categoria" />,
     );
-    expect(html).toContain('>delivery<');
-    expect(html).not.toContain('>extra-rara<');
-    expect(html).toContain('>Mais<');
-    expect(html).toMatch(/<(svg|img)[^>]*aria-hidden="true"/); // CatIcon (ícone de cada categoria)
+    for (const id of ['delivery', 'comer-fora', 'mercado', 'transporte', 'extra-rara'])
+      expect(html).toContain(`>${id}<`);
+    expect(html).not.toContain('>Mais<');
+    expect(html).toMatch(/<(svg|img|span)[^>]*aria-hidden="true"/); // CatIcon (ícone de cada categoria)
+    expect(html).toContain('+ Criar categoria');
   });
 
-  it('"Mais" aberto mostra todas e some o botão; a escolhida vai no campo categoryId', () => {
+  it('a escolhida vai no campo categoryId e aparece marcada', () => {
     const html = renderToString(
-      <CategoryPills
-        categories={categories}
-        kind="saida"
-        value="mercado"
-        onChange={noop}
-        showAll
-        onShowAll={noop}
-        legend="Categoria"
-        moreLabel="Mais"
-      />,
+      <CategoryField categories={categories} kind="saida" value="mercado" onChange={noop} legend="Categoria" />,
     );
-    expect(html).toContain('>extra-rara<');
-    expect(html).not.toContain('>Mais<');
     expect(html).toContain('name="categoryId" value="mercado"');
-    expect(html).toMatch(/aria-pressed="true"[^>]*>(<[^>]*>)*[^<]*<span>mercado/);
+    expect(html).toMatch(/aria-checked="true"[^>]*data-cat-id="mercado"/);
   });
 
   it('entrada só mostra categorias de entrada', () => {
     const html = renderToString(
-      <CategoryPills
+      <CategoryField
         categories={[cat('salario', 'entrada'), cat('delivery')]}
         kind="entrada"
         value={null}
         onChange={noop}
-        showAll={false}
-        onShowAll={noop}
         legend="Categoria"
-        moreLabel="Mais"
       />,
     );
     expect(html).toContain('>salario<');

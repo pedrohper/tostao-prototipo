@@ -1,7 +1,7 @@
 'use client';
-import { useId } from 'react';
+import { useId, type ComponentProps } from 'react';
 import type { CategoryDTO } from '@tostao/contracts';
-import { CatIcon } from '@/components/icone';
+import { CategoryPicker } from '@/components/category-picker';
 import { pill } from '@/components/sheet';
 import { getDictionary, type Locale } from '@/lib/i18n';
 import { maskMoneyInput, maskPastedMoney } from '@/lib/money-mask';
@@ -11,9 +11,6 @@ import { dateChip, dateForChip, suggestDescriptions } from '@/lib/quick-add';
 
 const field =
   'h-12 w-full rounded-xl border-[1.5px] border-linha bg-cartao px-4 text-base text-tinta outline-none focus:border-tinta';
-
-/** As 8 categorias que mais aparecem no dia a dia; o resto fica atrás do "Mais". */
-export const PRINCIPAIS = ['delivery', 'comer-fora', 'mercado', 'transporte', 'compras', 'role', 'casa', 'outros'];
 
 /** Valor com máscara de moeda: digita só números e eles entram como centavos (1 → 0,01 · 1250 → 12,50). */
 export function AmountInput({
@@ -166,61 +163,42 @@ export function DescriptionInput({
   );
 }
 
-/** Pills de categoria com o ícone de cada uma. Tocar de novo desmarca (categoria é opcional). */
-export function CategoryPills({
+/**
+ * Categoria do lançamento: seletor em lista rolável (ícone, nome, marca) com busca e "+ Criar categoria".
+ * Tocar de novo na escolhida desmarca (categoria é opcional). O id vai no campo `categoryId`.
+ */
+export function CategoryField({
   categories,
   kind,
   value,
   onChange,
-  showAll,
-  onShowAll,
   legend,
-  moreLabel,
+  locale = 'pt-BR',
+  onCreate,
 }: {
   categories: CategoryDTO[];
   kind: 'saida' | 'entrada';
   value: string | null;
   onChange: (id: string | null) => void;
-  showAll: boolean;
-  onShowAll: () => void;
   legend: React.ReactNode;
-  moreLabel: string;
+  locale?: Locale;
+  onCreate?: ComponentProps<typeof CategoryPicker>['onCreate'];
 }) {
-  const doTipo = categories.filter((c) => c.kind === kind);
-  const principais = doTipo
-    .filter((c) => PRINCIPAIS.includes(c.id))
-    .sort((a, b) => PRINCIPAIS.indexOf(a.id) - PRINCIPAIS.indexOf(b.id));
-  const options =
-    showAll || kind === 'entrada' || principais.length < 3
-      ? doTipo
-      : [...principais, ...doTipo.filter((c) => c.id === value && !PRINCIPAIS.includes(c.id))];
+  const t = getDictionary(locale).growth.quickAdd;
   return (
-    <fieldset className="flex flex-col gap-2">
+    <fieldset className="flex min-w-0 flex-col gap-2">
       <legend className="mb-2 text-[13px] font-semibold">{legend}</legend>
-      <input type="hidden" name="categoryId" value={value ?? ''} />
-      <div className="flex flex-wrap gap-2">
-        {options.map((c) => (
-          <button
-            type="button"
-            key={c.id}
-            aria-pressed={value === c.id}
-            onClick={() => onChange(value === c.id ? null : c.id)}
-            className={`${pill(value === c.id)} h-11 shrink-0 gap-1.5 px-3.5 whitespace-nowrap`}
-          >
-            <CatIcon id={c.id} emoji={c.emoji} size={18} />
-            <span>{c.name}</span>
-          </button>
-        ))}
-      </div>
-      {options.length < doTipo.length && (
-        <button
-          type="button"
-          onClick={onShowAll}
-          className="self-start text-[13px] font-semibold text-laranja-texto underline"
-        >
-          {moreLabel}
-        </button>
-      )}
+      <CategoryPicker
+        categories={categories}
+        kind={kind}
+        value={value}
+        onChange={onChange}
+        name="categoryId"
+        label={t.categoryLabel}
+        allowClear
+        locale={locale}
+        {...(onCreate ? { onCreate } : {})}
+      />
     </fieldset>
   );
 }
