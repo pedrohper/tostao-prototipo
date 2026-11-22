@@ -93,6 +93,7 @@ export function PlanejarAtalhos({ t }: { t: Dictionary }) {
         {shortcuts.map((item) => (
           <li key={item.id} className="w-[68px] shrink-0 snap-start">
             <Link
+              prefetch={false}
               href={item.href}
               className="flex flex-col items-center gap-1.5 text-tinta no-underline [&:active>span:first-child]:scale-95"
             >

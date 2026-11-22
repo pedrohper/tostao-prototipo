@@ -1,5 +1,6 @@
 'use client';
-import { useActionState, useEffect, useRef, useState } from 'react';
+import { useActionState, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { createManual, loadQuickAddData, type ActionState, type QuickAddData } from '@/app/(app)/carteira/actions';
@@ -175,10 +176,14 @@ export function QuickAddSheet({
   const [data, setData] = useState<QuickAddData | null>(null);
   const [failed, setFailed] = useState(false);
   const loading = useRef(false);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
-  // Os dados vêm quando a folha abre pela primeira vez (e ficam em memória nas próximas aberturas).
-  useEffect(() => {
-    if (!open || data || loading.current) return;
+  const fetchQuickAddData = useCallback(() => {
+    if (loading.current) return;
     loading.current = true;
     setFailed(false);
     loadQuickAddData()
@@ -190,7 +195,13 @@ export function QuickAddSheet({
       .finally(() => {
         loading.current = false;
       });
-  }, [open, data]);
+  }, []);
+
+  // Os dados vêm quando a folha abre pela primeira vez (e ficam em memória nas próximas aberturas).
+  useEffect(() => {
+    if (!open || data) return;
+    fetchQuickAddData();
+  }, [open, data, fetchQuickAddData]);
 
   useEffect(() => {
     if (!open) return;
@@ -207,7 +218,7 @@ export function QuickAddSheet({
   }, [open, onClose]);
 
   if (!open) return null;
-  return (
+  const dialog = (
     <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center">
       <button
         type="button"
@@ -247,9 +258,18 @@ export function QuickAddSheet({
               }}
             />
           ) : failed ? (
-            <p role="alert" className="py-8 text-center text-sm font-semibold text-vermelho-texto">
-              {q.loadError}
-            </p>
+            <div className="flex flex-col items-center gap-3 py-8 text-center">
+              <p role="alert" className="text-sm font-semibold text-vermelho-texto">
+                {q.loadError}
+              </p>
+              <button
+                type="button"
+                onClick={fetchQuickAddData}
+                className="inline-flex h-10 items-center justify-center rounded-full bg-tinta px-4 text-sm font-semibold text-papel"
+              >
+                Tentar de novo
+              </button>
+            </div>
           ) : (
             <p className="py-8 text-center text-sm text-tinta-suave">{q.loading}</p>
           )}
@@ -257,6 +277,7 @@ export function QuickAddSheet({
       </div>
     </div>
   );
+  return mounted ? createPortal(dialog, document.body) : dialog;
 }
 
 /** Botão que abre a folha: `fab` (laranja, flutuante, some no desktop `lg:`) ou `inline` (pílula na página). */
@@ -270,30 +291,38 @@ export function QuickAddButton({
   locale?: Locale;
 }) {
   const [open, setOpen] = useState(false);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const cleanLabel = variant === 'fab' ? label.replace(/^\+\s*/, '') : label;
   const className =
     variant === 'fab'
       ? 'fixed right-5 bottom-[calc(86px+env(safe-area-inset-bottom))] z-20 flex h-13 items-center gap-2 rounded-full bg-laranja pr-5 pl-4 text-[15px] font-bold text-tinta-fixa shadow-[0_4px_16px_rgba(30,27,24,0.28)] md:bottom-6 lg:hidden'
       : 'flex h-11 items-center justify-center rounded-full bg-laranja px-5 text-[15px] font-bold text-tinta-fixa';
+  const btn = (
+    <button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog" className={className}>
+      {variant === 'fab' && (
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          aria-hidden="true"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      )}
+      {cleanLabel}
+    </button>
+  );
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog" className={className}>
-        {variant === 'fab' && (
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            aria-hidden="true"
-          >
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-        )}
-        {cleanLabel}
-      </button>
+      {variant === 'fab' && mounted ? createPortal(btn, document.body) : btn}
       <QuickAddSheet open={open} onClose={() => setOpen(false)} locale={locale} />
     </>
   );

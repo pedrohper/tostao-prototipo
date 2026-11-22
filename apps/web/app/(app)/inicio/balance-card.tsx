@@ -217,23 +217,32 @@ export function MobileBalanceCard({
     <div className="relative flex flex-col gap-3.5 rounded-[22px] border border-linha bg-cartao p-[18px]">
       <Link href={walletHref} aria-label={walletLabel} className="absolute inset-0 rounded-[22px]" />
       <div className="relative flex flex-col items-center gap-2 text-center">
-        <EyeButton
-          hidden={hidden}
-          onToggle={toggleHiddenBalance}
-          hideLabel={hideBalanceAria}
-          showLabel={showBalanceAria}
-          className="absolute -top-1 -right-1"
-        />
         {balanceInCents !== null ? (
-          <div className="flex min-w-0 flex-col items-center gap-0.5 px-8">
+          <div className="flex min-w-0 flex-col items-center gap-0.5">
             <span className="text-[13px] font-semibold text-tinta-suave">{balanceLabel}</span>
-            <span className="font-display text-[40px] leading-[44px] font-extrabold tracking-[-0.5px] tabular-nums">
-              {hidden ? `R$ ${MASKED}` : money(balanceInCents)}
-            </span>
+            <div className="flex items-center justify-center gap-1.5">
+              <span className="font-display text-[40px] leading-[44px] font-extrabold tracking-[-0.5px] tabular-nums">
+                {hidden ? `R$ ${MASKED}` : money(balanceInCents)}
+              </span>
+              <EyeButton
+                hidden={hidden}
+                onToggle={toggleHiddenBalance}
+                hideLabel={hideBalanceAria}
+                showLabel={showBalanceAria}
+              />
+            </div>
           </div>
         ) : (
-          <div className="flex min-w-0 flex-col items-center gap-2 px-8">
-            <span className="text-[13px] font-semibold text-tinta-suave">{noConnectedBankHint}</span>
+          <div className="flex min-w-0 flex-col items-center gap-2">
+            <div className="flex items-center justify-center gap-1.5">
+              <span className="text-[13px] font-semibold text-tinta-suave">{noConnectedBankHint}</span>
+              <EyeButton
+                hidden={hidden}
+                onToggle={toggleHiddenBalance}
+                hideLabel={hideBalanceAria}
+                showLabel={showBalanceAria}
+              />
+            </div>
             {connectCta && <ConnectCta cta={connectCta} centered />}
           </div>
         )}

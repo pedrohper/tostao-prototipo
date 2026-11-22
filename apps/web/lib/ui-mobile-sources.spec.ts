@@ -18,7 +18,7 @@ describe('Home mobile (inicio/page.tsx)', () => {
     expect(page).not.toContain('firstName');
   });
 
-  it('mantém seletor de mês e ofensiva no cabeçalho sem a pílula de status do mês e centraliza o saldo mobile', () => {
+  it('mantém seletor de mês e ofensiva no cabeçalho sem a pílula de status do mês e coloca o olho ao lado do saldo mobile', () => {
     const header = page.slice(
       page.indexOf('<header className="flex items-center justify-between'),
       page.indexOf('</header>'),
@@ -29,14 +29,16 @@ describe('Home mobile (inicio/page.tsx)', () => {
     expect(page).not.toContain('t.home.monthInGreen');
     expect(page).not.toContain('monthStatus');
     expect(balanceCard).toContain('flex-col items-center gap-2 text-center');
-    expect(balanceCard).not.toContain('monthStatus');
+    expect(balanceCard).toContain('flex items-center justify-center gap-1.5');
+    expect(balanceCard).not.toContain('absolute -top-1 -right-1');
   });
 
-  it('carrossel PlanejarAtalhos inclui anotar, anotações e importar', () => {
+  it('carrossel PlanejarAtalhos inclui anotar, anotações e importar sem prefetch agressivo', () => {
     const carousel = read('app/(app)/inicio/planejar-atalhos.tsx');
     expect(carousel).toContain('/anotar');
     expect(carousel).toContain('/anotacoes');
     expect(carousel).toContain('/importar');
+    expect(carousel).toContain('prefetch={false}');
   });
 
   it('o Tostão compacto saiu da Home mobile e continua no desktop', () => {
@@ -45,25 +47,57 @@ describe('Home mobile (inicio/page.tsx)', () => {
     expect(page).toContain('<AskTostaoCard locale={locale} />'); // desktop (2 colunas)
   });
 
-  it('anotar vira botão flutuante (fab) sem "+" duplicado e aparece na Carteira também', () => {
+  it('anotar vira botão flutuante (fab) sem "+" duplicado e aparece na Carteira e em Anotações', () => {
     expect(page).toContain('<QuickAddButton variant="fab" label={t.nav.addExpense}');
     expect(page).not.toContain('<QuickAddButton variant="inline"');
     const carteira = read('app/(app)/carteira/page.tsx');
     expect(carteira).toContain('<QuickAddButton variant="fab" label={t.nav.addExpense}');
     expect(carteira).not.toContain("aba === 'extrato' && <QuickAddButton");
+    const anotacoes = read('app/(app)/anotacoes/page.tsx');
+    expect(anotacoes).toContain('<QuickAddButton variant="fab" label={t.nav.addExpense}');
   });
 });
 
 describe('QuickAddButton fab', () => {
   const sheet = read('components/quick-add-sheet.tsx');
+  const css = read('app/globals.css');
   const fab = sheet.slice(sheet.indexOf("variant === 'fab'"), sheet.indexOf(": 'flex h-11"));
-  it('laranja (bg-laranja text-tinta-fixa), acima da tab bar, sem "+" duplicado e some no desktop', () => {
+  it('laranja (bg-laranja text-tinta-fixa), portalizado no body e sem transform retido em .tela', () => {
     expect(sheet).toContain("label.replace(/^\\+\\s*/, '')");
+    expect(sheet).toContain('createPortal(btn, document.body)');
+    expect(sheet).toContain('createPortal(dialog, document.body)');
+    expect(css).toContain('animation: sobe 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;');
     expect(fab).toContain('bg-laranja');
     expect(fab).toContain('text-tinta-fixa');
     expect(fab).toContain('fixed');
     expect(fab).toContain('bottom-[calc(86px+env(safe-area-inset-bottom))]');
     expect(fab).toContain('lg:hidden');
+  });
+});
+
+describe('Metas, Anotações e Acertos no mobile', () => {
+  it('Metas separa a lista geral (/meta) da tela individual (/meta?id=...) com edição e exclusão na tela da meta', () => {
+    const meta = read('app/(app)/meta/page.tsx');
+    expect(meta).toContain('if (!selected)');
+    expect(meta).toContain('openGoalLabel');
+    expect(meta).toContain('<GoalForm');
+    expect(meta).toContain('<ConfirmSubmitButton');
+  });
+
+  it('Anotações permite navegar por mês (prevMes/nextMes) e ver todos os meses', () => {
+    const anotacoes = read('app/(app)/anotacoes/page.tsx');
+    expect(anotacoes).toContain('prevMes');
+    expect(anotacoes).toContain('nextMes');
+    expect(anotacoes).toContain("sp.mes === 'todos'");
+  });
+
+  it('Acertos usa botão "+ Criar acerto" (NewSplitButton) e esconde o formulário fixo no mobile (hidden ... lg:flex)', () => {
+    const acertos = read('app/(app)/acertos/page.tsx');
+    const pessoa = read('app/(app)/acertos/[id]/page.tsx');
+    expect(acertos).toContain('<NewSplitButton');
+    expect(acertos).toContain('hidden min-w-0 flex-col gap-2.5 rounded-2xl border border-linha bg-cartao p-4 lg:flex');
+    expect(pessoa).toContain('<NewSplitButton');
+    expect(pessoa).toContain('hidden min-w-0 flex-col gap-4 lg:flex');
   });
 });
 

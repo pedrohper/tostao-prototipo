@@ -9,6 +9,7 @@ import { getI18n } from '@/lib/i18n-server';
 import { BackLink, Eyebrow, PageFrame } from '@/components/ui';
 import { EntryForm } from '../entry-form';
 import { apagarPessoa, renomearPessoa } from '../actions';
+import { NewSplitButton } from '../split-sheet';
 
 export default async function PessoaPage({
   params,
@@ -38,38 +39,48 @@ export default async function PessoaPage({
       ? pr.waOweText(p.name, money(-p.balanceInCents))
       : '';
   const back = voltar ? `/acertos/${p.id}?voltar=${encodeURIComponent(backHref)}` : `/acertos/${p.id}`;
+  const createLabel = locale === 'en' ? 'New split' : locale === 'es' ? 'Nuevo ajuste' : 'Criar acerto';
+  const errMsg = erroDe(erro);
 
   return (
     <PageFrame size="analytics" className="pb-24 md:pb-0">
       <BackLink href={backHref} label={pr.backLabel} />
-      {erroDe(erro) && (
-        <p role="alert" className="rounded-xl bg-rosa px-3 py-2 text-sm font-medium">
-          {erroDe(erro)}
-        </p>
-      )}
 
-      <details className="group">
-        <summary className="flex cursor-pointer list-none items-center gap-2.5 [&::-webkit-details-marker]:hidden">
-          <h1 className="min-w-0 font-display text-[30px] leading-[34px] font-extrabold break-words">{p.name}</h1>
-          <span className="shrink-0 rounded-full border border-linha px-2.5 py-1 text-xs font-semibold text-tinta-suave group-open:hidden">
-            {pr.editName}
-          </span>
-        </summary>
-        <form action={renomearPessoa} className="mt-2 flex max-w-[440px] gap-2">
-          <input type="hidden" name="personId" value={p.id} />
-          <input
-            name="name"
-            defaultValue={p.name}
-            maxLength={40}
-            required
-            aria-label={pr.newNameAria}
-            className="h-11 min-w-0 grow rounded-xl border-[1.5px] border-linha bg-cartao px-3 text-base text-tinta outline-none focus:border-tinta"
-          />
-          <button type="submit" className="h-11 shrink-0 rounded-full bg-tinta px-4 text-sm font-semibold text-papel">
-            {dict.common.save}
-          </button>
-        </form>
-      </details>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <details className="group min-w-0 flex-1">
+          <summary className="flex cursor-pointer list-none items-center gap-2.5 [&::-webkit-details-marker]:hidden">
+            <h1 className="min-w-0 font-display text-[28px] leading-[32px] font-extrabold break-words lg:text-[30px] lg:leading-[34px]">
+              {p.name}
+            </h1>
+            <span className="shrink-0 rounded-full border border-linha px-2.5 py-1 text-xs font-semibold text-tinta-suave group-open:hidden">
+              {pr.editName}
+            </span>
+          </summary>
+          <form action={renomearPessoa} className="mt-2 flex max-w-[440px] gap-2">
+            <input type="hidden" name="personId" value={p.id} />
+            <input
+              name="name"
+              defaultValue={p.name}
+              maxLength={40}
+              required
+              aria-label={pr.newNameAria}
+              className="h-11 min-w-0 grow rounded-xl border-[1.5px] border-linha bg-cartao px-3 text-base text-tinta outline-none focus:border-tinta"
+            />
+            <button type="submit" className="h-11 shrink-0 rounded-full bg-tinta px-4 text-sm font-semibold text-papel">
+              {dict.common.save}
+            </button>
+          </form>
+        </details>
+
+        <NewSplitButton
+          personId={p.id}
+          personName={p.name}
+          label={createLabel}
+          title={pr.formTitle(p.name)}
+          errorMessage={errMsg}
+          t={ac.entryForm}
+        />
+      </div>
 
       <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[1.12fr_0.88fr] lg:items-start lg:gap-6">
         <div className="flex min-w-0 flex-col gap-4">
@@ -124,15 +135,28 @@ export default async function PessoaPage({
                 <li className="py-4 text-sm text-tinta-suave">{pr.emptyHistory(p.name)}</li>
               )}
             </ul>
-            <p className="text-xs leading-[18px] text-tinta-suave">
+            <p className="hidden text-xs leading-[18px] text-tinta-suave lg:block">
               {pr.footerExplain(p.name, monthName(new Date().toISOString().slice(0, 7), locale))}
             </p>
           </section>
+
+          <form action={apagarPessoa} className="self-center lg:hidden">
+            <input type="hidden" name="personId" value={p.id} />
+            <button type="submit" className="min-h-11 text-[13px] font-semibold text-vermelho-texto">
+              {pr.deletePerson(p.name)}
+            </button>
+          </form>
         </div>
 
-        <div className="flex min-w-0 flex-col gap-4">
+        {/* Desktop mantém a coluna lateral; no mobile o botão "+ Criar acerto" abre o modal limpo. */}
+        <div className="hidden min-w-0 flex-col gap-4 lg:flex">
           <section className="flex flex-col gap-2.5 rounded-2xl border border-linha bg-cartao p-4">
             <Eyebrow>{pr.formTitle(p.name)}</Eyebrow>
+            {errMsg && (
+              <p role="alert" className="rounded-xl bg-rosa px-3 py-2 text-sm font-medium">
+                {errMsg}
+              </p>
+            )}
             <EntryForm personId={p.id} t={ac.entryForm} />
           </section>
 

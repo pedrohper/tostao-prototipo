@@ -13,7 +13,7 @@ import {
 import { api, ApiError } from '@/lib/api';
 import { currentMonth, parseMoney, shiftMonth, todayIso } from '@/lib/format';
 import { isSafePathSegment, safeInternalPath, safePathSegment } from '@/lib/safe-redirect';
-import { rethrowIfRedirect } from '@/lib/rethrow';
+import { orFallback, rethrowIfRedirect } from '@/lib/rethrow';
 import { flashToast } from '@/lib/flash-toast-server';
 import { recentDescriptions } from '@/lib/quick-add';
 import { recurringBodyFrom } from '@/lib/recurring-form';
@@ -286,8 +286,12 @@ export async function loadQuickAddData(): Promise<{ data?: QuickAddData; error?:
     const month = currentMonth();
     const [{ categories }, now, before] = await Promise.all([
       api<{ categories: CategoryDTO[] }>('/categories'),
-      api<{ transactions: TransactionDTO[] }>(`/transactions?month=${month}`),
-      api<{ transactions: TransactionDTO[] }>(`/transactions?month=${shiftMonth(month, -1)}`),
+      api<{ transactions: TransactionDTO[] }>(`/transactions?month=${month}`).catch(orFallback({ transactions: [] })),
+      api<{ transactions: TransactionDTO[] }>(`/transactions?month=${shiftMonth(month, -1)}`).catch(
+        orFallback({
+          transactions: [],
+        }),
+      ),
     ]);
     return {
       data: {
