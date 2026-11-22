@@ -25,6 +25,75 @@ export const ICON_SVGS: Record<string, React.ReactNode> = {
       <path d="M11 11h2" />
     </>
   ),
+  // Categorias extras (sem arte ilustrada ainda): traço limpo em currentColor, no mesmo estilo dos de cima.
+  'cat/pets': (
+    <>
+      <circle cx="6.5" cy="10.5" r="1.7" />
+      <circle cx="10" cy="6.5" r="1.7" />
+      <circle cx="14" cy="6.5" r="1.7" />
+      <circle cx="17.5" cy="10.5" r="1.7" />
+      <path d="M12 12.5c-3 0-5 2.6-5 4.5 0 1.6 1.3 2.4 2.7 2.4 1 0 1.5-.5 2.3-.5s1.3.5 2.3.5c1.4 0 2.7-.8 2.7-2.4 0-1.9-2-4.5-5-4.5z" />
+    </>
+  ),
+  'cat/beleza': (
+    <>
+      <circle cx="6" cy="6" r="2.5" />
+      <circle cx="6" cy="18" r="2.5" />
+      <path d="M8 7.6L20 18M8 16.4L20 6" />
+    </>
+  ),
+  'cat/viagem': (
+    <>
+      <rect x="4" y="7" width="16" height="13" rx="2.5" />
+      <path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7" />
+      <path d="M9 11v5M15 11v5" />
+    </>
+  ),
+  'cat/presentes': (
+    <>
+      <rect x="3.5" y="9" width="17" height="4" rx="1" />
+      <path d="M5 13v7h14v-7M12 9v11" />
+      <path d="M12 9C10 9 8 8 8 6.2 8 4.8 9.2 4 10.3 4.4 11.6 4.9 12 7 12 9zM12 9c2 0 4-1 4-2.8 0-1.4-1.2-2.2-2.3-1.8C12.4 4.9 12 7 12 9z" />
+    </>
+  ),
+  'cat/taxas': (
+    <>
+      <path d="M6 3h12v18l-3-2-3 2-3-2-3 2z" />
+      <path d="M9 8h6M9 12h6" />
+    </>
+  ),
+  'cat/dividas': (
+    <>
+      <rect x="2.5" y="5" width="19" height="14" rx="3" />
+      <path d="M2.5 10h19M6.5 15h3.5" />
+    </>
+  ),
+  'cat/investimentos': (
+    <>
+      <path d="M4 4v16h16" />
+      <path d="M7.5 15l3.5-3.5 3 3 5-6" />
+      <path d="M15.5 8.5H19V12" />
+    </>
+  ),
+  'cat/freela': (
+    <>
+      <rect x="5" y="5" width="14" height="10" rx="2" />
+      <path d="M2.5 19h19" />
+    </>
+  ),
+  'cat/reembolso': (
+    <>
+      <path d="M9 7L4.5 11.5 9 16" />
+      <path d="M4.5 11.5H15a4.5 4.5 0 0 1 0 9h-3" />
+    </>
+  ),
+  'cat/rendimentos': (
+    <>
+      <path d="M12 21v-9" />
+      <path d="M12 12c0-3.5-2.5-5.5-6-5.5 0 3.5 2.5 5.5 6 5.5z" />
+      <path d="M12 14.5c0-3 2.2-5 5.5-5 0 3-2.2 5-5.5 5z" />
+    </>
+  ),
   'cat/assinaturas': (
     <>
       <rect x="2" y="5" width="20" height="14" rx="3" />
@@ -508,6 +577,16 @@ const CATEGORIAS_COM_ICONE = new Set([
   'saude',
   'sem-categoria',
   'transporte',
+  'pets',
+  'beleza',
+  'viagem',
+  'presentes',
+  'taxas',
+  'dividas',
+  'investimentos',
+  'freela',
+  'reembolso',
+  'rendimentos',
 ]);
 
 /** Ícone da categoria: desenho próprio pras do sistema, emoji pras que a pessoa criou. */

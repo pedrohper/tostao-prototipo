@@ -8,7 +8,7 @@ import { useToast } from '@/components/toast';
 import { getDictionary, type Locale } from '@/lib/i18n';
 import { canSaveQuickAdd } from '@/lib/quick-add';
 import { centsFromMasked } from '@/lib/money-mask';
-import { AmountInput, CategoryPills, DateChips, DescriptionInput, NoteField } from './quick-add-fields';
+import { AmountInput, CategoryField, DateChips, DescriptionInput, NoteField } from './quick-add-fields';
 
 /**
  * Formulário compacto de anotar: valor com máscara, Hoje/Ontem, descrição com sugestões, categoria com ícone, nota
@@ -34,7 +34,6 @@ export function QuickAddForm({
   const [date, setDate] = useState(data.today);
   const [description, setDescription] = useState('');
   const [cat, setCat] = useState<string | null>(null);
-  const [showAll, setShowAll] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [note, setNote] = useState('');
   // "Repetir todo mês" automático (T5.2): a folha cria uma regra mensal (dinheiro/sem conta). Parcelar e conta: no /anotar.
@@ -91,15 +90,13 @@ export function QuickAddForm({
         label={q.descLabel}
         placeholder={q.descPlaceholder}
       />
-      <CategoryPills
+      <CategoryField
         categories={data.categories}
         kind={kind}
         value={cat}
         onChange={setCat}
-        showAll={showAll}
-        onShowAll={() => setShowAll(true)}
         legend={q.categoryLabel}
-        moreLabel={q.moreCategories}
+        locale={locale}
       />
       <NoteField
         value={note}
@@ -262,7 +259,7 @@ export function QuickAddSheet({
   );
 }
 
-/** Botão que abre a folha: `fab` (redondo, flutuante, só no mobile) ou `inline` (pílula na página). */
+/** Botão que abre a folha: `fab` (laranja, flutuante, some no desktop `lg:`) ou `inline` (pílula na página). */
 export function QuickAddButton({
   variant = 'inline',
   label,
@@ -275,7 +272,7 @@ export function QuickAddButton({
   const [open, setOpen] = useState(false);
   const className =
     variant === 'fab'
-      ? 'fixed right-5 bottom-[calc(86px+env(safe-area-inset-bottom))] z-20 flex h-13 items-center gap-2 rounded-full bg-tinta pr-5 pl-4 text-[15px] font-semibold text-papel shadow-[0_4px_16px_rgba(30,27,24,0.28)] md:hidden'
+      ? 'fixed right-5 bottom-[calc(86px+env(safe-area-inset-bottom))] z-20 flex h-13 items-center gap-2 rounded-full bg-laranja pr-5 pl-4 text-[15px] font-bold text-tinta-fixa shadow-[0_4px_16px_rgba(30,27,24,0.28)] md:bottom-6 lg:hidden'
       : 'flex h-11 items-center justify-center rounded-full bg-laranja px-5 text-[15px] font-bold text-tinta-fixa';
   return (
     <>

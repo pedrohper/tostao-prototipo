@@ -126,6 +126,7 @@ export default async function CategorizarPage({
               id={t.id}
               back={back}
               options={options}
+              kind={kind}
               current={t.categoryId}
               rulePattern={rulePattern}
               locale={locale}

@@ -1512,6 +1512,25 @@ export interface Dictionary {
       loadError: string;
       fullForm: string;
     };
+    categoryPicker: {
+      searchLabel: string;
+      searchPlaceholder: string;
+      noResults: string;
+      create: string;
+      createTitle: string;
+      nameLabel: string;
+      namePlaceholder: string;
+      colorLabel: string;
+      colorNames: { rosa: string; amarelo: string; menta: string; azul: string; bege: string; laranja: string };
+      kindLabel: string;
+      kindOut: string;
+      kindIn: string;
+      submit: string;
+      submitting: string;
+      cancel: string;
+      createError: string;
+      createdOtherKind: (name: string, kind: 'saida' | 'entrada') => string;
+    };
     wallet: {
       accountFilterLabel: string;
       searchClear: string;

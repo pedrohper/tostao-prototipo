@@ -91,7 +91,7 @@ export function SwipeSheet({
   const fade = closing ? 0 : Math.max(0, 1 - dy / panelHeight);
 
   return (
-    <div className="fixed inset-0 z-30 flex flex-col md:items-center md:justify-center md:p-6">
+    <div className="fixed inset-x-0 top-0 z-30 flex h-dvh flex-col md:items-center md:justify-center md:p-6">
       <div
         aria-hidden="true"
         onClick={fechar}
@@ -150,7 +150,9 @@ export function SwipeSheet({
             </svg>
           </button>
         </div>
-        <div className="flex min-h-0 grow flex-col gap-3.5 overflow-y-auto px-5 pb-7 md:px-6 md:pb-6">{children}</div>
+        <div className="flex min-h-0 grow flex-col gap-3.5 overflow-y-auto px-5 pb-[max(1.75rem,env(safe-area-inset-bottom))] md:px-6 md:pb-6">
+          {children}
+        </div>
       </div>
     </div>
   );

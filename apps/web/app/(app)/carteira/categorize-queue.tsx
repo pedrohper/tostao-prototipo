@@ -2,8 +2,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import type { CategoryDTO } from '@tostao/contracts';
-import { CatIcon } from '@/components/icone';
-import { pill } from '@/components/sheet';
+import { CategoryPicker } from '@/components/category-picker';
 import { useToast } from '@/components/toast';
 import { money, shortDate } from '@/lib/format';
 import { getDictionary, type Locale } from '@/lib/i18n';
@@ -55,9 +54,7 @@ export function CategorizeQueue({
     );
   }
 
-  const options = categories.filter(
-    (c) => c.kind === 'neutra' || c.kind === (current.amountInCents > 0 ? 'entrada' : 'saida'),
-  );
+  const kind = current.amountInCents > 0 ? 'entrada' : 'saida';
 
   const pick = (categoryId: string) => {
     startTransition(async () => {
@@ -97,19 +94,18 @@ export function CategorizeQueue({
           {money(Math.abs(current.amountInCents))}
         </span>
       </div>
-      <div className="flex flex-wrap gap-2" aria-busy={busy}>
-        {options.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            disabled={busy}
-            onClick={() => pick(c.id)}
-            className={`${pill(false)} h-11 gap-1.5 px-3.5 whitespace-nowrap disabled:opacity-50`}
-          >
-            <CatIcon id={c.id} emoji={c.emoji} size={18} />
-            <span>{c.name}</span>
-          </button>
-        ))}
+      {/* Um toque numa categoria (ou numa recém-criada em "+ Criar categoria") já categoriza e passa pra próxima. */}
+      <div aria-busy={busy}>
+        <CategoryPicker
+          categories={categories}
+          kind={kind}
+          includeNeutral
+          value={null}
+          onChange={(id) => id && pick(id)}
+          label={w.categorizeMode}
+          disabled={busy}
+          locale={locale}
+        />
       </div>
       <label className="flex min-h-11 cursor-pointer items-center gap-3 text-[13px] leading-[18px] text-tinta-suave">
         <input
