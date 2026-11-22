@@ -25,17 +25,14 @@ const resize = (size) => sharp(src).resize(size, size, { kernel: 'lanczos3' });
 await resize(192).png({ compressionLevel: 9 }).toFile(out('icon-192.png'));
 await resize(512).png({ compressionLevel: 9 }).toFile(out('icon-512.png'));
 
-// Maskable: o sistema recorta num círculo/arredondado, então o fundo vai até a borda (opaco) e o mascote fica na zona segura (80%).
-// Antes de reduzir, corta a margem do ícone (os cantos arredondados e o fundo ao redor), senão o contorno dele aparece
-// como um quadradinho mais claro dentro do fundo cheio.
-const pad = Math.round(meta.width * 0.07);
-const inner = await sharp(src)
-  .extract({ left: pad, top: pad, width: meta.width - 2 * pad, height: meta.height - 2 * pad })
-  .resize(Math.round(512 * 0.78), Math.round(512 * 0.78), { kernel: 'lanczos3' })
-  .png()
-  .toBuffer();
-await sharp({ create: { width: 512, height: 512, channels: 3, background: { r, g, b } } })
-  .composite([{ input: inner, gravity: 'center' }])
+// Maskable: o sistema recorta num círculo/arredondado, então o fundo precisa ser opaco até as bordas.
+// Como o ícone do mascote preenche o quadro inteiro (orelhas e boné sangrando na borda), achatamos direto sobre a cor
+// dominante sem encolher pra não criar degrau quadrado no boné nem nas orelhas; a zona segura central (80%) já preserva
+// olhos, focinho e sorriso intactos.
+await sharp(src)
+  .resize(512, 512, { kernel: 'lanczos3' })
+  .flatten({ background: { r, g, b } })
+  .removeAlpha()
   .png({ compressionLevel: 9 })
   .toFile(out('icon-maskable-512.png'));
 console.log(`Ícones PWA regenerados de icon.png (${meta.width}px), fundo rgb(${r}, ${g}, ${b}).`);
