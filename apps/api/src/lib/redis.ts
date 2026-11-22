@@ -14,6 +14,10 @@ export interface KeyValueStore {
   /** Subtrai 1 (estorno de cota reservada); nunca deixa abaixo de 0. Não cria a chave. */
   decr(key: string): Promise<void>;
   del(key: string): Promise<void>;
+  /** Guarda SÓ se a chave não existe (SET NX): base do lock distribuído. true = esta chamada ganhou. */
+  setnx(key: string, value: string, ttlSeconds: number): Promise<boolean>;
+  /** Apaga só se o valor ainda é `value` (quem libera o lock é o dono; um lock já expirado e retomado por outro não cai). */
+  delIfEquals(key: string, value: string): Promise<boolean>;
 }
 
 /** Só pra testes. Relógio injetável pra testar validade sem esperar. */
@@ -53,6 +57,16 @@ export class MemoryKeyValueStore implements KeyValueStore {
   }
   async del(key: string) {
     this.data.delete(key);
+  }
+  async setnx(key: string, value: string, ttlSeconds: number) {
+    if (this.live(key)) return false;
+    this.data.set(key, { value, expiresAt: this.now() + ttlSeconds * 1000 });
+    return true;
+  }
+  async delIfEquals(key: string, value: string) {
+    if (this.live(key)?.value !== value) return false;
+    this.data.delete(key);
+    return true;
   }
 }
 
@@ -111,6 +125,19 @@ export class RedisKeyValueStore implements KeyValueStore {
   }
   async del(key: string) {
     await this.redis.del(this.k(key));
+  }
+  async setnx(key: string, value: string, ttlSeconds: number) {
+    return (await this.redis.set(this.k(key), value, 'EX', ttlSeconds, 'NX')) === 'OK';
+  }
+  async delIfEquals(key: string, value: string) {
+    // Lua: comparar e apagar numa operação só (um GET seguido de DEL poderia apagar o lock de outro).
+    const n = await this.redis.eval(
+      "if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) else return 0 end",
+      1,
+      this.k(key),
+      value,
+    );
+    return n === 1;
   }
 }
 

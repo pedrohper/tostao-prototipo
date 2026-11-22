@@ -254,12 +254,6 @@ export const en: Dictionary = {
     whatsappConnectedBadge: 'Connected',
     whatsappOffBadge: 'Off',
   },
-  auth: {
-    splitSlogan: 'Money explained, penny by penny',
-    splitHighlight1: 'Central Bank regulated Open Finance, read-only',
-    splitHighlight2: '2-minute lessons built from your real statement',
-    splitHighlight3: 'No sermons, no complicated spreadsheets',
-  },
   auto: {
     hubTitle: 'Tostão',
     tabConversation: 'Chat',
@@ -393,6 +387,7 @@ export const en: Dictionary = {
       continueGoogle: 'Continue with Google',
       continueApple: 'Continue with Apple',
       orEmail: 'or with email',
+      orContinueWith: 'or continue with',
       signupTermsPrefix: 'By continuing with Google or Apple, you confirm you are 18+ and accept the ',
       errors: {
         unconfiguredGoogle: 'Google sign-in is not enabled on this server yet. Use email for now.',

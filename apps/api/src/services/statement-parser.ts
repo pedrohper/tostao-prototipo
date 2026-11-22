@@ -5,7 +5,7 @@ import { daysInMonth, noonOfCivilDay } from '../lib/tz.js';
 
 export type ParsedTransaction = { externalId: string; occurredAt: Date; amountInCents: number; description: string };
 export type ParsedStatement = {
-  format: 'ofx' | 'csv';
+  format: 'ofx' | 'csv' | 'pdf';
   kind: 'BANK' | 'CREDIT';
   balanceInCents: number | null;
   transactions: ParsedTransaction[];

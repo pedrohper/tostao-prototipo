@@ -233,12 +233,6 @@ export interface Dictionary {
     whatsappConnectedBadge: string;
     whatsappOffBadge: string;
   };
-  auth: {
-    splitSlogan: string;
-    splitHighlight1: string;
-    splitHighlight2: string;
-    splitHighlight3: string;
-  };
   auto: {
     hubTitle: string;
     tabConversation: string;
@@ -355,6 +349,7 @@ export interface Dictionary {
       continueGoogle: string;
       continueApple: string;
       orEmail: string;
+      orContinueWith: string;
       signupTermsPrefix: string;
       errors: {
         unconfiguredGoogle: string;

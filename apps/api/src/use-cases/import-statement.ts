@@ -6,7 +6,12 @@ import {
   internalTransferUpdates,
   PAIR_WINDOW_DAYS,
 } from '../services/internal-transfers.js';
-import { parseStatement, StatementParseError, type SignConvention } from '../services/statement-parser.js';
+import {
+  parseStatement,
+  StatementParseError,
+  type ParsedStatement,
+  type SignConvention,
+} from '../services/statement-parser.js';
 import { reconcileManualEntries } from './reconcile-manual-entries.js';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -55,6 +60,24 @@ export class ImportStatementUseCase {
       if (e instanceof StatementParseError) throw new AppError(e.message, 400);
       throw e;
     }
+    return this.persist(userId, accountName, parsed);
+  }
+
+  /** Extrato já lido e (se foi o caso) conferido pela pessoa, ex.: a pré-visualização do PDF. Mesma gravação do OFX/CSV. */
+  async executeParsed({
+    userId,
+    accountName,
+    parsed,
+  }: {
+    userId: string;
+    accountName: string;
+    parsed: ParsedStatement;
+  }) {
+    if (parsed.transactions.length === 0) throw new AppError('Nenhuma transação encontrada nesse arquivo.', 400);
+    return this.persist(userId, accountName, parsed);
+  }
+
+  private async persist(userId: string, accountName: string, parsed: ParsedStatement) {
     const name = accountName.trim() || (parsed.kind === 'CREDIT' ? 'Cartão importado' : 'Conta importada');
     const itemId = `${IMPORT_PREFIX}${slug(name) || 'conta'}`;
     const { connections, accounts, transactions, rules } = this.repos;

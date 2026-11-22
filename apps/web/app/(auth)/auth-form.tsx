@@ -62,10 +62,13 @@ export function AuthForm({
   mode,
   invite,
   t,
+  children,
 }: {
   mode: 'entrar' | 'criar';
   invite?: string;
   t: Dictionary['authPages']['form'];
+  /** Bloco de login social: sobe pro topo no mobile e desce pra depois do botão principal no desktop. */
+  children?: React.ReactNode;
 }) {
   const [state, action, pending] = useActionState<FormState, FormData>(mode === 'entrar' ? login : register, {});
   const f = state.fields ?? {};
@@ -130,10 +133,11 @@ export function AuthForm({
       <button
         type="submit"
         disabled={pending}
-        className="flex h-[54px] items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel transition active:translate-y-px disabled:opacity-50"
+        className="flex h-[54px] items-center justify-center rounded-full bg-laranja text-base font-bold text-tinta-fixa transition hover:brightness-95 active:translate-y-px disabled:opacity-50"
       >
         {pending ? t.submitPending : criar ? t.createAccount : t.signIn}
       </button>
+      {children && <div className="order-first lg:order-none">{children}</div>}
       <div className="grow lg:grow-0" />
       <p className="text-center text-sm text-tinta-suave">
         {criar ? (

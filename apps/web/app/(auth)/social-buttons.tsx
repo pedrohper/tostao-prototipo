@@ -103,9 +103,12 @@ export function SocialAuthButtons({
         </p>
       )}
       <ErrorNote message={errorMessage} />
-      <div className="my-1 flex items-center gap-3 text-xs font-semibold tracking-wide text-tinta-suave uppercase">
+      {/* Mobile: o divisor fecha o bloco social ("ou com e-mail", e o formulário vem depois).
+          Desktop: o divisor abre o bloco, que fica abaixo do botão principal ("ou continue com"). */}
+      <div className="order-last my-1 flex items-center gap-3 text-xs font-semibold tracking-wide text-tinta-suave uppercase lg:order-first">
         <span className="h-px grow bg-linha" aria-hidden="true" />
-        <span>{social.orEmail}</span>
+        <span className="lg:hidden">{social.orEmail}</span>
+        <span className="hidden lg:inline">{social.orContinueWith}</span>
         <span className="h-px grow bg-linha" aria-hidden="true" />
       </div>
     </div>

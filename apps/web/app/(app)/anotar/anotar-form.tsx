@@ -7,6 +7,8 @@ import { pill } from '@/components/sheet';
 import { useToast } from '@/components/toast';
 import { AmountInput, CategoryField, DateChips, DescriptionInput, NoteField } from '@/components/quick-add-fields';
 import { centsFromMasked } from '@/lib/money-mask';
+import { money } from '@/lib/format';
+import { installmentCents } from '@/lib/recurring-form';
 import { canSaveQuickAdd } from '@/lib/quick-add';
 import { getDictionary, type Locale } from '@/lib/i18n';
 import { createManual, type ActionState } from '../carteira/actions';
@@ -69,8 +71,12 @@ export function AnotarForm({
   const [conta, setConta] = useState<string | null>(null);
   const [repete, setRepete] = useState<'nao' | 'mensal' | 'parcelado'>('nao');
   const [vezes, setVezes] = useState(2);
+  // "Lançar sozinho" (T5.2): vira uma regra que o app executa no dia. Só vale pra dinheiro ou conta manual/importada
+  // (conta ligada ao banco já recebe o lançamento de verdade: lançar sozinho duplicaria).
+  const [automatico, setAutomatico] = useState(true);
   const ready = canSaveQuickAdd({ cents: centsFromMasked(amount), description });
   const escolhida = contas.find((c) => c.id === conta);
+  const podeAutomatico = !escolhida?.auto;
 
   return (
     <form action={action} className="flex min-h-0 grow flex-col">
@@ -190,6 +196,30 @@ export function AnotarForm({
                 ? labels.repeatMonthlyHint
                 : labels.repeatInstallmentHint(vezes)}
           </p>
+          {repete !== 'nao' && (
+            <label
+              className={`flex items-start gap-2.5 rounded-xl border-[1.5px] border-linha bg-cartao px-3 py-2.5 ${podeAutomatico ? 'cursor-pointer' : 'opacity-60'}`}
+            >
+              <input
+                type="checkbox"
+                name="automatic"
+                checked={automatico && podeAutomatico}
+                disabled={!podeAutomatico}
+                onChange={(e) => setAutomatico(e.target.checked)}
+                className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--color-tinta)]"
+              />
+              <span className="flex flex-col text-[14px] leading-5">
+                <b className="font-semibold">Lançar sozinho no dia</b>
+                <span className="text-[12px] leading-[17px] text-tinta-suave">
+                  {!podeAutomatico
+                    ? 'Essa conta é ligada ao banco e já traz os lançamentos sozinha.'
+                    : repete === 'parcelado'
+                      ? `Cada parcela de ${money(installmentCents(centsFromMasked(amount) ?? 0, vezes))} entra sozinha todo mês, na data certa, e o saldo da conta manual acompanha.`
+                      : 'O Tostão lança todo mês, na data certa, sem você precisar anotar de novo. Dá pra pausar ou apagar depois.'}
+                </span>
+              </span>
+            </label>
+          )}
         </fieldset>
         <CategoryField
           categories={categories}

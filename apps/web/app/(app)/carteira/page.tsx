@@ -1,3 +1,4 @@
+import { ReconcileBalanceCard, type ReconcileAccount } from '@/components/reconcile-balance-card';
 import { CardNetworkBadge, BankBadge } from '@/components/banco';
 import { getBankLogos } from '@/lib/api-queries';
 import Link from 'next/link';
@@ -180,6 +181,14 @@ export default async function CarteiraPage({
       });
     }
   }
+  // "Conferir saldo" (T5.2): só conta manual ou importada (a ligada ao banco tem o saldo do banco).
+  const reconcilable: ReconcileAccount[] = (profile?.connections ?? [])
+    .filter((c) => c.isImport || c.isManual)
+    .flatMap((c) =>
+      c.accounts
+        .filter((a) => !a.hidden)
+        .map((a) => ({ id: a.id, name: a.name, type: a.type, balanceInCents: a.balanceInCents })),
+    );
 
   const totalBankBalance = summary.balanceInCents ?? bancos.reduce((s, a) => s + a.balanceInCents, 0);
   const totalOpenBills = cartoes.reduce((s, a) => s + Math.max(0, -a.balanceInCents), 0);
@@ -879,6 +888,8 @@ export default async function CarteiraPage({
               <p className="max-w-[320px] text-[15px] text-tinta-suave">{tw.noAccountsEmpty}</p>
             </div>
           )}
+
+          {reconcilable.length > 0 && <ReconcileBalanceCard accounts={reconcilable} />}
 
           <div className="flex justify-center pt-1">
             <Link

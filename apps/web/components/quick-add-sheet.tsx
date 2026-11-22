@@ -36,6 +36,8 @@ export function QuickAddForm({
   const [cat, setCat] = useState<string | null>(null);
   const [noteOpen, setNoteOpen] = useState(false);
   const [note, setNote] = useState('');
+  // "Repetir todo mês" automático (T5.2): a folha cria uma regra mensal (dinheiro/sem conta). Parcelar e conta: no /anotar.
+  const [monthly, setMonthly] = useState(false);
 
   // Roda a cada envio (não num efeito): mostra o toast, limpa o que muda de um lançamento pro outro e avisa a folha.
   const [state, action, pending] = useActionState<ActionState, FormData>(async (prev, formData) => {
@@ -50,6 +52,7 @@ export function QuickAddForm({
         setCat(null);
         setNote('');
         setNoteOpen(false);
+        setMonthly(false);
       }
       onSaved(another);
     }
@@ -103,6 +106,26 @@ export function QuickAddForm({
         addLabel={q.addNote}
         placeholder={q.notePlaceholder}
       />
+      <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border-[1.5px] border-linha bg-cartao px-3 py-2.5">
+        <input
+          type="checkbox"
+          checked={monthly}
+          onChange={(e) => setMonthly(e.target.checked)}
+          className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--color-tinta)]"
+        />
+        <span className="flex flex-col text-[14px] leading-5">
+          <b className="font-semibold">Repetir todo mês</b>
+          <span className="text-[12px] leading-[17px] text-tinta-suave">
+            O Tostão lança sozinho no dia. Pra parcelar ou escolher a conta, use “Mais opções”.
+          </span>
+        </span>
+      </label>
+      {monthly && (
+        <>
+          <input type="hidden" name="repeat" value="mensal" />
+          <input type="hidden" name="automatic" value="on" />
+        </>
+      )}
       <ErrorNote message={state.error} />
       <div className="flex flex-col gap-2 pt-1">
         <button

@@ -1,10 +1,15 @@
 import Link from 'next/link';
 import { Mascot } from '@/components/mascote';
-import { getI18n } from '@/lib/i18n-server';
 
-function Wordmark() {
+function Wordmark({ className = 'text-tinta' }: { className?: string }) {
   return (
-    <svg viewBox="-10 -200 626 210" width={120} height={40} aria-hidden="true" className="h-auto w-[120px] text-tinta">
+    <svg
+      viewBox="-10 -200 626 210"
+      width={120}
+      height={40}
+      aria-hidden="true"
+      className={`h-auto w-[120px] ${className}`}
+    >
       <path
         d="M53.60 2.60Q35 2.60 26.20-7.30Q17.40-17.20 17.40-39L17.40-80.40L2.40-80.40L3-105.40L13.80-105.40Q20.20-105.60 23.50-107.40Q26.80-109.20 27.60-114.20L30.20-129L48.40-129L48.40-105.60L73.80-105.60L73.80-79.40L48.40-79.40L48.40-40.40Q48.40-33.60 51.70-30.40Q55-27.20 61.80-27.20Q65.60-27.20 69-28Q72.40-28.80 74.60-30.20L74.60-0.40Q68.20 1.60 62.90 2.10Q57.60 2.60 53.60 2.60"
         fill="currentColor"
@@ -41,55 +46,61 @@ function Wordmark() {
   );
 }
 
-function CheckIcon() {
+/** Rabiscos de gráfico e moedas flutuando no painel. Só decoração, por isso aria-hidden. */
+function Doodles() {
   return (
     <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
+      viewBox="0 0 360 300"
       fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
       aria-hidden="true"
+      className="pointer-events-none absolute top-[14%] right-[6%] w-[min(46%,320px)] text-tinta-fixa"
     >
-      <path d="M5 12.5l4.5 4.5L19 7.5" />
+      {/* folha com gráfico de barras */}
+      <g transform="rotate(8 150 130)">
+        <rect x="60" y="30" width="190" height="210" rx="14" fill="#fffdf9" stroke="currentColor" strokeWidth="4" />
+        <path d="M86 70v140h140" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+        <rect x="104" y="150" width="30" height="60" rx="5" fill="#3dd6a0" stroke="currentColor" strokeWidth="3.5" />
+        <rect x="148" y="118" width="30" height="92" rx="5" fill="#ffc233" stroke="currentColor" strokeWidth="3.5" />
+        <rect x="192" y="76" width="30" height="134" rx="5" fill="#ff5a36" stroke="currentColor" strokeWidth="3.5" />
+      </g>
+      {/* moedas */}
+      <g stroke="currentColor" strokeWidth="3.5">
+        <circle cx="300" cy="190" r="22" fill="#ffc233" />
+        <circle cx="300" cy="190" r="12" strokeWidth="2.5" />
+        <circle cx="262" cy="262" r="16" fill="#ffc233" />
+        <circle cx="262" cy="262" r="8" strokeWidth="2.5" />
+      </g>
+      {/* brilhos */}
+      <g fill="#ffc233" stroke="currentColor" strokeWidth="3" strokeLinejoin="round">
+        <path d="M28 70l7 16 16 7-16 7-7 16-7-16-16-7 16-7z" />
+        <path d="M318 40l5 11 11 5-11 5-5 11-5-11-11-5 11-5z" />
+      </g>
+      <g stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+        <path d="M20 190h14M27 183v14" />
+        <path d="M330 120h12M336 114v12" />
+      </g>
     </svg>
   );
 }
 
-export default async function AuthLayout({ children }: { children: React.ReactNode }) {
-  const { t } = await getI18n();
-  const highlights = [t.auth.splitHighlight1, t.auth.splitHighlight2, t.auth.splitHighlight3];
-
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto flex min-h-dvh max-w-[420px] flex-col bg-papel text-tinta lg:grid lg:max-w-none lg:grid-cols-2 lg:p-0">
-      <div className="flex min-h-dvh flex-col bg-papel lg:min-h-0 lg:justify-center">
+    <div className="mx-auto flex min-h-dvh max-w-[420px] flex-col bg-papel text-tinta lg:grid lg:max-w-none lg:grid-cols-2">
+      <div className="flex min-h-dvh flex-col bg-papel lg:min-h-0 lg:items-center lg:justify-center">
         <main className="mx-auto flex w-full max-w-[420px] grow flex-col gap-4 px-5 pt-6 pb-6 lg:grow-0 lg:px-6 lg:py-10">
-          <Link href="/" aria-label="Tostão" className="hidden self-start lg:mb-2 lg:inline-block">
-            <Wordmark />
-          </Link>
           {children}
         </main>
       </div>
 
-      <aside className="hidden flex-col items-center justify-center border-l border-linha bg-papel-2 p-12 lg:flex">
-        <div className="flex w-full max-w-[440px] flex-col items-center gap-6 text-center">
-          <Mascot pose="dupla" size={240} alt="Tostão e Caramelo" />
-          <h2 className="font-display text-[32px] leading-[36px] font-extrabold tracking-[-0.5px] text-tinta">
-            {t.auth.splitSlogan}
-          </h2>
-          <ul className="flex w-full flex-col gap-3.5 rounded-[22px] border border-linha bg-cartao p-6 text-left shadow-[0_10px_30px_rgba(30,27,24,0.06)]">
-            {highlights.map((item) => (
-              <li key={item} className="flex items-start gap-3 text-[15px] leading-[22px] font-medium text-tinta">
-                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-menta-clara text-verde-texto">
-                  <CheckIcon />
-                </span>
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
+      {/* Painel ilustrado: fundo quente fixo (não muda com o tema) e fica à esquerda no desktop. */}
+      <aside className="relative m-6 hidden min-h-[calc(100dvh-3rem)] overflow-hidden rounded-[28px] bg-[#FFF1E6] lg:order-first lg:block">
+        <Link href="/" aria-label="Tostão" className="absolute top-8 left-9 z-10 inline-block">
+          <Wordmark className="text-tinta-fixa" />
+        </Link>
+        <Doodles />
+        {/* Mascote grandão, cortado pela borda de baixo como se estivesse espiando */}
+        <div className="pointer-events-none absolute bottom-0 left-[4%] w-[min(86%,520px)] translate-y-[14%]">
+          <Mascot pose="acenando" size={479} alt="" className="h-auto w-full" eager />
         </div>
       </aside>
     </div>

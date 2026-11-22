@@ -31,6 +31,8 @@ import type {
   TostaoAutoConfig,
   OAuthAccount,
   OAuthProvider,
+  RecurringRule,
+  AutomationToken,
 } from '../domain/entities.js';
 import type { FinancialPlan, UpdateTostaoAutoConfigBody } from '@tostao/contracts';
 
@@ -211,6 +213,53 @@ export interface TransactionsRepository {
   findByPerson(userId: string, personId: string): Promise<Transaction[]>;
   /** Tudo que foi anotado à mão (sem externalId), mais recente primeiro. */
   findManualByUser(userId: string): Promise<Transaction[]>;
+  /**
+   * Lançamentos de conta MANUAL (de qualquer pessoa) cuja data já chegou (`occurredAt <= now`) e que ainda não pesaram
+   * no saldo (`balanceAppliedAt` nulo). É o que o job de materialização aplica. Mais antigos primeiro.
+   */
+  findBalancePending(now: Date, limit: number): Promise<Transaction[]>;
+  /**
+   * Trava: marca o lançamento como "já pesou no saldo" SE ainda não estava (UPDATE condicional). true = esta chamada
+   * foi quem marcou (só ela pode ajustar o saldo); false = outra já tinha marcado. Duas execuções nunca aplicam 2x.
+   */
+  claimBalanceApplication(id: string, at: Date): Promise<boolean>;
+}
+
+export type NewRecurringRule = Omit<RecurringRule, 'id' | 'createdAt' | 'updatedAt'>;
+export interface RecurringRulesRepository {
+  create(data: NewRecurringRule): Promise<RecurringRule>;
+  findById(id: string): Promise<RecurringRule | null>;
+  listByUser(userId: string): Promise<RecurringRule[]>;
+  /** Regras ativas de uma pessoa (previsão). */
+  listActiveByUser(userId: string): Promise<RecurringRule[]>;
+  /** Ativas, com lançamento automático ligado e vencimento até `now`, de QUALQUER pessoa (o job). */
+  listDue(now: Date, limit: number, userId?: string): Promise<RecurringRule[]>;
+  save(rule: RecurringRule): Promise<void>;
+  /**
+   * Passo do job: avança a regra SE ela ainda está no vencimento `expectedNextRunAt` (UPDATE condicional). true = esta
+   * chamada avançou (só ela pode lançar essa ocorrência); false = outra execução já avançou. Duas execuções no mesmo
+   * dia nunca contam a mesma parcela duas vezes.
+   */
+  advance(
+    id: string,
+    expectedNextRunAt: Date,
+    next: { nextRunAt: Date; postedInstallments: number; active: boolean },
+  ): Promise<boolean>;
+  delete(id: string): Promise<void>;
+}
+
+export interface AutomationTokensRepository {
+  /** Cria só se a pessoa tiver menos de `max` tokens ativos (decisão atômica: duas criações juntas não passam do teto). null = no limite. */
+  createLimited(
+    data: Pick<AutomationToken, 'userId' | 'label' | 'tokenHash'>,
+    max: number,
+  ): Promise<AutomationToken | null>;
+  listByUser(userId: string): Promise<AutomationToken[]>;
+  findByHash(tokenHash: string): Promise<AutomationToken | null>;
+  /** Revoga um token DESSA pessoa. false = não existe (ou é de outra pessoa). */
+  revoke(userId: string, id: string, at: Date): Promise<boolean>;
+  /** Marca o uso (no máximo 1 escrita por minuto por token). */
+  touch(id: string, at: Date): Promise<void>;
 }
 
 export type NewReconciledNote = Omit<ReconciledNote, 'id' | 'reconciledAt'>;
@@ -446,4 +495,6 @@ export type Repositories = {
   people: PeopleRepository;
   tostaoAuto: TostaoAutoRepository;
   reconciledNotes: ReconciledNotesRepository;
+  recurring: RecurringRulesRepository;
+  automationTokens: AutomationTokensRepository;
 };

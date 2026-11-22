@@ -11,14 +11,15 @@ import type {
   ThisMonthForecast,
 } from '@tostao/contracts';
 import type { Repositories } from '../repositories/types.js';
-import type { Transaction } from '../domain/entities.js';
+import type { RecurringRule, Transaction } from '../domain/entities.js';
 import { NEUTRAL_CATEGORY_ID } from '../domain/entities.js';
 import { currentMonth } from '../lib/month.js';
-import { civilDayOfMonth, daysInMonth as daysInMonthOf, monthRange } from '../lib/tz.js';
+import { civilDayOfMonth, daysInMonth as daysInMonthOf, monthRange, noonOfCivilDay } from '../lib/tz.js';
 import { timezoneOf } from '../lib/user-tz.js';
 import { AppError, ResourceNotFoundError } from '../domain/errors.js';
 import { normalizeDescription } from '../lib/text.js';
 import { patternFromDescription } from '../services/categorize.js';
+import { occurrenceDescription, occurrencesInMonth } from '../services/recurrence.js';
 import { listSubscriptions, subscriptionsFrom } from './list-subscriptions.js';
 import { loadFinance, sliceRange, summarizeMonth, summarizeMonths, type FinanceSnapshot } from './month-aggregation.js';
 import { subscriptionBaseKey, subscriptionKey } from '../services/subscriptions.js';
@@ -475,7 +476,8 @@ export type ForecastResult = {
 };
 
 /** Dados que a previsão (e o contexto do chat) usam. `txs` cobre `forecastWindow` e já vem do banco numa query só. */
-export type ForecastData = FinanceSnapshot & { ignoredKeys: string[] };
+/** `recurring`: regras de lançamento automático ativas (T5.2). Cada vencimento futuro vira um item da previsão. */
+export type ForecastData = FinanceSnapshot & { ignoredKeys: string[]; recurring?: RecurringRule[] };
 
 /** Do começo do mês -6 (base do dia a dia) até o fim do último mês previsto; também cobre a janela das assinaturas. */
 export function forecastWindow(now: Date, tz: string, months = 3) {
@@ -485,17 +487,51 @@ export function forecastWindow(now: Date, tz: string, months = 3) {
   return { from: from < subscriptionsFrom(now) ? from : subscriptionsFrom(now), to };
 }
 
-/** 4 queries: contas, categorias, assinaturas ignoradas e UMA janela de lançamentos (antes eram ~30 no total). */
+/** 5 queries: contas, categorias, assinaturas ignoradas, regras automáticas e UMA janela de lançamentos (antes eram ~30 no total). */
 export async function loadForecastData(
-  repos: Pick<Repositories, 'transactions' | 'categories' | 'accounts' | 'ignoredSubscriptions'>,
+  repos: Pick<Repositories, 'transactions' | 'categories' | 'accounts' | 'ignoredSubscriptions' | 'recurring'>,
   userId: string,
   { now, tz, months = 3 }: { now: Date; tz: string; months?: number },
 ): Promise<ForecastData> {
-  const [finance, ignoredKeys] = await Promise.all([
+  const [finance, ignoredKeys, recurring] = await Promise.all([
     loadFinance(repos, userId, { tz, ...forecastWindow(now, tz, months) }),
     repos.ignoredSubscriptions.listKeys(userId),
+    repos.recurring.listActiveByUser(userId),
   ]);
-  return { ...finance, ignoredKeys };
+  return { ...finance, ignoredKeys, recurring };
+}
+
+/**
+ * Vencimentos futuros das regras automáticas num mês, no formato de lançamento agendado (a previsão os trata como
+ * qualquer outro agendado). Pula a regra que já tem lançamento real naquele mês e conta oculta.
+ */
+function recurringAsScheduled(
+  rules: RecurringRule[],
+  month: string,
+  tz: string,
+  already: Transaction[],
+  hiddenAccountIds: Set<string>,
+): Transaction[] {
+  const out: Transaction[] = [];
+  for (const rule of rules) {
+    if (rule.accountId && hiddenAccountIds.has(rule.accountId)) continue;
+    if (already.some((t) => t.externalId?.startsWith(`rec:${rule.id}:`))) continue;
+    for (const o of occurrencesInMonth(rule, month, tz)) {
+      out.push({
+        id: `rec-forecast:${rule.id}:${o.day}`,
+        userId: rule.userId,
+        accountId: rule.accountId,
+        externalId: null,
+        description: occurrenceDescription(rule, o.n),
+        amountInCents: (rule.kind === 'saida' ? -1 : 1) * rule.amountInCents,
+        occurredAt: noonOfCivilDay(o.day, tz),
+        categoryId: rule.categoryId,
+        isInternalTransfer: false,
+        createdAt: rule.createdAt,
+      });
+    }
+  }
+  return out;
 }
 
 export class ForecastUseCase {
@@ -572,12 +608,14 @@ export function computeForecast(plan: FinancialPlan, data: ForecastData, now: Da
   for (let k = 1; k <= months; k++) {
     const month = shiftMonth(cur, k);
     // Lançamento de conta oculta não aparece pra pessoa: não entra na previsão.
-    const inMonth = scheduled.filter(
+    const real = scheduled.filter(
       (t) =>
         currentMonth(t.occurredAt, tz) === month &&
         !t.isInternalTransfer &&
         !(t.accountId && hiddenAccountIds.has(t.accountId)),
     );
+    // + o que as regras automáticas (salário, aluguel, parcelas) vão lançar nesse mês.
+    const inMonth = [...real, ...recurringAsScheduled(data.recurring ?? [], month, tz, real, hiddenAccountIds)];
     const items: ForecastItem[] = [];
     if (plan.salary?.amountInCents) {
       // Adiantamento (ex.: metade no dia 15): o total do mês é o salário; a parte do adiantamento cai antes.

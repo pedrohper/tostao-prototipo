@@ -8,6 +8,7 @@ import {
   categorizeBody,
   manualTransactionBody,
   updateTransactionBody,
+  transferLinkBody,
   monthQuery,
   summaryHistoryQuery,
   type SummaryHistoryResponse,
@@ -141,6 +142,13 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases, limits: Li
     const { id } = idParam.parse(request.params);
     const { serie } = z.object({ serie: z.enum(['0', '1']).optional() }).parse(request.query);
     return uc.deleteTransaction.execute({ userId: request.user.sub, transactionId: id, series: serie === '1' });
+  });
+
+  // "É pagamento de fatura" / "Transferi pra outra conta minha" (kind: 'none' desfaz).
+  app.patch('/transactions/:id/transfer-link', { onRequest: verifyJwt }, async (request) => {
+    const { id } = idParam.parse(request.params);
+    const body = transferLinkBody.parse(request.body);
+    return uc.transferLink.execute({ ...body, userId: request.user.sub, transactionId: id });
   });
 
   app.patch('/transactions/:id', { onRequest: verifyJwt }, async (request) => {

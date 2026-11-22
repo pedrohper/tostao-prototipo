@@ -29,6 +29,8 @@ import type {
   OutboxJob,
   UserConsent,
   AuditLog,
+  RecurringRule,
+  AutomationToken,
 } from '../../domain/entities.js';
 import { isYieldTransaction, type FinancialPlan, type UpdateTostaoAutoConfigBody } from '@tostao/contracts';
 import type {
@@ -54,6 +56,9 @@ import type {
   RotateRefreshResult,
   PeopleRepository,
   Repositories,
+  RecurringRulesRepository,
+  NewRecurringRule,
+  AutomationTokensRepository,
   TransactionsRepository,
   UsersRepository,
   NewOAuthAccount,
@@ -309,6 +314,21 @@ export class InMemoryTransactionsRepository implements TransactionsRepository {
   async save(transaction: Transaction) {
     const i = this.items.findIndex((t) => t.id === transaction.id);
     if (i >= 0) this.items[i] = transaction;
+  }
+  async findBalancePending(now: Date, limit: number) {
+    const manual = new Set(
+      (this.accounts?.items ?? []).filter((a) => a.externalId.startsWith('manual:')).map((a) => a.id),
+    );
+    return this.items
+      .filter((t) => !t.balanceAppliedAt && t.accountId && manual.has(t.accountId) && t.occurredAt <= now)
+      .sort((a, b) => a.occurredAt.getTime() - b.occurredAt.getTime() || a.id.localeCompare(b.id))
+      .slice(0, limit);
+  }
+  async claimBalanceApplication(id: string, at: Date) {
+    const t = this.items.find((x) => x.id === id);
+    if (!t || t.balanceAppliedAt) return false;
+    t.balanceAppliedAt = at;
+    return true;
   }
   async createMany(
     data: (Omit<Transaction, 'id' | 'createdAt'> & { id?: string })[],
@@ -1038,6 +1058,77 @@ export class InMemoryUserConsentsRepository implements UserConsentsRepository {
   }
 }
 
+export class InMemoryRecurringRulesRepository implements RecurringRulesRepository {
+  items: RecurringRule[] = [];
+  async create(data: NewRecurringRule) {
+    const now = new Date();
+    const r: RecurringRule = { id: randomUUID(), createdAt: now, updatedAt: now, ...data };
+    this.items.push(r);
+    return { ...r };
+  }
+  async findById(id: string) {
+    const r = this.items.find((x) => x.id === id);
+    return r ? { ...r } : null;
+  }
+  async listByUser(userId: string) {
+    return this.items.filter((r) => r.userId === userId).map((r) => ({ ...r }));
+  }
+  async listActiveByUser(userId: string) {
+    return this.items.filter((r) => r.userId === userId && r.active).map((r) => ({ ...r }));
+  }
+  async listDue(now: Date, limit: number, userId?: string) {
+    return this.items
+      .filter((r) => r.active && r.autoPost && r.nextRunAt <= now && (!userId || r.userId === userId))
+      .sort((a, b) => a.nextRunAt.getTime() - b.nextRunAt.getTime() || a.id.localeCompare(b.id))
+      .slice(0, limit)
+      .map((r) => ({ ...r }));
+  }
+  async save(rule: RecurringRule) {
+    const i = this.items.findIndex((r) => r.id === rule.id);
+    if (i >= 0) this.items[i] = { ...rule, updatedAt: new Date() };
+  }
+  async advance(
+    id: string,
+    expectedNextRunAt: Date,
+    next: { nextRunAt: Date; postedInstallments: number; active: boolean },
+  ) {
+    const r = this.items.find((x) => x.id === id);
+    if (!r || !r.active || r.nextRunAt.getTime() !== expectedNextRunAt.getTime()) return false;
+    Object.assign(r, next, { updatedAt: new Date() });
+    return true;
+  }
+  async delete(id: string) {
+    this.items = this.items.filter((r) => r.id !== id);
+  }
+}
+
+export class InMemoryAutomationTokensRepository implements AutomationTokensRepository {
+  items: AutomationToken[] = [];
+  async createLimited(data: Pick<AutomationToken, 'userId' | 'label' | 'tokenHash'>, max: number) {
+    if (this.items.filter((t) => t.userId === data.userId && !t.revokedAt).length >= max) return null;
+    const t: AutomationToken = { id: randomUUID(), lastUsedAt: null, revokedAt: null, createdAt: new Date(), ...data };
+    this.items.push(t);
+    return { ...t };
+  }
+  async listByUser(userId: string) {
+    return this.items.filter((t) => t.userId === userId).map((t) => ({ ...t }));
+  }
+  async findByHash(tokenHash: string) {
+    const t = this.items.find((x) => x.tokenHash === tokenHash);
+    return t ? { ...t } : null;
+  }
+  async revoke(userId: string, id: string, at: Date) {
+    const t = this.items.find((x) => x.id === id && x.userId === userId);
+    if (!t) return false;
+    t.revokedAt ??= at;
+    return true;
+  }
+  async touch(id: string, at: Date) {
+    const t = this.items.find((x) => x.id === id);
+    if (t && (!t.lastUsedAt || t.lastUsedAt.getTime() < at.getTime() - 60_000)) t.lastUsedAt = at;
+  }
+}
+
 export function makeInMemoryRepositories() {
   const oauthAccounts = new InMemoryOAuthAccountsRepository();
   const transactions = new InMemoryTransactionsRepository();
@@ -1075,6 +1166,8 @@ export function makeInMemoryRepositories() {
     people: new InMemoryPeopleRepository(),
     tostaoAuto: new InMemoryTostaoAutoRepository(),
     reconciledNotes: new InMemoryReconciledNotesRepository(),
+    recurring: new InMemoryRecurringRulesRepository(),
+    automationTokens: new InMemoryAutomationTokensRepository(),
   } satisfies Repositories;
   return repos;
 }

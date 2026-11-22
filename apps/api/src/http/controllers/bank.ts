@@ -4,6 +4,11 @@ import {
   connectBankBody,
   createManualAccountBody,
   importStatementBody,
+  importPdfBody,
+  importRowsBody,
+  reconcileBalanceBody,
+  type ImportPreviewResponse,
+  type ReconcileBalanceResponse,
   monthQuery,
   type AccountDetailResponse,
   type InstitutionLogosResponse,
@@ -95,6 +100,42 @@ export function bankRoutes(app: FastifyInstance, uc: UseCases, repos: Repositori
         .send({ ...r, from: r.from.toISOString(), to: r.to.toISOString() } satisfies ImportResponse);
     },
   );
+
+  // PDF de fatura/extrato: 1) lê e devolve as linhas pra pessoa conferir (não grava nada)...
+  app.post(
+    '/imports/preview',
+    { onRequest: verifyJwt, preHandler: [limits.importsByUser, limits.pdfPreviewByUser], bodyLimit: 14_500_000 },
+    async (request) => {
+      const body = importPdfBody.parse(request.body);
+      return (await uc.importPdf.preview(request.user.sub, body)) satisfies ImportPreviewResponse;
+    },
+  );
+
+  // ...2) grava as linhas já conferidas/editadas (mesma gravação e mesma conciliação do OFX/CSV).
+  app.post(
+    '/imports/rows',
+    { onRequest: verifyJwt, preHandler: limits.importsByUser, bodyLimit: 1024 * 1024 },
+    async (request, reply) => {
+      const body = importRowsBody.parse(request.body);
+      const r = await uc.importPdf.confirm(request.user.sub, body);
+      categorizeLater(request.user.sub);
+      return reply
+        .status(201)
+        .send({ ...r, from: r.from.toISOString(), to: r.to.toISOString() } satisfies ImportResponse);
+    },
+  );
+
+  // "Conferir / Ajustar saldo atual": lança a diferença e fixa o saldo no valor que a pessoa informou.
+  app.post('/accounts/:id/reconcile-balance', { onRequest: verifyJwt }, async (request) => {
+    const { id } = idParam.parse(request.params);
+    const body = reconcileBalanceBody.parse(request.body);
+    return (await uc.reconcileBalance.execute({
+      userId: request.user.sub,
+      accountId: id,
+      targetBalanceInCents: body.targetBalanceInCents,
+      note: body.note,
+    })) satisfies ReconcileBalanceResponse;
+  });
 
   app.post('/connections/:id/sync', { onRequest: verifyJwt, preHandler: limits.syncByUser }, async (request) => {
     const { id } = idParam.parse(request.params);

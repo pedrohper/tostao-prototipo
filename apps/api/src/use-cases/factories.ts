@@ -11,6 +11,11 @@ import { ListLessonProgressUseCase } from './lesson-progress.js';
 import { GamesUseCase } from './games.js';
 import { EngagementUseCase } from './engagement.js';
 import { ImportStatementUseCase } from './import-statement.js';
+import { ImportPdfUseCase } from './import-pdf.js';
+import { RecurringRulesUseCase } from './recurring-rules.js';
+import { ReconcileBalanceUseCase } from './reconcile-balance.js';
+import { TransferLinkUseCase } from './transfer-link.js';
+import { AutomationTokensUseCase, ShortcutWebhookUseCase } from './automation.js';
 import { CreateInviteUseCase, ListInvitesUseCase } from './invites.js';
 import { RequestPasswordResetUseCase, ResetPasswordUseCase } from './password-reset.js';
 import { SessionsUseCase } from './sessions.js';
@@ -106,6 +111,7 @@ export function makeUseCases({
   const pendingActions = new PendingActionUseCase(pendingStore, repos);
   const createManualTransaction = new CreateManualTransactionUseCase(repos);
   const runTostaoChecks = new RunTostaoChecksUseCase(repos);
+  const importStatement = new ImportStatementUseCase(repos);
   return {
     registerUser: new RegisterUserUseCase(repos, sendEmailVerification),
     sessions: new SessionsUseCase(repos),
@@ -177,7 +183,13 @@ export function makeUseCases({
       execute: async ({ userId }: { userId?: string }) => ({ categories: await repos.categories.list(userId) }),
     },
     createCategory: new CreateCategoryUseCase(repos),
-    importStatement: new ImportStatementUseCase(repos),
+    importStatement,
+    importPdf: new ImportPdfUseCase(repos, importStatement, ai, kv),
+    recurringRules: new RecurringRulesUseCase(repos),
+    reconcileBalance: new ReconcileBalanceUseCase(repos),
+    transferLink: new TransferLinkUseCase(repos),
+    automationTokens: new AutomationTokensUseCase(repos),
+    shortcutWebhook: new ShortcutWebhookUseCase(repos, createManualTransaction),
     autoCategorize,
     askTostao,
     pendingActions,

@@ -256,12 +256,6 @@ export const ptBR: Dictionary = {
     whatsappConnectedBadge: 'Conectado',
     whatsappOffBadge: 'Desligado',
   },
-  auth: {
-    splitSlogan: 'Grana explicada, de tostão em tostão',
-    splitHighlight1: 'Open Finance regulado pelo Banco Central, só leitura',
-    splitHighlight2: 'Lições de 2 minutos usando o seu próprio extrato',
-    splitHighlight3: 'Sem sermão, sem planilha complicada',
-  },
   auto: {
     hubTitle: 'Tostão',
     tabConversation: 'Conversa',
@@ -395,6 +389,7 @@ export const ptBR: Dictionary = {
       continueGoogle: 'Continuar com Google',
       continueApple: 'Continuar com Apple',
       orEmail: 'ou com e-mail',
+      orContinueWith: 'ou continue com',
       signupTermsPrefix: 'Ao continuar com Google ou Apple, você confirma ter 18+ e aceita os ',
       errors: {
         unconfiguredGoogle: 'O login com Google ainda não foi ativado neste servidor. Por enquanto, entra com e-mail.',

@@ -32,6 +32,13 @@ const schema = z
     PLUGGY_INCLUDE_SANDBOX: z.preprocess((v) => (v === '' ? undefined : v), z.enum(['true', 'false']).optional()),
     // O Pluggy atualiza cada banco uma vez por dia, em horários diferentes: de 3 em 3 horas pega o mesmo dia.
     SYNC_CRON: z.string().default('0 6-23/3 * * *'),
+    // Materialização de recorrências e de lançamentos agendados (T5.2). A cada hora: cada pessoa tem o meio-dia dela
+    // num horário diferente e a rodada é idempotente (rodar toda hora é seguro). Validado aqui pra erro de digitação
+    // aparecer na subida, não às 3 da manhã.
+    RECURRING_CRON: z
+      .string()
+      .default('5 * * * *')
+      .refine((v) => v.trim().split(/\s+/).length >= 5, 'RECURRING_CRON precisa de 5 campos (ex.: "5 * * * *")'),
     DEEPSEEK_API_KEY: z.string().default(''),
     DEEPSEEK_MODEL: z.string().default('deepseek-chat'),
     CHAT_DAILY_LIMIT: z.coerce.number().int().positive().default(40),

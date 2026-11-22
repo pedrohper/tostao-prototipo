@@ -21,6 +21,8 @@ import type {
   ReconciledNote,
   OAuthAccount,
   OAuthProvider,
+  RecurringRule,
+  AutomationToken,
   OutboxJob,
   UserConsent,
   FriendRequest,
@@ -61,6 +63,9 @@ import type {
   TostaoAutoRepository,
   UpsertTostaoInsight,
   ReconciledNotesRepository,
+  RecurringRulesRepository,
+  NewRecurringRule,
+  AutomationTokensRepository,
   NewReconciledNote,
   OutboxRepository,
   AuditLogRepository,
@@ -83,6 +88,11 @@ const mapAccount = (r: Prisma.AccountGetPayload<object>): Account => ({
   creditLimitInCents: toCentsOrNull(r.creditLimitInCents),
 });
 const mapTransaction = (r: Prisma.TransactionGetPayload<object>): Transaction => ({
+  ...r,
+  amountInCents: toCents(r.amountInCents),
+  linkKind: r.linkKind as Transaction['linkKind'], // a coluna é TEXT com CHECK ('card_payment' | 'transfer')
+});
+const mapRule = (r: Prisma.RecurringRuleGetPayload<object>): RecurringRule => ({
   ...r,
   amountInCents: toCents(r.amountInCents),
 });
@@ -465,6 +475,9 @@ class PrismaTransactionsRepository implements TransactionsRepository {
     personId,
     note,
     customDescription,
+    balanceAppliedAt,
+    linkedAccountId,
+    linkKind,
   }: Transaction) {
     await this.db.transaction.update({
       where: { id },
@@ -478,6 +491,9 @@ class PrismaTransactionsRepository implements TransactionsRepository {
         ...(personId !== undefined ? { personId } : {}),
         ...(note !== undefined ? { note } : {}),
         ...(customDescription !== undefined ? { customDescription } : {}),
+        ...(balanceAppliedAt !== undefined ? { balanceAppliedAt } : {}),
+        ...(linkedAccountId !== undefined ? { linkedAccountId } : {}),
+        ...(linkKind !== undefined ? { linkKind } : {}),
       },
     });
   }
@@ -491,6 +507,26 @@ class PrismaTransactionsRepository implements TransactionsRepository {
       orderBy: { occurredAt: 'desc' },
     });
     return rows.map(mapTransaction);
+  }
+  async findBalancePending(now: Date, limit: number): Promise<Transaction[]> {
+    const rows = await this.db.transaction.findMany({
+      where: {
+        balanceAppliedAt: null,
+        occurredAt: { lte: now },
+        account: { externalId: { startsWith: 'manual:' } },
+      },
+      orderBy: [{ occurredAt: 'asc' }, { id: 'asc' }],
+      take: limit,
+    });
+    return rows.map(mapTransaction);
+  }
+  async claimBalanceApplication(id: string, at: Date): Promise<boolean> {
+    // UPDATE ... WHERE balance_applied_at IS NULL: o Postgres serializa dois pedidos na mesma linha, só um enxerga null.
+    const r = await this.db.transaction.updateMany({
+      where: { id, balanceAppliedAt: null },
+      data: { balanceAppliedAt: at },
+    });
+    return r.count === 1;
   }
   async clearCategory(userId: string, categoryId: string) {
     await this.db.transaction.updateMany({ where: { userId, categoryId }, data: { categoryId: null } });
@@ -1283,6 +1319,104 @@ class PrismaUserConsentsRepository implements UserConsentsRepository {
   }
 }
 
+class PrismaRecurringRulesRepository implements RecurringRulesRepository {
+  constructor(private db: Db) {}
+  async create(data: NewRecurringRule) {
+    return mapRule(
+      await this.db.recurringRule.create({ data: { ...data, amountInCents: toBigCents(data.amountInCents) } }),
+    );
+  }
+  async findById(id: string) {
+    const row = await this.db.recurringRule.findUnique({ where: { id } });
+    return row && mapRule(row);
+  }
+  async listByUser(userId: string) {
+    return (await this.db.recurringRule.findMany({ where: { userId }, orderBy: { createdAt: 'asc' } })).map(mapRule);
+  }
+  async listActiveByUser(userId: string) {
+    return (
+      await this.db.recurringRule.findMany({ where: { userId, active: true }, orderBy: { createdAt: 'asc' } })
+    ).map(mapRule);
+  }
+  async listDue(now: Date, limit: number, userId?: string) {
+    return (
+      await this.db.recurringRule.findMany({
+        where: { active: true, autoPost: true, nextRunAt: { lte: now }, ...(userId ? { userId } : {}) },
+        orderBy: [{ nextRunAt: 'asc' }, { id: 'asc' }],
+        take: limit,
+      })
+    ).map(mapRule);
+  }
+  async save(r: RecurringRule) {
+    await this.db.recurringRule.update({
+      where: { id: r.id },
+      data: {
+        accountId: r.accountId,
+        categoryId: r.categoryId,
+        kind: r.kind,
+        description: r.description,
+        amountInCents: toBigCents(r.amountInCents),
+        frequency: r.frequency,
+        dayOfMonth: r.dayOfMonth,
+        totalInstallments: r.totalInstallments,
+        postedInstallments: r.postedInstallments,
+        autoPost: r.autoPost,
+        nextRunAt: r.nextRunAt,
+        active: r.active,
+        updatedAt: new Date(),
+      },
+    });
+  }
+  async advance(
+    id: string,
+    expectedNextRunAt: Date,
+    next: { nextRunAt: Date; postedInstallments: number; active: boolean },
+  ) {
+    const r = await this.db.recurringRule.updateMany({
+      where: { id, nextRunAt: expectedNextRunAt, active: true },
+      data: { ...next, updatedAt: new Date() },
+    });
+    return r.count === 1;
+  }
+  async delete(id: string) {
+    await this.db.recurringRule.delete({ where: { id } });
+  }
+}
+
+class PrismaAutomationTokensRepository implements AutomationTokensRepository {
+  constructor(private db: Db) {}
+  createLimited(data: Pick<AutomationToken, 'userId' | 'label' | 'tokenHash'>, max: number) {
+    return inTx(this.db, async (tx) => {
+      // Tranca a linha da pessoa: duas criações simultâneas esperam uma pela outra e a segunda já enxerga a primeira.
+      await tx.$queryRaw`SELECT id FROM users WHERE id = ${data.userId} FOR UPDATE`;
+      const active = await tx.automationToken.count({ where: { userId: data.userId, revokedAt: null } });
+      if (active >= max) return null;
+      return tx.automationToken.create({ data });
+    });
+  }
+  listByUser(userId: string) {
+    return this.db.automationToken.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } });
+  }
+  findByHash(tokenHash: string) {
+    return this.db.automationToken.findUnique({ where: { tokenHash } });
+  }
+  async revoke(userId: string, id: string, at: Date) {
+    const r = await this.db.automationToken.updateMany({
+      where: { id, userId, revokedAt: null },
+      data: { revokedAt: at },
+    });
+    if (r.count === 1) return true;
+    // Já estava revogado conta como "existe" (idempotente); inexistente ou de outra pessoa, não.
+    return (await this.db.automationToken.count({ where: { id, userId } })) > 0;
+  }
+  async touch(id: string, at: Date) {
+    await this.db.automationToken.updateMany({
+      where: { id, OR: [{ lastUsedAt: null }, { lastUsedAt: { lt: new Date(at.getTime() - 60_000) } }] },
+      data: { lastUsedAt: at },
+    });
+  }
+}
+
 export function makePrismaRepositories(db: Db): Repositories {
   const repos: Repositories = {
     // Dentro de uma transação já aberta o Prisma não aninha: reaproveita a mesma.
@@ -1312,6 +1446,8 @@ export function makePrismaRepositories(db: Db): Repositories {
     people: new PrismaPeopleRepository(db),
     tostaoAuto: new PrismaTostaoAutoRepository(db),
     reconciledNotes: new PrismaReconciledNotesRepository(db),
+    recurring: new PrismaRecurringRulesRepository(db),
+    automationTokens: new PrismaAutomationTokensRepository(db),
   };
   return repos;
 }

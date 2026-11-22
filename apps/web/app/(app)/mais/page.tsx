@@ -197,6 +197,21 @@ export default async function MaisPage() {
         </Link>
 
         <Link
+          href="/mais/atalhos"
+          className="flex min-h-[68px] items-center gap-3.5 py-3 text-tinta no-underline transition-opacity hover:opacity-80"
+        >
+          <span
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-azul text-tinta"
+            aria-hidden="true"
+          >
+            ⚡
+          </span>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <span className="text-[15px] font-bold">Atalhos do iPhone</span>
+            <span className="text-[13px] text-tinta-suave">Apple Pay e notificações do banco entram sozinhas</span>
+          </div>
+        </Link>
+        <Link
           href="/mais/preferencias"
           className="flex min-h-[68px] items-center gap-3.5 py-3 text-tinta no-underline transition-opacity hover:opacity-80"
         >

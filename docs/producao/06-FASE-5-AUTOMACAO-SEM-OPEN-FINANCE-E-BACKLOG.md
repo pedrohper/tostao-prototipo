@@ -49,7 +49,9 @@
 
 ## T5.2 — Recorrências Automáticas, Parcelamentos, Saldo Guiado e Vínculo de Transferência
 
-- [ ] Concluída
+- [x] Concluída
+
+> **Nota de execução (2026-11-22):** como o Worker BullMQ da Fase 3 ainda não existe, o job diário roda no processo da API (`apps/api/src/jobs/recurring.ts`, croner, toda hora no minuto 5 via `RECURRING_CRON`; cada pessoa vence ao meio-dia do fuso dela) com lock distribuído no Redis + idempotência no Postgres. Quando a Fase 3 entrar, é só o worker chamar `materializeAll`. Detalhes e riscos em `AGENT_SYNC.md`.
 
 ### Problema atual
 
@@ -82,7 +84,9 @@
 
 ## T5.3 — Importação Universal (PDF de Fatura/Extrato + Share Target Android + Atalho iOS)
 
-- [ ] Concluída
+- [x] Concluída
+
+> **Nota de execução (2026-11-22):** layouts de PDF validados só com fixtures sintéticas (sem fatura real); o fluxo de **imagem** compartilhada avisa que a leitura de comprovante é da T5.4; o link de instalação do Atalho pronto é opcional (`SHORTCUT_APPLE_PAY_URL` / `SHORTCUT_NOTIFICATION_URL`), sem ele a tela ensina a montar. Detalhes e riscos em `AGENT_SYNC.md`.
 
 ### Problema atual
 

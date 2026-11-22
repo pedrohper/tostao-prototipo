@@ -17,6 +17,7 @@ import { isSyncStale, scheduleDailySync, syncAllConnections } from './jobs/daily
 import { DisabledPushGateway, WebPushGateway } from './gateways/push-gateway.js';
 import { scheduleNotifications } from './jobs/notifications.js';
 import { scheduleOutbox } from './jobs/outbox.js';
+import { materializeAll, scheduleRecurring } from './jobs/recurring.js';
 import { scheduleTostaoChecks, runPeriodicTostaoChecks } from './jobs/tostao-checks.js';
 import { BcbRatesGateway } from './gateways/rates-gateway.js';
 import { OidcOAuthGateway } from './gateways/oauth-gateway.js';
@@ -116,6 +117,11 @@ if (await isSyncStale(repos, 6 * 3600_000).catch(() => false)) {
   console.info('[sync] última sincronização tem mais de 6 h: rodando agora');
   void syncEverything().catch((err) => console.error('[sync] falhou:', (err as Error).message));
 }
+
+// Recorrências e agendados (T5.2): lock distribuído no Redis + idempotência no Postgres, então 2 réplicas não duplicam.
+const materialize = () => materializeAll(repos, kv);
+scheduleRecurring(env.RECURRING_CRON, materialize);
+void materialize().catch((err) => console.error('[recorrencias] rodada inicial falhou:', (err as Error).message));
 
 scheduleNotifications(repos, push, whatsapp);
 scheduleOutbox(repos, bank);

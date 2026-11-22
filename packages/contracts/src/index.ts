@@ -276,6 +276,8 @@ export type TransactionDTO = {
   categoryEmoji: string | null;
   categoryColor: string | null;
   accountName: string | null;
+  /** Id da conta/cartão do lançamento (null = dinheiro/sem conta). */
+  accountId: string | null;
   isInternalTransfer: boolean;
   source: 'bank' | 'manual';
   /** Faz parte de um "todo mês" ou "parcelado" anotado à mão. */
@@ -286,6 +288,9 @@ export type TransactionDTO = {
   note: string | null;
   /** Apelido dado pela pessoa. `description` segue sendo o texto original (do banco), usado na conciliação. */
   customDescription: string | null;
+  /** Vínculo explícito (T5.2): a conta/cartão do outro lado, e se é pagamento de fatura ou transferência entre contas suas. */
+  linkedAccountId: string | null;
+  linkKind: 'card_payment' | 'transfer' | null;
 };
 
 // ---------- Anotações ----------
@@ -586,7 +591,7 @@ export const importStatementBody = z.object({
 export type ImportResponse = {
   importedCount: number;
   skipped: number;
-  format: 'ofx' | 'csv';
+  format: 'ofx' | 'csv' | 'pdf';
   kind: 'BANK' | 'CREDIT';
   accountName: string;
   from: string;
@@ -917,3 +922,181 @@ export type ApplyTostaoInsightResponse = {
   redirectTo: string | null;
   appliedSummary: string;
 };
+
+// ---------- T5.2: recorrências, saldo guiado e vínculo de transferência ----------
+export const RECURRING_MAX_INSTALLMENTS = 120;
+export const recurringFrequency = z.enum(['MONTHLY', 'WEEKLY', 'BIWEEKLY']);
+export type RecurringFrequency = z.infer<typeof recurringFrequency>;
+
+/** "Repetir todo mês" (sem fim) ou "parcelar" (`totalInstallments`): o job diário lança cada vencimento sozinho. */
+export const createRecurringRuleBody = z.object({
+  description: z.string().trim().min(1, 'Diz o que é').max(140, 'Descrição longa demais'),
+  amountInCents: z.number().int().positive('Valor precisa ser maior que zero').max(MAX_CENTS, 'Valor alto demais'),
+  kind: z.enum(['saida', 'entrada']),
+  frequency: recurringFrequency.default('MONTHLY'),
+  /** Data do 1º lançamento (AAAA-MM-DD, dia civil da pessoa). O dia do mês dela vira o dia fixo da regra. */
+  startDate: z.iso.date(),
+  accountId: shortId.nullable().optional(),
+  categoryId: shortId.nullable().optional(),
+  /** Parcelado: total de parcelas (o valor é o de CADA parcela). Sem isso, repete pra sempre até pausar/apagar. */
+  totalInstallments: z
+    .number()
+    .int()
+    .min(2, 'Parcela em pelo menos 2x')
+    .max(RECURRING_MAX_INSTALLMENTS)
+    .nullable()
+    .optional(),
+  /** false = só entra na previsão; o app não lança sozinho. */
+  autoPost: z.boolean().default(true),
+});
+export type CreateRecurringRuleBody = z.infer<typeof createRecurringRuleBody>;
+
+export const updateRecurringRuleBody = z
+  .object({
+    description: z.string().trim().min(1).max(140).optional(),
+    amountInCents: z.number().int().positive().max(MAX_CENTS).optional(),
+    categoryId: shortId.nullable().optional(),
+    accountId: shortId.nullable().optional(),
+    active: z.boolean().optional(),
+    autoPost: z.boolean().optional(),
+  })
+  .refine((b) => Object.keys(b).length > 0, { message: 'Nada pra atualizar' });
+export type UpdateRecurringRuleBody = z.infer<typeof updateRecurringRuleBody>;
+
+export type RecurringRuleDTO = {
+  id: string;
+  accountId: string | null;
+  categoryId: string | null;
+  kind: 'saida' | 'entrada';
+  description: string;
+  amountInCents: number;
+  frequency: RecurringFrequency;
+  dayOfMonth: number;
+  totalInstallments: number | null;
+  postedInstallments: number;
+  autoPost: boolean;
+  nextRunAt: string;
+  active: boolean;
+};
+export type RecurringRulesResponse = { rules: RecurringRuleDTO[] };
+
+/** "Conferir / Ajustar saldo atual" (conta manual ou importada): a pessoa informa o saldo que o banco mostra. */
+export const reconcileBalanceBody = z.object({
+  targetBalanceInCents: z.number().int().min(-MAX_CENTS).max(MAX_CENTS),
+  note: z.string().trim().max(140).optional(),
+});
+export type ReconcileBalanceBody = z.infer<typeof reconcileBalanceBody>;
+export type ReconcileBalanceResponse = {
+  /** Diferença lançada (alvo − saldo anterior). 0 = já estava batendo, nada foi lançado. */
+  deltaInCents: number;
+  balanceInCents: number;
+  transactionId: string | null;
+};
+
+/** "É pagamento de fatura" (cartão) ou "Transferi pra outra conta minha" (conta). `none` desfaz o vínculo. */
+export const transferLinkBody = z
+  .object({
+    kind: z.enum(['card_payment', 'transfer', 'none']),
+    targetAccountId: shortId.optional(),
+  })
+  .refine((b) => b.kind === 'none' || !!b.targetAccountId, {
+    message: 'Escolha a conta de destino',
+    path: ['targetAccountId'],
+  });
+export type TransferLinkBody = z.infer<typeof transferLinkBody>;
+
+// ---------- T5.3: importação de PDF, Atalhos do iOS ----------
+/** PDF de fatura/extrato: vai em base64 (até 10 MB de arquivo ≈ 13,4 MB de texto) pra uma pré-visualização editável. */
+export const PDF_MAX_BYTES = 10 * 1024 * 1024;
+export const importPdfBody = z.object({
+  fileName: z.string().max(200),
+  contentBase64: z.string().min(20, 'Arquivo vazio').max(14_000_000, 'PDF grande demais (máx. 10 MB)'),
+  accountName: z.string().trim().max(40).default(''),
+  /** Se nenhum layout conhecido servir, pode pedir ajuda à IA (só com o aceite da IA ativo; o texto vai mascarado). */
+  allowAi: z.boolean().default(true),
+});
+export type ImportPdfBody = z.infer<typeof importPdfBody>;
+
+export type ImportPreviewRow = {
+  /** Identidade estável do lançamento no arquivo (vira o externalId): reimportar o mesmo PDF nunca duplica. */
+  key: string;
+  date: string;
+  description: string;
+  /** Negativo = saída. */
+  amountInCents: number;
+};
+export type ImportPreviewResponse = {
+  /** Banco detectado (ex.: "Nubank"), ou null. */
+  bank: string | null;
+  kind: 'BANK' | 'CREDIT';
+  suggestedAccountName: string;
+  /** Quem leu: layout conhecido ou a IA. */
+  source: 'layout' | 'ai';
+  /** Total das saídas (fatura) ou saldo do período (conta), em centavos. */
+  totalInCents: number;
+  /** Total que o próprio PDF informa (fatura), quando achamos; serve pra conferir. */
+  statedTotalInCents: number | null;
+  rows: ImportPreviewRow[];
+  warnings: string[];
+  /** Nenhum layout serviu e a IA não pôde ajudar: a pessoa precisa saber por quê. */
+  aiBlockedReason: 'no_consent' | 'disabled' | 'quota' | null;
+};
+
+/** Confirmação da pré-visualização (já editada pela pessoa). */
+export const importRowsBody = z.object({
+  accountName: z.string().trim().min(1).max(40),
+  fileName: z.string().max(200),
+  isCard: z.boolean(),
+  rows: z
+    .array(
+      z.object({
+        key: z.string().regex(/^[a-f0-9]{8,64}(?::\d{1,4})?$/, 'Linha inválida'),
+        date: z.iso.date(),
+        description: z.string().trim().min(1).max(140),
+        amountInCents: z
+          .number()
+          .int()
+          .min(-MAX_CENTS)
+          .max(MAX_CENTS)
+          .refine((n) => n !== 0, 'Valor zerado'),
+      }),
+    )
+    .min(1, 'Nenhuma linha pra importar')
+    .max(2000, 'Linhas demais (máx. 2000)'),
+});
+export type ImportRowsBody = z.infer<typeof importRowsBody>;
+
+export const AUTOMATION_TOKEN_LIMIT = 3;
+export const createAutomationTokenBody = z.object({
+  label: z.string().trim().min(1, 'Dá um nome pro atalho').max(60, 'Nome longo demais'),
+});
+export type AutomationTokenDTO = {
+  id: string;
+  label: string;
+  lastUsedAt: string | null;
+  revokedAt: string | null;
+  createdAt: string;
+};
+export type AutomationTokensResponse = { tokens: AutomationTokenDTO[]; limit: number };
+/** O token em claro só aparece AQUI, uma vez. */
+export type CreateAutomationTokenResponse = { token: string; item: AutomationTokenDTO };
+
+export const SHORTCUT_SOURCES = ['apple_pay', 'ios_notification', 'shortcut'] as const;
+/** Corpo do `POST /webhooks/shortcuts`: o Atalho manda o valor OU o texto da notificação. */
+export const shortcutWebhookBody = z
+  .object({
+    /** Número em reais (45.9) ou texto ("R$ 45,90"). Compra = positivo; o sinal é normalizado pelo servidor. */
+    amount: z.union([z.number(), z.string().max(40)]).optional(),
+    /** Texto cru da notificação ("Compra aprovada R$ 45,90 em PADARIA"): o servidor tira valor e estabelecimento. */
+    text: z.string().max(400).optional(),
+    merchant: z.string().trim().max(140).optional(),
+    occurredAt: z.string().max(40).optional(),
+    accountId: shortId.optional(),
+    kind: z.enum(['saida', 'entrada']).optional(),
+    source: z.enum(SHORTCUT_SOURCES),
+    /** Idempotência: o mesmo evento reenviado não duplica. */
+    eventId: z.string().trim().min(1).max(100).optional(),
+  })
+  .refine((b) => b.amount !== undefined || !!b.text, { message: 'Mande amount ou text' });
+export type ShortcutWebhookBody = z.infer<typeof shortcutWebhookBody>;
+export type ShortcutWebhookResponse = { id: string; duplicate: boolean };

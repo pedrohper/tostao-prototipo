@@ -1,6 +1,8 @@
 // T2.1 · Quantas queries SQL cada tela dispara, contado pelo log do Prisma contra Postgres REAL.
 // Só roda com TEST_DATABASE_URL (banco descartável com as migrations aplicadas).
 // Tetos do doc: GET /forecast ≤ 6, POST /chat ≤ 10 (snapshot ≤ 8), GET /people ≤ 3.
+// T5.2 somou UMA query deliberada à previsão (as regras de lançamento automático: `recurring_rules` ativas), então os dois
+// que passam por `loadForecastData` ficam em 7 e 11. Continua sendo 1 query por tabela, nada de N+1.
 import { PrismaClient } from '@prisma/client';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { seedFinanceFixture, FIXTURE_NOW } from '../test-support/finance-fixture.js';
@@ -45,21 +47,21 @@ describe.skipIf(!url)('T2.1 contagem de queries (Postgres real)', () => {
     return { result, count: queries.length };
   };
 
-  it('GET /forecast ≤ 6 queries', async () => {
+  it('GET /forecast ≤ 7 queries (6 do T2.1 + as regras automáticas)', async () => {
     const { result, count } = await measure('forecast', () =>
       new ForecastUseCase(repos, () => NOW).execute({ userId }),
     );
     expect(result.hasPlan).toBe(true);
     expect(result.months).toHaveLength(3);
-    expect(count).toBeLessThanOrEqual(6);
+    expect(count).toBeLessThanOrEqual(7);
   });
 
-  it('POST /chat ≤ 10 queries', async () => {
+  it('POST /chat ≤ 11 queries (10 do T2.1 + as regras automáticas)', async () => {
     const ai = new FakeAiGateway();
     const ask = new AskTostaoUseCase(repos, ai, 40, () => NOW, new MemoryKeyValueStore());
     const { result, count } = await measure('chat', () => ask.execute({ userId, message: 'Quanto gastei?' }));
     expect(result.reply.content.length).toBeGreaterThan(0);
-    expect(count).toBeLessThanOrEqual(10);
+    expect(count).toBeLessThanOrEqual(11);
   });
 
   it('GET /people ≤ 3 queries', async () => {
