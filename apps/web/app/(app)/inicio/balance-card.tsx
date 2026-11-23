@@ -37,7 +37,7 @@ function toggleHiddenBalance() {
   listeners.forEach((fn) => fn());
 }
 
-function useHiddenBalance() {
+export function useHiddenBalance() {
   return useSyncExternalStore(subscribeHidden, readHidden, () => false);
 }
 
@@ -121,7 +121,7 @@ function FlowArrow({ direction }: { direction: 'up' | 'down' }) {
   );
 }
 
-const MASKED = '•••••';
+export const MASKED = '•••••';
 
 export interface BalanceCardProps {
   month?: string;
@@ -141,96 +141,66 @@ export interface BalanceCardProps {
   hideBalanceAria: string;
   showBalanceAria: string;
   accountsPreview: { name: string; balanceInCents: number }[];
-  /** "Gastos +12% vs mês anterior" (ou "Já gastou 64% do que gastou em outubro" no mês corrente). null = sem base. */
-  changeLabel?: string | null;
-  /** Dados estruturados do comparativo de gasto para barra visual intuitiva. */
-  spendingCompare?: { pct: number; prevMonth: string; isCurrentMonth: boolean; changePctValue?: number } | null;
   /** "Faturas abertas: R$ 1.200,00" (soma dos cartões). null = sem fatura. */
   openBillsLabel?: string | null;
   /** Valor em centavos das faturas em aberto (permite esconder com o olho e destacar como atalho). */
   openBillsInCents?: number | null;
-  /** Rótulo curto para faturas em aberto ("Faturas abertas"). */
+  /** Rótulo curto para faturas em aberto ("Faturas em aberto"). */
   openBillsShortLabel?: string;
   /** Sem conta conectada: botão direto pra /conectar no lugar do texto cinza. */
   connectCta?: { label: string; href: string } | null;
 }
 
-/** Linha de contexto sob os números: comparativo visual com mês anterior e atalho claro para faturas abertas. */
-function ContextLine({
-  changeLabel,
-  spendingCompare,
+/** Linha de faturas em aberto no mesmo formato de Receitas e Despesas (ícone circular + rótulo + total), levando a Carteira > Contas. */
+function OpenBillsSummary({
   openBillsLabel,
   openBillsInCents,
-  openBillsShortLabel = 'Faturas abertas',
+  openBillsShortLabel = 'Faturas em aberto',
   hidden = false,
-}: Pick<
-  BalanceCardProps,
-  'changeLabel' | 'spendingCompare' | 'openBillsLabel' | 'openBillsInCents' | 'openBillsShortLabel'
-> & { hidden?: boolean }) {
+}: Pick<BalanceCardProps, 'openBillsLabel' | 'openBillsInCents' | 'openBillsShortLabel'> & { hidden?: boolean }) {
   const hasBills = (openBillsInCents ?? 0) > 0 || Boolean(openBillsLabel);
-  if (!changeLabel && !spendingCompare && !hasBills) return null;
-
-  const pct = spendingCompare?.pct ?? null;
-  const barWidth = pct !== null ? Math.min(100, Math.max(4, pct)) : 0;
-  const toneColor = pct !== null ? (pct > 100 ? 'bg-alerta' : pct >= 85 ? 'bg-laranja' : 'bg-menta') : 'bg-tinta';
-  const pctTextColor =
-    pct !== null
-      ? pct > 100
-        ? 'text-vermelho-texto'
-        : pct >= 85
-          ? 'text-laranja-texto'
-          : 'text-verde-texto'
-      : 'text-tinta';
+  if (!hasBills) return null;
 
   return (
-    <div className="relative z-[1] flex flex-col gap-2 border-t border-linha pt-3">
-      {spendingCompare?.isCurrentMonth && pct !== null ? (
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-center justify-between gap-2 text-[12px]">
-            <span className="font-medium text-tinta-suave">Gasto até hoje vs {spendingCompare.prevMonth}</span>
-            <span className={`font-bold tabular-nums ${pctTextColor}`}>{pct}%</span>
-          </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-papel-2" aria-hidden="true">
-            <div className={`h-full rounded-full ${toneColor}`} style={{ width: `${barWidth}%` }} />
-          </div>
-        </div>
-      ) : (
-        changeLabel && <span className="text-[12px] font-medium text-tinta-suave tabular-nums">{changeLabel}</span>
-      )}
-
-      {hasBills && (
-        <Link
-          href="/carteira?aba=contas"
-          className="flex items-center justify-between gap-2 rounded-xl bg-papel-2/75 px-3 py-2 text-[13px] font-semibold text-tinta no-underline transition-colors hover:bg-papel-2"
-        >
-          <span className="flex min-w-0 items-center gap-2 text-tinta-suave">
+    <div className="relative z-[1] border-t border-linha pt-3">
+      <Link
+        href="/carteira?aba=contas"
+        className="flex min-w-0 items-center justify-between gap-2.5 text-tinta no-underline"
+      >
+        <span className="flex min-w-0 items-center gap-2.5">
+          <span
+            aria-hidden="true"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amarelo-claro text-laranja-texto"
+          >
             <svg
-              width="15"
-              height="15"
+              width="18"
+              height="18"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              strokeWidth="2"
+              strokeWidth="2.1"
               strokeLinecap="round"
               strokeLinejoin="round"
-              aria-hidden="true"
-              className="shrink-0"
             >
               <rect x="2" y="5" width="20" height="14" rx="3" />
               <path d="M2 10h20" />
             </svg>
-            <span className="truncate">{openBillsShortLabel}</span>
           </span>
-          <span className="shrink-0 font-bold text-tinta tabular-nums">
-            {openBillsInCents && openBillsInCents > 0
-              ? hidden
-                ? `R$ ${MASKED}`
-                : money(openBillsInCents)
-              : openBillsLabel}{' '}
-            ›
+          <span className="flex min-w-0 flex-col">
+            <span className="truncate text-xs font-semibold text-tinta-suave">{openBillsShortLabel}</span>
+            <span className="text-[15px] font-bold text-tinta tabular-nums sm:text-[17px]">
+              {openBillsInCents && openBillsInCents > 0
+                ? hidden
+                  ? `R$ ${MASKED}`
+                  : money(openBillsInCents)
+                : openBillsLabel}
+            </span>
           </span>
-        </Link>
-      )}
+        </span>
+        <span aria-hidden="true" className="shrink-0 text-sm font-semibold text-tinta-suave">
+          ›
+        </span>
+      </Link>
     </div>
   );
 }
@@ -275,21 +245,19 @@ export function MobileBalanceCard({
   outcomeLabel,
   hideBalanceAria,
   showBalanceAria,
-  changeLabel,
-  spendingCompare,
   openBillsLabel,
   openBillsInCents,
   openBillsShortLabel,
   connectCta,
 }: BalanceCardProps) {
   const hidden = useHiddenBalance();
-  const walletHref = buildWalletHref(month);
+  const accountsHref = '/carteira?aba=contas';
   const incomeHref = buildWalletHref(month, 'entradas');
   const outcomeHref = buildWalletHref(month, 'saidas');
 
   return (
     <div className="relative flex flex-col gap-3.5 rounded-[22px] border border-linha bg-cartao p-[18px]">
-      <Link href={walletHref} aria-label={walletLabel} className="absolute inset-0 rounded-[22px]" />
+      <Link href={accountsHref} aria-label={walletLabel} className="absolute inset-0 rounded-[22px]" />
       <div className="relative flex flex-col items-center gap-2 text-center">
         {balanceInCents !== null ? (
           <div className="flex min-w-0 flex-col items-center gap-0.5">
@@ -352,9 +320,7 @@ export function MobileBalanceCard({
           </span>
         </Link>
       </div>
-      <ContextLine
-        changeLabel={changeLabel}
-        spendingCompare={spendingCompare}
+      <OpenBillsSummary
         openBillsLabel={openBillsLabel}
         openBillsInCents={openBillsInCents}
         openBillsShortLabel={openBillsShortLabel}
@@ -378,22 +344,20 @@ export function DesktopBalanceRow({
   hideBalanceAria,
   showBalanceAria,
   accountsPreview,
-  changeLabel,
-  spendingCompare,
   openBillsLabel,
   openBillsInCents,
   openBillsShortLabel,
   connectCta,
 }: BalanceCardProps) {
   const hidden = useHiddenBalance();
-  const walletHref = buildWalletHref(month);
+  const accountsHref = '/carteira?aba=contas';
   const incomeHref = buildWalletHref(month, 'entradas');
   const outcomeHref = buildWalletHref(month, 'saidas');
 
   return (
     <div className="grid grid-cols-2 gap-4 xl:grid-cols-[1.25fr_1fr_1fr] xl:gap-5">
       <div className="relative col-span-2 flex min-w-0 flex-col gap-1 rounded-[22px] border border-linha bg-cartao p-[22px] text-tinta xl:col-span-1">
-        <Link href={walletHref} aria-label={walletLabel} className="absolute inset-0 rounded-[22px]" />
+        <Link href={accountsHref} aria-label={walletLabel} className="absolute inset-0 rounded-[22px]" />
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm font-semibold text-tinta-suave">{balanceLabelDesktop}</span>
           <EyeButton
@@ -417,14 +381,14 @@ export function DesktopBalanceRow({
             {connectCta && <ConnectCta cta={connectCta} />}
           </span>
         ) : null}
-        <ContextLine
-          changeLabel={changeLabel}
-          spendingCompare={spendingCompare}
-          openBillsLabel={openBillsLabel}
-          openBillsInCents={openBillsInCents}
-          openBillsShortLabel={openBillsShortLabel}
-          hidden={hidden}
-        />
+        <div className="mt-2">
+          <OpenBillsSummary
+            openBillsLabel={openBillsLabel}
+            openBillsInCents={openBillsInCents}
+            openBillsShortLabel={openBillsShortLabel}
+            hidden={hidden}
+          />
+        </div>
       </div>
 
       <Link

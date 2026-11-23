@@ -103,6 +103,8 @@ export type Transaction = {
   customDescription?: string | null;
   /** Conta MANUAL: quando o lançamento passou a pesar no saldo (null = ainda não: data futura). Trava contra aplicar 2x. */
   balanceAppliedAt?: Date | null;
+  /** Quando foi pago ou recebido (null = pendente / a pagar ou a receber). */
+  settledAt?: Date | null;
   /** Vínculo explícito: o outro lado ("pagamento de fatura" → o cartão; "transferi pra outra conta minha" → a conta). */
   linkedAccountId?: string | null;
   linkKind?: 'card_payment' | 'transfer' | null;

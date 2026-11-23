@@ -91,6 +91,7 @@ async function materializeRule(repos: Repositories, rule: RecurringRule, now: Da
             categoryId,
             isInternalTransfer: isNeutral(categoryId),
             seriesId: null,
+            settledAt: now,
             // Já venceu (nextRunAt <= agora): em conta manual pesa no saldo agora, junto com o lançamento.
             balanceAppliedAt: manual ? now : null,
           },

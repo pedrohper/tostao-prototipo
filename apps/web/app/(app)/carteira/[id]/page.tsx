@@ -13,7 +13,7 @@ import { CategorizeForm } from './categorize-form';
 import { NicknameForm } from './nickname-form';
 import { EditManualForm } from './edit-manual-form';
 import { NOTE_MAX } from '@tostao/contracts';
-import { apagarLancamento, saveTransactionNote, toggleInternalTransfer } from '../actions';
+import { apagarLancamento, saveTransactionNote, toggleInternalTransfer, toggleTransactionSettled } from '../actions';
 import { getMe } from '@/lib/api-queries';
 import { TransferLinkForms, hasLinkContent, type LinkAccount } from './transfer-link';
 
@@ -70,6 +70,68 @@ export default async function CategorizarPage({
             {money(Math.abs(t.amountInCents))}
           </span>
         </div>
+        {(t.source === 'manual' || t.settled === false) && !t.isInternalTransfer && (
+          <form
+            action={toggleTransactionSettled}
+            className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-linha bg-papel-2/70 px-3 py-2"
+          >
+            <input type="hidden" name="id" value={t.id} />
+            <input type="hidden" name="settled" value={t.settled === false ? 'true' : 'false'} />
+            <input type="hidden" name="kind" value={t.amountInCents > 0 ? 'entrada' : 'saida'} />
+            <input type="hidden" name="back" value={back} />
+            <span className="flex items-center gap-2 text-xs font-semibold">
+              <span
+                className={`inline-block h-2 w-2 rounded-full ${t.settled === false ? 'bg-alerta' : 'bg-menta'}`}
+                aria-hidden="true"
+              />
+              {t.settled === false
+                ? locale === 'en'
+                  ? 'Pending payment/receipt'
+                  : locale === 'es'
+                    ? 'Pendiente'
+                    : t.amountInCents > 0
+                      ? 'Receita pendente'
+                      : 'Despesa pendente'
+                : locale === 'en'
+                  ? t.amountInCents > 0
+                    ? 'Received'
+                    : 'Paid'
+                  : locale === 'es'
+                    ? t.amountInCents > 0
+                      ? 'Recibido'
+                      : 'Pagado'
+                    : t.amountInCents > 0
+                      ? 'Recebido'
+                      : 'Pago'}
+            </span>
+            <button
+              type="submit"
+              className={`h-8 rounded-full px-3 text-xs font-bold transition-colors ${
+                t.settled === false
+                  ? 'bg-tinta text-papel hover:opacity-90'
+                  : 'border border-linha bg-cartao text-tinta-suave hover:text-tinta'
+              }`}
+            >
+              {t.settled === false
+                ? t.amountInCents > 0
+                  ? locale === 'en'
+                    ? 'Mark received'
+                    : locale === 'es'
+                      ? 'Marcar recibido'
+                      : 'Já recebi'
+                  : locale === 'en'
+                    ? 'Mark paid'
+                    : locale === 'es'
+                      ? 'Marcar pagado'
+                      : 'Já paguei'
+                : locale === 'en'
+                  ? 'Mark pending'
+                  : locale === 'es'
+                    ? 'Marcar pendiente'
+                    : 'Marcar pendente'}
+            </button>
+          </form>
+        )}
       </div>
       {acerto ? (
         <Acerto t={t} people={people} back={back} erro={erro === 'nota' ? undefined : erroDe(erro)} labels={d.split} />

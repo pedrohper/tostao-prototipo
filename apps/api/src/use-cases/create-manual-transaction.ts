@@ -16,6 +16,8 @@ type Input = {
   repeat?: 'nao' | 'mensal' | 'parcelado';
   times?: number;
   note?: string;
+  /** true = já paguei / já recebi; false = fica como pendente (a pagar / a receber). */
+  settled?: boolean;
   /** Só lançamento único: identidade gerada pelo app (ex.: `shortcut:<token>:<evento>`) pra nunca duplicar. */
   externalId?: string;
 };
@@ -68,21 +70,27 @@ export class CreateManualTransactionUseCase {
     const now = this.now();
     const manual = !!account && isManualAccount(account);
     // Todas as parcelas/meses entram juntas (createMany numa transação): nunca fica meia série lançada.
-    const rows = Array.from({ length: n }, (_, i) => ({
-      id: randomUUID(),
-      userId: input.userId,
-      accountId,
-      externalId: n === 1 ? (input.externalId ?? null) : null,
-      description: repeat === 'parcelado' ? `${input.description} (${i + 1}/${n})` : input.description,
-      amountInCents: sign * (i === 0 ? first : parcel),
-      occurredAt: addMonths(input.occurredAt, i),
-      categoryId,
-      isInternalTransfer: isNeutral(categoryId),
-      seriesId,
-      note: input.note || null,
-      // Conta manual: o que já aconteceu pesa no saldo agora (e fica marcado); o futuro espera o job de materialização.
-      balanceAppliedAt: manual && isDue({ occurredAt: addMonths(input.occurredAt, i) }, now) ? now : null,
-    }));
+    const rows = Array.from({ length: n }, (_, i) => {
+      const occurredAt = addMonths(input.occurredAt, i);
+      const rowSettled = i === 0 ? (input.settled ?? isDue({ occurredAt }, now)) : false;
+      const shouldApply = manual && rowSettled && (input.settled === true || isDue({ occurredAt }, now));
+      return {
+        id: randomUUID(),
+        userId: input.userId,
+        accountId,
+        externalId: n === 1 ? (input.externalId ?? null) : null,
+        description: repeat === 'parcelado' ? `${input.description} (${i + 1}/${n})` : input.description,
+        amountInCents: sign * (i === 0 ? first : parcel),
+        occurredAt,
+        categoryId,
+        isInternalTransfer: isNeutral(categoryId),
+        seriesId,
+        note: input.note || null,
+        settledAt: rowSettled ? now : null,
+        // Conta manual: o que já aconteceu pesa no saldo agora (e fica marcado); o futuro ou pendente espera.
+        balanceAppliedAt: shouldApply ? now : null,
+      };
+    });
     const transaction = await this.repos.tx(async (r) => {
       await r.transactions.createMany(rows);
       // Conta manual: o saldo acompanha o que já aconteceu (junto, na mesma transação).

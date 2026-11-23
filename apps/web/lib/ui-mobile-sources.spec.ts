@@ -33,12 +33,19 @@ describe('Home mobile (inicio/page.tsx)', () => {
     expect(balanceCard).not.toContain('absolute -top-1 -right-1');
   });
 
-  it('carrossel PlanejarAtalhos inclui anotar, anotações e importar sem prefetch agressivo', () => {
+  it('carrossel PlanejarAtalhos junta anotar+anotações num botão só e mantém importar sem prefetch agressivo', () => {
     const carousel = read('app/(app)/inicio/planejar-atalhos.tsx');
-    expect(carousel).toContain('/anotar');
+    expect(carousel).not.toContain("id: 'anotar'");
     expect(carousel).toContain('/anotacoes');
     expect(carousel).toContain('/importar');
     expect(carousel).toContain('prefetch={false}');
+  });
+
+  it('card de saldo leva a Carteira > Contas, remove comparativo do mês passado e exibe Pendências e alertas', () => {
+    const balance = read('app/(app)/inicio/balance-card.tsx');
+    expect(balance).toContain("const accountsHref = '/carteira?aba=contas'");
+    expect(balance).not.toContain('Gasto até hoje vs');
+    expect(read('app/(app)/inicio/page.tsx')).toContain('<PendingAlertsCard');
   });
 
   it('o Tostão compacto saiu da Home mobile e continua no desktop', () => {

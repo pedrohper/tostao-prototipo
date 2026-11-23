@@ -82,6 +82,7 @@ export async function createManual(_: ActionState, form: FormData): Promise<Acti
     repeat: form.get('repeat') || 'nao',
     times: form.get('repeat') === 'parcelado' ? Number(form.get('times') || 0) : undefined,
     note: String(form.get('note') ?? ''),
+    settled: form.has('settled') ? form.get('settled') === 'true' : undefined,
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
   // "Lançar sozinho" (T5.2): em vez de pré-lançar 12 meses/parcelas, cria uma REGRA e o app lança cada vencimento no dia.
@@ -372,6 +373,37 @@ export async function linkTransfer(form: FormData) {
         : 'Transferência ligada. Não conta como gasto.',
   );
   redirect(back);
+}
+
+/** Marca um lançamento como pago/recebido (`settled=true`) ou volta para pendente (`settled=false`). */
+export async function toggleTransactionSettled(form: FormData) {
+  const id = form.get('id');
+  const settled = form.get('settled') === 'true';
+  const isIncome = form.get('kind') === 'entrada';
+  const backRaw = form.get('back');
+  const back = typeof backRaw === 'string' && backRaw ? safeInternalPath(backRaw, '/carteira') : null;
+  if (!isSafePathSegment(id)) {
+    if (back) redirect(back);
+    return;
+  }
+  const parsed = updateTransactionBody.safeParse({ settled });
+  if (!parsed.success) {
+    if (back) redirect(back);
+    return;
+  }
+  try {
+    await api(`/transactions/${safePathSegment(id)}`, { method: 'PATCH', body: parsed.data });
+  } catch (caught) {
+    rethrowIfRedirect(caught);
+    await flashToast(caught instanceof ApiError ? caught.message : 'Não consegui atualizar agora.', 'error');
+    if (back) redirect(back);
+    return;
+  }
+  revalidateFinance();
+  await flashToast(
+    settled ? (isIncome ? 'Receita marcada como recebida.' : 'Despesa marcada como paga.') : 'Marcado como pendente.',
+  );
+  if (back) redirect(back);
 }
 
 export type ReconcileState = { error?: string; done?: { deltaInCents: number; balanceInCents: number } };

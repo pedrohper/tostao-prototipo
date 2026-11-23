@@ -30,5 +30,6 @@ export function presentTransaction(
     customDescription: t.customDescription ?? null,
     linkedAccountId: t.linkedAccountId ?? null,
     linkKind: t.linkKind ?? null,
+    settled: t.settledAt !== null,
   };
 }

@@ -85,6 +85,7 @@ export class TransferLinkUseCase {
           seriesId: null,
           linkedAccountId: source?.id ?? null,
           linkKind: kind,
+          settledAt: applied ? now : null,
           balanceAppliedAt: applied ? now : null,
         });
         mirrorId = mirror.id;

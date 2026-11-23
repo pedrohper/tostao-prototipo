@@ -21,17 +21,10 @@ export function PlanejarAtalhos({ t }: { t: Dictionary }) {
 
   const shortcuts: Shortcut[] = [
     {
-      id: 'anotar',
-      href: `/anotar${back}`,
-      icon: 'conectar/anotar',
-      tone: 'bg-laranja text-papel',
-      label: t.home.shortcutAnnotate,
-    },
-    {
       id: 'anotacoes',
       href: `/anotacoes${back}`,
-      icon: 'cat/taxas',
-      tone: 'bg-amarelo-claro text-tinta',
+      icon: 'conectar/anotar',
+      tone: 'bg-laranja text-papel',
       label: titles.notes,
     },
     {

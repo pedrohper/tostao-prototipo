@@ -613,10 +613,19 @@ export interface Dictionary {
       hide: string;
     };
     main: {
-      filters: { tudo: string; saidas: string; entradas: string; pendentes: string };
+      filters: {
+        tudo: string;
+        saidas: string;
+        entradas: string;
+        pendentes: string;
+        'a-pagar': string;
+        'a-receber': string;
+      };
       hideTransfers: string;
       hideYields: string;
       pendingChip: (count: number) => string;
+      pendingOutChip: (count: number) => string;
+      pendingInChip: (count: number) => string;
       uncategorizedLabel: string;
       categoryLabel: string;
       sectionsAria: string;
@@ -1248,6 +1257,7 @@ export interface Dictionary {
       moveUpAria: (name: string) => string;
       moveDownAria: (name: string) => string;
       sections: Record<
+        | 'pendencias'
         | 'sobra'
         | 'missoes'
         | 'vence'
@@ -1488,6 +1498,9 @@ export interface Dictionary {
       connectCta: string;
       evolutionTitle: string;
       evolutionSub: string;
+      pendingAlertsTitle: string;
+      pendingExpensesLabel: string;
+      pendingIncomesLabel: string;
     };
     quickAdd: {
       title: string;

@@ -58,6 +58,7 @@ export class ReconcileBalanceUseCase {
           internalTransferManual: true,
           seriesId: null,
           note: note || null,
+          settledAt: now,
           balanceAppliedAt: manual ? now : null,
         },
       ]);

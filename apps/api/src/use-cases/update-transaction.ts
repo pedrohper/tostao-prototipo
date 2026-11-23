@@ -32,6 +32,18 @@ export class UpdateTransactionUseCase {
       throw new AppError('Esse lançamento está ligado a outra conta. Desfaça o vínculo primeiro.', 400);
 
     const tz = await timezoneOf(this.repos.users, userId);
+    const now = this.now();
+    const nextOccurredAt = patch.occurredAt !== undefined ? noonOfCivilDay(patch.occurredAt, tz) : t.occurredAt;
+    const nextSettledAt =
+      patch.settled !== undefined
+        ? patch.settled
+          ? (t.settledAt ?? now)
+          : null
+        : patch.occurredAt !== undefined
+          ? isDue({ occurredAt: nextOccurredAt }, now)
+            ? (t.settledAt ?? now)
+            : null
+          : t.settledAt;
     const updated = {
       ...t,
       ...(patch.isInternalTransfer !== undefined
@@ -43,18 +55,18 @@ export class UpdateTransactionUseCase {
         : {}),
       ...(patch.description !== undefined ? { description: patch.description } : {}),
       ...(patch.amountInCents !== undefined ? { amountInCents: patch.amountInCents } : {}),
-      ...(patch.occurredAt !== undefined ? { occurredAt: noonOfCivilDay(patch.occurredAt, tz) } : {}),
+      ...(patch.occurredAt !== undefined ? { occurredAt: nextOccurredAt } : {}),
+      ...(nextSettledAt !== t.settledAt ? { settledAt: nextSettledAt } : {}),
       // A anotação é da pessoa: vale também pra transação do banco. Vazio apaga.
       ...(patch.note !== undefined ? { note: patch.note || null } : {}),
       // O apelido também vale pra transação do banco e nunca mexe na `description` original.
       ...(patch.customDescription !== undefined ? { customDescription: patch.customDescription?.trim() || null } : {}),
     };
-    const now = this.now();
     await this.repos.tx(async (r) => {
       const account = t.accountId ? (await r.accounts.listByUser(userId)).find((a) => a.id === t.accountId) : null;
       if (account && isManualAccount(account)) {
-        // Conta manual: o saldo acompanha a edição. Depois de editar, pesa no saldo quem já tem a data chegada.
-        const applied = isDue(updated, now);
+        // Conta manual: o saldo acompanha a edição. Se marcou como pago/recebido agora, ou se já está pago e a data chegou, pesa no saldo.
+        const applied = patch.settled === true || (updated.settledAt !== null && isDue(updated, now));
         updated.balanceAppliedAt = applied ? (t.balanceAppliedAt ?? now) : null;
         const delta = balanceEffect(updated) - balanceEffect(t);
         await r.transactions.save(updated);

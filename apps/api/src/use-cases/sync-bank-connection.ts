@@ -141,6 +141,7 @@ export class SyncBankConnectionUseCase {
             description: tx.description,
             amountInCents: tx.amountInCents,
             occurredAt: tx.occurredAt,
+            settledAt: tx.occurredAt,
             categoryId:
               categorizeByRules(tx.description, userRules, tx.merchantName) ??
               categorizeByProviderCategory(tx.providerCategory, tx.amountInCents),

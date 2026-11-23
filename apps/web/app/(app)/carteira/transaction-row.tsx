@@ -8,6 +8,7 @@ import type { TransactionDTO } from '@tostao/contracts';
 import { money, shortDate } from '@/lib/format';
 import { getDictionary, type Dictionary, type Locale } from '@/lib/i18n';
 import { withQuery } from '@/lib/wallet-search';
+import { toggleTransactionSettled } from './actions';
 
 /** Barra de busca da Carteira. Formulário comum (GET), funciona até sem JavaScript. */
 export function SearchBar({
@@ -478,33 +479,73 @@ export function Row({
     '↑'
   );
   const bg = pending ? undefined : t.isInternalTransfer ? undefined : (t.categoryColor ?? undefined);
+  const unpaid = t.settled === false && !t.isInternalTransfer;
+  const quickSettleLabel =
+    t.amountInCents > 0
+      ? locale === 'en'
+        ? 'Received'
+        : locale === 'es'
+          ? 'Recibido'
+          : 'Recebi'
+      : locale === 'en'
+        ? 'Paid'
+        : locale === 'es'
+          ? 'Pagado'
+          : 'Paguei';
+  const pendingTag = locale === 'en' ? 'Pending' : locale === 'es' ? 'Pendiente' : 'Pendente';
+
   return (
-    <Link
-      href={`/carteira/${t.id}?voltar=${encodeURIComponent(back)}`}
-      className={`flex min-h-[76px] items-center gap-3.5 border-b border-linha/60 py-4 text-tinta no-underline transition-colors last:border-b-0 hover:bg-papel-2/40 ${t.isInternalTransfer ? 'opacity-60' : ''}`}
+    <div
+      className={`flex min-h-[76px] items-center gap-2 border-b border-linha/60 last:border-b-0 ${t.isInternalTransfer ? 'opacity-60' : ''}`}
     >
-      <div
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg font-bold ${pending ? 'bg-rosa text-tinta' : bg ? 'text-tinta-fixa' : 'bg-papel-2 text-tinta'}`}
-        style={bg ? { background: bg } : undefined}
-        aria-hidden="true"
+      <Link
+        href={`/carteira/${t.id}?voltar=${encodeURIComponent(back)}`}
+        className="flex min-w-0 flex-1 items-center gap-3.5 py-4 text-tinta no-underline transition-colors hover:bg-papel-2/40"
       >
-        {icon}
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="truncate text-[15px] leading-5 font-semibold">{t.customDescription || t.description}</span>
-        <span
-          className={`truncate text-[13px] leading-4 ${pending ? 'font-semibold text-laranja-texto' : 'text-tinta-suave'}`}
+        <div
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg font-bold ${pending ? 'bg-rosa text-tinta' : bg ? 'text-tinta-fixa' : 'bg-papel-2 text-tinta'}`}
+          style={bg ? { background: bg } : undefined}
+          aria-hidden="true"
         >
-          {line}
+          {icon}
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <div className="flex items-center gap-1.5">
+            <span className="truncate text-[15px] leading-5 font-semibold">{t.customDescription || t.description}</span>
+            {unpaid && (
+              <span className="shrink-0 rounded-full bg-amarelo-claro px-2 py-0.5 text-[10px] font-bold text-laranja-texto uppercase">
+                {pendingTag}
+              </span>
+            )}
+          </div>
+          <span
+            className={`truncate text-[13px] leading-4 ${pending ? 'font-semibold text-laranja-texto' : 'text-tinta-suave'}`}
+          >
+            {line}
+          </span>
+          {t.note && <span className="truncate text-[12px] leading-4 text-tinta-suave italic">“{t.note}”</span>}
+        </div>
+        <span
+          className={`shrink-0 text-[15px] tabular-nums ${t.amountInCents > 0 ? 'font-bold text-verde-texto' : 'font-semibold'}`}
+        >
+          {t.amountInCents > 0 ? '+ ' : ''}
+          {money(Math.abs(t.amountInCents))}
         </span>
-        {t.note && <span className="truncate text-[12px] leading-4 text-tinta-suave italic">“{t.note}”</span>}
-      </div>
-      <span
-        className={`shrink-0 text-[15px] tabular-nums ${t.amountInCents > 0 ? 'font-bold text-verde-texto' : 'font-semibold'}`}
-      >
-        {t.amountInCents > 0 ? '+ ' : ''}
-        {money(Math.abs(t.amountInCents))}
-      </span>
-    </Link>
+      </Link>
+      {unpaid && (
+        <form action={toggleTransactionSettled} className="shrink-0">
+          <input type="hidden" name="id" value={t.id} />
+          <input type="hidden" name="settled" value="true" />
+          <input type="hidden" name="kind" value={t.amountInCents > 0 ? 'entrada' : 'saida'} />
+          <input type="hidden" name="back" value={back} />
+          <button
+            type="submit"
+            className="h-8 rounded-full border border-linha bg-papel-2 px-2.5 text-xs font-bold text-tinta transition-colors hover:bg-tinta hover:text-papel"
+          >
+            {quickSettleLabel}
+          </button>
+        </form>
+      )}
+    </div>
   );
 }

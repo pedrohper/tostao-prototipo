@@ -659,10 +659,19 @@ export const en: Dictionary = {
       hide: 'Hide account',
     },
     main: {
-      filters: { tudo: 'All', saidas: 'Expenses', entradas: 'Income', pendentes: 'Uncategorized' },
+      filters: {
+        tudo: 'All',
+        saidas: 'Expenses',
+        entradas: 'Income',
+        pendentes: 'Uncategorized',
+        'a-pagar': 'To pay',
+        'a-receber': 'To receive',
+      },
       hideTransfers: 'Hide internal transfers',
       hideYields: 'Hide yields',
       pendingChip: (count) => `${count} uncategorized`,
+      pendingOutChip: (count) => `${count} to pay`,
+      pendingInChip: (count) => `${count} to receive`,
       uncategorizedLabel: 'Uncategorized',
       categoryLabel: 'Category',
       sectionsAria: 'Wallet sections',
@@ -1442,6 +1451,7 @@ export const en: Dictionary = {
       moveUpAria: (name) => `Move ${name} up`,
       moveDownAria: (name) => `Move ${name} down`,
       sections: {
+        pendencias: { name: 'Pending and alerts', hint: 'Unpaid expenses and upcoming income' },
         sobra: { name: 'End-of-month forecast', hint: 'Estimated leftover until month-end' },
         missoes: { name: 'Today’s missions', hint: 'And your daily streak' },
         vence: { name: 'Due soon', hint: 'Bills, subscriptions, and cards' },
@@ -1715,6 +1725,9 @@ export const en: Dictionary = {
       connectCta: 'Connect my bank ›',
       evolutionTitle: 'Month by month',
       evolutionSub: 'What came in and went out over the last months',
+      pendingAlertsTitle: 'Pending and alerts',
+      pendingExpensesLabel: 'Outstanding expenses',
+      pendingIncomesLabel: 'Outstanding incomes',
     },
     quickAdd: {
       title: 'Log',

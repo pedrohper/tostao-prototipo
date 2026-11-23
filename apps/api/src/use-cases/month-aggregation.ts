@@ -87,6 +87,9 @@ export function summarizeMonth(data: FinanceSnapshot, month: string, now: Date) 
   const balanceAtMonthEnd = (accountId: string, currentBalance: number, type: string) =>
     type === 'BANK' && isPastMonth ? currentBalance - (deltaAfterByAccount.get(accountId) ?? 0) : currentBalance;
 
+  const pendingOuts = outs.filter((t) => t.settledAt === null);
+  const pendingIns = real.filter((t) => t.amountInCents > 0 && t.settledAt === null);
+
   return {
     month,
     balanceInCents: bankAccounts.length
@@ -95,6 +98,10 @@ export function summarizeMonth(data: FinanceSnapshot, month: string, now: Date) 
     incomeInCents,
     outcomeInCents,
     uncategorizedCount: real.filter((t) => t.categoryId === null).length,
+    pendingExpensesCount: pendingOuts.length,
+    pendingExpensesInCents: pendingOuts.reduce((s, t) => s - t.amountInCents, 0),
+    pendingIncomesCount: pendingIns.length,
+    pendingIncomesInCents: pendingIns.reduce((s, t) => s + t.amountInCents, 0),
     byCategory,
     accounts: visible.map((a) => ({
       id: a.id,

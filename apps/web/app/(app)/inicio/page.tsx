@@ -48,9 +48,10 @@ import { NO_PROGRESS } from '@/lib/xp';
 import { PwaInstallBanner } from '@/components/pwa-install-banner';
 import { activationChecklist } from '@/lib/onboarding';
 import { AskTostaoCard } from './ask-card';
-import { changePct, stackedSegments } from '@/lib/chart-math';
+import { stackedSegments } from '@/lib/chart-math';
 import { unifyAlerts, type LocalAlertKey } from '@/lib/home-alerts';
 import { DesktopBalanceRow, MobileBalanceCard, type BalanceCardProps } from './balance-card';
+import { PendingAlertsCard } from './pending-alerts-card';
 import { PlanejarAtalhos } from './planejar-atalhos';
 import { getMe, getMissions, getProgress, getTostaoAuto } from '@/lib/api-queries';
 
@@ -267,6 +268,18 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
 
   const sectionsById: Record<HomeSectionId, React.ReactNode> = {
     atalhos: <PlanejarAtalhos t={t} />,
+    pendencias: (
+      <PendingAlertsCard
+        month={month}
+        title={t.growth.home.pendingAlertsTitle}
+        pendingExpensesLabel={t.growth.home.pendingExpensesLabel}
+        pendingIncomesLabel={t.growth.home.pendingIncomesLabel}
+        pendingExpensesCount={summary.pendingExpensesCount ?? 0}
+        pendingExpensesInCents={summary.pendingExpensesInCents ?? 0}
+        pendingIncomesCount={summary.pendingIncomesCount ?? 0}
+        pendingIncomesInCents={summary.pendingIncomesInCents ?? 0}
+      />
+    ),
     aula: (
       <Link
         href={proxima ? `/aprender/${proxima.id}` : '/aprender/trilha'}
@@ -658,23 +671,6 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     ? t.home.balanceAtEndOfMonth(currentMonthLabel)
     : t.home.balanceInAccounts(bankAccounts.length);
 
-  // Variação do gasto vs mês anterior. No mês corrente o gasto está pela metade: comparar com o mês cheio daria
-  // "-60%" enganoso, então mostramos quanto do mês passado já foi gasto.
-  const prevPoint = history?.months.at(-2);
-  const hasPrevCompare = Boolean(prevPoint && prevPoint.outcomeInCents > 0 && summary.outcomeInCents > 0);
-  const prevOutcomePct = hasPrevCompare ? Math.round((summary.outcomeInCents / prevPoint!.outcomeInCents) * 100) : null;
-  const spendingCompare = hasPrevCompare
-    ? {
-        pct: prevOutcomePct!,
-        prevMonth: monthName(prevPoint!.month, locale),
-        isCurrentMonth: month === hoje,
-      }
-    : null;
-  const spendingChangeLabel = hasPrevCompare
-    ? month === hoje
-      ? t.growth.home.spentSoFarOfPrev(prevOutcomePct!, monthName(prevPoint!.month, locale))
-      : t.growth.home.outcomeChange(changePct(summary.outcomeInCents, prevPoint!.outcomeInCents) ?? 0)
-    : null;
   // Cartão: saldo negativo = fatura em aberto.
   const openBillsInCents = creditCards.reduce((sum, c) => sum + Math.max(0, -c.balanceInCents), 0);
   const noAccounts = bankAccounts.length === 0 && creditCards.length === 0;
@@ -697,8 +693,6 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     hideBalanceAria: t.home.hideBalanceAria,
     showBalanceAria: t.home.showBalanceAria,
     accountsPreview: bankAccounts.slice(0, 3).map((a) => ({ name: a.name, balanceInCents: a.balanceInCents })),
-    changeLabel: spendingChangeLabel,
-    spendingCompare,
     openBillsLabel: openBillsInCents > 0 ? t.growth.home.openBills(money(openBillsInCents)) : null,
     openBillsInCents: openBillsInCents > 0 ? openBillsInCents : null,
     openBillsShortLabel: t.walletExtra.main.openBillsLabel,
@@ -1189,6 +1183,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
             {/* Desktop (lg+) */}
             <div className="hidden lg:flex lg:flex-col lg:gap-7">
               {isSectionVisible('atalhos') && sectionsById.atalhos}
+              {isSectionVisible('pendencias') && sectionsById.pendencias}
 
               <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">
                 <div className="flex min-w-0 flex-col gap-[18px]">

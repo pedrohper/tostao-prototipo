@@ -194,6 +194,8 @@ model Transaction {
   // Quando o lançamento passou a pesar no saldo de uma conta MANUAL (null = ainda não pesou: data futura). É a trava
   // que impede o job de recorrências/agendados de aplicar o mesmo lançamento duas vezes. Só faz sentido em conta manual.
   balanceAppliedAt       DateTime? @map("balance_applied_at") @db.Timestamptz(3)
+  // Quando a pessoa pagou ou recebeu o lançamento (null = pendente / ainda vai pagar ou receber).
+  settledAt              DateTime? @map("settled_at") @db.Timestamptz(3)
   // Vínculo explícito (T5.2): "é pagamento de fatura" (card_payment) ou "transferi pra outra conta minha" (transfer),
   // apontando pra conta de destino. Quem tem isso é transferência interna (internalTransferManual = true).
   linkedAccountId        String?   @map("linked_account_id")
@@ -216,6 +218,7 @@ model Transaction {
   @@index([userId, accountId, occurredAt])
   @@index([userId, personId, occurredAt])
   @@index([userId, seriesId, occurredAt])
+  @@index([userId, settledAt, occurredAt])
   // Busca por trecho da descrição (ILIKE): GIN com pg_trgm. A extensão e os índices parciais (sem categoria / manual)
   // são criados por SQL na migration 20261123100000_t21_indexes: o Prisma não modela índice parcial.
   @@index([description(ops: raw("gin_trgm_ops"))], type: Gin, map: "transactions_description_trgm_idx")
