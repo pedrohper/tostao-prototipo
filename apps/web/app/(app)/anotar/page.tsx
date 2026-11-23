@@ -1,4 +1,4 @@
-import type { CategoryDTO, TransactionDTO } from '@tostao/contracts';
+import type { CategoryDTO, PeopleResponse, TransactionDTO } from '@tostao/contracts';
 import { api } from '@/lib/api';
 import { currentMonth, resolveBackHref, shiftMonth, todayIso } from '@/lib/format';
 import { recentDescriptions } from '@/lib/quick-add';
@@ -9,10 +9,11 @@ import { getMe } from '@/lib/api-queries';
 
 export default async function AnotarPage({ searchParams }: { searchParams: Promise<{ voltar?: string }> }) {
   const month = currentMonth();
-  const [{ voltar }, { categories }, me, { locale, t }, recentNow, recentBefore] = await Promise.all([
+  const [{ voltar }, { categories }, me, peopleRes, { locale, t }, recentNow, recentBefore] = await Promise.all([
     searchParams,
     api<{ categories: CategoryDTO[] }>('/categories'),
     getMe().catch(() => null),
+    api<PeopleResponse>('/people').catch(() => null),
     getI18n(),
     // Só pra sugerir descrições: se falhar, o formulário funciona igual, sem sugestões.
     api<{ transactions: TransactionDTO[] }>(`/transactions?month=${month}`).catch(() => null),
@@ -61,6 +62,7 @@ export default async function AnotarPage({ searchParams }: { searchParams: Promi
         <AnotarForm
           categories={categories}
           contas={contas}
+          people={peopleRes?.people ?? []}
           today={todayIso()}
           recents={recents}
           back={backHref}

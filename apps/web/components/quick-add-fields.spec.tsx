@@ -74,20 +74,40 @@ describe('DescriptionInput', () => {
 describe('CategoryField', () => {
   const categories = ['delivery', 'comer-fora', 'mercado', 'transporte', 'extra-rara'].map((id) => cat(id));
 
-  it('lista todas as categorias do tipo com ícone (sem esconder atrás de "Mais")', () => {
-    const html = renderToString(
+  it('usa seleção suspensa por padrão e lista todas as categorias com ícone e "+ Criar categoria" ao abrir', () => {
+    const fechado = renderToString(
       <CategoryField categories={categories} kind="saida" value={null} onChange={noop} legend="Categoria" />,
     );
+    expect(fechado).toContain('aria-expanded="false"');
+    expect(fechado).toContain('Escolher categoria');
+
+    const aberto = renderToString(
+      <CategoryField
+        categories={categories}
+        kind="saida"
+        value={null}
+        onChange={noop}
+        legend="Categoria"
+        variant="inline"
+      />,
+    );
     for (const id of ['delivery', 'comer-fora', 'mercado', 'transporte', 'extra-rara'])
-      expect(html).toContain(`>${id}<`);
-    expect(html).not.toContain('>Mais<');
-    expect(html).toMatch(/<(svg|img|span)[^>]*aria-hidden="true"/); // CatIcon (ícone de cada categoria)
-    expect(html).toContain('+ Criar categoria');
+      expect(aberto).toContain(`>${id}<`);
+    expect(aberto).not.toContain('>Mais<');
+    expect(aberto).toMatch(/<(svg|img|span)[^>]*aria-hidden="true"/); // CatIcon (ícone de cada categoria)
+    expect(aberto).toContain('+ Criar categoria');
   });
 
   it('a escolhida vai no campo categoryId e aparece marcada', () => {
     const html = renderToString(
-      <CategoryField categories={categories} kind="saida" value="mercado" onChange={noop} legend="Categoria" />,
+      <CategoryField
+        categories={categories}
+        kind="saida"
+        value="mercado"
+        onChange={noop}
+        legend="Categoria"
+        variant="inline"
+      />,
     );
     expect(html).toContain('name="categoryId" value="mercado"');
     expect(html).toMatch(/aria-checked="true"[^>]*data-cat-id="mercado"/);
@@ -101,6 +121,7 @@ describe('CategoryField', () => {
         value={null}
         onChange={noop}
         legend="Categoria"
+        variant="inline"
       />,
     );
     expect(html).toContain('>salario<');

@@ -174,6 +174,8 @@ export function CategoryField({
   onChange,
   legend,
   locale = 'pt-BR',
+  variant,
+  defaultOpen,
   onCreate,
 }: {
   categories: CategoryDTO[];
@@ -182,6 +184,8 @@ export function CategoryField({
   onChange: (id: string | null) => void;
   legend: React.ReactNode;
   locale?: Locale;
+  variant?: ComponentProps<typeof CategoryPicker>['variant'];
+  defaultOpen?: boolean;
   onCreate?: ComponentProps<typeof CategoryPicker>['onCreate'];
 }) {
   const t = getDictionary(locale).growth.quickAdd;
@@ -197,6 +201,8 @@ export function CategoryField({
         label={t.categoryLabel}
         allowClear
         locale={locale}
+        {...(variant ? { variant } : {})}
+        {...(defaultOpen !== undefined ? { defaultOpen } : {})}
         {...(onCreate ? { onCreate } : {})}
       />
     </fieldset>
