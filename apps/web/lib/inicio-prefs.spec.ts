@@ -8,9 +8,9 @@ import { DEFAULT_HIDDEN_SECTIONS, HOME_SECTIONS, parsePrefs, resolveSectionOrder
 const visibleByDefault = HOME_SECTIONS.filter((s) => !(DEFAULT_HIDDEN_SECTIONS as readonly string[]).includes(s.id));
 
 describe('padrão enxuto', () => {
-  it('liga 8 seções padrão com o carrossel de atalhos visível no topo', () => {
+  it('liga 9 seções padrão com o carrossel de atalhos e pendências visíveis no topo', () => {
     expect(visibleByDefault.map((s) => s.id).sort()).toEqual(
-      ['atalhos', 'avisos', 'aula', 'evolucao', 'limites', 'meta', 'pra-onde-foi', 'sobra'].sort(),
+      ['atalhos', 'avisos', 'aula', 'evolucao', 'limites', 'meta', 'pendencias', 'pra-onde-foi', 'sobra'].sort(),
     );
     expect(HOME_SECTIONS[0]?.id).toBe('atalhos');
     expect(HOME_SECTIONS.length - visibleByDefault.length).toBe(DEFAULT_HIDDEN_SECTIONS.length);

@@ -217,3 +217,55 @@ describe('acerto com pessoa nunca vira gasto', () => {
     expect((await s.repos.transactions.findById(without.id))!.isInternalTransfer).toBe(false);
   });
 });
+
+describe('pendências (pago / recebido)', () => {
+  it('lançamento criado com settled=false fica fora do saldo manual até marcar como pago e soma em pendências do mês', async () => {
+    const s = await setup();
+    const { summarizeMonth } = await import('./month-aggregation.js');
+    const created = await s.create.execute(
+      spend({ accountId: s.account.id, amountInCents: 200_00, description: 'Aluguel', settled: false }),
+    );
+    await s.create.execute(
+      spend({
+        accountId: s.account.id,
+        kind: 'entrada',
+        amountInCents: 500_00,
+        description: 'Freela',
+        settled: false,
+      }),
+    );
+    // Ainda não foi pago/recebido: saldo da conta manual não mudou.
+    expect(await s.balance()).toBe(1000_00);
+
+    const before = summarizeMonth(
+      {
+        tz: 'America/Sao_Paulo',
+        accounts: await s.repos.accounts.listByUser('u1'),
+        categories: [],
+        txs: s.repos.transactions.items,
+      },
+      '2026-11',
+      NOW,
+    );
+    expect(before.pendingExpensesCount).toBe(1);
+    expect(before.pendingExpensesInCents).toBe(200_00);
+    expect(before.pendingIncomesCount).toBe(1);
+    expect(before.pendingIncomesInCents).toBe(500_00);
+
+    await s.update.execute({ userId: 'u1', transactionId: created.transaction.id, settled: true });
+    expect(await s.balance()).toBe(800_00);
+
+    const after = summarizeMonth(
+      {
+        tz: 'America/Sao_Paulo',
+        accounts: await s.repos.accounts.listByUser('u1'),
+        categories: [],
+        txs: s.repos.transactions.items,
+      },
+      '2026-11',
+      NOW,
+    );
+    expect(after.pendingExpensesCount).toBe(0);
+    expect(after.pendingExpensesInCents).toBe(0);
+  });
+});

@@ -160,7 +160,11 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases, limits: Li
       transactionId: id,
     });
     checkLater(request.user.sub);
-    return { id: transaction.id, isInternalTransfer: transaction.isInternalTransfer };
+    return {
+      id: transaction.id,
+      isInternalTransfer: transaction.isInternalTransfer,
+      settled: transaction.settledAt !== null,
+    };
   });
 
   app.patch('/transactions/:id/category', { onRequest: verifyJwt }, async (request) => {

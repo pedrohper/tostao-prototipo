@@ -70,6 +70,8 @@ export function AnotarForm({
   // Acerto com alguém (opcional, vale para lançamentos manuais diretos).
   const [acertoMode, setAcertoMode] = useState<'none' | 'existing' | 'new'>('none');
   const [acertoName, setAcertoName] = useState('');
+  // Efetivado ("Já paguei / Já recebi"): datas futuras nascem como pendentes, mas a pessoa pode ligar/desligar.
+  const [settled, setSettled] = useState(true);
 
   const [state, action, pending] = useActionState<ActionState, FormData>(async (prev, formData) => {
     const result = await createManual(prev, formData);
@@ -85,6 +87,7 @@ export function AnotarForm({
         setCat(null);
         setAcertoMode('none');
         setAcertoName('');
+        setSettled(date <= today);
       }
       onDone?.(another);
     }
@@ -149,7 +152,56 @@ export function AnotarForm({
           ))}
         </div>
         <AmountInput value={amount} onChange={setAmount} label={labels.amountLabel} autoFocus />
-        <DateChips value={date} onChange={setDate} today={today} locale={locale} />
+        <DateChips
+          value={date}
+          onChange={(nextDate) => {
+            setDate(nextDate);
+            setSettled(nextDate <= today);
+          }}
+          today={today}
+          locale={locale}
+        />
+        {!isAutomaticRule && (
+          <>
+            <input type="hidden" name="settled" value={settled ? 'true' : 'false'} />
+            <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border-[1.5px] border-linha bg-cartao px-3.5 py-2.5">
+              <span className="flex min-w-0 flex-col">
+                <span className="text-[14px] font-semibold text-tinta">
+                  {kind === 'entrada'
+                    ? locale === 'en'
+                      ? 'Already received'
+                      : locale === 'es'
+                        ? 'Ya recibido'
+                        : 'Já recebi'
+                    : locale === 'en'
+                      ? 'Already paid'
+                      : locale === 'es'
+                        ? 'Ya pagado'
+                        : 'Já paguei'}
+                </span>
+                <span className="text-[12px] leading-[16px] text-tinta-suave">
+                  {settled
+                    ? locale === 'en'
+                      ? 'Counts as completed now'
+                      : locale === 'es'
+                        ? 'Ya cuenta como efectuado'
+                        : 'Já entra como pago/recebido no saldo'
+                    : locale === 'en'
+                      ? 'Stays in Pending and alerts until marked done'
+                      : locale === 'es'
+                        ? 'Queda en Pendientes hasta marcar como hecho'
+                        : 'Fica em Pendências até você marcar baixa'}
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={settled}
+                onChange={(e) => setSettled(e.target.checked)}
+                className="h-5 w-5 shrink-0 accent-[var(--color-tinta)]"
+              />
+            </label>
+          </>
+        )}
         <DescriptionInput
           value={description}
           onChange={setDescription}

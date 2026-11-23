@@ -120,6 +120,7 @@ export class ImportStatementUseCase {
           description: tx.description,
           amountInCents: tx.amountInCents,
           occurredAt: tx.occurredAt,
+          settledAt: tx.occurredAt,
           categoryId: categorizeByRules(tx.description, userRules),
           isInternalTransfer: false,
           seriesId: null,

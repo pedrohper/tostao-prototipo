@@ -171,6 +171,7 @@ export class AddPersonEntryUseCase {
       description: description?.trim() || `${LABEL[kind]} (${p.name})`,
       amountInCents: SIGN[kind] * amountInCents,
       occurredAt,
+      settledAt: occurredAt,
     });
     return { transaction };
   }

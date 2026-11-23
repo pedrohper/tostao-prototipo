@@ -111,7 +111,11 @@ const accountWrite = (a: AccountData) => ({
     creditLimitInCents: a.creditLimitInCents === null ? null : toBigCents(a.creditLimitInCents),
   }),
 });
-const transactionWrite = (t: NewTransaction) => ({ ...t, amountInCents: toBigCents(t.amountInCents) });
+const transactionWrite = (t: NewTransaction) => ({
+  ...t,
+  amountInCents: toBigCents(t.amountInCents),
+  settledAt: t.settledAt === undefined ? (t.externalId ? t.occurredAt : (t.balanceAppliedAt ?? null)) : t.settledAt,
+});
 
 /** A coluna é `date`: o resto do app continua falando 'AAAA-MM-DD'. */
 const dayToDate = (day: string) => new Date(`${day}T00:00:00.000Z`);
@@ -476,6 +480,7 @@ class PrismaTransactionsRepository implements TransactionsRepository {
     note,
     customDescription,
     balanceAppliedAt,
+    settledAt,
     linkedAccountId,
     linkKind,
   }: Transaction) {
@@ -492,6 +497,7 @@ class PrismaTransactionsRepository implements TransactionsRepository {
         ...(note !== undefined ? { note } : {}),
         ...(customDescription !== undefined ? { customDescription } : {}),
         ...(balanceAppliedAt !== undefined ? { balanceAppliedAt } : {}),
+        ...(settledAt !== undefined ? { settledAt } : {}),
         ...(linkedAccountId !== undefined ? { linkedAccountId } : {}),
         ...(linkKind !== undefined ? { linkKind } : {}),
       },

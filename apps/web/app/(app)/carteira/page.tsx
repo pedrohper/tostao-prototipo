@@ -29,7 +29,7 @@ import { Simulacao } from './simulacao';
 import { Chevron, ExtratoHeaderBar, FilterDropdown, Row } from './transaction-row';
 import { getMe } from '@/lib/api-queries';
 
-const FILTER_KEYS = ['tudo', 'saidas', 'entradas', 'pendentes'] as const;
+const FILTER_KEYS = ['tudo', 'saidas', 'entradas', 'a-pagar', 'a-receber', 'pendentes'] as const;
 type Filter = (typeof FILTER_KEYS)[number];
 type Aba = 'extrato' | 'contas' | 'planejar';
 
@@ -102,6 +102,8 @@ export default async function CarteiraPage({
       return !tx.isInternalTransfer && (tx.categoryId ?? 'sem') === cat && (cat !== 'sem' || tx.amountInCents < 0);
     if (filter === 'saidas') return tx.amountInCents < 0 && !tx.isInternalTransfer;
     if (filter === 'entradas') return tx.amountInCents > 0 && !tx.isInternalTransfer;
+    if (filter === 'a-pagar') return tx.amountInCents < 0 && !tx.isInternalTransfer && tx.settled === false;
+    if (filter === 'a-receber') return tx.amountInCents > 0 && !tx.isInternalTransfer && tx.settled === false;
     if (filter === 'pendentes') return !tx.categoryId && !tx.isInternalTransfer;
     return true;
   });
@@ -411,6 +413,16 @@ export default async function CarteiraPage({
             <div className="flex flex-wrap items-center gap-2">
               {FILTER_KEYS.map((f) => {
                 const isSelected = !cat && filter === f;
+                const pendingOutCount = summary.pendingExpensesCount ?? 0;
+                const pendingInCount = summary.pendingIncomesCount ?? 0;
+                const label =
+                  f === 'pendentes'
+                    ? tw.pendingChip(summary.uncategorizedCount)
+                    : f === 'a-pagar' && pendingOutCount > 0
+                      ? tw.pendingOutChip(pendingOutCount)
+                      : f === 'a-receber' && pendingInCount > 0
+                        ? tw.pendingInChip(pendingInCount)
+                        : tw.filters[f];
                 return (
                   <Link
                     key={f}
@@ -420,10 +432,12 @@ export default async function CarteiraPage({
                         ? 'bg-tinta text-papel'
                         : f === 'pendentes' && summary.uncategorizedCount > 0
                           ? 'bg-rosa text-tinta hover:opacity-85'
-                          : 'bg-papel-2 text-tinta hover:bg-linha/60'
+                          : (f === 'a-pagar' && pendingOutCount > 0) || (f === 'a-receber' && pendingInCount > 0)
+                            ? 'bg-amarelo-claro text-tinta hover:opacity-85'
+                            : 'bg-papel-2 text-tinta hover:bg-linha/60'
                     }`}
                   >
-                    {f === 'pendentes' ? tw.pendingChip(summary.uncategorizedCount) : tw.filters[f]}
+                    {label}
                   </Link>
                 );
               })}
@@ -588,21 +602,35 @@ export default async function CarteiraPage({
               </div>
             ) : (
               <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 md:-mx-10 md:px-10 lg:hidden">
-                {FILTER_KEYS.map((f) => (
-                  <Link
-                    key={f}
-                    href={q({ filtro: f })}
-                    className={`shrink-0 rounded-full px-3.5 py-2 text-[13px] font-semibold no-underline ${
-                      filter === f
-                        ? 'bg-tinta text-papel'
-                        : f === 'pendentes' && summary.uncategorizedCount > 0
-                          ? 'bg-rosa text-tinta'
-                          : 'bg-papel-2 text-tinta'
-                    }`}
-                  >
-                    {f === 'pendentes' ? tw.pendingChip(summary.uncategorizedCount) : tw.filters[f]}
-                  </Link>
-                ))}
+                {FILTER_KEYS.map((f) => {
+                  const pendingOutCount = summary.pendingExpensesCount ?? 0;
+                  const pendingInCount = summary.pendingIncomesCount ?? 0;
+                  const label =
+                    f === 'pendentes'
+                      ? tw.pendingChip(summary.uncategorizedCount)
+                      : f === 'a-pagar' && pendingOutCount > 0
+                        ? tw.pendingOutChip(pendingOutCount)
+                        : f === 'a-receber' && pendingInCount > 0
+                          ? tw.pendingInChip(pendingInCount)
+                          : tw.filters[f];
+                  return (
+                    <Link
+                      key={f}
+                      href={q({ filtro: f })}
+                      className={`shrink-0 rounded-full px-3.5 py-2 text-[13px] font-semibold no-underline ${
+                        filter === f
+                          ? 'bg-tinta text-papel'
+                          : f === 'pendentes' && summary.uncategorizedCount > 0
+                            ? 'bg-rosa text-tinta'
+                            : (f === 'a-pagar' && pendingOutCount > 0) || (f === 'a-receber' && pendingInCount > 0)
+                              ? 'bg-amarelo-claro text-tinta'
+                              : 'bg-papel-2 text-tinta'
+                      }`}
+                    >
+                      {label}
+                    </Link>
+                  );
+                })}
                 <Link
                   href={toggleHideTransfersHref}
                   aria-pressed={hideTransfers}

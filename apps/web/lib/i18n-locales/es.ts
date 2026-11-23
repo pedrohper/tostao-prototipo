@@ -666,10 +666,19 @@ export const es: Dictionary = {
       hide: 'Ocultar cuenta',
     },
     main: {
-      filters: { tudo: 'Todo', saidas: 'Gastos', entradas: 'Ingresos', pendentes: 'Sin categoría' },
+      filters: {
+        tudo: 'Todo',
+        saidas: 'Gastos',
+        entradas: 'Ingresos',
+        pendentes: 'Sin categoría',
+        'a-pagar': 'Por pagar',
+        'a-receber': 'Por cobrar',
+      },
       hideTransfers: 'Ocultar entre cuentas',
       hideYields: 'Ocultar rendimientos',
       pendingChip: (count) => `${count} sin categoría`,
+      pendingOutChip: (count) => `${count} por pagar`,
+      pendingInChip: (count) => `${count} por cobrar`,
       uncategorizedLabel: 'Sin categoría',
       categoryLabel: 'Categoría',
       sectionsAria: 'Secciones de cartera',
@@ -1448,6 +1457,7 @@ export const es: Dictionary = {
       moveUpAria: (name) => `Subir ${name}`,
       moveDownAria: (name) => `Bajar ${name}`,
       sections: {
+        pendencias: { name: 'Pendientes y alertas', hint: 'Gastos por pagar e ingresos por cobrar' },
         sobra: { name: 'Cuánto sobra en el mes', hint: 'Previsión hasta fin de mes' },
         missoes: { name: 'Misiones de hoy', hint: 'Y tu racha' },
         vence: { name: 'Vence pronto', hint: 'Recibos, suscripciones y facturas' },
@@ -1722,6 +1732,9 @@ export const es: Dictionary = {
       connectCta: 'Conectar mi banco ›',
       evolutionTitle: 'Mes a mes',
       evolutionSub: 'Lo que entró y salió en los últimos meses',
+      pendingAlertsTitle: 'Pendientes y alertas',
+      pendingExpensesLabel: 'Gastos pendientes',
+      pendingIncomesLabel: 'Ingresos pendientes',
     },
     quickAdd: {
       title: 'Anotar',

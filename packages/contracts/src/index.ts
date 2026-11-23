@@ -236,6 +236,8 @@ export const manualTransactionBody = z
     repeat: z.enum(['nao', 'mensal', 'parcelado']).default('nao'),
     times: z.number().int().min(2, 'Parcela em pelo menos 2x').max(48, 'No máximo 48x').optional(),
     note: z.string().trim().max(NOTE_MAX, `Anotação até ${NOTE_MAX} caracteres`).optional(),
+    /** true = já paguei / já recebi; false = fica em Pendências (a pagar / a receber). */
+    settled: z.boolean().optional(),
   })
   .refine((b) => b.repeat !== 'parcelado' || (b.times ?? 0) >= 2, { message: 'Diz em quantas vezes', path: ['times'] });
 export type ManualTransactionBody = z.infer<typeof manualTransactionBody>;
@@ -256,6 +258,8 @@ export const updateTransactionBody = z.object({
   note: z.string().trim().max(NOTE_MAX, `Anotação até ${NOTE_MAX} caracteres`).nullable().optional(),
   /** Apelido do lançamento (vale também pra transação do banco). Vazio ou null volta pra descrição original. */
   customDescription: z.string().trim().max(80, 'Apelido até 80 caracteres').nullable().optional(),
+  /** true = pago / recebido; false = pendente (a pagar / a receber). */
+  settled: z.boolean().optional(),
 });
 export type UpdateTransactionBody = z.infer<typeof updateTransactionBody>;
 
@@ -291,6 +295,8 @@ export type TransactionDTO = {
   /** Vínculo explícito (T5.2): a conta/cartão do outro lado, e se é pagamento de fatura ou transferência entre contas suas. */
   linkedAccountId: string | null;
   linkKind: 'card_payment' | 'transfer' | null;
+  /** true = já pago / já recebido; false = pendente (a pagar / a receber). */
+  settled?: boolean;
 };
 
 // ---------- Anotações ----------
@@ -378,6 +384,10 @@ export type MonthSummaryResponse = {
   incomeInCents: number;
   outcomeInCents: number;
   uncategorizedCount: number;
+  pendingExpensesCount?: number;
+  pendingExpensesInCents?: number;
+  pendingIncomesCount?: number;
+  pendingIncomesInCents?: number;
   byCategory: { categoryId: string | null; name: string; color: string; totalInCents: number }[];
   /** BANK = conta corrente (entra no saldo); CREDIT = cartão (balance = fatura em aberto). */
   accounts: {

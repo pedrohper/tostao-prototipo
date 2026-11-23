@@ -6,7 +6,8 @@ export type HomePrefs = { ordem: string[]; ocultos: string[]; fechados: string[]
 
 /** Home sections that can be hidden and reordered, in default order. Balance stays on top. */
 export const HOME_SECTIONS = [
-  { id: 'atalhos', nome: 'Atalhos do Planejar', dica: 'Anotar, Acertos, Limites, Meta e mais' },
+  { id: 'atalhos', nome: 'Atalhos do Planejar', dica: 'Anotações, Acertos, Limites, Meta e mais' },
+  { id: 'pendencias', nome: 'Pendências e alertas', dica: 'Despesas a pagar e receitas a receber' },
   { id: 'evolucao', nome: 'Mês a mês', dica: 'O que entrou e saiu nos últimos meses' },
   { id: 'aula', nome: 'Aula do Tostão', dica: 'Continuar a lição do módulo atual' },
   { id: 'sobra', nome: 'Quanto sobra no mês', dica: 'Previsão até o fim do mês' },
