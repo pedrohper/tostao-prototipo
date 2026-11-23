@@ -106,10 +106,10 @@ export function AnotarForm({
     locale === 'en' ? 'Person name' : locale === 'es' ? 'Nombre de la persona' : 'Nome da pessoa';
 
   return (
-    <form action={action} className="flex min-h-0 grow flex-col">
+    <form action={action} className="flex min-h-0 min-w-0 grow flex-col overflow-x-hidden">
       <input type="hidden" name="back" value={back} />
       <input type="hidden" name="personName" value={effectivePersonName} />
-      <div className="mx-auto flex min-h-0 w-full max-w-[520px] grow flex-col gap-3.5 overflow-y-auto px-5 pt-1 pb-4 md:max-w-none md:px-6">
+      <div className="mx-auto flex min-h-0 w-full max-w-[520px] min-w-0 grow flex-col gap-3.5 overflow-x-hidden overflow-y-auto px-5 pt-1 pb-4 md:max-w-none md:px-6">
         {children ?? (
           <div className="flex items-center justify-between gap-2.5">
             <div className="flex flex-col gap-0.5">
@@ -165,7 +165,7 @@ export function AnotarForm({
           addLabel={q.addNote}
           placeholder={labels.notePlaceholder}
         />
-        <fieldset className="flex flex-col gap-2">
+        <fieldset className="flex min-w-0 flex-col gap-2">
           <legend className="mb-2 text-[13px] font-semibold">{labels.repeatLegend}</legend>
           <input type="hidden" name="repeat" value={repete} />
           <div className="grid grid-cols-3 gap-1 rounded-full bg-papel-2 p-1">
@@ -262,12 +262,12 @@ export function AnotarForm({
           }
         />
         {contas.length > 0 && (
-          <fieldset className="flex flex-col gap-2">
+          <fieldset className="flex min-w-0 flex-col gap-2">
             <legend className="mb-2 text-[13px] font-semibold">
               {kind === 'saida' ? labels.paidWith : labels.receivedIn}
             </legend>
             <input type="hidden" name="accountId" value={conta ?? ''} />
-            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex flex-wrap gap-2">
               {[
                 { id: null, name: labels.cash, type: undefined, auto: false } as {
                   id: string | null;
@@ -311,11 +311,11 @@ export function AnotarForm({
           </fieldset>
         )}
         {!isAutomaticRule && (
-          <fieldset className="flex flex-col gap-2">
+          <fieldset className="flex min-w-0 flex-col gap-2">
             <legend className="mb-2 text-[13px] font-semibold">
               {splitSectionLabel} <span className="font-normal text-tinta-suave">{splitOptionalHint}</span>
             </legend>
-            <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="-mx-1 flex min-w-0 items-center gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <button
                 type="button"
                 aria-pressed={acertoMode === 'none'}

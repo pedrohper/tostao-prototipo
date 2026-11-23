@@ -36,7 +36,7 @@ export default async function AnotarPage({ searchParams }: { searchParams: Promi
   );
   return (
     <div className="fixed inset-0 z-30 flex flex-col bg-papel text-tinta md:items-center md:justify-center md:bg-papel-2/85 md:p-6 md:backdrop-blur-[2px]">
-      <div className="flex min-h-0 w-full grow flex-col md:max-h-[90dvh] md:max-w-[560px] md:grow-0 md:overflow-hidden md:rounded-[26px] md:border md:border-linha md:bg-papel md:shadow-2xl">
+      <div className="flex min-h-0 w-full grow flex-col overflow-x-hidden md:max-h-[90dvh] md:max-w-[560px] md:grow-0 md:overflow-hidden md:rounded-[26px] md:border md:border-linha md:bg-papel md:shadow-2xl">
         <div className="mx-auto flex w-full max-w-[520px] shrink-0 items-center justify-between px-3 pt-[max(12px,env(safe-area-inset-top))] pb-1 md:max-w-none md:px-5 md:pt-4">
           <Link
             href={backHref}
