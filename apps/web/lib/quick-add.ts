@@ -26,6 +26,8 @@ export type RecentTx = {
   occurredAt: string;
   source?: 'bank' | 'manual';
   customDescription?: string | null;
+  personId?: string | null;
+  isInternalTransfer?: boolean;
 };
 
 const norm = (s: string) =>
@@ -37,13 +39,15 @@ const norm = (s: string) =>
 
 /**
  * As últimas descrições que a PESSOA escreveu (anotações à mão, ou o apelido que deu): do mais recente pro mais antigo,
- * sem repetir (ignora caixa e acento). Descrição de banco ("PIX ENVIADO 123...") não serve de sugestão.
+ * sem repetir (ignora caixa e acento). Descrição de banco ("PIX ENVIADO 123..."), acerto com alguém e transferência
+ * entre contas não servem de sugestão para "O que foi".
  */
 export function recentDescriptions(txs: RecentTx[], limit = 8): string[] {
   const sorted = [...txs].sort((a, b) => (a.occurredAt < b.occurredAt ? 1 : a.occurredAt > b.occurredAt ? -1 : 0));
   const seen = new Set<string>();
   const out: string[] = [];
   for (const t of sorted) {
+    if (t.personId || t.isInternalTransfer) continue;
     const text = (t.customDescription?.trim() || (t.source === 'bank' ? '' : t.description)).trim();
     if (!text || text.length > 60) continue;
     const key = norm(text);

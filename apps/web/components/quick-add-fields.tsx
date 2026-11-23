@@ -130,7 +130,7 @@ export function DescriptionInput({
   const suggestions = suggestDescriptions(recents, value);
   const id = useId();
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex min-w-0 flex-col gap-1.5">
       <label htmlFor={id} className="text-[13px] font-semibold">
         {label}
       </label>
@@ -146,7 +146,7 @@ export function DescriptionInput({
         className={field}
       />
       {suggestions.length > 0 && (
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5">
+        <div className="-mx-1 flex min-w-0 gap-2 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {suggestions.map((s) => (
             <button
               key={s}

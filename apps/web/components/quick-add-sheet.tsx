@@ -74,7 +74,7 @@ export function QuickAddSheet({
         role="dialog"
         aria-modal="true"
         aria-label={a.headerTitle}
-        className="flex min-h-0 w-full grow flex-col bg-papel md:max-h-[90dvh] md:max-w-[560px] md:grow-0 md:overflow-hidden md:rounded-[26px] md:border md:border-linha md:shadow-2xl"
+        className="flex min-h-0 w-full grow flex-col overflow-x-hidden bg-papel md:max-h-[90dvh] md:max-w-[560px] md:grow-0 md:overflow-hidden md:rounded-[26px] md:border md:border-linha md:shadow-2xl"
       >
         <div className="mx-auto flex w-full max-w-[520px] shrink-0 items-center justify-between px-3 pt-[max(12px,env(safe-area-inset-top))] pb-1 md:max-w-none md:px-5 md:pt-4">
           <button

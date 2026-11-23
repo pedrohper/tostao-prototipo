@@ -76,6 +76,16 @@ describe('recentDescriptions()', () => {
       [],
     );
   });
+
+  it('acertos com alguém e transferências internas não viram sugestão em "O que foi"', () => {
+    const r = recentDescriptions([
+      tx('Emprestei (Humberto)', '2026-11-20T12:00:00Z', { personId: 'p1', isInternalTransfer: true }),
+      tx('Pai', '2026-11-19T12:00:00Z', { personId: 'p2', isInternalTransfer: true }),
+      tx('Transferência própria', '2026-11-18T12:00:00Z', { isInternalTransfer: true }),
+      tx('Almoço', '2026-11-17T12:00:00Z'),
+    ]);
+    expect(r).toEqual(['Almoço']);
+  });
 });
 
 describe('suggestDescriptions()', () => {
