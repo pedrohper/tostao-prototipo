@@ -1,6 +1,6 @@
 'use client';
 import { useActionState, useState } from 'react';
-import type { CategoryDTO } from '@tostao/contracts';
+import type { CategoryDTO, PersonDTO } from '@tostao/contracts';
 import { ErrorNote, CardIcon, BankIcon } from '@/components/ui';
 import { Mascot } from '@/components/mascote';
 import { pill } from '@/components/sheet';
@@ -24,20 +24,28 @@ export type ContaOption = {
 export function AnotarForm({
   categories,
   contas,
+  people = [],
   today,
   recents = [],
   back = '/carteira',
   locale = 'pt-BR',
+  stayOnSave = false,
+  onDone,
   children,
 }: {
   categories: CategoryDTO[];
   contas: ContaOption[];
+  /** Pessoas cadastradas em Acertos, para vincular o lançamento em um toque. */
+  people?: PersonDTO[];
   today: string;
   /** Últimas descrições que a pessoa usou (sugestões enquanto digita). */
   recents?: string[];
   /** Pra onde voltar depois de salvar. */
   back?: string;
   locale?: Locale;
+  /** Quando aberto dentro da folha/modal suspenso, mantém na mesma tela (sem redirecionar). */
+  stayOnSave?: boolean;
+  onDone?: (another: boolean) => void;
   children?: React.ReactNode;
 }) {
   const dict = getDictionary(locale);
@@ -47,40 +55,60 @@ export function AnotarForm({
   const toast = useToast();
   // Qual botão enviou: só pra trocar o texto "Anotando…" no botão certo.
   const [sending, setSending] = useState<'save' | 'another'>('save');
+  const [kind, setKind] = useState<'saida' | 'entrada'>('saida');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(today);
   const [description, setDescription] = useState('');
   const [noteOpen, setNoteOpen] = useState(false);
   const [note, setNote] = useState('');
   const [cat, setCat] = useState<string | null>(null);
-  // "Salvar e anotar outro": a ação não redireciona. Aqui (e não num efeito) mostra o toast e limpa valor, descrição,
-  // nota e categoria, mantendo tipo, data e conta pra quem anota vários seguidos.
-  const [state, action, pending] = useActionState<ActionState, FormData>(async (prev, formData) => {
-    const result = await createManual(prev, formData);
-    if (result.saved) {
-      toast.success(q.savedAnother);
-      setAmount('');
-      setDescription('');
-      setNote('');
-      setNoteOpen(false);
-      setCat(null);
-    }
-    return result;
-  }, {});
-  const [kind, setKind] = useState<'saida' | 'entrada'>('saida');
   const [conta, setConta] = useState<string | null>(null);
   const [repete, setRepete] = useState<'nao' | 'mensal' | 'parcelado'>('nao');
   const [vezes, setVezes] = useState(2);
-  // "Lançar sozinho" (T5.2): vira uma regra que o app executa no dia. Só vale pra dinheiro ou conta manual/importada
-  // (conta ligada ao banco já recebe o lançamento de verdade: lançar sozinho duplicaria).
+  // "Lançar sozinho" (T5.2): vira uma regra que o app executa no dia. Só vale pra dinheiro ou conta manual/importada.
   const [automatico, setAutomatico] = useState(true);
+  // Acerto com alguém (opcional, vale para lançamentos manuais diretos).
+  const [acertoMode, setAcertoMode] = useState<'none' | 'existing' | 'new'>('none');
+  const [acertoName, setAcertoName] = useState('');
+
+  const [state, action, pending] = useActionState<ActionState, FormData>(async (prev, formData) => {
+    const result = await createManual(prev, formData);
+    if (result.saved) {
+      const intent = formData.get('intent');
+      const another = intent === 'another';
+      toast.success(another ? q.savedAnother : kind === 'entrada' ? 'Entrada anotada.' : 'Gasto anotado.');
+      if (another) {
+        setAmount('');
+        setDescription('');
+        setNote('');
+        setNoteOpen(false);
+        setCat(null);
+        setAcertoMode('none');
+        setAcertoName('');
+      }
+      onDone?.(another);
+    }
+    return result;
+  }, {});
+
   const ready = canSaveQuickAdd({ cents: centsFromMasked(amount), description });
   const escolhida = contas.find((c) => c.id === conta);
   const podeAutomatico = !escolhida?.auto;
+  const isAutomaticRule = repete !== 'nao' && automatico && podeAutomatico;
+  const effectivePersonName = !isAutomaticRule && acertoMode !== 'none' ? acertoName.trim() : '';
+
+  const splitSectionLabel =
+    locale === 'en' ? 'Split with someone' : locale === 'es' ? 'Dividir con alguien' : 'Acerto com alguém';
+  const splitOptionalHint = locale === 'en' ? '(optional)' : locale === 'es' ? '(opcional)' : '(opcional)';
+  const noSplitLabel = locale === 'en' ? 'Just mine' : locale === 'es' ? 'Solo mío' : 'Só meu';
+  const newSplitLabel = locale === 'en' ? '+ New split' : locale === 'es' ? '+ Nuevo ajuste' : '+ Novo acerto';
+  const newSplitPlaceholder =
+    locale === 'en' ? 'Person name' : locale === 'es' ? 'Nombre de la persona' : 'Nome da pessoa';
 
   return (
     <form action={action} className="flex min-h-0 grow flex-col">
       <input type="hidden" name="back" value={back} />
+      <input type="hidden" name="personName" value={effectivePersonName} />
       <div className="mx-auto flex min-h-0 w-full max-w-[520px] grow flex-col gap-3.5 overflow-y-auto px-5 pt-1 pb-4 md:max-w-none md:px-6">
         {children ?? (
           <div className="flex items-center justify-between gap-2.5">
@@ -239,7 +267,7 @@ export function AnotarForm({
               {kind === 'saida' ? labels.paidWith : labels.receivedIn}
             </legend>
             <input type="hidden" name="accountId" value={conta ?? ''} />
-            <div className="flex flex-wrap gap-2">
+            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {[
                 { id: null, name: labels.cash, type: undefined, auto: false } as {
                   id: string | null;
@@ -257,14 +285,14 @@ export function AnotarForm({
                     type="button"
                     key={c.id ?? 'dinheiro'}
                     onClick={() => setConta(c.id)}
-                    className={`${pill(isSelected)} h-11 shrink-0 px-3.5 whitespace-nowrap flex items-center gap-1.5`}
+                    className={`${pill(isSelected)} flex h-11 shrink-0 items-center gap-1.5 px-3.5 whitespace-nowrap`}
                   >
                     {isCard && <CardIcon className="opacity-70" />}
                     {isBank && <BankIcon className="opacity-70" />}
                     <span>{c.name}</span>
                     {c.type && (
                       <span
-                        className={`text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full ${
+                        className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase ${
                           isSelected ? 'bg-papel/20 text-papel' : 'bg-papel-2 text-tinta-suave'
                         }`}
                       >
@@ -282,6 +310,69 @@ export function AnotarForm({
             )}
           </fieldset>
         )}
+        {!isAutomaticRule && (
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-2 text-[13px] font-semibold">
+              {splitSectionLabel} <span className="font-normal text-tinta-suave">{splitOptionalHint}</span>
+            </legend>
+            <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <button
+                type="button"
+                aria-pressed={acertoMode === 'none'}
+                onClick={() => {
+                  setAcertoMode('none');
+                  setAcertoName('');
+                }}
+                className={`${pill(acertoMode === 'none')} h-10 shrink-0 px-3.5 whitespace-nowrap`}
+              >
+                {noSplitLabel}
+              </button>
+              {people.map((p) => {
+                const active = acertoMode === 'existing' && acertoName === p.name;
+                return (
+                  <button
+                    type="button"
+                    key={p.id}
+                    aria-pressed={active}
+                    onClick={() => {
+                      setAcertoMode('existing');
+                      setAcertoName(p.name);
+                    }}
+                    className={`${pill(active)} h-10 shrink-0 px-3.5 whitespace-nowrap`}
+                  >
+                    {p.name}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                aria-pressed={acertoMode === 'new'}
+                onClick={() => {
+                  setAcertoMode('new');
+                  if (acertoMode !== 'new') setAcertoName('');
+                }}
+                className={`h-10 shrink-0 rounded-full border border-dashed px-3.5 text-[13px] font-semibold whitespace-nowrap transition-colors ${
+                  acertoMode === 'new'
+                    ? 'border-tinta bg-tinta text-papel'
+                    : 'border-laranja-texto text-laranja-texto hover:bg-laranja-claro/40'
+                }`}
+              >
+                {newSplitLabel}
+              </button>
+            </div>
+            {acertoMode === 'new' && (
+              <input
+                value={acertoName}
+                onChange={(e) => setAcertoName(e.target.value)}
+                maxLength={40}
+                placeholder={newSplitPlaceholder}
+                aria-label={newSplitPlaceholder}
+                autoComplete="off"
+                className="h-11 w-full rounded-xl border-[1.5px] border-linha bg-cartao px-3.5 text-base text-tinta outline-none focus:border-tinta"
+              />
+            )}
+          </fieldset>
+        )}
         <ErrorNote message={state.error} />
       </div>
       <div className="shrink-0 border-t border-linha bg-cartao px-5 pt-3 pb-[max(28px,env(safe-area-inset-bottom))] md:px-6 md:pb-5">
@@ -289,7 +380,7 @@ export function AnotarForm({
           <button
             type="submit"
             name="intent"
-            value="save"
+            value={stayOnSave ? 'stay' : 'save'}
             disabled={pending || !ready}
             onClick={() => {
               setSending('save');

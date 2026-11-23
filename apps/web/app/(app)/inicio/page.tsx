@@ -661,15 +661,20 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   // Variação do gasto vs mês anterior. No mês corrente o gasto está pela metade: comparar com o mês cheio daria
   // "-60%" enganoso, então mostramos quanto do mês passado já foi gasto.
   const prevPoint = history?.months.at(-2);
-  const spendingChangeLabel =
-    prevPoint && prevPoint.outcomeInCents > 0 && summary.outcomeInCents > 0
-      ? month === hoje
-        ? t.growth.home.spentSoFarOfPrev(
-            Math.round((summary.outcomeInCents / prevPoint.outcomeInCents) * 100),
-            monthName(prevPoint.month, locale),
-          )
-        : t.growth.home.outcomeChange(changePct(summary.outcomeInCents, prevPoint.outcomeInCents) ?? 0)
-      : null;
+  const hasPrevCompare = Boolean(prevPoint && prevPoint.outcomeInCents > 0 && summary.outcomeInCents > 0);
+  const prevOutcomePct = hasPrevCompare ? Math.round((summary.outcomeInCents / prevPoint!.outcomeInCents) * 100) : null;
+  const spendingCompare = hasPrevCompare
+    ? {
+        pct: prevOutcomePct!,
+        prevMonth: monthName(prevPoint!.month, locale),
+        isCurrentMonth: month === hoje,
+      }
+    : null;
+  const spendingChangeLabel = hasPrevCompare
+    ? month === hoje
+      ? t.growth.home.spentSoFarOfPrev(prevOutcomePct!, monthName(prevPoint!.month, locale))
+      : t.growth.home.outcomeChange(changePct(summary.outcomeInCents, prevPoint!.outcomeInCents) ?? 0)
+    : null;
   // Cartão: saldo negativo = fatura em aberto.
   const openBillsInCents = creditCards.reduce((sum, c) => sum + Math.max(0, -c.balanceInCents), 0);
   const noAccounts = bankAccounts.length === 0 && creditCards.length === 0;
@@ -693,7 +698,10 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     showBalanceAria: t.home.showBalanceAria,
     accountsPreview: bankAccounts.slice(0, 3).map((a) => ({ name: a.name, balanceInCents: a.balanceInCents })),
     changeLabel: spendingChangeLabel,
+    spendingCompare,
     openBillsLabel: openBillsInCents > 0 ? t.growth.home.openBills(money(openBillsInCents)) : null,
+    openBillsInCents: openBillsInCents > 0 ? openBillsInCents : null,
+    openBillsShortLabel: t.walletExtra.main.openBillsLabel,
     connectCta: noAccounts ? { label: t.growth.home.connectCta, href: '/conectar?voltar=/inicio' } : null,
   };
 

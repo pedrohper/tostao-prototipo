@@ -3,6 +3,7 @@ import type { PersonDTO, TransactionDTO } from '@tostao/contracts';
 import { money } from '@/lib/format';
 import type { Dictionary } from '@/lib/i18n';
 import { desligarPessoa, ligarPessoa } from '../../acertos/actions';
+import { AcertoPicker } from './acerto-picker';
 
 /**
  * "Essa compra não é minha" / "foi empréstimo": liga o lançamento a alguém.
@@ -78,34 +79,13 @@ export function Acerto({
         <input type="hidden" name="id" value={t.id} />
         <input type="hidden" name="back" value={back} />
         <p className="text-[13px] text-tinta-suave">{saida ? labels.notMineNote : labels.someonePaidNote}</p>
-        {people.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {people.slice(0, 6).map((p) => (
-              <button
-                key={p.id}
-                type="submit"
-                name="personName"
-                value={p.name}
-                className="h-9 rounded-full bg-papel-2 px-3 text-[13px] font-semibold text-tinta"
-              >
-                {p.name}
-              </button>
-            ))}
-          </div>
-        )}
-        <div className="flex gap-2">
-          <input
-            name="personName"
-            maxLength={40}
-            placeholder={people.length ? labels.otherPersonPlaceholder : labels.firstPersonPlaceholder}
-            aria-label={labels.personAria}
-            autoComplete="off"
-            className="h-11 min-w-0 flex-1 rounded-xl border-[1.5px] border-linha bg-papel px-3 text-base outline-none focus:border-tinta"
-          />
-          <button type="submit" className="h-11 shrink-0 rounded-full bg-tinta px-4 text-sm font-semibold text-papel">
-            {labels.markCta}
-          </button>
-        </div>
+        <AcertoPicker
+          people={people}
+          placeholder={people.length ? labels.otherPersonPlaceholder : labels.firstPersonPlaceholder}
+          ariaLabel={labels.personAria}
+          submitLabel={labels.markCta}
+          defaultExpanded={!!erro}
+        />
         {erro && (
           <p role="alert" className="text-[13px] font-medium text-vermelho-texto">
             {erro}

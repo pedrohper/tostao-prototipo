@@ -1,167 +1,15 @@
 'use client';
-import { useActionState, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { createManual, loadQuickAddData, type ActionState, type QuickAddData } from '@/app/(app)/carteira/actions';
-import { ErrorNote } from '@/components/ui';
-import { useToast } from '@/components/toast';
+import { AnotarForm } from '@/app/(app)/anotar/anotar-form';
+import { loadQuickAddData, type QuickAddData } from '@/app/(app)/carteira/actions';
 import { getDictionary, type Locale } from '@/lib/i18n';
-import { canSaveQuickAdd } from '@/lib/quick-add';
-import { centsFromMasked } from '@/lib/money-mask';
-import { AmountInput, CategoryField, DateChips, DescriptionInput, NoteField } from './quick-add-fields';
 
 /**
- * Formulário compacto de anotar: valor com máscara, Hoje/Ontem, descrição com sugestões, categoria com ícone, nota
- * recolhida e "Salvar e anotar outro". Conta, repetir e parcelar ficam no /anotar completo (link no rodapé).
+ * Tela inteira no mobile (e modal centralizado no desktop) que abre o mesmo `AnotarForm` completo de `/anotar`.
+ * Unifica "Anotar gasto" e "Anotar lançamento" em um único fluxo robusto.
  */
-export function QuickAddForm({
-  data,
-  locale = 'pt-BR',
-  fullFormHref,
-  onSaved,
-}: {
-  data: QuickAddData;
-  locale?: Locale;
-  fullFormHref: string;
-  /** Chamado depois de salvar. `another` = a pessoa quer anotar outro (a folha não fecha). */
-  onSaved: (another: boolean) => void;
-}) {
-  const q = getDictionary(locale).growth.quickAdd;
-  const toast = useToast();
-  const [sending, setSending] = useState<'stay' | 'another'>('stay');
-  const [kind, setKind] = useState<'saida' | 'entrada'>('saida');
-  const [amount, setAmount] = useState('');
-  const [date, setDate] = useState(data.today);
-  const [description, setDescription] = useState('');
-  const [cat, setCat] = useState<string | null>(null);
-  const [noteOpen, setNoteOpen] = useState(false);
-  const [note, setNote] = useState('');
-  // "Repetir todo mês" automático (T5.2): a folha cria uma regra mensal (dinheiro/sem conta). Parcelar e conta: no /anotar.
-  const [monthly, setMonthly] = useState(false);
-
-  // Roda a cada envio (não num efeito): mostra o toast, limpa o que muda de um lançamento pro outro e avisa a folha.
-  const [state, action, pending] = useActionState<ActionState, FormData>(async (prev, formData) => {
-    const result = await createManual(prev, formData);
-    if (result.saved) {
-      const another = formData.get('intent') === 'another';
-      toast.success(another ? q.savedAnother : kind === 'entrada' ? 'Entrada anotada.' : 'Gasto anotado.');
-      if (another) {
-        // Mantém tipo e data (quem anota vários de uma vez costuma ser do mesmo dia); limpa o resto.
-        setAmount('');
-        setDescription('');
-        setCat(null);
-        setNote('');
-        setNoteOpen(false);
-        setMonthly(false);
-      }
-      onSaved(another);
-    }
-    return result;
-  }, {});
-
-  const ready = canSaveQuickAdd({ cents: centsFromMasked(amount), description });
-
-  return (
-    <form action={action} className="flex flex-col gap-3.5">
-      <input type="hidden" name="back" value="/carteira" />
-      <input type="hidden" name="kind" value={kind} />
-      <div className="grid grid-cols-2 gap-1 rounded-full bg-papel-2 p-1">
-        {(['saida', 'entrada'] as const).map((k) => (
-          <button
-            key={k}
-            type="button"
-            aria-pressed={kind === k}
-            onClick={() => {
-              setKind(k);
-              setCat(null);
-            }}
-            className={`flex h-10 items-center justify-center rounded-full text-[15px] font-semibold transition-colors ${kind === k ? 'bg-tinta text-papel' : 'text-tinta'}`}
-          >
-            {k === 'saida' ? q.kindOut : q.kindIn}
-          </button>
-        ))}
-      </div>
-      <AmountInput value={amount} onChange={setAmount} label={q.amountLabel} autoFocus />
-      <DateChips value={date} onChange={setDate} today={data.today} locale={locale} />
-      <DescriptionInput
-        value={description}
-        onChange={setDescription}
-        recents={data.recents}
-        label={q.descLabel}
-        placeholder={q.descPlaceholder}
-      />
-      <CategoryField
-        categories={data.categories}
-        kind={kind}
-        value={cat}
-        onChange={setCat}
-        legend={q.categoryLabel}
-        locale={locale}
-      />
-      <NoteField
-        value={note}
-        onChange={setNote}
-        open={noteOpen}
-        onOpen={() => setNoteOpen(true)}
-        addLabel={q.addNote}
-        placeholder={q.notePlaceholder}
-      />
-      <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border-[1.5px] border-linha bg-cartao px-3 py-2.5">
-        <input
-          type="checkbox"
-          checked={monthly}
-          onChange={(e) => setMonthly(e.target.checked)}
-          className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--color-tinta)]"
-        />
-        <span className="flex flex-col text-[14px] leading-5">
-          <b className="font-semibold">Repetir todo mês</b>
-          <span className="text-[12px] leading-[17px] text-tinta-suave">
-            O Tostão lança sozinho no dia. Pra parcelar ou escolher a conta, use “Mais opções”.
-          </span>
-        </span>
-      </label>
-      {monthly && (
-        <>
-          <input type="hidden" name="repeat" value="mensal" />
-          <input type="hidden" name="automatic" value="on" />
-        </>
-      )}
-      <ErrorNote message={state.error} />
-      <div className="flex flex-col gap-2 pt-1">
-        <button
-          type="submit"
-          name="intent"
-          value="stay"
-          disabled={pending || !ready}
-          onClick={() => {
-            setSending('stay');
-          }}
-          className="flex h-[52px] items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel disabled:opacity-50"
-        >
-          {pending && sending === 'stay' ? q.saving : q.save}
-        </button>
-        <button
-          type="submit"
-          name="intent"
-          value="another"
-          disabled={pending || !ready}
-          onClick={() => {
-            setSending('another');
-          }}
-          className="flex h-11 items-center justify-center rounded-full border-[1.5px] border-tinta text-[15px] font-semibold text-tinta disabled:opacity-50"
-        >
-          {pending && sending === 'another' ? q.saving : q.saveAnother}
-        </button>
-        <Link href={fullFormHref} className="self-center py-1 text-[13px] font-semibold text-tinta-suave underline">
-          {q.fullForm}
-        </Link>
-      </div>
-    </form>
-  );
-}
-
-/** Folha que sobe de baixo (e vira diálogo no desktop). Fecha no X, no fundo escurecido e no Esc. */
 export function QuickAddSheet({
   open,
   onClose,
@@ -171,7 +19,9 @@ export function QuickAddSheet({
   onClose: () => void;
   locale?: Locale;
 }) {
-  const q = getDictionary(locale).growth.quickAdd;
+  const dict = getDictionary(locale);
+  const q = dict.growth.quickAdd;
+  const a = dict.pages.anotar;
   const pathname = usePathname();
   const [data, setData] = useState<QuickAddData | null>(null);
   const [failed, setFailed] = useState(false);
@@ -197,7 +47,7 @@ export function QuickAddSheet({
       });
   }, []);
 
-  // Os dados vêm quando a folha abre pela primeira vez (e ficam em memória nas próximas aberturas).
+  // Os dados vêm quando abre pela primeira vez (e ficam em memória nas próximas aberturas).
   useEffect(() => {
     if (!open || data) return;
     fetchQuickAddData();
@@ -219,68 +69,75 @@ export function QuickAddSheet({
 
   if (!open) return null;
   const dialog = (
-    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center">
-      <button
-        type="button"
-        aria-label={q.close}
-        onClick={onClose}
-        tabIndex={-1}
-        className="absolute inset-0 bg-tinta-fixa/45 motion-safe:animate-[toast-in_0.15s_ease-out]"
-      />
+    <div className="fixed inset-0 z-50 flex flex-col bg-papel text-tinta md:items-center md:justify-center md:bg-tinta-fixa/45 md:p-6 md:backdrop-blur-[2px]">
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={q.title}
-        className="relative flex max-h-[92dvh] w-full max-w-[520px] flex-col overflow-hidden rounded-t-[26px] border border-linha bg-papel shadow-2xl md:rounded-[26px]"
+        aria-label={a.headerTitle}
+        className="flex min-h-0 w-full grow flex-col bg-papel md:max-h-[90dvh] md:max-w-[560px] md:grow-0 md:overflow-hidden md:rounded-[26px] md:border md:border-linha md:shadow-2xl"
       >
-        <div className="flex shrink-0 items-center justify-between px-5 pt-3 pb-1">
-          <span className="mx-auto h-1 w-10 rounded-full bg-linha md:hidden" aria-hidden="true" />
-          <h2 className="sr-only md:not-sr-only md:font-display md:text-xl md:font-extrabold">{q.title}</h2>
+        <div className="mx-auto flex w-full max-w-[520px] shrink-0 items-center justify-between px-3 pt-[max(12px,env(safe-area-inset-top))] pb-1 md:max-w-none md:px-5 md:pt-4">
           <button
             type="button"
             onClick={onClose}
             aria-label={q.close}
-            className="absolute top-2 right-3 flex h-10 w-10 items-center justify-center rounded-full text-tinta hover:bg-papel-2"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-tinta transition-colors hover:bg-papel-2"
           >
-            <span aria-hidden="true" className="text-xl leading-none">
-              ×
-            </span>
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
           </button>
+          <span className="text-[13px] font-semibold text-tinta-suave">{a.headerTitle}</span>
+          <span className="w-11" aria-hidden="true" />
         </div>
-        <div className="min-h-0 overflow-y-auto px-5 pt-2 pb-[max(24px,env(safe-area-inset-bottom))]">
-          {data ? (
-            <QuickAddForm
-              data={data}
-              locale={locale}
-              fullFormHref={`/anotar?voltar=${encodeURIComponent(pathname)}`}
-              onSaved={(another) => {
-                if (!another) onClose();
-              }}
-            />
-          ) : failed ? (
-            <div className="flex flex-col items-center gap-3 py-8 text-center">
-              <p role="alert" className="text-sm font-semibold text-vermelho-texto">
-                {q.loadError}
-              </p>
-              <button
-                type="button"
-                onClick={fetchQuickAddData}
-                className="inline-flex h-10 items-center justify-center rounded-full bg-tinta px-4 text-sm font-semibold text-papel"
-              >
-                Tentar de novo
-              </button>
-            </div>
-          ) : (
-            <p className="py-8 text-center text-sm text-tinta-suave">{q.loading}</p>
-          )}
-        </div>
+        {data ? (
+          <AnotarForm
+            categories={data.categories}
+            contas={data.contas}
+            people={data.people}
+            today={data.today}
+            recents={data.recents}
+            back={pathname}
+            locale={locale}
+            stayOnSave
+            onDone={(another) => {
+              if (!another) onClose();
+            }}
+          />
+        ) : failed ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-8 text-center">
+            <p role="alert" className="text-sm font-semibold text-vermelho-texto">
+              {q.loadError}
+            </p>
+            <button
+              type="button"
+              onClick={fetchQuickAddData}
+              className="inline-flex h-10 items-center justify-center rounded-full bg-tinta px-4 text-sm font-semibold text-papel"
+            >
+              Tentar de novo
+            </button>
+          </div>
+        ) : (
+          <p className="flex flex-1 items-center justify-center py-8 text-center text-sm text-tinta-suave">
+            {q.loading}
+          </p>
+        )}
       </div>
     </div>
   );
   return mounted ? createPortal(dialog, document.body) : dialog;
 }
 
-/** Botão que abre a folha: `fab` (laranja, flutuante, some no desktop `lg:`) ou `inline` (pílula na página). */
+/** Botão que abre o lançamento completo: `fab` (laranja, flutuante, some no desktop `lg:`) ou `inline` (pílula na página). */
 export function QuickAddButton({
   variant = 'inline',
   label,

@@ -103,6 +103,7 @@ export function CategorizeQueue({
           value={null}
           onChange={(id) => id && pick(id)}
           label={w.categorizeMode}
+          variant="inline"
           disabled={busy}
           locale={locale}
         />

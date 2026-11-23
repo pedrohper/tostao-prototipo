@@ -4,13 +4,18 @@ import { redirect } from 'next/navigation';
 import {
   categorizeBody,
   createManualAccountBody,
+  linkPersonBody,
   manualTransactionBody,
   updateTransactionBody,
   type AutoCategorizeResponse,
   type CategoryDTO,
+  type PeopleResponse,
+  type PersonDTO,
   type TransactionDTO,
 } from '@tostao/contracts';
 import { api, ApiError } from '@/lib/api';
+import { getMe } from '@/lib/api-queries';
+import type { ContaOption } from '@/app/(app)/anotar/anotar-form';
 import { currentMonth, parseMoney, shiftMonth, todayIso } from '@/lib/format';
 import { isSafePathSegment, safeInternalPath, safePathSegment } from '@/lib/safe-redirect';
 import { orFallback, rethrowIfRedirect } from '@/lib/rethrow';
@@ -92,9 +97,22 @@ export async function createManual(_: ActionState, form: FormData): Promise<Acti
     automatic: form.get('automatic') === 'on',
   });
   if (rule && !rule.success) return { error: rule.error.issues[0]?.message };
+  const personName = String(form.get('personName') ?? '').trim();
+  const parsedPerson = personName ? linkPersonBody.safeParse({ personName }) : null;
+  if (parsedPerson && !parsedPerson.success) return { error: parsedPerson.error.issues[0]?.message };
+
   try {
-    if (rule?.success) await api<RecurringRulesResponse>('/recurring-rules', { method: 'POST', body: rule.data });
-    else await api('/transactions', { method: 'POST', body: parsed.data });
+    if (rule?.success) {
+      await api<RecurringRulesResponse>('/recurring-rules', { method: 'POST', body: rule.data });
+    } else {
+      const created = await api<{ id?: string }>('/transactions', { method: 'POST', body: parsed.data });
+      if (parsedPerson?.success && parsedPerson.data.personName && created?.id && isSafePathSegment(created.id)) {
+        await api(`/transactions/${safePathSegment(created.id)}/person`, {
+          method: 'PUT',
+          body: { personName: parsedPerson.data.personName },
+        });
+      }
+    }
   } catch (e) {
     rethrowIfRedirect(e);
     return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
@@ -273,19 +291,22 @@ export async function createManualAccount(_: ActionState, form: FormData): Promi
 
 export type QuickAddData = {
   categories: CategoryDTO[];
+  contas: ContaOption[];
+  people: PersonDTO[];
   recents: string[];
   today: string;
 };
 
 /**
- * Dados da folha "Anotar rápido", pedidos só quando ela abre (não pesam o carregamento da Home nem da Carteira):
- * categorias e as últimas descrições que a pessoa usou (mês atual e o anterior).
+ * Dados do formulário completo de lançamento, pedidos só quando a folha abre (não pesam o carregamento da Home/Carteira).
  */
 export async function loadQuickAddData(): Promise<{ data?: QuickAddData; error?: true }> {
   try {
     const month = currentMonth();
-    const [{ categories }, now, before] = await Promise.all([
+    const [{ categories }, me, peopleRes, now, before] = await Promise.all([
       api<{ categories: CategoryDTO[] }>('/categories'),
+      getMe().catch(orFallback(null)),
+      api<PeopleResponse>('/people').catch(orFallback({ people: [], owedToYouInCents: 0, youOweInCents: 0 })),
       api<{ transactions: TransactionDTO[] }>(`/transactions?month=${month}`).catch(orFallback({ transactions: [] })),
       api<{ transactions: TransactionDTO[] }>(`/transactions?month=${shiftMonth(month, -1)}`).catch(
         orFallback({
@@ -293,9 +314,22 @@ export async function loadQuickAddData(): Promise<{ data?: QuickAddData; error?:
         }),
       ),
     ]);
+    const contas: ContaOption[] = (me?.connections ?? []).flatMap((c) =>
+      c.accounts
+        .filter((acc) => !acc.hidden)
+        .map((acc) => ({
+          id: acc.id,
+          name: acc.name,
+          type: acc.type,
+          institution: c.institution,
+          auto: !c.isImport,
+        })),
+    );
     return {
       data: {
         categories: categories.filter((c) => c.kind !== 'neutra'),
+        contas,
+        people: peopleRes.people,
         recents: recentDescriptions([...now.transactions, ...before.transactions]),
         today: todayIso(),
       },

@@ -118,12 +118,14 @@ describe('Salvar no rodapé da folha (Android)', () => {
 });
 
 describe('Seletor reutilizado nos 3 lugares', () => {
-  it('Carteira (detalhe), Anotar (rápido e completo) e modo categorizar usam o CategoryPicker', () => {
+  it('Carteira (detalhe), Anotar (unificado com QuickAddSheet) e modo categorizar usam o CategoryPicker', () => {
     expect(read('app/(app)/carteira/[id]/categorize-form.tsx')).toContain('CategoryPicker');
     expect(read('app/(app)/carteira/categorize-queue.tsx')).toContain('CategoryPicker');
     expect(read('components/quick-add-fields.tsx')).toContain('CategoryPicker');
-    expect(read('components/quick-add-sheet.tsx')).toContain('CategoryField');
+    expect(read('components/quick-add-sheet.tsx')).toContain('<AnotarForm');
     expect(read('app/(app)/anotar/anotar-form.tsx')).toContain('CategoryField');
+    expect(read('app/(app)/anotar/anotar-form.tsx')).toContain('+ Novo acerto');
+    expect(read('app/(app)/carteira/[id]/acerto-picker.tsx')).toContain('+ {newLabel}');
   });
 });
 
