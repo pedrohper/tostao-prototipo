@@ -7,6 +7,13 @@ export const hashToken = (token: string) => createHash('sha256').update(token).d
 /** Token opaco de 256 bits. Só o SHA-256 vai pro banco: quem lê a tabela não consegue usar as sessões. */
 export const newOpaqueToken = () => randomBytes(32).toString('base64url');
 
+/**
+ * Janela de tolerância do reuso. Dentro dela, um refresh token já trocado cujo filho ainda não foi usado NÃO derruba a
+ * família: ganha outro token. Cobre a aba que perdeu a resposta da troca e duas abas renovando ao mesmo tempo.
+ * Passou disso, vale o comportamento de sempre (reuso = roubo/replay: revoga a família e grava `refresh_reuse_detected`).
+ */
+export const REFRESH_REUSE_GRACE_SECONDS = 30;
+
 export type SessionContext = { userAgent?: string | null; ipAddress?: string | null };
 const clip = (v: string | null | undefined, max: number) => (v ? v.slice(0, max) : null);
 
@@ -19,6 +26,7 @@ export class SessionsUseCase {
     private readonly repos: Pick<Repositories, 'refreshTokens' | 'audit'>,
     private readonly now: () => Date = () => new Date(),
     private readonly ttlSeconds = REFRESH_TOKEN_TTL_SECONDS,
+    private readonly graceSeconds = REFRESH_REUSE_GRACE_SECONDS,
   ) {}
 
   private expiry() {
@@ -39,12 +47,16 @@ export class SessionsUseCase {
     return { refreshToken };
   }
 
-  /** Troca o refresh token por um novo. Reuso de token já trocado revoga a família inteira e responde 401. */
+  /**
+   * Troca o refresh token por um novo. Reuso de token já trocado revoga a família inteira e responde 401, a não ser
+   * dentro da janela de tolerância (ver `REFRESH_REUSE_GRACE_SECONDS`).
+   */
   async rotate(refreshToken: string, ctx: SessionContext = {}): Promise<{ userId: string; refreshToken: string }> {
     const next = newOpaqueToken();
     const result = await this.repos.refreshTokens.rotate({
       tokenHash: hashToken(refreshToken),
       now: this.now(),
+      graceMs: this.graceSeconds * 1000,
       next: {
         tokenHash: hashToken(next),
         expiresAt: this.expiry(),
@@ -57,6 +69,16 @@ export class SessionsUseCase {
       await this.repos.audit.record({
         userId: result.userId,
         action: 'refresh_reuse_detected',
+        entityType: 'refresh_token_family',
+        entityId: result.familyId,
+        ipAddress: ctx.ipAddress ?? null,
+      });
+    }
+    if (result.status === 'rotated' && result.viaGrace) {
+      // Não é reuso: fica só o registro (sem o token) pra dar pra medir quantas vezes a janela salvou uma sessão.
+      await this.repos.audit.record({
+        userId: result.userId,
+        action: 'refresh_grace_used',
         entityType: 'refresh_token_family',
         entityId: result.familyId,
         ipAddress: ctx.ipAddress ?? null,

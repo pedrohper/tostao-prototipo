@@ -368,7 +368,7 @@ model UserConsent {
 model AuditLog {
   id         String   @id @default(uuid())
   userId     String?  @map("user_id")
-  action     String // password_reset | account_deleted | consent_changed | refresh_reuse_detected | data_exported
+  action     String // password_reset | account_deleted | consent_changed | refresh_reuse_detected | refresh_grace_used | data_exported
   entityType String?  @map("entity_type")
   entityId   String?  @map("entity_id")
   metadata   Json?

@@ -106,7 +106,7 @@ limit desligou em silêncio. Ninguém ficou sabendo.
 
 ## T6.4 — Janela de tolerância no refresh token
 
-- [ ] Concluída
+- [x] Concluída (código e testes prontos, sem migration; falta o `pm2 restart tostao-api` do Pedro depois do merge, ver AGENT_SYNC > Plano)
 
 ### Problema atual
 
