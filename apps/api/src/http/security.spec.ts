@@ -57,7 +57,7 @@ describe('Helmet e cabeçalhos', () => {
     const before = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
     try {
-      const { app: prod } = await boot({ kv: new MemoryKeyValueStore() });
+      const { app: prod } = await boot({ kv: new MemoryKeyValueStore(), checkDb: async () => {} });
       const res = await prod.inject({ method: 'GET', url: '/health' });
       expect(res.headers['strict-transport-security']).toContain('max-age=15552000');
     } finally {

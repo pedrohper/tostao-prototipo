@@ -28,6 +28,7 @@ import { FakeEmailGateway, type EmailGateway } from './gateways/email-gateway.js
 import { ACCESS_TOKEN_TTL_SECONDS } from '@tostao/contracts';
 import { makeLimiters } from './http/rate-limits.js';
 import { OAuthStateStore } from './services/oauth-state.js';
+import { withTimeout } from './lib/wait-for.js';
 import { RedisKeyValueStore, testOnlyKeyValueStore, type KeyValueStore } from './lib/redis.js';
 
 declare module 'fastify' {
@@ -88,7 +89,19 @@ type Options = Omit<Deps, 'appUrl'> & {
   email?: EmailGateway;
   /** Redis em produção. Sem isso, só memória e só com NODE_ENV=test. */
   kv?: KeyValueStore;
+  /** Faz um `SELECT 1` no banco (o /health usa). Sem isso, só com NODE_ENV=test; o server.ts passa o Prisma. */
+  checkDb?: () => Promise<unknown>;
 };
+
+/** Teto de cada checagem do /health: o monitor não pode ficar pendurado numa dependência morta. */
+export const HEALTH_CHECK_TIMEOUT_MS = 2_000;
+
+function testOnlyDbCheck(): () => Promise<unknown> {
+  if (process.env.NODE_ENV !== 'test') {
+    throw new Error('Passe checkDb ao buildApp: o /health precisa checar o banco de verdade fora de NODE_ENV=test.');
+  }
+  return async () => {};
+}
 
 export async function buildApp({
   repos,
@@ -109,6 +122,7 @@ export async function buildApp({
   rates = new ReferenceRatesGateway(),
   email = new FakeEmailGateway(),
   kv = testOnlyKeyValueStore(),
+  checkDb = testOnlyDbCheck(),
 }: Options) {
   const app = Fastify({
     logger: logger
@@ -172,7 +186,21 @@ export async function buildApp({
   app.setErrorHandler(errorHandler);
 
   const uc = makeUseCases({ repos, bank, ai, whatsapp, oauth, kv, chatDailyLimit, email, appUrl: webOrigin });
-  app.get('/health', async () => ({ ok: true }));
+  // Sem rate limit (ver o preHandler acima) e sem dado sensível: só se cada dependência respondeu. O motivo da falha vai pro log.
+  const probe = async (name: string, check: () => Promise<unknown>) => {
+    try {
+      await withTimeout(Promise.resolve().then(check), HEALTH_CHECK_TIMEOUT_MS, name);
+      return true;
+    } catch (err) {
+      app.log.warn(`[health] ${name} falhou: ${(err as Error).message}`);
+      return false;
+    }
+  };
+  app.get('/health', async (_request, reply) => {
+    const [db, redis] = await Promise.all([probe('db', checkDb), probe('redis', () => kv.ping())]);
+    const ok = db && redis;
+    return reply.code(ok ? 200 : 503).send({ ok, db, redis });
+  });
   engagementRoutes(app, uc, repos, push, limits);
   authRoutes(app, uc, limits, oauth, webOrigin, new OAuthStateStore(kv));
   accountRoutes(app, uc, limits);

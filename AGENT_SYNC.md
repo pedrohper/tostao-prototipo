@@ -17,6 +17,29 @@ O que está pra ser feito agora, por quem e em que branch. Tire daqui quando for
 >
 > **Regra até resolver:** ninguém faz `git pull`, `checkout`, `reset` ou `stash` no servidor, e deploy da `main` do GitHub fica suspenso (sobrescreveria o que está no ar). O servidor não tem login no GitHub, então esse código precisa ser levado pra um PR (Pedro decide quem leva). Depois disso, volta a regra de sempre: código só no GitHub, servidor só faz deploy.
 
+- [ ] **Trocar o pm2 + systemd + crontab (T6.1, T6.2, T6.3 — branch `fix/fase6-operacao`).** Pedro. **Sem migration.** Env nova opcional: `ALERT_WEBHOOK_URL` em `apps/api/.env`. Só vale depois do merge: `git checkout main && git pull --ff-only` (o working tree do servidor está na branch `fix/fase6-operacao`). `~/homelab/ecosystem.config.cjs` **já foi editado** (backup em `~/homelab/ecosystem.config.cjs.bak-2026-11-24-pre-t61`), mas só vale quando o pm2 recriar os processos. Os 3 passos abaixo derrubam API e site por alguns segundos:
+  1. **pm2** (`delete` + `start` + `save`; só `restart` não troca o `script`/`args` de um processo já registrado):
+     ```
+     pm2 delete tostao-api tostao-web
+     pm2 start ~/homelab/ecosystem.config.cjs --only tostao-api,tostao-web
+     pm2 save
+     ps -eo pid,ppid,cmd --forest | grep -E "server.ts|next-server" | grep -v grep   # 1 node por app (o esbuild do tsx é só um helper)
+     curl -s http://127.0.0.1:3333/health   # {"ok":true,"db":true,"redis":true}
+     ```
+  2. **systemd** (pm2 só sobe depois do Docker; precisa de sudo):
+     ```
+     sudo mkdir -p /etc/systemd/system/pm2-optiplex.service.d
+     printf '[Unit]\nAfter=docker.service\nWants=docker.service\n' | sudo tee /etc/systemd/system/pm2-optiplex.service.d/override.conf
+     sudo systemctl daemon-reload && systemctl cat pm2-optiplex
+     ```
+     (equivale a `sudo systemctl edit pm2-optiplex` com esse conteúdo). O container do Postgres pode demorar mais que o `docker.service`: a espera de até 60 s no `server.ts` cobre isso.
+  3. **crontab** (`crontab -e`) e o webhook:
+     ```
+     mkdir -p ~/.cache/tostao
+     */5 * * * * /home/optiplex/homelab/tostao-prototipo/scripts/healthcheck.sh >> /home/optiplex/.cache/tostao/healthcheck.log 2>&1
+     ```
+     e, em `apps/api/.env`, `ALERT_WEBHOOK_URL="https://…"` (webhook do n8n que manda o WhatsApp; recebe `{status:"down"|"up", text, failed:["api"|"web"], failures, host, at}`). Sem a variável o script só registra no log.
+  4. **Conferir** (T6.1): `pm2 restart tostao-api` 5 vezes seguidas e `grep -c EADDRINUSE ~/.pm2/logs/tostao-api-error-*.log` sem crescer.
 - [ ] **Deploy da UX mobile da Home + categorias extras (branch `feat/ui-mobile-home-categorias`, sai da `main` `f3c473c`).** Pedro. **Sem migration.** Ordem: `pnpm install --frozen-lockfile`; **`pnpm db:seed`** (cria as 10 categorias novas e recria as regras do sistema; idempotente, roda quantas vezes quiser; sem ele as categorias e regras novas não existem no banco e o seletor não as mostra); `pnpm build` com backup/restauração do `.next` (ver entrada de 2026-11-20); reiniciar `tostao-api` e `tostao-web` **juntos** (o web novo manda `color` no `POST /categories`; a API antiga ignoraria a cor e criaria com o tom padrão, sem erro). **O histórico não é recategorizado** pelas regras novas (valem pra lançamento novo, importação e sync). Antes de subir: olhar num celular Android a Home, o `Salvar` da folha de categorizar e o "+ Criar categoria" (ver "O que ficou de fora" na Execução de 2026-11-22).
 
 - [ ] **Backlog · logos de marcas (resto da T4.4).** Pacote local de 25–30 marcas (`apps/web/lib/brand-logos.ts` + `components/brand-logo.tsx` com matcher por `merchantName`/descrição e fallback pro `<Icon>` da categoria), `BrandLogo` em `carteira/transaction-row.tsx` e em `assinaturas/page.tsx`, e `brand-logos.spec.ts` (sem falso positivo em nomes curtos: "99" x "R$ 99,90", "tim" x "estimativa", "raia" x "praia", "uber" x "Uberlândia"). Pedro adiou em 2026-11-21. Ponto de decisão: não dá pra baixar logo oficial (marca registrada); proposta era selo monograma na cor da marca, trocável por SVG oficial depois.
@@ -41,6 +64,24 @@ Relatório do que foi feito. Modelo:
 - Como validei (testes, rota, tela).
 - O que ficou de fora / riscos.
 ```
+
+### 2026-11-24 · Claude · branch fix/fase6-operacao (Fase 6, PR 1: T6.1 processo único + desligamento limpo, T6.2 espera de Postgres/Redis, T6.3 `/health` real + alerta)
+
+**Commit local, sem push e sem PR. Nada foi reiniciado em produção** (`tostao-api`/`tostao-web` seguem com 0 restarts, mesmos PIDs, build antigo; `.next` de produção salvo em `~/tostao-backups/web-next-antes-t61-20261124-182829` e restaurado byte a byte). Checkboxes de T6.1, T6.2 e T6.3 marcados em `docs/producao/07-FASE-6-...md` (o código está pronto; a troca em produção é o item novo no Plano).
+
+- **T6.1 · processo único.** `scripts/pm2/tostao.config.cjs` (referência versionada) e `~/homelab/ecosystem.config.cjs` (real, **backup antes**: `ecosystem.config.cjs.bak-2026-11-24-pre-t61`; só as entradas `tostao-*` mudaram, `diff` confirma `anki-studio`/`homelab-hub` intactos). API: `/usr/bin/node --env-file=.env --import tsx src/server.ts` com `cwd: apps/api`, `interpreter: "none"`; web: `node_modules/next/dist/bin/next start -H 127.0.0.1` com `cwd: apps/web` (mesma porta 3000 e mesmo `.env.local`). Os dois com `kill_timeout: 15000` e `restart_delay: 3000` (este último é extra: sem ele, uma falha de boot reinicia sem pausa). `src/lib/shutdown.ts` + `server.ts`: em SIGTERM/SIGINT (o pm2 manda SIGINT) para os crons, `app.close()`, ponte do n8n, `prisma.$disconnect()` e Redis, nessa ordem; passou de 10 s sai com 1; segundo sinal força. `scheduleNotifications` passou a devolver `{ stop }` (usava `setInterval` solto; o plano falava só de `Cron`).
+- **T6.2 · espera.** `src/lib/wait-for.ts` (`waitFor` com 1, 2, 4, 8, 16 e o resto até somar 60 s, teto de 5 s por tentativa, log de cada tentativa; `withTimeout`). `server.ts` espera `SELECT 1` e `PING` antes de montar a app, agendar crons e dar `listen`; passou do teto, `exit(1)`. `KeyValueStore` ganhou `ping()` e `close()`.
+- **T6.3 · `/health`.** `GET /health` → `{ ok, db, redis }`, 200 ou 503, 2 s por checagem em paralelo, sem rate limit, sem `cache-control`, sem o erro no corpo (vai pro log). `buildApp` ganhou `checkDb` (obrigatório fora de `NODE_ENV=test`, como o `kv`; o `security.spec.ts` que simula produção passa um). `scripts/healthcheck.sh`: `/health` da API + `/entrar` da web, `curl` com timeout, alerta depois de 2 falhas seguidas, 1 aviso ao cair e 1 ao voltar, estado em `~/.cache/tostao/healthcheck.state`, `flock` contra sobreposição, URL do webhook lida do `apps/api/.env` por `grep` e nunca logada; se o webhook falhar, tenta de novo na rodada seguinte. `.env.example`: `ALERT_WEBHOOK_URL`.
+- `eslint.config.mjs`: `scripts/**/*.cjs` ganhou `sourceType: commonjs` (senão `module` dava `no-undef` na config do pm2).
+- Migration? Não. Variável de ambiente nova? `ALERT_WEBHOOK_URL` (opcional, só o script lê).
+- **Como validei**: `pnpm format:check`, `typecheck`, `lint` limpos; `pnpm test` 897 + 702 + 16 testes ok (novos: `wait-for.spec` 5, `shutdown.spec` 5, `http/health.spec` 5, `healthcheck-script.spec` 7 rodando o script de verdade contra servidores locais); `pnpm build` ok com `.next` salvo e restaurado. **Teste real num pm2 isolado** (`PM2_HOME` temporário, porta 43333, Postgres e Redis descartáveis em containers que já removi, `.env` de teste; nada do `.env` real foi carregado): 1 `node` por app; `/health` 200 → Redis parado 503 `{"db":true,"redis":false}` → volta 200; **5 `pm2 restart` seguidos** sem `EADDRINUSE` e com `[shutdown] crons/http/ponte do n8n/prisma/redis ok` em todos; boot com o Postgres parado esperou, sem crash (restarts não subiu), e subiu na 6ª tentativa quando o banco voltou; a web (porta 43000) também sobe direto e reinicia limpa. `healthcheck.sh` rodado contra o servidor real (só leitura, estado em pasta temporária): ok, silencioso.
+- **O que ficou de fora / riscos**:
+  - **Não executei a troca no pm2 real, o `systemctl` nem o crontab** (você pediu sem restart/sudo): os critérios "5 restarts em produção" e "alerta chegando no WhatsApp" só se confirmam depois dos passos do Plano. O webhook do n8n precisa existir (não testei a entrega real, só contra servidor local).
+  - `ps --forest` ainda mostra um `esbuild` filho do `node` da API: é o helper do tsx, não um segundo servidor.
+  - `scripts/homelab-setup.sh` ainda sobe o pm2 com `pnpm start:api`/`pnpm start:web` (a forma antiga): se alguém rodar o setup de novo, volta o problema. Não mexi (fora do escopo); a T6.6/T6.7 é um bom lugar pra apontar pra `scripts/pm2/tostao.config.cjs`.
+  - `skipOnError: true` do rate limit continua ligando o limite em silêncio se o Redis cair; agora o `/health` + o alerta avisam, mas o comportamento não mudou.
+  - `shellcheck` não está instalado no servidor: só `bash -n` (a T6.6 pede shellcheck pro `deploy.sh`).
+  - O `07-PROMPTS-ANTIGRAVITY.md` (untracked, de outra frente) **não** entrou no commit; o `07-FASE-6-...md` entrou porque os checkboxes são parte da entrega.
 
 ### 2026-11-22 · Claude · branch feat/fase5-t52-t53 (redesign desktop de autenticação: painel ilustrado + formulário limpo)
 
