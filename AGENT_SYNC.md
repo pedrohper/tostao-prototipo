@@ -17,29 +17,12 @@ O que está pra ser feito agora, por quem e em que branch. Tire daqui quando for
 >
 > **Regra até resolver:** ninguém faz `git pull`, `checkout`, `reset` ou `stash` no servidor, e deploy da `main` do GitHub fica suspenso (sobrescreveria o que está no ar). O servidor não tem login no GitHub, então esse código precisa ser levado pra um PR (Pedro decide quem leva). Depois disso, volta a regra de sempre: código só no GitHub, servidor só faz deploy.
 
-- [ ] **Trocar o pm2 + systemd + crontab (T6.1, T6.2, T6.3 — branch `fix/fase6-operacao`).** Pedro. **Sem migration.** Env nova opcional: `ALERT_WEBHOOK_URL` em `apps/api/.env`. Só vale depois do merge: `git checkout main && git pull --ff-only` (o working tree do servidor está na branch `fix/fase6-operacao`). `~/homelab/ecosystem.config.cjs` **já foi editado** (backup em `~/homelab/ecosystem.config.cjs.bak-2026-11-24-pre-t61`), mas só vale quando o pm2 recriar os processos. Os 3 passos abaixo derrubam API e site por alguns segundos:
-  1. **pm2** (`delete` + `start` + `save`; só `restart` não troca o `script`/`args` de um processo já registrado):
-     ```
-     pm2 delete tostao-api tostao-web
-     pm2 start ~/homelab/ecosystem.config.cjs --only tostao-api,tostao-web
-     pm2 save
-     ps -eo pid,ppid,cmd --forest | grep -E "server.ts|next-server" | grep -v grep   # 1 node por app (o esbuild do tsx é só um helper)
-     curl -s http://127.0.0.1:3333/health   # {"ok":true,"db":true,"redis":true}
-     ```
-  2. **systemd** (pm2 só sobe depois do Docker; precisa de sudo):
-     ```
-     sudo mkdir -p /etc/systemd/system/pm2-optiplex.service.d
-     printf '[Unit]\nAfter=docker.service\nWants=docker.service\n' | sudo tee /etc/systemd/system/pm2-optiplex.service.d/override.conf
-     sudo systemctl daemon-reload && systemctl cat pm2-optiplex
-     ```
-     (equivale a `sudo systemctl edit pm2-optiplex` com esse conteúdo). O container do Postgres pode demorar mais que o `docker.service`: a espera de até 60 s no `server.ts` cobre isso.
-  3. **crontab** (`crontab -e`) e o webhook:
-     ```
-     mkdir -p ~/.cache/tostao
-     */5 * * * * /home/optiplex/homelab/tostao-prototipo/scripts/healthcheck.sh >> /home/optiplex/.cache/tostao/healthcheck.log 2>&1
-     ```
-     e, em `apps/api/.env`, `ALERT_WEBHOOK_URL="https://…"` (webhook do n8n que manda o WhatsApp; recebe `{status:"down"|"up", text, failed:["api"|"web"], failures, host, at}`). Sem a variável o script só registra no log.
-  4. **Conferir** (T6.1): `pm2 restart tostao-api` 5 vezes seguidas e `grep -c EADDRINUSE ~/.pm2/logs/tostao-api-error-*.log` sem crescer.
+- [ ] **Fechar a T6.1 a T6.3 (branch `fix/fase6-operacao`, commit `ea8921e`).** Pedro. A troca no servidor **já foi feita em 2026-11-24** (pm2 recriado e salvo, drop-in do systemd, crontab; ver Execução). Falta:
+  1. **`ALERT_WEBHOOK_URL="https://…"` em `apps/api/.env`** (webhook do n8n que manda o WhatsApp; recebe `{status:"down"|"up", text, failed, failures, host, at}`). Até lá o `healthcheck.sh` só escreve em `~/.cache/tostao/healthcheck.log`. Depois de preencher, **testar o alerta de verdade**: `pm2 stop tostao-web`, esperar 2 rodadas (~10 min) e conferir o aviso de queda e o de volta (`pm2 start tostao-web`).
+  2. **Push + PR + merge** da branch (não foi enviada). Depois: `git checkout main && git pull --ff-only` no servidor, que hoje está na branch. Sem isso um `pm2 restart` usa o código da branch (o mesmo que está no ar).
+  3. **Provar o boot de verdade**: no próximo reboot, `journalctl -u pm2-optiplex -b` e `pm2 logs tostao-api --lines 50` devem mostrar `[boot] postgres/redis` esperando (se for o caso) e nenhum crash loop. O teste com o Postgres parado foi só num pm2 isolado.
+  4. **Trocar a senha do sudo do `optiplex`**: ela apareceu na saída de um comando do agente em 2026-11-24 (ver Execução).
+  5. Apontar o `scripts/homelab-setup.sh` pra `scripts/pm2/tostao.config.cjs` (ele ainda sobe `pnpm start:api`; fica pra T6.6/T6.7).
 - [ ] **Deploy da UX mobile da Home + categorias extras (branch `feat/ui-mobile-home-categorias`, sai da `main` `f3c473c`).** Pedro. **Sem migration.** Ordem: `pnpm install --frozen-lockfile`; **`pnpm db:seed`** (cria as 10 categorias novas e recria as regras do sistema; idempotente, roda quantas vezes quiser; sem ele as categorias e regras novas não existem no banco e o seletor não as mostra); `pnpm build` com backup/restauração do `.next` (ver entrada de 2026-11-20); reiniciar `tostao-api` e `tostao-web` **juntos** (o web novo manda `color` no `POST /categories`; a API antiga ignoraria a cor e criaria com o tom padrão, sem erro). **O histórico não é recategorizado** pelas regras novas (valem pra lançamento novo, importação e sync). Antes de subir: olhar num celular Android a Home, o `Salvar` da folha de categorizar e o "+ Criar categoria" (ver "O que ficou de fora" na Execução de 2026-11-22).
 
 - [ ] **Backlog · logos de marcas (resto da T4.4).** Pacote local de 25–30 marcas (`apps/web/lib/brand-logos.ts` + `components/brand-logo.tsx` com matcher por `merchantName`/descrição e fallback pro `<Icon>` da categoria), `BrandLogo` em `carteira/transaction-row.tsx` e em `assinaturas/page.tsx`, e `brand-logos.spec.ts` (sem falso positivo em nomes curtos: "99" x "R$ 99,90", "tim" x "estimativa", "raia" x "praia", "uber" x "Uberlândia"). Pedro adiou em 2026-11-21. Ponto de decisão: não dá pra baixar logo oficial (marca registrada); proposta era selo monograma na cor da marca, trocável por SVG oficial depois.
@@ -65,9 +48,17 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-24 · Claude · servidor (troca do pm2, systemd e crontab da T6.1 a T6.3, a pedido do Pedro)
+
+- **pm2**: `pm2 delete tostao-api tostao-web` + `pm2 start ~/homelab/ecosystem.config.cjs --only tostao-api,tostao-web` + `pm2 save`. 1 processo `node` por app; `/health` `{"ok":true,"db":true,"redis":true}` 200; `/entrar` 200. Rodei **5 `pm2 restart tostao-api` seguidos**: `/health` 200 em todos, 1 `node`, `EADDRINUSE` nos logs parado em 52 (os de 22/11), `[shutdown] crons/http/ponte do n8n/prisma/redis ok` em cada um. `tostao-api` está com ↺5 por causa desses testes.
+- **systemd**: `/etc/systemd/system/pm2-optiplex.service.d/override.conf` com `After=docker.service` e `Wants=docker.service`, `daemon-reload` ok, `systemctl cat` mostra o drop-in. O reboot ainda não foi feito (ver Plano).
+- **crontab**: `*/5 * * * * …/scripts/healthcheck.sh >> ~/.cache/tostao/healthcheck.log 2>&1`. Uma rodada manual: silenciosa, estado `fails=0 alerted=0`.
+- **Incidente**: na 1ª tentativa de gravar o `override.conf`, montei o `sudo -S` errado e a senha do sudo foi pro começo do arquivo e pra saída do comando. Reescrevi o arquivo antes do `daemon-reload` e conferi que não sobrou nada nele; a senha ficou no histórico da conversa, por isso o item de trocá-la no Plano.
+- **Não feito**: `ALERT_WEBHOOK_URL` (o agente não tem a URL), push/PR, `git checkout main` (a branch não foi mergeada).
+
 ### 2026-11-24 · Claude · branch fix/fase6-operacao (Fase 6, PR 1: T6.1 processo único + desligamento limpo, T6.2 espera de Postgres/Redis, T6.3 `/health` real + alerta)
 
-**Commit local, sem push e sem PR. Nada foi reiniciado em produção** (`tostao-api`/`tostao-web` seguem com 0 restarts, mesmos PIDs, build antigo; `.next` de produção salvo em `~/tostao-backups/web-next-antes-t61-20261124-182829` e restaurado byte a byte). Checkboxes de T6.1, T6.2 e T6.3 marcados em `docs/producao/07-FASE-6-...md` (o código está pronto; a troca em produção é o item novo no Plano).
+**Commit local, sem push e sem PR. Nada foi reiniciado em produção** (`tostao-api`/`tostao-web` seguem com 0 restarts, mesmos PIDs, build antigo; `.next` de produção salvo em `~/tostao-backups/web-next-antes-t61-20261124-182829` e restaurado byte a byte). Checkboxes de T6.1, T6.2 e T6.3 marcados em `docs/producao/07-FASE-6-...md` (o código está pronto; a troca em produção foi feita na entrada seguinte, e o que falta está no Plano).
 
 - **T6.1 · processo único.** `scripts/pm2/tostao.config.cjs` (referência versionada) e `~/homelab/ecosystem.config.cjs` (real, **backup antes**: `ecosystem.config.cjs.bak-2026-11-24-pre-t61`; só as entradas `tostao-*` mudaram, `diff` confirma `anki-studio`/`homelab-hub` intactos). API: `/usr/bin/node --env-file=.env --import tsx src/server.ts` com `cwd: apps/api`, `interpreter: "none"`; web: `node_modules/next/dist/bin/next start -H 127.0.0.1` com `cwd: apps/web` (mesma porta 3000 e mesmo `.env.local`). Os dois com `kill_timeout: 15000` e `restart_delay: 3000` (este último é extra: sem ele, uma falha de boot reinicia sem pausa). `src/lib/shutdown.ts` + `server.ts`: em SIGTERM/SIGINT (o pm2 manda SIGINT) para os crons, `app.close()`, ponte do n8n, `prisma.$disconnect()` e Redis, nessa ordem; passou de 10 s sai com 1; segundo sinal força. `scheduleNotifications` passou a devolver `{ stop }` (usava `setInterval` solto; o plano falava só de `Cron`).
 - **T6.2 · espera.** `src/lib/wait-for.ts` (`waitFor` com 1, 2, 4, 8, 16 e o resto até somar 60 s, teto de 5 s por tentativa, log de cada tentativa; `withTimeout`). `server.ts` espera `SELECT 1` e `PING` antes de montar a app, agendar crons e dar `listen`; passou do teto, `exit(1)`. `KeyValueStore` ganhou `ping()` e `close()`.
