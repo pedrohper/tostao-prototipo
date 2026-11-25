@@ -5,7 +5,7 @@ import { ConfirmSubmitButton } from '@/components/confirm-dialog';
 import { WidgetErrorAlert } from '@/components/conectar-guia';
 import { Icon } from '@/components/icone';
 import { Button, ErrorNote, Field } from '@/components/ui';
-import { humanizeWidgetError } from '@/lib/conectar-widget';
+import { humanizeSyncError, humanizeWidgetError } from '@/lib/conectar-widget';
 import { getDictionary, type Locale } from '@/lib/i18n';
 import { connectBank, connectItem, disconnectBank, getConnectToken, syncNow, type ConnectState } from './actions';
 
@@ -180,7 +180,7 @@ export function SyncButton({ id, locale = 'pt-BR' }: { id: string; locale?: Loca
         {pending ? labels.syncing : labels.syncNow}
       </button>
       {state.ok && <span className="text-sm text-verde-texto">{state.ok}</span>}
-      {state.error && <span className="text-sm text-vermelho-texto">{state.error}</span>}
+      {state.error && <span className="text-sm text-vermelho-texto">{humanizeSyncError(state.error)}</span>}
     </form>
   );
 }

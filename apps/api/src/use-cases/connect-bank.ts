@@ -3,6 +3,9 @@ import type { BankGateway } from '../gateways/bank-gateway.js';
 import type { BankConnectionsRepository } from '../repositories/types.js';
 import type { SyncBankConnectionUseCase } from './sync-bank-connection.js';
 
+export const CONNECTED_BUT_NOT_SYNCED =
+  'Seu banco foi ligado, mas ainda não consegui puxar os lançamentos. Toca em "Sincronizar agora" daqui a pouco.';
+
 /**
  * Liga um Item do Meu Pluggy ao usuário e já faz a primeira sincronização.
  * Se o Item já estava ligado, só sincroniza de novo.
@@ -19,6 +22,7 @@ export class ConnectBankUseCase {
 
   async execute({ userId, itemId }: { userId: string; itemId: string }) {
     let connection = await this.connections.findByUserAndItem(userId, itemId);
+    const isNew = !connection;
     if (!connection) {
       // Já é de outra pessoa? Corta antes de falar com o provedor.
       if (await this.connections.findByItemId(itemId)) throw new ConflictError('Essa conexão não está disponível.');
@@ -32,7 +36,13 @@ export class ConnectBankUseCase {
       }
       connection = await this.connections.create({ userId, itemId, institution: item.institution });
     }
-    const result = await this.sync.execute({ connectionId: connection.id });
-    return { connection, ...result };
+    try {
+      const result = await this.sync.execute({ connectionId: connection.id });
+      return { connection, ...result };
+    } catch (error) {
+      if (!isNew) throw error;
+      // A conexão já está salva: dizer "não deu pra conectar" mandaria a pessoa conectar de novo ou importar extrato.
+      throw new BankConnectionError(CONNECTED_BUT_NOT_SYNCED);
+    }
   }
 }

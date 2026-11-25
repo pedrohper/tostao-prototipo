@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hasTechnicalLeak, humanizeWidgetError } from './conectar-widget';
+import { hasTechnicalLeak, humanizeSyncError, humanizeWidgetError } from './conectar-widget';
 
 describe('humanizeWidgetError (T6.5)', () => {
   const technicalCases: Array<[string, 'token' | 'init' | 'widget' | 'connect']> = [
@@ -33,5 +33,16 @@ describe('humanizeWidgetError (T6.5)', () => {
     const out = humanizeWidgetError(null, 'init');
     expect(out).toContain('Não deu pra conectar seu banco agora');
     expect(hasTechnicalLeak(out)).toBe(false);
+  });
+
+  it('banco salvo com a primeira sincronização falhando não vira "não deu pra conectar"', () => {
+    const raw = 'Seu banco foi ligado, mas ainda não consegui puxar os lançamentos. Toca em "Sincronizar agora".';
+    expect(humanizeWidgetError(raw, 'connect')).toBe(raw);
+  });
+
+  it('"Sincronizar agora" esconde termo técnico e mantém aviso que já é humano', () => {
+    const out = humanizeSyncError('Esse Item ID não existe ou expirou no Pluggy.');
+    expect(hasTechnicalLeak(out)).toBe(false);
+    expect(humanizeSyncError('Calma, já sincronizei há pouco.')).toBe('Calma, já sincronizei há pouco.');
   });
 });

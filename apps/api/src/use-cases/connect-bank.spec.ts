@@ -38,6 +38,16 @@ describe('conectar banco (Open Finance): um Item é de uma pessoa só', () => {
     expect(repos.connections.items).toHaveLength(1);
   });
 
+  it('se só a primeira sincronização falha, a conexão fica salva e o erro diz isso', async () => {
+    bank.fetchAccounts = async () => {
+      throw new BankConnectionError('Pluggy respondeu 500.');
+    };
+    await expect(connect.execute({ userId: 'u1', itemId: ITEM })).rejects.toThrow(/Seu banco foi ligado/);
+    expect(repos.connections.items).toHaveLength(1);
+    // conectar de novo é só sincronizar: o erro original segue
+    await expect(connect.execute({ userId: 'u1', itemId: ITEM })).rejects.toThrow(/Pluggy respondeu 500/);
+  });
+
   it('usuário B não conecta o Item que já é do usuário A (e o erro não diz de quem é)', async () => {
     await connect.execute({ userId: 'u1', itemId: ITEM });
     bank.item = { ...bank.item, clientUserId: 'u2' }; // mesmo com o clientUserId "certo", o Item já é de A

@@ -19,6 +19,8 @@ export function humanizeWidgetError(rawError?: string | null, reason: WidgetFail
   const msg = (rawError ?? '').trim();
 
   if (reason === 'connect') {
+    // A conexão foi salva, só a primeira sincronização falhou: a mensagem da API já é humana.
+    if (isConnectedButNotSynced(msg)) return msg;
     if (/não está disponível|não pertence|conflit|forbidden/i.test(msg)) {
       return 'Esse banco já tá ligado ou pertence a outra conta. Tenta de novo pelo botão acima, ou traz seus gastos de outro jeito:';
     }
@@ -28,6 +30,15 @@ export function humanizeWidgetError(rawError?: string | null, reason: WidgetFail
   }
 
   return 'Não deu pra conectar seu banco agora. O Open Finance pode estar instável ou o acesso ainda não ficou pronto — mas dá pra continuar de outro jeito:';
+}
+
+export const isConnectedButNotSynced = (message: string) => /^Seu banco foi ligado/.test(message);
+
+/** Erro do "Sincronizar agora": o que vier com termo técnico vira uma frase que a pessoa entende. */
+export function humanizeSyncError(rawError: string): string {
+  return hasTechnicalLeak(rawError)
+    ? 'Não consegui falar com seu banco agora. Tenta mais tarde; se continuar, remove e conecta de novo.'
+    : rawError;
 }
 
 /** Garante em testes que nenhum termo técnico ou código HTTP escape na mensagem exibida. */
