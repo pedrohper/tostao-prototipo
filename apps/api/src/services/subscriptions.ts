@@ -30,6 +30,11 @@ export type Subscription = {
   duplicateOf: string | null;
   /** Reajuste visto no histórico (usado pelo Tostão Automático). null = o preço não subiu. */
   priceIncrease: PriceIncrease | null;
+  /**
+   * As duas últimas cobranças batem (até 5%), é parcela ou houve reajuste de um preço que era fixo. Sem isso é compra
+   * que se repete (corrida, mercado), e o Tostão não deve afirmar "vai cobrar R$ X".
+   */
+  steadyPrice: boolean;
 };
 
 // Parcela no fim/meio da descrição: "5/12", "PARC 03/10", "PARCELA 2 DE 6" (sem diferenciar maiúscula)
@@ -133,6 +138,8 @@ export function detectSubscriptions(transactions: Transaction[], now: Date, tz?:
       const nextChargeAt = new Date(last.occurredAt.getTime() + Math.round(gap) * DAY);
       const parcel = installmentOf(normalizeDescription(last.description));
       const installmentsLeft = parcel ? Math.max(0, parcel.total - parcel.n) : null;
+      // Parcela não é reajuste (a 1ª costuma vir uns centavos diferente das outras).
+      const priceIncrease = parcel ? null : priceIncreaseOf(txs, all, bands);
       // Dois planos da MESMA loja (faixas de valor diferentes) precisam de chaves diferentes, senão "ignorar um"
       // esconde os dois e o aviso de duplicidade se confunde. A faixa entra na chave só quando há mais de uma.
       const bandKey =
@@ -149,8 +156,9 @@ export function detectSubscriptions(transactions: Transaction[], now: Date, tz?:
         installmentsLeft,
         accountId: last.accountId,
         duplicateOf: null,
-        // Parcela não é reajuste (a 1ª costuma vir uns centavos diferente das outras).
-        priceIncrease: parcel ? null : priceIncreaseOf(txs, all, bands),
+        priceIncrease,
+        steadyPrice:
+          parcel !== null || priceIncrease !== null || samePrice(chargeCents(txs[txs.length - 2]!), chargeCents(last)),
       });
     }
   }
@@ -182,13 +190,15 @@ const chargeCents = (t: Transaction) => Math.abs(t.amountInCents);
 
 /** Conta em centavos inteiros: exatamente 5% não passa. */
 const roseEnough = (from: number, to: number) => to * 100 > from * (100 + PRICE_INCREASE_PERCENT);
+const samePrice = (a: number, b: number) => Math.abs(a - b) * 100 <= Math.max(a, b) * PRICE_INCREASE_PERCENT;
 
 /**
  * Reajuste de uma assinatura (`band` = cobranças dela; `all` = tudo da mesma loja, em ordem de data). Dois casos:
  * 1. salto grande, que cai fora da faixa de ±25% e por isso não entrou na assinatura: só vale se o preço era fixo
  *    (3 cobranças iguais), depois dele há UMA única cobrança da loja, um ciclo depois, e no máximo o dobro. Sem essas
  *    travas, qualquer compra solta na mesma loja viraria "aumento";
- * 2. a última cobrança da assinatura veio mais cara que a anterior.
+ * 2. a última cobrança da assinatura veio mais cara que a anterior, e antes disso o preço era fixo (as duas cobranças
+ *    anteriores iguais). Valor que varia todo mês (corrida, mercado, conta de consumo) não é "reajuste".
  */
 function priceIncreaseOf(band: Transaction[], all: Transaction[], bands: Transaction[][]): PriceIncrease | null {
   const last = band[band.length - 1]!;
@@ -215,6 +225,8 @@ function priceIncreaseOf(band: Transaction[], all: Transaction[], bands: Transac
   }
 
   const previous = band[band.length - 2]!;
+  const beforePrevious = band[band.length - 3];
+  if (!beforePrevious || chargeCents(beforePrevious) !== chargeCents(previous)) return null;
   return roseEnough(chargeCents(previous), chargeCents(last)) ? increase(previous, last) : null;
 }
 

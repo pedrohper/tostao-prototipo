@@ -409,7 +409,7 @@ export class RunTostaoChecksUseCase {
     const today = civilDay(now, tz);
     return subs.flatMap((s): UpsertTostaoInsight[] => {
       // Salto de preço numa cobrança depois da última da assinatura: a previsão com o preço antigo não vale mais.
-      if (!s.active || (s.priceIncrease && s.priceIncrease.chargedAt > s.lastChargedAt)) return [];
+      if (!s.active || !s.steadyPrice || (s.priceIncrease && s.priceIncrease.chargedAt > s.lastChargedAt)) return [];
       const dueDate = civilDay(s.nextChargeAt, tz);
       const daysLeft = diffCivilDays(today, dueDate);
       if (daysLeft < 0 || daysLeft > CHARGE_SOON_DAYS) return [];

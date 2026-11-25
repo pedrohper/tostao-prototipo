@@ -80,8 +80,8 @@ export function transactionRoutes(app: FastifyInstance, uc: UseCases, limits: Li
 
   app.get('/subscriptions', { onRequest: verifyJwt }, async (request) => {
     const r = await uc.listSubscriptions.execute({ userId: request.user.sub });
-    // `priceIncrease` é de uso interno (avisos do Tostão Automático): não entra no contrato desta rota.
-    const dto = ({ priceIncrease: _, ...s }: (typeof r.subscriptions)[number]) => ({
+    // `priceIncrease` e `steadyPrice` são de uso interno (avisos do Tostão Automático): ficam fora do contrato.
+    const dto = ({ priceIncrease: _, steadyPrice: _steady, ...s }: (typeof r.subscriptions)[number]) => ({
       ...s,
       lastChargedAt: s.lastChargedAt.toISOString(),
       nextChargeAt: s.nextChargeAt.toISOString(),

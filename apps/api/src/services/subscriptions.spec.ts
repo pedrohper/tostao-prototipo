@@ -252,10 +252,23 @@ describe('T6.18 · reajuste de assinatura', () => {
   });
 
   it('exatamente 5%, menos que isso ou queda de preço não contam', () => {
-    expect(increase(series([2000, 2100]))).toEqual([null]);
-    expect(increase(series([2000, 2101]))[0]).toMatchObject({ fromInCents: 2000, toInCents: 2101 });
-    expect(increase(series([2000, 2090]))).toEqual([null]);
-    expect(increase(series([2500, 2200]))).toEqual([null]);
+    expect(increase(series([2000, 2000, 2100]))).toEqual([null]);
+    expect(increase(series([2000, 2000, 2101]))[0]).toMatchObject({ fromInCents: 2000, toInCents: 2101 });
+    expect(increase(series([2000, 2000, 2090]))).toEqual([null]);
+    expect(increase(series([2500, 2500, 2200]))).toEqual([null]);
+  });
+
+  it('compra que varia todo mês (corrida, mercado) não vira reajuste nem "vai cobrar"', () => {
+    const rides = detectSubscriptions(series([2000, 2300, 2700], '99 APP'), NOW);
+    expect(rides.map((s) => [s.priceIncrease, s.steadyPrice])).toEqual([[null, false]]);
+    expect(increase(series([2000, 2300]))).toEqual([null]); // só 2 cobranças: não dá pra saber se o preço era fixo
+  });
+
+  it('preço fixo, variação de câmbio pequena e reajuste contam como preço firme', () => {
+    const steady = (values: number[]) => detectSubscriptions(series(values), NOW)[0]!.steadyPrice;
+    expect(steady([2090, 2090])).toBe(true);
+    expect(steady([2090, 2150])).toBe(true);
+    expect(steady([2090, 2090, 2490])).toBe(true);
   });
 
   it('compara só com a anterior: reajuste de meses atrás não reaparece', () => {
