@@ -1,17 +1,32 @@
-// INSS e IRRF (simplificados) dos simuladores do módulo 6. Cópia sem mudança das contas que estavam em
-// simulators-m6-m9.tsx (T6.15): a tabela é a mesma de antes.
+// INSS e IRRF mensais dos simuladores do módulo 6, pelas regras de 2026. Conferir todo mês de janeiro.
+// INSS: Portaria Interministerial MPS/MF nº 13, de 09/01/2026 (cada faixa paga a própria alíquota, até o teto).
+// IRRF: tabela mensal de 2026 e redução da Lei 15.270/2025, em gov.br/receitafederal, "Tributação de 2026".
+// Simplificação: sem dependentes, pensão alimentícia ou previdência privada.
+
+/** [teto da faixa em reais, alíquota] */
+const FAIXAS_INSS: [number, number][] = [
+  [1621.0, 0.075],
+  [2902.84, 0.09],
+  [4354.27, 0.12],
+  [8475.55, 0.14],
+];
+
+/** [teto da base em reais, alíquota, parcela a deduzir] */
+const FAIXAS_IRRF: [number, number, number][] = [
+  [2428.8, 0, 0],
+  [2826.65, 0.075, 182.16],
+  [3751.05, 0.15, 394.16],
+  [4664.68, 0.225, 675.49],
+  [Infinity, 0.275, 908.73],
+];
+
+const DESCONTO_SIMPLIFICADO = 607.2;
 
 export function calcInssCents(brutoCents: number): number {
   const bruto = brutoCents / 100;
-  const faixas: [number, number][] = [
-    [1518.0, 0.075],
-    [2793.88, 0.09],
-    [4190.83, 0.12],
-    [8157.41, 0.14],
-  ];
   let anterior = 0;
   let total = 0;
-  for (const [teto, aliq] of faixas) {
+  for (const [teto, aliq] of FAIXAS_INSS) {
     if (bruto <= anterior) break;
     const base = Math.min(bruto, teto) - anterior;
     total += base * aliq;
@@ -20,17 +35,17 @@ export function calcInssCents(brutoCents: number): number {
   return Math.round(total * 100);
 }
 
+/** Redução da Lei 15.270/2025. Usa o salário bruto (não a base de cálculo): zera o imposto até R$ 5.000. */
+function reducaoDoIrrf(bruto: number): number {
+  if (bruto <= 5000) return 312.89;
+  if (bruto <= 7350) return 978.62 - 0.133145 * bruto;
+  return 0;
+}
+
 export function calcIrrfCents(brutoCents: number, inssCents: number): number {
   const bruto = brutoCents / 100;
-  const inss = inssCents / 100;
-  // Desconto simplificado mensal (R$ 564,80) vs INSS legal: usa o maior
-  const deducao = Math.max(inss, 564.8);
-  const base = Math.max(0, bruto - deducao);
-  let ir: number;
-  if (base <= 2259.2) ir = 0;
-  else if (base <= 2826.65) ir = base * 0.075 - 169.44;
-  else if (base <= 3751.05) ir = base * 0.15 - 381.44;
-  else if (base <= 4664.68) ir = base * 0.225 - 662.77;
-  else ir = base * 0.275 - 896.0;
-  return Math.max(0, Math.round(ir * 100));
+  // Vale o que for maior: o desconto simplificado ou o INSS pago.
+  const base = Math.max(0, bruto - Math.max(inssCents / 100, DESCONTO_SIMPLIFICADO));
+  const [, aliq, parcela] = FAIXAS_IRRF.find(([teto]) => base <= teto)!;
+  return Math.max(0, Math.round((base * aliq - parcela - reducaoDoIrrf(bruto)) * 100));
 }

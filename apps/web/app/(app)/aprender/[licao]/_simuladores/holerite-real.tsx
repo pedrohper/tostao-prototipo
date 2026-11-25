@@ -1,6 +1,5 @@
 'use client';
-// m6-l1: Calculadora do holerite real, no SimuladorShell (T6.15). A conta é a de sempre, agora em centavos desde a
-// entrada.
+// m6-l1: Calculadora do holerite real, no SimuladorShell (T6.15). Contas em centavos; tabelas em inss-irrf-clt.ts.
 import { useState } from 'react';
 import { Selo } from '@/components/selo';
 import { Quadros } from '@/components/simulador-campos';
@@ -59,8 +58,8 @@ export function CalculadoraHoleriteReal() {
       respostaCerta={(r) => palpiteCertoDoHolerite(r.brutoCents, r.liquidoCents)}
       explicacao={
         <p>
-          <Selo tipo="dica" />O INSS é cobrado por faixas (como uma escada), não sobre o total. E o IRRF usa o desconto
-          simplificado automático quando ele é mais vantajoso que a dedução do INSS.
+          <Selo tipo="dica" />O INSS é cobrado por faixas (como uma escada), não sobre o total. No Imposto de Renda de
+          2026, quem ganha até R$ 5.000 por mês não paga, e até R$ 7.350 paga menos (Lei 15.270/2025).
         </p>
       }
       principal={
@@ -80,7 +79,9 @@ export function CalculadoraHoleriteReal() {
           itens={[
             { rotulo: 'Salário bruto', valor: money(bruto) },
             { rotulo: 'INSS progressivo', valor: `−${money(inssCents)}`, tom: 'ruim' },
-            { rotulo: 'IRRF na fonte', valor: `−${money(irrfCents)}`, tom: 'ruim' },
+            irrfCents
+              ? { rotulo: 'IRRF na fonte', valor: `−${money(irrfCents)}`, tom: 'ruim' }
+              : { rotulo: 'IRRF na fonte', valor: money(0), tom: 'bom', nota: 'Isento nesse salário' },
           ]}
         />
       }

@@ -1,6 +1,7 @@
-// T6.15 · módulo 6 no SimuladorShell: a MATEMÁTICA NÃO MUDOU. As funções `antes*` são cópia literal das contas que
-// estavam em simulators-m6-m9.tsx (valores em reais); as posições das réguas de antes são comparadas com a conta nova
-// (em centavos). Depois, a tela e os palpites.
+// T6.15 · módulo 6 no SimuladorShell. As funções `antes*` são cópia literal das contas que estavam em
+// simulators-m6-m9.tsx (valores em reais); as posições das réguas de antes são comparadas com a conta nova (em
+// centavos). A exceção são o INSS e o IRRF, atualizados pras regras de 2026 e conferidos com os valores oficiais.
+// Depois, a tela e os palpites.
 import { createElement, type ReactElement, type ReactNode } from 'react';
 import { renderToString } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
@@ -62,44 +63,10 @@ const opcoes = (Sim: () => ReactNode) => {
 
 // ---------- As contas de ANTES (cópia literal) ----------
 
-function antesInss(brutoCents: number): number {
-  const bruto = brutoCents / 100;
-  const faixas: [number, number][] = [
-    [1518.0, 0.075],
-    [2793.88, 0.09],
-    [4190.83, 0.12],
-    [8157.41, 0.14],
-  ];
-  let anterior = 0;
-  let total = 0;
-  for (const [teto, aliq] of faixas) {
-    if (bruto <= anterior) break;
-    const base = Math.min(bruto, teto) - anterior;
-    total += base * aliq;
-    anterior = teto;
-  }
-  return Math.round(total * 100);
-}
-
-function antesIrrf(brutoCents: number, inssCents: number): number {
-  const bruto = brutoCents / 100;
-  const inss = inssCents / 100;
-  // Desconto simplificado mensal (R$ 564,80) vs INSS legal: usa o maior
-  const deducao = Math.max(inss, 564.8);
-  const base = Math.max(0, bruto - deducao);
-  let ir: number;
-  if (base <= 2259.2) ir = 0;
-  else if (base <= 2826.65) ir = base * 0.075 - 169.44;
-  else if (base <= 3751.05) ir = base * 0.15 - 381.44;
-  else if (base <= 4664.68) ir = base * 0.225 - 662.77;
-  else ir = base * 0.275 - 896.0;
-  return Math.max(0, Math.round(ir * 100));
-}
-
 function antesHolerite(bruto: number) {
   const brutoCents = bruto * 100;
-  const inssCents = antesInss(brutoCents);
-  const irrfCents = antesIrrf(brutoCents, inssCents);
+  const inssCents = calcInssCents(brutoCents);
+  const irrfCents = calcIrrfCents(brutoCents, inssCents);
   const liquidoCents = brutoCents - inssCents - irrfCents;
   const pctDesconto = (((inssCents + irrfCents) / brutoCents) * 100).toFixed(1).replace('.', ',');
   return { inssCents, irrfCents, liquidoCents, pctDesconto };
@@ -142,8 +109,8 @@ function antesFerias(salario: number, gastouTudo: boolean) {
 
 function antesCltPj(cltBruto: number, beneficios: number, pjMensal: number) {
   const cltBrutoCents = cltBruto * 100;
-  const inss = antesInss(cltBrutoCents);
-  const irrf = antesIrrf(cltBrutoCents, inss);
+  const inss = calcInssCents(cltBrutoCents);
+  const irrf = calcIrrfCents(cltBrutoCents, inss);
   const cltLiqMensal = cltBrutoCents - inss - irrf;
 
   const fgtsAnual = Math.round(cltBrutoCents * 0.08 * 13.33);
@@ -159,37 +126,43 @@ function antesCltPj(cltBruto: number, beneficios: number, pjMensal: number) {
   return { cltAnualCents, pjAnualCents, diffAnual };
 }
 
-// ---------- (a) A matemática ----------
+// ---------- (a) INSS e IRRF de 2026 ----------
+
+describe('módulo 6: INSS e IRRF de 2026', () => {
+  it('INSS: o teto de cada faixa e o teto de contribuição', () => {
+    expect([162_100, 290_284, 435_427, 847_555, 1_500_000].map(calcInssCents)).toEqual([
+      12_157, 23_694, 41_111, 98_809, 98_809,
+    ]);
+  });
+
+  // Receita Federal, "Exemplos de Aplicação da Lei 15.270/2025" (os exemplos informam o INSS usado).
+  it.each([
+    [303_600, 25_773, 0],
+    [400_000, 37_341, 0],
+    [500_000, 50_960, 0],
+    [600_000, 64_960, 38_288],
+    [760_720, 0, 101_627],
+  ])('IRRF: exemplo oficial com salário %i', (bruto, inss, esperado) => {
+    expect(calcIrrfCents(bruto, inss)).toBe(esperado);
+  });
+
+  it('isento até R$ 5.000, redução até R$ 7.350 e tabela cheia depois', () => {
+    const irrf = (cents: number) => calcIrrfCents(cents, calcInssCents(cents));
+    expect(regua(150_000, 500_000, 97).filter((c) => irrf(c) !== 0)).toEqual([]);
+    expect(irrf(500_100)).toBeGreaterThan(0);
+    // Na virada dos R$ 7.350 a redução já é zero: não existe degrau.
+    expect(irrf(735_001) - irrf(735_000)).toBeLessThanOrEqual(1);
+  });
+
+  it('ganhar mais nunca diminui o líquido', () => {
+    const liquidos = regua(150_000, 1_500_000, 100).map((c) => calcularHolerite({ brutoCents: c }).liquidoCents);
+    expect(liquidos.filter((v, i) => i > 0 && v < liquidos[i - 1]!)).toEqual([]);
+  });
+});
+
+// ---------- (a2) As outras contas ----------
 
 describe('módulo 6: a matemática não mudou', () => {
-  it('INSS e IRRF: valores quebrados da régua inteira e as fronteiras das faixas', () => {
-    const valores = regua(150_000, 1_500_000, 97);
-    // Tetos do INSS e, com o desconto simplificado ou o próprio INSS, as viradas de base do IRRF.
-    for (const virada of [151_800, 279_388, 419_083, 815_741, 282_400, 338_850, 431_000, 522_948, 150_000, 1_500_000])
-      valores.push(...regua(virada - 300, virada + 300, 1));
-    const diferentes = valores.filter((cents) => {
-      const inss = antesInss(cents);
-      return calcInssCents(cents) !== inss || calcIrrfCents(cents, inss) !== antesIrrf(cents, inss);
-    });
-    expect(valores.length).toBeGreaterThan(19_000);
-    expect(diferentes).toEqual([]);
-  });
-
-  it('m6-l1 Holerite: todas as posições', () => {
-    const posicoes = regua(1500, 15000, 100);
-    expect(posicoes).toHaveLength(136);
-    for (const bruto of posicoes) {
-      const antes = antesHolerite(bruto);
-      const agora = calcularHolerite({ brutoCents: bruto * 100 });
-      expect([agora.inssCents, agora.irrfCents, agora.liquidoCents], String(bruto)).toEqual([
-        antes.inssCents,
-        antes.irrfCents,
-        antes.liquidoCents,
-      ]);
-      expect(agora.descontoPct.toFixed(1).replace('.', ',')).toBe(antes.pctDesconto);
-    }
-  });
-
   it('m6-l2 Saque-aniversário: todas as posições', () => {
     let casos = 0;
     for (const bruto of regua(1500, 12000, 100))
@@ -273,14 +246,16 @@ describe('m6-l1 · Holerite real', () => {
 
   it('valores didáticos e depois de mexer', () => {
     const tela = aberto(CalculadoraHoleriteReal);
-    expect(grande(tela)).toBe('Líquido real que cai na conta R$ 3.127,75 −10,6% de descontos');
-    expect(tudo(tela)).toContain('INSS progressivo −R$ 313,41');
-    expect(tudo(tela)).toContain('IRRF na fonte −R$ 58,84');
+    expect(grande(tela)).toBe('Líquido real que cai na conta R$ 3.191,40 −8,8% de descontos');
+    expect(tudo(tela)).toContain('INSS progressivo −R$ 308,60');
+    expect(tudo(tela)).toContain('IRRF na fonte R$ 0,00 Isento nesse salário');
+    expect(tudo(tela)).toContain('quem ganha até R$ 5.000 por mês não paga');
     expect(tudo(tela)).toContain('O INSS é cobrado por faixas (como uma escada)');
     mover(tela, 'Salário bruto CLT', 920_000);
     const antes = antesHolerite(9200);
     expect(grande(tela)).toContain(plain(money(antes.liquidoCents)));
     expect(grande(tela)).toContain(`−${antes.pctDesconto}% de descontos`);
+    expect(tudo(tela)).toContain(`IRRF na fonte −${plain(money(antes.irrfCents))}`);
   });
 });
 
@@ -374,13 +349,13 @@ describe('m6-l5 · CLT x PJ', () => {
     principalForaDoMais(tela, 'Proposta PJ mensal');
   });
 
-  it('valores didáticos: PJ paga R$ 4.814,67 a mais', () => {
+  it('valores didáticos: quase empate, o PJ paga R$ 238,13 a mais', () => {
     const tela = aberto(EquivalenciaCltPj);
-    expect(grande(tela)).toContain('O PJ paga a mais por ano R$ 4.814,67');
+    expect(grande(tela)).toContain('O PJ paga a mais por ano R$ 238,13');
     const t = tudo(tela);
-    expect(t).toContain('CLT líquido/ano R$ 70.335,33');
+    expect(t).toContain('CLT líquido/ano R$ 74.911,87');
     expect(t).toContain('PJ líquido/ano R$ 75.150,00');
-    expect(t).toContain('~R$ 5.861,28/mês');
+    expect(t).toContain('~R$ 6.242,66/mês');
     expect(t).toContain('~R$ 6.262,50/mês');
     expect(t).toContain('considerando 11 meses trabalhados, 6% de DAS e R$ 200/mês de contador');
   });
@@ -438,7 +413,7 @@ describe('módulo 6: palpites', () => {
   });
 
   it.each([
-    ['m6-l1', CalculadoraHoleriteReal, 1],
+    ['m6-l1', CalculadoraHoleriteReal, 0],
     ['m6-l2', SaqueAniversarioVsRescisao, 0],
     ['m6-l3', FatiadorDecimoTerceiro, 2],
     ['m6-l4', ContaRetornoFerias, 0],

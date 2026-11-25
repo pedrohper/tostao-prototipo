@@ -1,5 +1,5 @@
 'use client';
-// m6-l5: Equivalência CLT x PJ, no SimuladorShell (T6.15). A conta é a de sempre, agora em centavos desde a entrada.
+// m6-l5: Equivalência CLT x PJ, no SimuladorShell (T6.15). Contas em centavos; tabelas em inss-irrf-clt.ts.
 import { useState } from 'react';
 import { Selo } from '@/components/selo';
 import { Quadros } from '@/components/simulador-campos';
