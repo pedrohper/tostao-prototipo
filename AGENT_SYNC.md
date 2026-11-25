@@ -10,11 +10,10 @@ Histórico: [até 2026-11-21](docs/historico/agent-sync-ate-2026-11-21.md) · [2
 
 O que está pra ser feito agora, por quem e em que branch. Tire daqui quando for pra Execução.
 
-- [ ] **Imposto desatualizado nos simuladores m6-l1 (holerite) e m6-l5 (CLT x PJ).** Usam INSS com teto de R$ 8.157,41 e IRRF antigo; a própria lição fala das regras de 2026 (teto de R$ 8.475,55; Lei 15.270/2025: isento até R$ 5.000, redução até R$ 7.350). Conferir na fonte oficial e corrigir em PR própria. Pedro aprova.
 - [ ] **Revisar conteúdo dos simuladores** (achado na migração, nada alterado). m2-l3 e `/compensa`: o texto compara o desconto com o CDI bruto, mas o veredito usa o líquido, e pode afirmar "12,4%, mais que os 14,9%". Taxas de referência: `TAXAS_REFERENCIA` com Selic 15% e m7-l1/m7-l4 com 11,15%/11,25%, contra 13,75% no currículo. m8-l4: "em poucos anos superaria toda a economia" não vale no padrão (cerca de 39 anos). m8-l2: com 0,70% e metas redondas pede 1 cota a mais. m7-l4: "IPCA+ sempre ganha da inflação" só no vencimento. m7-l2: a frase do teto global omite o excesso por banco. m6-l2: o saldo ignora saques já feitos. m8-l1/m8-l3: cenários ilustrativos sem aviso. m5-l1: texto "renda é o motor" mesmo quando guardar cedo vence. m2-l5: "melhor janela" em qualquer dia após o fechamento. m1-l5: sem dia marcado ainda conta 1 troca. m5-l5: lazer zerado ainda manda separar R$ 0,00. m4-l5: saldo zero usa o exemplo didático com o aviso de "seus números". m3-l3: nos extremos a contraoferta vira centavos.
 - [ ] **Operação no servidor.** Pedro. Preencher `ALERT_WEBHOOK_URL` em `apps/api/.env` e testar (`pm2 stop tostao-web`); trocar a senha do `sudo`; conferir que a chave que abre o backup da nuvem também está guardada fora do servidor. Reconectar o WhatsApp: em 25/11 as 2 instâncias da Evolution estavam desconectadas.
 - [ ] **Amigos no Pluggy (T6.5).** Pedro. Testar com 1 amigo; confirmar com o suporte do Pluggy se o plano permite; avisar que os dados ficam no servidor dele.
-- [ ] **Decisões de produto.** Pedro. (1) "Quanto sobra no mês" projeta o ritmo de gasto e pode mostrar sobra enquanto o "posso gastar hoje" mostra falta. (2) A Política ganhou data própria (25/11/2026); decidir se o `TERMS_VERSION` do registro de consentimento (hoje `2026-11-20`) sobe junto.
+- [ ] **Decisões de produto.** Pedro. (1) "Quanto sobra no mês" projeta o ritmo de gasto e pode mostrar sobra enquanto o "posso gastar hoje" mostra falta.
 - [ ] **Conferir em aparelho e serviço reais.** Pedro. Pix copia e cola num app de banco; compartilhar a imagem do mês no iPhone e no Android; abrir o CSV no Excel; DeepSeek e WhatsApp reais; widget do Pluggy; `NEXT_PUBLIC_LEGAL_CNPJ` se aplicável; faturas PDF, Atalhos do iOS e Share Target.
 - [ ] **Backlog.** Logos de marcas (resto da T4.4).
 
@@ -29,6 +28,15 @@ Relatório do que foi feito. Modelo:
 - Como validei (testes, rota, tela).
 - O que ficou de fora / riscos.
 ```
+
+### 2026-11-25 · Claude · imposto de 2026 e versão do consentimento (`fix/imposto-2026-e-consentimento`, em cima da T6.15)
+
+- m6-l1 e m6-l5: `_simuladores/inss-irrf-clt.ts` com INSS (Portaria MPS/MF nº 13/2026), tabela mensal do IRRF 2026, desconto simplificado de R$ 607,20 e redução da Lei 15.270/2025. Nos valores iniciais o holerite passa de R$ 3.127,75 pra R$ 3.191,40 e a vantagem anual do PJ cai de R$ 4.814,67 pra R$ 238,13.
+- `AI_CONSENT_VERSION` e `TERMS_VERSION` em `2026-11-25` (a pedido do Pedro, que é o único que usou o app: sem novo aceite). A tela "Isso é golpe?" avisa que nomes de terceiros e links vão junto.
+- Aviso das 9h continua mostrando o valor na tela de bloqueio (decisão do Pedro).
+- Migration? Não. Env nova? Não.
+- Como validei: 5 exemplos oficiais da Receita reproduzidos no teste, mais isenção até R$ 5.000, virada dos R$ 7.350 e líquido que nunca cai quando o salário sobe.
+- Fora: dependentes, pensão e previdência privada; as tabelas precisam ser conferidas todo janeiro.
 
 ### 2026-11-25 · Claude (e 3 agentes Claude) · T6.15: todos os simuladores no SimuladorShell (`feat/fase6-simuladores`, em cima das sobras; nada publicado)
 
