@@ -38,13 +38,16 @@ export default async function SimuladoresPage() {
                     className="flex h-full flex-col gap-1.5 rounded-[18px] border border-linha bg-cartao p-4 text-tinta no-underline transition-colors hover:bg-papel-2"
                   >
                     {lesson && (
-                      <span className="text-[11px] font-bold tracking-[0.08em] text-tinta-suave uppercase">
+                      <span className="text-xs font-bold tracking-[0.08em] text-tinta-suave uppercase">
                         {tl.simulatorLesson(lesson.module.number, lesson.lesson.number)}
                       </span>
                     )}
                     <span className="font-display text-[18px] leading-[22px] font-extrabold">{s.title}</span>
-                    <span className="text-[13px] leading-[19px] text-tinta-suave">{s.blurb}</span>
-                    <span className="mt-auto pt-1 text-[13px] font-semibold text-laranja-texto">
+                    <span className="mt-1 flex flex-col gap-0.5">
+                      <span className="text-xs font-bold text-verde-texto">Você vai entender</span>
+                      <span className="text-[14px] leading-[20px] text-tinta-suave">{s.aprende}</span>
+                    </span>
+                    <span className="mt-auto pt-2 text-[13px] font-semibold text-laranja-texto">
                       {tl.simulatorOpen} →
                     </span>
                   </Link>

@@ -5,6 +5,7 @@ import { getI18n } from '@/lib/i18n-server';
 import { findLesson } from '@/lib/lessons';
 import { loadLessonContext } from '@/lib/lesson-context-server';
 import { findSimulator } from '@/lib/simulators-catalog';
+import { AntesDeMexer } from '../antes-de-mexer';
 
 // Um simulador isolado (T4.5). Só abre os que estão na galeria: o id da URL nunca vira "qualquer lição".
 export default async function SimuladorPage({ params }: { params: Promise<{ id: string }> }) {
@@ -24,13 +25,15 @@ export default async function SimuladorPage({ params }: { params: Promise<{ id: 
       </Link>
       <div className="flex flex-col gap-1">
         {lesson && (
-          <span className="text-[11px] font-bold tracking-[0.08em] text-tinta-suave uppercase">
+          <span className="text-xs font-bold tracking-[0.08em] text-tinta-suave uppercase">
             {tl.simulatorLesson(lesson.module.number, lesson.lesson.number)}
           </span>
         )}
         <h1 className="font-display text-[26px] leading-[30px] font-extrabold">{entry.title}</h1>
-        <p className="text-[15px] leading-[21px] text-tinta-suave">{entry.blurb}</p>
       </div>
+      {lesson && (
+        <AntesDeMexer aprende={entry.aprende} conceito={lesson.lesson.concept} hrefDaLicao={`/aprender/${id}`} />
+      )}
       <div className="flex flex-col gap-3 rounded-[20px] border border-linha bg-cartao p-4 text-[16px] leading-relaxed">
         <SimulatorView id={id} locale={locale} userContext={userContext} />
       </div>
