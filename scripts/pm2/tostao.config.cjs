@@ -9,7 +9,10 @@
 //   pm2 delete tostao-api tostao-web
 //   pm2 start ~/homelab/ecosystem.config.cjs --only tostao-api,tostao-web
 //   pm2 save
-const ROOT = '/home/optiplex/homelab/tostao-prototipo';
+const path = require('node:path');
+
+// A pasta do repositório onde este arquivo está (usado pelo scripts/homelab-setup.sh).
+const ROOT = path.resolve(__dirname, '../..');
 
 module.exports = {
   apps: [
@@ -48,6 +51,8 @@ module.exports = {
       max_memory_restart: '512M',
       env: {
         NODE_ENV: 'production',
+        // Só a web recebe PORT (a API lê a dela do .env). Padrão 3000.
+        PORT: process.env.WEB_PORT || '3000',
       },
     },
   ],

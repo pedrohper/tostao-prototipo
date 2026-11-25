@@ -2,15 +2,17 @@
 import { useActionState, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { ConfirmSubmitButton } from '@/components/confirm-dialog';
+import { WidgetErrorAlert } from '@/components/conectar-guia';
 import { Icon } from '@/components/icone';
 import { Button, ErrorNote, Field } from '@/components/ui';
+import { humanizeSyncError, humanizeWidgetError } from '@/lib/conectar-widget';
 import { getDictionary, type Locale } from '@/lib/i18n';
 import { connectBank, connectItem, disconnectBank, getConnectToken, syncNow, type ConnectState } from './actions';
 
 /**
- * Caminho principal: o widget Pluggy Connect. A pessoa escolhe o banco (ou o MeuPluggy),
+ * Caminho principal: o widget Pluggy Connect. A pessoa escolhe o MeuPluggy,
  * autoriza, e o onSuccess entrega o item.id, que a gente liga ao usuário na hora.
- * Campo manual fica de plano B (e é o único caminho quando o provedor de bancos não está configurado).
+ * O campo manual não aparece na tela principal (fica só quando não há widget ou via ?manual=1).
  */
 export type ConnectCard = { icon: string; bg: string; title: string; tag: string | null; desc: string };
 
@@ -20,17 +22,21 @@ export function ConnectPanel({
   locale = 'pt-BR',
   layout = 'default',
   card,
+  importarHref = '/importar',
+  allowManual = false,
 }: {
   widget: boolean;
   novo?: boolean;
   locale?: Locale;
   /**
-   * default: botão do widget + "Já tenho um Item ID" recolhido (tela normal).
+   * default: botão do widget na tela principal (sem Item ID visível).
    * card: só o cartão "Conectar banco" do onboarding, que abre o widget direto.
-   * manual: só o campo de Item ID (vai dentro do bloco "Avançado e suporte").
+   * manual: só o campo manual (apenas quando não há widget ou ?manual=1).
    */
   layout?: 'default' | 'card' | 'manual';
   card?: ConnectCard;
+  importarHref?: string;
+  allowManual?: boolean;
 }) {
   const labels = getDictionary(locale).pages.conectar.panel;
   const [state, setState] = useState<ConnectState>({});
@@ -61,32 +67,39 @@ export function ConnectPanel({
   function openWidget() {
     setState({});
     startTransition(async () => {
-      const { connectToken, error } = await getConnectToken();
-      if (error || !connectToken) {
-        setState({ error: error ?? labels.fallbackError });
-        return;
-      }
-      // Import dinâmico: o SDK mexe no window, então só pode carregar no navegador.
-      const { PluggyConnect } = await import('pluggy-connect-sdk');
-      let connect: InstanceType<typeof PluggyConnect> | undefined;
-      const itemId = await new Promise<string | null>((resolve) => {
-        connect = new PluggyConnect({
-          connectToken,
-          language: locale === 'en' ? 'en' : locale === 'es' ? 'es' : 'pt',
-          onSuccess: ({ item }) => resolve(item.id),
-          onError: ({ message }) => {
-            setState({ error: labels.pluggyError(message) });
+      try {
+        const { connectToken, error } = await getConnectToken();
+        if (error || !connectToken) {
+          setState({ error: humanizeWidgetError(error, 'token') });
+          return;
+        }
+        // Import dinâmico: o SDK mexe no window, então só pode carregar no navegador.
+        const { PluggyConnect } = await import('pluggy-connect-sdk');
+        let connect: InstanceType<typeof PluggyConnect> | undefined;
+        const itemId = await new Promise<string | null>((resolve) => {
+          connect = new PluggyConnect({
+            connectToken,
+            language: locale === 'en' ? 'en' : locale === 'es' ? 'es' : 'pt',
+            onSuccess: ({ item }) => resolve(item.id),
+            onError: ({ message }) => {
+              setState({ error: humanizeWidgetError(message, 'widget') });
+              resolve(null);
+            },
+            onClose: () => resolve(null),
+          });
+          connect.init().catch(() => {
+            setState({ error: humanizeWidgetError(null, 'init') });
             resolve(null);
-          },
-          onClose: () => resolve(null),
+          });
         });
-        connect.init().catch(() => {
-          setState({ error: labels.initError });
-          resolve(null);
-        });
-      });
-      connect?.destroy().catch(() => {});
-      if (itemId) setState(await connectItem(itemId));
+        connect?.destroy().catch(() => {});
+        if (itemId) {
+          const res = await connectItem(itemId);
+          setState(res.error ? { error: humanizeWidgetError(res.error, 'connect') } : res);
+        }
+      } catch {
+        setState({ error: humanizeWidgetError(null, 'init') });
+      }
     });
   }
 
@@ -121,7 +134,7 @@ export function ConnectPanel({
             <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[15px] font-bold">
               {pending ? labels.connecting : card.title}
               {card.tag && (
-                <span className="rounded-full bg-amarelo-claro px-2 py-0.5 text-[11px] font-semibold text-tinta">
+                <span className="rounded-full bg-amarelo-claro px-2 py-0.5 text-xs font-semibold text-tinta">
                   {card.tag}
                 </span>
               )}
@@ -132,7 +145,7 @@ export function ConnectPanel({
             ›
           </span>
         </button>
-        <ErrorNote message={state.error} />
+        <WidgetErrorAlert message={state.error} importarHref={importarHref} />
       </div>
     );
   }
@@ -142,11 +155,13 @@ export function ConnectPanel({
       <Button type="button" variant="laranja" onClick={openWidget} disabled={pending}>
         {pending ? labels.connecting : labels.connectBank}
       </Button>
-      <ErrorNote message={state.error} />
-      <details className="rounded-2xl bg-cartao p-3">
-        <summary className="cursor-pointer text-[15px] font-semibold">{labels.haveItemId}</summary>
-        <div className="mt-3">{manualForm}</div>
-      </details>
+      <WidgetErrorAlert message={state.error} importarHref={importarHref} />
+      {allowManual && (
+        <details className="rounded-2xl bg-cartao p-3">
+          <summary className="cursor-pointer text-[15px] font-semibold">{labels.haveItemId}</summary>
+          <div className="mt-3">{manualForm}</div>
+        </details>
+      )}
     </div>
   );
 }
@@ -165,7 +180,7 @@ export function SyncButton({ id, locale = 'pt-BR' }: { id: string; locale?: Loca
         {pending ? labels.syncing : labels.syncNow}
       </button>
       {state.ok && <span className="text-sm text-verde-texto">{state.ok}</span>}
-      {state.error && <span className="text-sm text-vermelho-texto">{state.error}</span>}
+      {state.error && <span className="text-sm text-vermelho-texto">{humanizeSyncError(state.error)}</span>}
     </form>
   );
 }

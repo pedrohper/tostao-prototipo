@@ -9,6 +9,7 @@ import {
 import { api, ApiError } from '@/lib/api';
 import { safePathSegment } from '@/lib/safe-redirect';
 import { rethrowIfRedirect } from '@/lib/rethrow';
+import { isConnectedButNotSynced } from '@/lib/conectar-widget';
 
 export type ConnectState = { error?: string; ok?: string };
 
@@ -28,7 +29,10 @@ export async function connectItem(itemId: string): Promise<ConnectState> {
     };
   } catch (e) {
     rethrowIfRedirect(e);
-    return { error: e instanceof ApiError ? e.message : 'Algo deu errado.' };
+    const message = e instanceof ApiError ? e.message : 'Algo deu errado.';
+    // Conectou e só o sync falhou: a conexão precisa aparecer na lista pra pessoa tocar em "Sincronizar agora".
+    if (isConnectedButNotSynced(message)) revalidateFinance();
+    return { error: message };
   }
 }
 

@@ -9,6 +9,7 @@ export default tseslint.config(
     ignores: [
       '**/node_modules/**',
       '**/.next/**',
+      '**/.next.*/**',
       '**/dist/**',
       'docs-obsidian/**',
       'artefato-tostao-claude.html',
@@ -46,8 +47,9 @@ export default tseslint.config(
     files: ['scripts/**/*.cjs'],
     languageOptions: {
       sourceType: 'commonjs',
-      globals: { module: 'writable' },
+      globals: { module: 'writable', require: 'readonly', __dirname: 'readonly', process: 'readonly' },
     },
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
   },
   {
     rules: {

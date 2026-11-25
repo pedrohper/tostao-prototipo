@@ -636,7 +636,8 @@ export class InMemoryRefreshTokensRepository implements RefreshTokensRepository 
     const current = this.items.find((t) => t.tokenHash === tokenHash);
     if (!current) return { status: 'invalid' };
     if (!current.revokedAt && current.expiresAt > now) {
-      current.revokedAt = now;
+      // um ramo vivo só por família (mesma regra do Prisma): a troca normal mata os irmãos emitidos pela janela
+      for (const t of this.items) if (t.familyId === current.familyId && !t.revokedAt) t.revokedAt = now;
       const created: RefreshToken = {
         id: randomUUID(),
         createdAt: now,

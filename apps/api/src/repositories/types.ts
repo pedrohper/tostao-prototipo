@@ -314,6 +314,8 @@ export interface RefreshTokensRepository {
    * Token JÁ revogado reapresentado = reuso: a família inteira é revogada no mesmo bloco, EXCETO dentro de
    * `graceMs` depois da troca, se o filho dele ainda estiver vivo e sem uso (a resposta da troca se perdeu, ou duas
    * abas renovaram juntas): aí emite outro token na mesma família e devolve `viaGrace: true`.
+   * A troca normal seguinte revoga os outros tokens vivos da família: só um ramo continua, e quem aparecer com um
+   * irmão morto conta como reuso.
    */
   rotate(data: {
     tokenHash: string;

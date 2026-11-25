@@ -128,7 +128,7 @@ resposta com o cookie novo desloga a pessoa. Em produção: 2 `refresh_reuse_det
 
 ## T6.5 — Amigos conectando banco pelo Pluggy do Pedro
 
-- [ ] Concluída
+- [x] Concluída
 
 ### Situação (verificado em 2026-11-24)
 
@@ -154,7 +154,7 @@ resposta com o cookie novo desloga a pessoa. Em produção: 2 `refresh_reuse_det
 
 ## T6.6 — `scripts/deploy.sh`
 
-- [ ] Concluída
+- [x] Concluída
 
 ### Problema atual
 
@@ -177,7 +177,7 @@ volta o `.next.prev`, reinicia e sai com erro. Tem `--dry-run` que só imprime o
 
 ## T6.7 — Enxugar o `AGENT_SYNC.md`
 
-- [ ] Concluída
+- [x] Concluída
 
 ### Problema atual
 
