@@ -17,6 +17,14 @@ describe('SeusDados', () => {
     expect(html.indexOf('(CSV)')).toBeLessThan(html.indexOf('(JSON)'));
   });
 
+  it('o período da planilha é um grupo de opções que começa em "Tudo"', () => {
+    const html = renderToString(<SeusDados />);
+    expect(html).toContain('aria-label="Período da planilha"');
+    const marcadas = [...html.matchAll(/aria-checked="true"[^>]*>([^<]+)</g)].map((m) => m[1]);
+    expect(marcadas).toEqual(['Tudo']);
+    for (const rotulo of ['Este mês', 'Mês passado', 'Este ano']) expect(html).toContain(rotulo);
+  });
+
   it('/mais usa a seção', () => {
     expect(read('app/(app)/mais/page.tsx')).toContain('<SeusDados />');
   });
