@@ -17,10 +17,14 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-const files = [...walk(join(ROOT, 'app')), ...walk(join(ROOT, 'lib'))].filter((f) => {
+const files = [
+  ...walk(join(ROOT, 'app')),
+  ...walk(join(ROOT, 'lib')),
+  join(ROOT, 'components/menu-com-dados.tsx'),
+].filter((f) => {
   const rel = relative(ROOT, f);
   if (rel.endsWith('.spec.ts')) return false;
-  if (rel === 'app/(app)/layout.tsx') return true;
+  if (rel === 'app/(app)/layout.tsx' || rel === 'components/menu-com-dados.tsx') return true;
   return /^['"]use server['"]/m.test(readFileSync(f, 'utf8').split('\n').slice(0, 3).join('\n'));
 });
 
