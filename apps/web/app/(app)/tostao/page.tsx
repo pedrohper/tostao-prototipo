@@ -33,6 +33,7 @@ const EMPTY_AUTO: TostaoAutoResponse = {
     olheiroAcertos: true,
     notifyPush: false,
     notifyWhatsapp: false,
+    notifySafeToSpend: false,
     lastCheckedAt: null,
   },
 };

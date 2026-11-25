@@ -992,6 +992,7 @@ export class InMemoryTostaoAutoRepository implements TostaoAutoRepository {
         olheiroAcertos: true,
         notifyPush: true,
         notifyWhatsapp: false,
+        notifySafeToSpend: false,
         lastCheckedAt: null,
         updatedAt: new Date(0),
       }

@@ -302,6 +302,9 @@ export const en: Dictionary = {
     watchesSubtitle: 'Choose what Tostão and Caramelo monitor for you and where alerts arrive.',
     pushChannelLabel: 'Urgent push alerts on this device',
     whatsappChannelLabel: 'Alerts on connected WhatsApp',
+    safeToSpendPushLabel: 'What I can spend today, at 9am',
+    safeToSpendPushHint:
+      'One phone notification a day (needs notifications on for this device). The amount shows on the lock screen.',
     routines: {
       caramelo_extrato: {
         title: 'Caramelo tidies the statement',

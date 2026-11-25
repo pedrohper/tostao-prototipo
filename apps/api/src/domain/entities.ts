@@ -252,6 +252,7 @@ export type TostaoAutoConfig = {
   olheiroAcertos: boolean;
   notifyPush: boolean;
   notifyWhatsapp: boolean;
+  notifySafeToSpend: boolean;
   lastCheckedAt: Date | null;
   updatedAt: Date;
 };

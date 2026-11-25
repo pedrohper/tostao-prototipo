@@ -177,7 +177,8 @@ export default async function PrivacidadePage() {
         </li>
         <li>
           <b>Serviço de avisos do seu navegador</b> (Google, Apple ou Mozilla, conforme o aparelho): só se você ligar os
-          avisos. Leva o texto do aviso (ex.: "Fatura vence em 2 dias") até o seu celular.
+          avisos. Leva o texto do aviso (ex.: "Fatura vence em 2 dias" ou, se você ligar o aviso diário, quanto dá pra
+          gastar hoje) até o seu celular.
         </li>
         <li>
           <b>Provedor de hospedagem (infraestrutura de nuvem)</b>: onde o site, a API e o banco de dados rodam. Guarda

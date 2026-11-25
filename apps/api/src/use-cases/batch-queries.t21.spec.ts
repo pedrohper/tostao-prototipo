@@ -343,6 +343,7 @@ describe('avisos: só quem pode receber', () => {
         olheiroAcertos: true,
         notifyPush: true,
         notifyWhatsapp: true,
+        notifySafeToSpend: false,
         lastCheckedAt: null,
         updatedAt: WED_7H,
       });
@@ -351,6 +352,7 @@ describe('avisos: só quem pode receber', () => {
       ...repos.tostaoAuto.configs.get('u00000')!,
       userId: 'ninguem',
       notifyWhatsapp: false,
+      notifySafeToSpend: false,
     });
     const all = vi.spyOn(repos.users, 'listAllIds');
     const page = vi.spyOn(repos.tostaoAuto, 'listWhatsappNotifiableUserIds');

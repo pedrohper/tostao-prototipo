@@ -594,6 +594,8 @@ model TostaoAutoConfig {
   olheiroAcertos  Boolean   @default(true) @map("olheiro_acertos")
   notifyPush      Boolean   @default(true) @map("notify_push")
   notifyWhatsapp  Boolean   @default(false) @map("notify_whatsapp")
+  /// Aviso diário "quanto posso gastar hoje" (push, 9h). Desligado até a pessoa ligar.
+  notifySafeToSpend Boolean @default(false) @map("notify_safe_to_spend")
   lastCheckedAt   DateTime? @map("last_checked_at") @db.Timestamptz(3)
   updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 

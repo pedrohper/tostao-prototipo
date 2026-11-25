@@ -22,6 +22,7 @@ const DEFAULT_AUTO_CONFIG: TostaoAutoConfigDTO = {
   olheiroAcertos: true,
   notifyPush: true,
   notifyWhatsapp: false,
+  notifySafeToSpend: false,
   lastCheckedAt: null,
 };
 
