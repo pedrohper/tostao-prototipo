@@ -76,13 +76,21 @@ export function buildDemoTransactions(now: Date, tz: string): DemoTransaction[] 
   for (let offset = -6; offset <= 0; offset++) {
     const wobble = ((offset + 6) * 7) % 5; // varia os valores de um mês pro outro sem sortear nada
     const vary = (cents: number) => Math.round((cents * (100 + (offset === 0 ? 0 : (wobble - 2) * 6))) / 100 / 10) * 10;
+    // O dia a dia troca de loja a cada mês: a mesma loja, no mesmo dia, todo mês, seria lida como assinatura.
     const spend = (
       account: DemoAccountKey,
-      description: string,
+      stores: readonly [string, string, string],
       cents: number,
       day: number,
       categoryId: string | null,
-    ) => add({ account, description, amountInCents: -vary(cents), occurredAt: spread(offset, day), categoryId });
+    ) =>
+      add({
+        account,
+        description: stores[(offset + 6) % 3]!,
+        amountInCents: -vary(cents),
+        occurredAt: spread(offset, day),
+        categoryId,
+      });
     const fixed = (
       account: DemoAccountKey,
       description: string,
@@ -106,30 +114,30 @@ export function buildDemoTransactions(now: Date, tz: string): DemoTransaction[] 
     fixed('nubank', 'PAGTO VIVO FIBRA', -9990, 12, 'casa');
 
     // Guardar, transferir entre contas próprias e pagar a fatura (as duas últimas não contam como gasto)
-    fixed('nubank', 'APLICACAO RDB RESERVA', -20000, 6, 'investimentos');
+    fixed('nubank', 'TRANSFERENCIA PARA RESERVA RDB', -20000, 6, 'investimentos');
     fixed('nubank', 'TRANSFERENCIA ENVIADA CONTA INTER', -15000, 6, null, { isInternalTransfer: true });
     fixed('inter', 'TRANSFERENCIA RECEBIDA CONTA NUBANK', 15000, 6, null, { isInternalTransfer: true });
     fixed('nubank', 'PAGAMENTO DE FATURA', -(31000 + wobble * 900), 7, null, { isInternalTransfer: true });
     fixed('cartao', 'PAGAMENTO RECEBIDO', 31000 + wobble * 900, 7, null, { isInternalTransfer: true });
 
     // Dia a dia
-    spend('cartao', 'IFD*BURGER DO ZE', 4290, 3, 'delivery');
-    spend('cartao', 'IFD*PIZZARIA BELLA', 5890, 9, 'delivery');
-    spend('cartao', 'RAPPI*SUSHI DA VILA', 6470, 16, 'delivery');
-    spend('cartao', 'IFD*ACAI POINT', 2890, 22, 'delivery');
-    spend('nubank', 'ASSAI ATACADISTA', 14230, 2, 'mercado');
-    spend('nubank', 'SUPERMERCADO BOM PRECO', 8760, 13, 'mercado');
-    spend('nubank', 'HORTIFRUTI DA ESQUINA', 3120, 19, 'mercado');
-    spend('inter', 'BILHETE UNICO RECARGA', 8000, 6, 'transporte');
-    spend('inter', 'UBER *TRIP', 1890, 4, 'transporte');
-    spend('inter', 'UBER *TRIP', 2340, 11, 'transporte');
-    spend('inter', '99APP *CORRIDA', 1620, 23, 'transporte');
-    spend('cartao', 'BAR DO TONINHO', 7600, 14, 'role');
-    spend('cartao', 'CINEMARK CENTRO', 4400, 21, 'role');
-    spend('inter', 'PADARIA PAO QUENTE', 1450, 1, 'comer-fora');
-    spend('inter', 'PADARIA PAO QUENTE', 1780, 15, 'comer-fora');
-    spend('inter', 'LANCHONETE DO CAMPUS', 2150, 17, 'comer-fora');
-    spend('nubank', 'DROGASIL CENTRO', 3890, 18, 'saude');
+    spend('cartao', ['IFD*BURGER DO ZE', 'IFD*TACOS DA PRACA', 'IFD*PASTEL DA FEIRA'], 4290, 3, 'delivery');
+    spend('cartao', ['IFD*PIZZARIA BELLA', 'IFD*MASSAS DA NONNA', 'IFD*ESFIHA CASA'], 5890, 9, 'delivery');
+    spend('cartao', ['RAPPI*SUSHI DA VILA', 'RAPPI*POKE DO PORTO', 'RAPPI*YAKISOBA SP'], 6470, 16, 'delivery');
+    spend('cartao', ['IFD*ACAI POINT', 'IFD*SORVETE SUL', 'IFD*DOCERIA LUA'], 2890, 22, 'delivery');
+    spend('nubank', ['ASSAI ATACADISTA', 'ATACADAO CENTRO', 'CARREFOUR BAIRRO'], 14230, 2, 'mercado');
+    spend('nubank', ['SUPERMERCADO BOM PRECO', 'SUPERMERCADO ESTRELA', 'SUPERMERCADO DIA'], 8760, 13, 'mercado');
+    spend('nubank', ['HORTIFRUTI DA ESQUINA', 'HORTIFRUTI VERDE', 'HORTIFRUTI DA PRACA'], 3120, 19, 'mercado');
+    spend('inter', ['BILHETE UNICO RECARGA', 'METRO RECARGA CARTAO', 'SPTRANS RECARGA'], 8000, 6, 'transporte');
+    spend('inter', ['UBER *TRIP', '99APP *CORRIDA', 'UBER *UBERX'], 1890, 4, 'transporte');
+    spend('inter', ['99APP *99POP', 'UBER *COMFORT', 'UBER *MOTO'], 2340, 11, 'transporte');
+    spend('inter', ['UBER *TRIP VOLTA', '99APP *99MOTO', 'UBER *PRIORITY'], 1620, 23, 'transporte');
+    spend('cartao', ['BAR DO TONINHO', 'BOTECO DA ESQUINA', 'CHOPERIA CENTRAL'], 7600, 14, 'role');
+    spend('cartao', ['CINEMARK CENTRO', 'CINEPOLIS NORTE', 'TEATRO MUNICIPAL'], 4400, 21, 'role');
+    spend('inter', ['PADARIA PAO QUENTE', 'PADARIA ESTRELA', 'PADARIA DO LARGO'], 1450, 1, 'comer-fora');
+    spend('inter', ['CAFETERIA GRAO', 'PADARIA SANTA CLARA', 'CAFETERIA DO PATIO'], 1780, 15, 'comer-fora');
+    spend('inter', ['LANCHONETE DO CAMPUS', 'CANTINA DA FACULDADE', 'PASTELARIA DO TREVO'], 2150, 17, 'comer-fora');
+    spend('nubank', ['DROGASIL CENTRO', 'DROGA RAIA SUL', 'FARMACIA POPULAR'], 3890, 18, 'saude');
 
     // Compra parcelada no cartão (entra na previsão como parcela que falta)
     if (offset >= -2)

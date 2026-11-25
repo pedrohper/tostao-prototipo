@@ -62,10 +62,19 @@ describe.each(DAYS)('demonstração em %s', (iso) => {
     expect(new Set(txs.map((t) => civilMonth(t.occurredAt, TZ))).size).toBeGreaterThanOrEqual(6);
   });
 
-  it('o detector acha as 5 assinaturas ativas e a Netflix mais cara na última cobrança', () => {
-    const found = detectSubscriptions(asDomain(now), now, TZ).filter((s) => s.active);
-    expect(found.length).toBeGreaterThanOrEqual(5);
+  it('o detector acha só as 5 assinaturas de verdade, todas ativas, com a Netflix mais cara na última cobrança', () => {
+    // Compra do dia a dia confundida com assinatura encheria /assinaturas, a previsão e os avisos de aumento.
+    const found = detectSubscriptions(asDomain(now), now, TZ);
+    expect(found.map((s) => s.name.split(' ')[0]!.toUpperCase().replace(/\W.*$/, '')).sort()).toEqual([
+      'AMAZONPRIME',
+      'APPLE',
+      'NETFLIX',
+      'SMARTFIT',
+      'SPOTIFY',
+    ]);
+    expect(found.every((s) => s.active)).toBe(true);
     expect(found.find((s) => s.key.startsWith('NETFLIX'))?.amountInCents).toBe(5590);
+    expect(found.filter((s) => s.amountInCents !== 5590).every((s) => s.chargeCount >= 6)).toBe(true);
   });
 
   it('tem parcela de cartão pela frente', () => {
