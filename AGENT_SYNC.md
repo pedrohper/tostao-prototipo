@@ -13,9 +13,9 @@ O que está pra ser feito agora, por quem e em que branch. Tire daqui quando for
 - [ ] **Aprovar os 3 simuladores modelo (T6.13).** Pedro. Só depois disso fazer a T6.15 (migrar os outros).
 - [ ] **Operação no servidor.** Pedro. Preencher `ALERT_WEBHOOK_URL` em `apps/api/.env` e testar (`pm2 stop tostao-web`); trocar a senha do `sudo`; conferir que a chave que abre o backup da nuvem também está guardada fora do servidor. Reconectar o WhatsApp: em 25/11 as 2 instâncias da Evolution estavam desconectadas.
 - [ ] **Amigos no Pluggy (T6.5).** Pedro. Testar com 1 amigo; confirmar com o suporte do Pluggy se o plano permite; avisar que os dados ficam no servidor dele.
-- [ ] **Decisões de produto.** Pedro. (1) "Quanto sobra no mês" projeta o ritmo de gasto e pode mostrar sobra enquanto o "posso gastar hoje" mostra falta. (2) Citar a mensagem colada em "Isso é golpe?" no aviso de IA e na Política de Privacidade.
+- [ ] **Decisões de produto.** Pedro. (1) "Quanto sobra no mês" projeta o ritmo de gasto e pode mostrar sobra enquanto o "posso gastar hoje" mostra falta. (2) A Política ganhou data própria (25/11/2026); decidir se o `TERMS_VERSION` do registro de consentimento (hoje `2026-11-20`) sobe junto.
 - [ ] **Conferir em aparelho e serviço reais.** Pedro. Pix copia e cola num app de banco; compartilhar a imagem do mês no iPhone e no Android; abrir o CSV no Excel; DeepSeek e WhatsApp reais; widget do Pluggy; `NEXT_PUBLIC_LEGAL_CNPJ` se aplicável; faturas PDF, Atalhos do iOS e Share Target.
-- [ ] **Backlog.** Logos de marcas (resto da T4.4); o layout do app ainda espera `/progress`, `/missions` e `/tostao/auto` antes de desenhar; ícones das explicações dos simuladores quase somem no tema escuro.
+- [ ] **Backlog.** Logos de marcas (resto da T4.4).
 
 ## Execução
 
@@ -28,6 +28,17 @@ Relatório do que foi feito. Modelo:
 - Como validei (testes, rota, tela).
 - O que ficou de fora / riscos.
 ```
+
+### 2026-11-25 · Claude · sobras da Fase 6 (`feat/fase6-sobras`; nada publicado)
+
+- `/mais`: período da planilha (tudo, este mês, mês passado, este ano) em `lib/periodo-csv.ts`; a API já aceitava `from`/`to`.
+- Aviso de IA e Política de Privacidade citam a mensagem colada em "Isso é golpe?"; a Política tem data própria (`legal.privacyUpdatedDate`).
+- Layout do app não espera mais `/progress`, `/missions` e `/tostao/auto`: o menu vem por `<Suspense>` (`components/menu-com-dados.tsx`).
+- Aviso diário "quanto posso gastar hoje" por push, das 9h às 12h, uma vez por dia, desligado por padrão e com interruptor próprio em `/mais/alertas` (vale mesmo com os avisos urgentes desligados). Sem renda informada, não manda. O valor aparece na tela de bloqueio.
+- Migration: `20261129100000_safe_to_spend_push` (aditiva, `tostao_auto_configs.notify_safe_to_spend`). Env nova? Não.
+- Como validei: `typecheck`, `lint`, `format:check`; API 1220/1220 com Postgres e Redis descartáveis (na primeira rodada completa o teste de contagem de queries do resumo do mês falhou uma vez e passou nas repetições), web 865/865, contracts 39/39; `migrate diff` sem diferença.
+- Telas conferidas numa pilha descartável (390, 320 escuro e 1440): baixar "Mês passado" gera o arquivo do período e o interruptor das 9h continua marcado depois de recarregar.
+- Fora: push em aparelho real; abrir a planilha no Excel.
 
 ### 2026-11-25 · Claude · produção (merge dos PRs #47 a #52 e deploy, a pedido do Pedro)
 
