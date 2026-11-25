@@ -1,7 +1,10 @@
 import type { NextConfig } from 'next';
 import { securityHeaders } from './lib/security-headers';
 
+const distDir = process.env.NEXT_DIST_DIR?.trim();
+
 const config: NextConfig = {
+  ...(distDir ? { distDir } : {}),
   transpilePackages: ['@tostao/contracts'],
   // Não anuncia "X-Powered-By: Next.js" (um detalhe a menos pra quem procura versão vulnerável).
   poweredByHeader: false,
