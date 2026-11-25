@@ -1016,7 +1016,8 @@ export const en: Dictionary = {
       title: 'Upcoming months',
       emptyBody: 'To forecast ahead, I need to know what comes in and goes out every month.',
       tellIncomeCta: 'Add my income',
-      allGreen: (month, _amount) => `All three months finish in the green. In ${month} you should have about `,
+      allGreen: (month, amount) =>
+        `All three months finish in the green. In ${month} you should have about ${amount} left.`,
       worstIsFirst: (month, amount) =>
         `${month} gets tight: about ${amount} short. Holding back on daily spending now fixes it.`,
       firstVsWorst: (firstMonth, firstGreen, worstMonth, worstAmount) =>

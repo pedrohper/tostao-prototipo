@@ -1018,7 +1018,7 @@ export const ptBR: Dictionary = {
       title: 'Próximos meses',
       emptyBody: 'Pra prever, eu preciso saber quanto entra e o que sai todo mês.',
       tellIncomeCta: 'Contar minha renda',
-      allGreen: (month, _amount) => `Os três meses fecham no azul. Em ${month} devem sobrar uns `,
+      allGreen: (month, amount) => `Os três meses fecham no azul. Em ${month} devem sobrar uns ${amount}.`,
       worstIsFirst: (month, amount) => `${month} aperta: faltam uns ${amount}. Segurar o dia a dia agora resolve.`,
       firstVsWorst: (firstMonth, firstGreen, worstMonth, worstAmount) =>
         `${firstMonth} ${firstGreen ? 'fecha no azul' : 'aperta'}, mas ${worstMonth} aperta${!firstGreen ? ' mais' : ''}: faltam uns ${worstAmount}. Segurar o dia a dia agora resolve.`,

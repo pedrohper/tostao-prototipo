@@ -1023,7 +1023,7 @@ export const es: Dictionary = {
       title: 'Próximos meses',
       emptyBody: 'Para proyectar, necesito saber cuánto entra y qué sale cada mes.',
       tellIncomeCta: 'Contar mis ingresos',
-      allGreen: (month, _amount) => `Los tres meses cierran en positivo. En ${month} deberían sobrar unos `,
+      allGreen: (month, amount) => `Los tres meses cierran en positivo. En ${month} deberían sobrar unos ${amount}.`,
       worstIsFirst: (month, amount) =>
         `${month} aprieta: faltan unos ${amount}. Frenar el día a día ahora lo resuelve.`,
       firstVsWorst: (firstMonth, firstGreen, worstMonth, worstAmount) =>
