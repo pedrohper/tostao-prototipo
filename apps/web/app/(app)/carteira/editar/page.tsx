@@ -59,7 +59,7 @@ export default async function EditarCarteiraPage({ searchParams }: { searchParam
       <section className="flex flex-col gap-3">
         <Eyebrow>{visibilityHeading}</Eyebrow>
         {summary.accounts.length > 0 && (
-          <div className="flex flex-col divide-y divide-linha rounded-[22px] border border-linha bg-cartao px-4">
+          <div className="flex flex-col divide-y divide-linha rounded-card border border-linha bg-cartao px-4">
             {summary.accounts.map((a) => {
               const conn = connByAccountId.get(a.id);
               const isCard = a.type === 'CREDIT';
@@ -80,14 +80,14 @@ export default async function EditarCarteiraPage({ searchParams }: { searchParam
                   >
                     <BankBadge nome={a.name} instituicao={conn?.displayName} size={36} quadrado logos={logos} />
                     <div className="flex min-w-0 flex-col gap-0.5">
-                      <span className="truncate text-[15px] font-semibold">{a.name}</span>
+                      <span className="truncate text-body font-semibold">{a.name}</span>
                       <span className="flex flex-wrap items-center gap-1.5 text-xs text-tinta-suave">
                         {isCard && <CardNetworkBadge brand={a.brand} last4={a.last4} />}
                         {!isCard && <span>{syncText}</span>}
                       </span>
                     </div>
                   </Link>
-                  <span className="shrink-0 text-[15px] font-bold tabular-nums">
+                  <span className="shrink-0 text-body font-bold tabular-nums">
                     {money(isCard ? Math.max(0, -a.balanceInCents) : a.balanceInCents)}
                   </span>
                   <HideAccountButton accountId={a.id} hidden={false} t={t.walletExtra.hideAccount} />
@@ -100,7 +100,7 @@ export default async function EditarCarteiraPage({ searchParams }: { searchParam
         {summary.hiddenAccounts.length > 0 && (
           <div className="flex flex-col gap-2 pt-2">
             <Eyebrow>{tw.hiddenAccountsHeading}</Eyebrow>
-            <div className="flex flex-col divide-y divide-linha rounded-[22px] border border-linha bg-cartao px-4">
+            <div className="flex flex-col divide-y divide-linha rounded-card border border-linha bg-cartao px-4">
               {summary.hiddenAccounts.map((h) => {
                 const conn = connByAccountId.get(h.id);
                 const isCard = conn?.type === 'CREDIT';

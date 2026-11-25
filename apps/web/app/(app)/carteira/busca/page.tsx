@@ -56,7 +56,7 @@ export default async function BuscaPage({
   return (
     <PageFrame size="focused">
       <BackLink href={backHref} label={backHref === '/carteira' ? t.wallet.title : t.common.back} />
-      <h1 className="font-display text-[24px] leading-[30px] font-extrabold lg:text-[28px] lg:leading-[34px]">
+      <h1 className="font-display text-[24px] leading-[30px] font-extrabold lg:text-hero lg:leading-[34px]">
         {s.title}
       </h1>
       <SearchBar
@@ -78,7 +78,7 @@ export default async function BuscaPage({
           <Link
             key={p}
             href={link({ period: p })}
-            className={`shrink-0 rounded-full px-3 py-1.5 text-[13px] font-semibold no-underline ${period === p ? 'bg-tinta text-papel' : 'bg-papel-2 text-tinta'}`}
+            className={`shrink-0 rounded-full px-3 py-1.5 text-small font-semibold no-underline ${period === p ? 'bg-tinta text-papel' : 'bg-papel-2 text-tinta'}`}
           >
             {s.periods[p]}
           </Link>
@@ -89,7 +89,7 @@ export default async function BuscaPage({
           <Link
             key={k}
             href={link({ kind: k })}
-            className={`shrink-0 rounded-full px-3 py-1.5 text-[13px] font-semibold no-underline ${kind === k ? 'bg-tinta text-papel' : 'bg-papel-2 text-tinta'}`}
+            className={`shrink-0 rounded-full px-3 py-1.5 text-small font-semibold no-underline ${kind === k ? 'bg-tinta text-papel' : 'bg-papel-2 text-tinta'}`}
           >
             {s.kinds[k]}
           </Link>
@@ -97,7 +97,7 @@ export default async function BuscaPage({
         <Link
           href={link({ semEntreContas: hideTransfers ? null : '1' })}
           aria-pressed={hideTransfers}
-          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold no-underline transition-colors ${
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-small font-semibold no-underline transition-colors ${
             hideTransfers ? 'bg-tinta text-papel' : 'border border-linha bg-cartao text-tinta hover:bg-papel-2'
           }`}
         >
@@ -107,7 +107,7 @@ export default async function BuscaPage({
         <Link
           href={link({ semRendimentos: hideYields ? null : '1' })}
           aria-pressed={hideYields}
-          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold no-underline transition-colors ${
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-small font-semibold no-underline transition-colors ${
             hideYields ? 'bg-tinta text-papel' : 'border border-linha bg-cartao text-tinta hover:bg-papel-2'
           }`}
         >
@@ -119,28 +119,28 @@ export default async function BuscaPage({
       {!r ? (
         <div className="flex flex-col items-center gap-2 py-8 text-center">
           <Mascot pose="caramelo-farejando" size={140} alt="" />
-          <p className="text-[15px] text-tinta-suave">{s.emptyHint}</p>
+          <p className="text-body text-tinta-suave">{s.emptyHint}</p>
         </div>
       ) : r.count === 0 ? (
         <div className="flex flex-col items-center gap-2 py-8 text-center">
           <Mascot pose="caramelo-farejando" size={140} alt="" />
-          <p className="text-[15px] text-tinta-suave">
+          <p className="text-body text-tinta-suave">
             {s.noResults(q, period === 'tudo' ? s.allHistory : s.periods[period])}
           </p>
         </div>
       ) : (
         <>
           <div className="flex flex-col gap-1 rounded-2xl bg-papel-2 p-4">
-            <span className="text-[13px] font-semibold text-tinta-suave">{s.resultsCount(r.count, q)}</span>
+            <span className="text-small font-semibold text-tinta-suave">{s.resultsCount(r.count, q)}</span>
             <div className="flex flex-wrap gap-x-5 gap-y-1">
               {r.outInCents > 0 && (
-                <span className="text-[22px] font-bold tabular-nums">
-                  {money(r.outInCents)} <span className="text-[13px] font-semibold text-tinta-suave">{s.outLabel}</span>
+                <span className="text-title leading-normal font-bold tabular-nums">
+                  {money(r.outInCents)} <span className="text-small font-semibold text-tinta-suave">{s.outLabel}</span>
                 </span>
               )}
               {r.inInCents > 0 && (
-                <span className="text-[22px] font-bold text-verde-texto tabular-nums">
-                  + {money(r.inInCents)} <span className="text-[13px] font-semibold text-tinta-suave">{s.inLabel}</span>
+                <span className="text-title leading-normal font-bold text-verde-texto tabular-nums">
+                  + {money(r.inInCents)} <span className="text-small font-semibold text-tinta-suave">{s.inLabel}</span>
                 </span>
               )}
             </div>

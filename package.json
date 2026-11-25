@@ -11,6 +11,7 @@
     "content:build": "node scripts/build-lessons.mjs",
     "assets:sync": "node scripts/sync-art-manifest.mjs",
     "assets:icons": "node scripts/build-pwa-icons.mjs",
+    "shots": "node scripts/shots.mjs",
     "db:deploy": "pnpm --filter @tostao/api db:deploy",
     "build": "pnpm --filter @tostao/web build",
     "typecheck": "pnpm --filter @tostao/api typecheck && pnpm --filter @tostao/web typecheck && apps/api/node_modules/.bin/tsc -p packages/contracts/tsconfig.json --noEmit",
@@ -26,6 +27,7 @@
     "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
+    "playwright": "1.65.1",
     "prettier": "^3.10.1",
     "typescript-eslint": "^8.72.2"
   }

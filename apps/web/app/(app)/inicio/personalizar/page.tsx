@@ -1,5 +1,6 @@
 import { BackLink, PageFrame } from '@/components/ui';
-import { DEFAULT_HIDDEN_SECTIONS, HOME_SECTIONS, readHomePrefs, resolveSectionOrder } from '@/lib/inicio-prefs';
+import { DEFAULT_HIDDEN_SECTIONS, HOME_SECTIONS, resolveSectionOrder } from '@/lib/inicio-prefs';
+import { readHomePrefs } from '@/lib/inicio-prefs-server';
 import { resolveBackHref } from '@/lib/format';
 import { PersonalizarForm } from './form';
 import { getI18n } from '@/lib/i18n-server';
@@ -19,7 +20,7 @@ export default async function CustomizeHomePage({ searchParams }: { searchParams
     <PageFrame size="focused">
       <BackLink href={backHref} label={backHref === '/inicio' ? t.nav.home : t.common.back} />
       <h1 className="font-display text-[30px] leading-[34px] font-extrabold">{t.home.customizeHome}</h1>
-      <p className="text-[15px] leading-[21px] text-tinta-suave">{tp.subtitle}</p>
+      <p className="text-body leading-[21px] text-tinta-suave">{tp.subtitle}</p>
       <PersonalizarForm
         linhas={rows}
         ocultos={prefs.ocultos}

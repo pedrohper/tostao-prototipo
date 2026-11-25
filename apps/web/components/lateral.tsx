@@ -25,7 +25,7 @@ export function SidebarFooter({
       <SidebarStreakButton xp={xp} level={level} streakDays={streakDays} missions={missions} locale={locale} />
       <Link
         href="/anotar"
-        className="flex h-12 items-center justify-center gap-2 rounded-full bg-tinta text-[15px] font-semibold text-papel no-underline"
+        className="flex h-12 items-center justify-center gap-2 rounded-full bg-tinta text-body font-semibold text-papel no-underline"
       >
         <svg
           width="18"
@@ -79,7 +79,7 @@ export function RightRail({ locale = 'pt-BR' }: { missions?: MissionsResponse | 
       <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">{t.nav.learnHeader}</span>
       <div className="flex flex-col gap-2.5 rounded-[20px] bg-amarelo-claro p-4">
         <Mascot pose="professor" size={88} alt="Tostão" />
-        <span className="font-display text-[22px] leading-[26px] font-extrabold">{t.nav.learnPrompt}</span>
+        <span className="font-display text-title leading-[26px] font-extrabold">{t.nav.learnPrompt}</span>
         <Link
           href="/aprender"
           className="flex h-11 items-center justify-center rounded-full bg-tinta text-sm font-semibold text-papel no-underline"

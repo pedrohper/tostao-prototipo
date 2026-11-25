@@ -79,7 +79,7 @@ export default async function ImportarPage({
                   <li key={step} className="flex gap-2.5 text-tinta-suave">
                     <span
                       aria-hidden
-                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-tinta text-[11px] font-bold text-papel"
+                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-tinta text-[12px] font-bold text-papel"
                     >
                       {i + 1}
                     </span>

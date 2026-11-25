@@ -111,7 +111,7 @@ export default async function MetaPage({
         </div>
 
         <div className="flex items-center justify-between gap-3 rounded-2xl border border-linha bg-cartao p-4">
-          <div className="flex flex-col gap-0.5">
+          <div className="flex min-w-0 flex-col gap-0.5">
             <span className="text-xs font-semibold text-tinta-suave">{totalSavedLabel}</span>
             <span className="font-display text-[24px] leading-7 font-extrabold tabular-nums">
               {money(totalSaved)}
@@ -120,7 +120,7 @@ export default async function MetaPage({
               )}
             </span>
           </div>
-          <span className="rounded-full bg-papel-2 px-3 py-1 text-xs font-bold text-tinta tabular-nums">
+          <span className="shrink-0 rounded-full bg-papel-2 px-3 py-1 text-xs font-bold whitespace-nowrap text-tinta tabular-nums">
             {goals.length} {goals.length === 1 ? 'meta' : 'metas'}
           </span>
         </div>
@@ -148,7 +148,7 @@ export default async function MetaPage({
                     </span>
                     <div className="flex min-w-0 flex-col gap-0.5">
                       <span className="truncate text-[16px] font-bold">{item.label}</span>
-                      <span className="text-xs text-tinta-suave tabular-nums">
+                      <span className="text-[13px] leading-[18px] text-tinta-suave tabular-nums">
                         {money(item.savedInCents)}
                         {item.amountInCents ? ` ${p.ofTarget(money(item.amountInCents))}` : ''}
                       </span>
@@ -163,7 +163,7 @@ export default async function MetaPage({
                   <div className="h-full rounded-full bg-menta" style={{ width: `${itemPct}%` }} />
                 </div>
 
-                <div className="flex items-center justify-between gap-2 text-xs">
+                <div className="flex items-center justify-between gap-2 text-[13px] leading-[18px]">
                   <span className="truncate text-tinta-suave">
                     {item.reached
                       ? p.reachedBold

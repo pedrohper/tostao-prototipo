@@ -105,7 +105,7 @@ export function DailyMissions({
           {data.week.map((dayItem, idx) => (
             <span
               key={dayItem.day}
-              className="flex flex-col items-center gap-1 text-[11px] font-semibold text-tinta-suave"
+              className="flex flex-col items-center gap-1 text-[12px] font-semibold text-tinta-suave"
             >
               <span
                 className={`flex h-7 w-7 items-center justify-center rounded-full ${dayItem.done > 0 ? 'bg-laranja' : 'bg-papel-2'}`}

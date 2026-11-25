@@ -1,4 +1,4 @@
-import type { FinancialPlan } from '@tostao/contracts';
+import { readStoredHomePrefs, type FinancialPlan, type StoredHomePrefs } from '@tostao/contracts';
 import { ResourceNotFoundError } from '../domain/errors.js';
 import type { Repositories } from '../repositories/types.js';
 
@@ -27,6 +27,8 @@ export type UserDataExport = {
     aiConsentAt: string | null;
     /** Chave Pix cadastrada pro "Cobrar" dos acertos (null = nenhuma). */
     pixKey: string | null;
+    /** Como a pessoa arrumou a tela Início e os avisos que fechou (null = nada guardado). */
+    homePrefs: StoredHomePrefs | null;
     /** Só diz SE existe senha; o hash nunca sai. */
     hasPassword: boolean;
   };
@@ -153,6 +155,7 @@ export class ExportUserDataUseCase {
         termsVersion: user.termsVersion,
         aiConsentAt: iso(user.aiConsentAt),
         pixKey: user.pixKey,
+        homePrefs: readStoredHomePrefs(user.homePrefs),
         hasPassword: user.passwordHash !== null,
       },
       consents: mine(consents)

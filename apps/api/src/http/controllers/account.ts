@@ -3,9 +3,11 @@ import {
   consentsBody,
   deleteAccountBody,
   exportCsvQuery,
+  homePrefsPatchBody,
   pixKeyBody,
   type ConsentsResponse,
   type DeleteAccountResponse,
+  type HomePrefsResponse,
   type PixKeyResponse,
 } from '@tostao/contracts';
 import type { UseCases } from '../../use-cases/factories.js';
@@ -72,6 +74,16 @@ export function accountRoutes(app: FastifyInstance, uc: UseCases, limits: Limite
   app.delete('/me/pix-key', { onRequest: verifyJwt, preHandler: limits.pixKeyByUser }, async (request, reply) => {
     await uc.pixKey.set({ userId: request.user.sub, pixKey: null });
     return reply.status(204).send();
+  });
+
+  // Preferências da Home (T6.11): a mesma tela no celular e no computador. Só olha o `sub` do token.
+  app.get('/me/home-prefs', { onRequest: verifyJwt }, async (request) => {
+    return (await uc.homePrefs.get({ userId: request.user.sub })) satisfies HomePrefsResponse;
+  });
+
+  app.patch('/me/home-prefs', { onRequest: verifyJwt }, async (request) => {
+    const patch = homePrefsPatchBody.parse(request.body);
+    return (await uc.homePrefs.update({ userId: request.user.sub, patch })) satisfies HomePrefsResponse;
   });
 
   // Consentimento LGPD pra usar IA. Sem ele, /chat, /transactions/auto-categorize e a IA do WhatsApp respondem 403.

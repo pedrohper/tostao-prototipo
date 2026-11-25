@@ -151,7 +151,7 @@ export function ProposalCard({
     >
       <div className="flex items-center justify-between gap-2">
         <strong className="text-[14px] text-tinta">{t.proposalTitle}</strong>
-        <span className="rounded-full bg-cartao px-2.5 py-0.5 text-[11px] font-bold text-tinta">
+        <span className="rounded-full bg-cartao px-2.5 py-0.5 text-[12px] font-bold text-tinta">
           {proposal.type === 'saida' ? t.proposalOut : t.proposalIn}
         </span>
       </div>

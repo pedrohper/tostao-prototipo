@@ -86,6 +86,30 @@ export interface Dictionary {
     emptyLimitsHint: string;
     showDismissedAlerts: (count: number) => string;
     customizeHome: string;
+    /** T6.17 · "Quanto posso gastar hoje", acima do saldo. */
+    safeToSpend: {
+      title: string;
+      line: string;
+      perDay: (days: number) => string;
+      lastDay: string;
+      shortfall: string;
+      nothingLeft: string;
+      parts: { spent: string; fixed: string; subscriptions: string; scheduled: string; goal: string };
+      and: string;
+      alreadyOut: (list: string) => string;
+      rows: {
+        income: string;
+        spent: string;
+        fixed: string;
+        subscriptions: string;
+        scheduled: string;
+        goal: string;
+        available: (days: number) => string;
+        missing: string;
+      };
+      note: string;
+      inviteCta: string;
+    };
     dismissAlertLabel: string;
     monthInGreen: string;
     monthTight: string;
@@ -157,6 +181,7 @@ export interface Dictionary {
     title: string;
     verifyEmailLink: string;
     levelSummary: (level: number, xp: number, streakDays: number) => string;
+    levelBadge: (level: number, xp: number) => string;
     connectedAccounts: string;
     hiddenAccountHint: string;
     importedStatement: string;

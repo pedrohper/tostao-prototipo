@@ -141,7 +141,9 @@ export function MonthlyBars({
               className={`flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-tinta ${selected ? 'bg-papel-2' : ''}`}
             >
               {!entrada && (
-                <span className={`text-[10px] font-semibold tabular-nums ${on ? 'text-tinta' : 'text-tinta-suave'}`}>
+                <span
+                  className={`text-[13px] leading-4 font-semibold tabular-nums ${on ? 'text-tinta' : 'text-tinta-suave'}`}
+                >
                   {d.outInCents > 0 ? compacto(d.outInCents, labels.thousandUnit) : ''}
                 </span>
               )}
@@ -165,7 +167,7 @@ export function MonthlyBars({
         {data.map((d) => (
           <span
             key={d.month}
-            className={`flex-1 text-center text-[11px] font-semibold capitalize ${d.month === atual ? 'text-tinta' : 'text-tinta-suave'}`}
+            className={`flex-1 text-center text-[12px] font-semibold capitalize ${d.month === atual ? 'text-tinta' : 'text-tinta-suave'}`}
           >
             {curto(d.month, locale)}
           </span>
@@ -179,7 +181,7 @@ export function MonthlyBars({
         href={focus ? hrefFor(focus.month) : undefined}
       />
       {entrada && (
-        <div className="flex gap-3 text-[11px] font-semibold text-tinta-suave">
+        <div className="flex gap-3 text-[12px] font-semibold text-tinta-suave">
           <span className="flex items-center gap-1">
             <i className="h-2 w-2 rounded-full bg-menta" />
             {labels.barsInLegend}
@@ -321,7 +323,7 @@ export function CashflowLineChart({
           {data.map((d, i) => (
             <span
               key={d.month}
-              className={`flex-1 text-center text-[11px] font-semibold capitalize ${i === current ? 'text-tinta' : 'text-tinta-suave'}`}
+              className={`flex-1 text-center text-[12px] font-semibold capitalize ${i === current ? 'text-tinta' : 'text-tinta-suave'}`}
             >
               {curto(d.month, locale)}
             </span>
@@ -337,7 +339,7 @@ export function CashflowLineChart({
           href={focus && monthBasePath ? `${monthBasePath}?mes=${focus.month}` : undefined}
         />
       </div>
-      <div className="flex gap-3 text-[11px] font-semibold text-tinta-suave">
+      <div className="flex gap-3 text-[12px] font-semibold text-tinta-suave">
         <span className="flex items-center gap-1">
           <i className="h-2 w-2 rounded-full bg-menta" />
           {g.inLabel}
@@ -491,7 +493,7 @@ export function BudgetProgressBar({
           style={{ width: `${pct}%` }}
         />
       </div>
-      <div className="flex flex-wrap justify-between gap-x-2 gap-y-0.5 text-xs text-tinta-suave">
+      <div className="flex flex-wrap justify-between gap-x-2 gap-y-0.5 text-[13px] leading-[18px] text-tinta-suave">
         <span>{labels.usedLabel(money(usado), pct)}</span>
         <span>{labels.freeLabel(money(Math.max(0, limite - usado)))}</span>
       </div>

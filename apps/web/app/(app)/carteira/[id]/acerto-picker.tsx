@@ -31,7 +31,7 @@ export function AcertoPicker({
             type="submit"
             name="personName"
             value={p.name}
-            className="h-9 shrink-0 rounded-full bg-papel-2 px-3.5 text-[13px] font-semibold whitespace-nowrap text-tinta transition-colors hover:bg-linha/60"
+            className="h-9 shrink-0 rounded-full bg-papel-2 px-3.5 text-small font-semibold whitespace-nowrap text-tinta transition-colors hover:bg-linha/60"
           >
             {p.name}
           </button>
@@ -42,7 +42,7 @@ export function AcertoPicker({
             setAdding(true);
             setTimeout(() => inputRef.current?.focus(), 0);
           }}
-          className={`h-9 shrink-0 rounded-full border border-dashed px-3.5 text-[13px] font-semibold whitespace-nowrap transition-colors ${
+          className={`h-9 shrink-0 rounded-full border border-dashed px-3.5 text-small font-semibold whitespace-nowrap transition-colors ${
             adding
               ? 'border-tinta bg-papel-2 text-tinta'
               : 'border-laranja-texto text-laranja-texto hover:bg-laranja-claro/40'

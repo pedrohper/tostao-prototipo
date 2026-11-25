@@ -59,7 +59,7 @@ export function ErrorScreen({
           </a>
         )}
       </div>
-      {digest && <p className="text-[11px] text-tinta-suave">{`Código: ${digest}`}</p>}
+      {digest && <p className="text-[12px] text-tinta-suave">{`Código: ${digest}`}</p>}
     </main>
   );
 }

@@ -101,7 +101,7 @@ export function BookCarousel({ modules, initialBookId, currentBookId, done, page
             <Icon src={`modulo/${book.number}`} size={18} alt={t.pages.learnExtra.moduleAlt(book.number)} />
           </span>
           <span className="min-w-0 flex-1">
-            <span className={`block text-[10px] font-extrabold tracking-[0.06em] uppercase ${theme.accentTextClass}`}>
+            <span className={`block text-[12px] font-extrabold tracking-[0.06em] uppercase ${theme.accentTextClass}`}>
               {th.bookOfTotal(book.number, modules.length)} · {doneInBook}/{book.lessons.length}
               {book.optional ? th.optionalSuffix : ''}
             </span>
@@ -157,7 +157,7 @@ export function BookCarousel({ modules, initialBookId, currentBookId, done, page
                   )}
                   <span className="min-w-0 flex-1">
                     <span
-                      className={`block text-[10px] font-bold uppercase ${
+                      className={`block text-[12px] font-bold uppercase ${
                         isSelected ? 'text-papel/75' : 'text-tinta-suave'
                       }`}
                     >
@@ -271,7 +271,7 @@ export function BookCarousel({ modules, initialBookId, currentBookId, done, page
                   )}
 
                   {/* Selo único e discreto no topo esquerdo */}
-                  <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-cartao/90 px-3 py-1 text-[11px] font-bold tracking-[0.04em] text-tinta uppercase shadow-xs backdrop-blur-xs">
+                  <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-cartao/90 px-3 py-1 text-[12px] font-bold tracking-[0.04em] text-tinta uppercase shadow-xs backdrop-blur-xs">
                     {isLocked ? (
                       <svg
                         width="12"

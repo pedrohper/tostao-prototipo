@@ -207,7 +207,7 @@ export default async function CarteiraPage({
               </Link>
             )}
           </div>
-          <div className="flex flex-col gap-3.5 rounded-[22px] border border-linha bg-cartao p-5">
+          <div className="flex flex-col gap-3.5 rounded-card border border-linha bg-cartao p-5">
             {(() => {
               const topCats = summary.byCategory.slice(0, 6);
               const totalCat = summary.byCategory.reduce((s, c) => s + c.totalInCents, 0) || 1;
@@ -354,7 +354,7 @@ export default async function CarteiraPage({
         />
       ) : (
         <div className="flex items-center justify-between gap-3">
-          <h1 className="font-display text-[24px] leading-[30px] font-extrabold lg:text-[28px] lg:leading-[34px]">
+          <h1 className="font-display text-[24px] leading-[30px] font-extrabold lg:text-hero lg:leading-[34px]">
             {t.wallet.title}
           </h1>
           {aba === 'contas' && (
@@ -427,7 +427,7 @@ export default async function CarteiraPage({
                   <Link
                     key={f}
                     href={q({ filtro: f, cat: null })}
-                    className={`rounded-full px-3.5 py-1.5 text-[13px] font-semibold no-underline transition-colors ${
+                    className={`rounded-full px-3.5 py-1.5 text-small font-semibold no-underline transition-colors ${
                       isSelected
                         ? 'bg-tinta text-papel'
                         : f === 'pendentes' && summary.uncategorizedCount > 0
@@ -444,7 +444,7 @@ export default async function CarteiraPage({
               <Link
                 href={toggleHideTransfersHref}
                 aria-pressed={hideTransfers}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-semibold no-underline transition-colors ${
+                className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-small font-semibold no-underline transition-colors ${
                   hideTransfers ? 'bg-tinta text-papel' : 'border border-linha bg-cartao text-tinta hover:bg-papel-2'
                 }`}
               >
@@ -454,7 +454,7 @@ export default async function CarteiraPage({
               <Link
                 href={toggleHideYieldsHref}
                 aria-pressed={hideYields}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-semibold no-underline transition-colors ${
+                className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-small font-semibold no-underline transition-colors ${
                   hideYields ? 'bg-tinta text-papel' : 'border border-linha bg-cartao text-tinta hover:bg-papel-2'
                 }`}
               >
@@ -503,7 +503,7 @@ export default async function CarteiraPage({
               >
                 <Chevron d="M15 18l-6-6 6-6" />
               </Link>
-              <span className="text-[15px] font-bold capitalize">{mesTitulo}</span>
+              <span className="text-body font-bold capitalize">{mesTitulo}</span>
               <Link
                 href={q({ mes: shiftMonth(statementMonth, 1) })}
                 aria-label={statementMonth === hoje ? tw.simulateNextMonth : tw.nextMonth}
@@ -520,14 +520,14 @@ export default async function CarteiraPage({
                   className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 rounded-2xl border border-linha bg-cartao px-3.5 py-2.5 text-tinta no-underline"
                 >
                   <span className="text-xs font-semibold text-tinta-suave">{tw.filters.saidas}</span>
-                  <span className="text-[15px] font-bold tabular-nums">{money(summary.outcomeInCents)}</span>
+                  <span className="text-body font-bold tabular-nums">{money(summary.outcomeInCents)}</span>
                 </Link>
                 <Link
                   href={buildHref({ filtro: 'entradas', cat: null }) + '#lista'}
                   className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 rounded-2xl border border-linha bg-cartao px-3.5 py-2.5 text-tinta no-underline"
                 >
                   <span className="text-xs font-semibold text-tinta-suave">{tw.filters.entradas}</span>
-                  <span className="text-[15px] font-bold text-verde-texto tabular-nums">
+                  <span className="text-body font-bold text-verde-texto tabular-nums">
                     + {money(summary.incomeInCents)}
                   </span>
                 </Link>
@@ -537,11 +537,11 @@ export default async function CarteiraPage({
 
           {conta && (
             <div className="flex items-center justify-between gap-2 rounded-2xl bg-papel-2 py-2 pr-1.5 pl-3 lg:hidden">
-              <span className="truncate text-[13px] font-semibold text-tinta">{tw.accountPrefix(conta)}</span>
+              <span className="truncate text-small font-semibold text-tinta">{tw.accountPrefix(conta)}</span>
               <Link
                 href={semConta}
                 aria-label={tw.clearAccountFilter}
-                className="flex h-9 shrink-0 items-center rounded-full bg-cartao px-3 text-[13px] font-semibold text-tinta no-underline"
+                className="flex h-9 shrink-0 items-center rounded-full bg-cartao px-3 text-small font-semibold text-tinta no-underline"
               >
                 {t.wallet.allAccounts} ✕
               </Link>
@@ -581,10 +581,10 @@ export default async function CarteiraPage({
                   style={{ background: catInfo?.categoryId ? catInfo.color : 'var(--color-rosa-forte)' }}
                 />
                 <span className="flex min-w-0 grow flex-col">
-                  <span className="truncate text-[15px] font-bold">
+                  <span className="truncate text-body font-bold">
                     {catInfo?.name ?? (cat === 'sem' ? tw.uncategorizedLabel : tw.categoryLabel)}
                   </span>
-                  <span className="text-xs text-tinta-suave">
+                  <span className="text-small leading-[18px] text-tinta-suave">
                     {tw.categoryEntriesSummary(
                       money(catInfo?.totalInCents ?? 0),
                       shown.length,
@@ -595,7 +595,7 @@ export default async function CarteiraPage({
                 <Link
                   href={semCat}
                   aria-label={tw.clearCategoryFilter}
-                  className="flex h-9 shrink-0 items-center rounded-full bg-cartao px-3 text-[13px] font-semibold text-tinta no-underline"
+                  className="flex h-9 shrink-0 items-center rounded-full bg-cartao px-3 text-small font-semibold text-tinta no-underline"
                 >
                   {tw.viewAll} ✕
                 </Link>
@@ -617,7 +617,7 @@ export default async function CarteiraPage({
                     <Link
                       key={f}
                       href={q({ filtro: f })}
-                      className={`shrink-0 rounded-full px-3.5 py-2 text-[13px] font-semibold no-underline ${
+                      className={`shrink-0 rounded-full px-3.5 py-2 text-small font-semibold no-underline ${
                         filter === f
                           ? 'bg-tinta text-papel'
                           : f === 'pendentes' && summary.uncategorizedCount > 0
@@ -634,7 +634,7 @@ export default async function CarteiraPage({
                 <Link
                   href={toggleHideTransfersHref}
                   aria-pressed={hideTransfers}
-                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-semibold no-underline ${
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-small font-semibold no-underline ${
                     hideTransfers ? 'bg-tinta text-papel' : 'border border-linha bg-cartao text-tinta'
                   }`}
                 >
@@ -644,7 +644,7 @@ export default async function CarteiraPage({
                 <Link
                   href={toggleHideYieldsHref}
                   aria-pressed={hideYields}
-                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-semibold no-underline ${
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-small font-semibold no-underline ${
                     hideYields ? 'bg-tinta text-papel' : 'border border-linha bg-cartao text-tinta'
                   }`}
                 >
@@ -665,7 +665,7 @@ export default async function CarteiraPage({
                   size={140}
                   alt=""
                 />
-                <p className="text-[15px] text-tinta-suave">
+                <p className="text-body text-tinta-suave">
                   {filter === 'pendentes' && !cat && !conta
                     ? tw.allCategorizedNote
                     : tw.nothingInMonth(monthName(statementMonth, locale))}
@@ -681,7 +681,7 @@ export default async function CarteiraPage({
                 <div className="flex flex-col gap-6 lg:hidden">
                   {[...groups.entries()].map(([day, list]) => (
                     <section key={day} className="flex flex-col gap-1">
-                      <h2 className="pb-1 text-[15px] leading-5 font-bold text-tinta">{day}</h2>
+                      <h2 className="pb-1 text-body leading-5 font-bold text-tinta">{day}</h2>
                       <div className="flex flex-col">
                         {list.map((tx) => (
                           <Row key={tx.id} t={tx} back={back} locale={locale} labels={t.walletExtra.txRow} />
@@ -691,7 +691,7 @@ export default async function CarteiraPage({
                   ))}
                 </div>
 
-                <div className="hidden overflow-hidden rounded-[22px] border border-linha bg-cartao px-4 py-2 lg:block xl:px-5">
+                <div className="hidden overflow-hidden rounded-card border border-linha bg-cartao px-4 py-2 lg:block xl:px-5">
                   <div className="overflow-x-auto">
                     <table className="w-full table-fixed border-collapse">
                       <thead>
@@ -722,13 +722,13 @@ export default async function CarteiraPage({
                               key={tx.id}
                               className="border-b border-linha transition-colors last:border-b-0 hover:bg-papel-2/40"
                             >
-                              <td className="px-2 py-4 text-[13px] whitespace-nowrap text-tinta-suave xl:px-3">
+                              <td className="px-2 py-4 text-small whitespace-nowrap text-tinta-suave xl:px-3">
                                 {shortDate(tx.occurredAt, locale)}
                               </td>
                               <td className="min-w-0 px-2 py-4 xl:px-3">
                                 <Link
                                   href={href}
-                                  className="block truncate text-[15px] font-semibold text-tinta no-underline hover:underline"
+                                  className="block truncate text-body font-semibold text-tinta no-underline hover:underline"
                                 >
                                   {tx.customDescription || tx.description}
                                 </Link>
@@ -740,14 +740,14 @@ export default async function CarteiraPage({
                                 {pending ? (
                                   <Link
                                     href={href}
-                                    className="inline-flex h-7 max-w-full items-center truncate rounded-full bg-amarelo-claro px-2.5 text-[13px] font-semibold text-tinta no-underline hover:opacity-85"
+                                    className="inline-flex h-7 max-w-full items-center truncate rounded-full bg-amarelo-claro px-2.5 text-small font-semibold text-tinta no-underline hover:opacity-85"
                                   >
                                     {t.wallet.categorizeBadge}
                                   </Link>
                                 ) : tx.isInternalTransfer ? (
                                   <Link
                                     href={href}
-                                    className="inline-flex h-7 max-w-full items-center truncate rounded-full bg-papel-2 px-2.5 text-[13px] font-semibold text-tinta-suave no-underline hover:opacity-85"
+                                    className="inline-flex h-7 max-w-full items-center truncate rounded-full bg-papel-2 px-2.5 text-small font-semibold text-tinta-suave no-underline hover:opacity-85"
                                   >
                                     {t.wallet.internalTransferBadge}
                                   </Link>
@@ -767,11 +767,11 @@ export default async function CarteiraPage({
                                   </Link>
                                 )}
                               </td>
-                              <td className="hidden truncate px-3 py-4 text-[13px] text-tinta-suave xl:table-cell">
+                              <td className="hidden truncate px-3 py-4 text-small text-tinta-suave xl:table-cell">
                                 {tx.accountName ?? tw.manualLabel}
                               </td>
                               <td
-                                className={`px-2 py-4 text-right text-[14px] font-bold whitespace-nowrap tabular-nums xl:px-3 xl:text-[15px] ${
+                                className={`px-2 py-4 text-right text-[14px] font-bold whitespace-nowrap tabular-nums xl:px-3 xl:text-body ${
                                   tx.isInternalTransfer
                                     ? 'text-tinta-suave line-through'
                                     : tx.amountInCents > 0
@@ -798,19 +798,19 @@ export default async function CarteiraPage({
       {aba === 'contas' && (
         <section className="flex flex-col gap-6 pb-8">
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5 rounded-[22px] bg-menta-clara p-5 text-tinta">
+            <div className="flex flex-col gap-1.5 rounded-card bg-menta-clara p-5 text-tinta">
               <Eyebrow>{tw.accountsBalanceLabel}</Eyebrow>
-              <span className="font-display text-[28px] leading-8 font-extrabold tabular-nums">
+              <span className="font-display text-hero leading-8 font-extrabold tabular-nums">
                 {money(totalBankBalance)}
               </span>
-              <span className="text-[13px] text-tinta-suave">{tw.visibleAccounts(bancos.length)}</span>
+              <span className="text-small text-tinta-suave">{tw.visibleAccounts(bancos.length)}</span>
             </div>
-            <div className="flex flex-col gap-1.5 rounded-[22px] border border-bronze-borda bg-bronze-suave p-5 text-tinta">
+            <div className="flex flex-col gap-1.5 rounded-card border border-bronze-borda bg-bronze-suave p-5 text-tinta">
               <Eyebrow>{tw.openBillsLabel}</Eyebrow>
-              <span className="font-display text-[28px] leading-8 font-extrabold tabular-nums">
+              <span className="font-display text-hero leading-8 font-extrabold tabular-nums">
                 {money(totalOpenBills)}
               </span>
-              <span className="text-[13px] text-tinta-suave">{tw.visibleCards(cartoes.length)}</span>
+              <span className="text-small text-tinta-suave">{tw.visibleCards(cartoes.length)}</span>
             </div>
           </div>
 
@@ -820,7 +820,7 @@ export default async function CarteiraPage({
                 <Eyebrow>{tw.bankAccountsHeading}</Eyebrow>
                 <span className="text-sm font-bold text-tinta tabular-nums">{money(totalBankBalance)}</span>
               </div>
-              <div className="flex flex-col divide-y divide-linha rounded-[22px] border border-linha bg-cartao px-4">
+              <div className="flex flex-col divide-y divide-linha rounded-card border border-linha bg-cartao px-4">
                 {bancos.map((a) => {
                   const conn = connByAccountId.get(a.id);
                   const syncText = conn
@@ -840,7 +840,7 @@ export default async function CarteiraPage({
                     >
                       <BankBadge nome={a.name} instituicao={conn?.displayName} size={38} quadrado logos={logos} />
                       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                        <span className="truncate text-[15px] font-semibold">{a.name}</span>
+                        <span className="truncate text-body font-semibold">{a.name}</span>
                         <span
                           className={`truncate text-xs ${
                             conn?.status === 'ERROR' && !conn.isImported
@@ -876,12 +876,12 @@ export default async function CarteiraPage({
                     <Link
                       key={a.id}
                       href={`/carteira/conta/${a.id}?mes=${statementMonth}`}
-                      className="flex min-w-0 flex-col gap-3.5 rounded-[22px] border border-linha bg-cartao p-5 text-tinta no-underline transition-colors hover:bg-papel-2/50"
+                      className="flex min-w-0 flex-col gap-3.5 rounded-card border border-linha bg-cartao p-5 text-tinta no-underline transition-colors hover:bg-papel-2/50"
                     >
                       <div className="flex items-center justify-between gap-2.5">
                         <div className="flex min-w-0 items-center gap-3">
                           <BankBadge nome={a.name} instituicao={conn?.displayName} size={36} quadrado logos={logos} />
-                          <span className="truncate text-[15px] font-bold">{a.name}</span>
+                          <span className="truncate text-body font-bold">{a.name}</span>
                         </div>
                         <CardNetworkBadge brand={a.brand} last4={a.last4} className="shrink-0" />
                       </div>
@@ -911,9 +911,9 @@ export default async function CarteiraPage({
           )}
 
           {bancos.length === 0 && cartoes.length === 0 && summary.hiddenAccounts.length === 0 && (
-            <div className="flex flex-col items-center gap-2 rounded-[22px] border border-linha bg-cartao py-8 text-center">
+            <div className="flex flex-col items-center gap-2 rounded-card border border-linha bg-cartao py-8 text-center">
               <Mascot pose="conectando" size={120} alt="" />
-              <p className="max-w-[320px] text-[15px] text-tinta-suave">{tw.noAccountsEmpty}</p>
+              <p className="max-w-[320px] text-body text-tinta-suave">{tw.noAccountsEmpty}</p>
             </div>
           )}
 

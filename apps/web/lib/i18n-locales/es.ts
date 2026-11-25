@@ -101,6 +101,35 @@ export const es: Dictionary = {
     setAction: 'Definir',
     emptyLimitsHint: 'Pon un tope en delivery, supermercado o lo que más pesa. Te aviso al acercarte.',
     showDismissedAlerts: (count) => `Mostrar ${count} ${count === 1 ? 'aviso descartado' : 'avisos descartados'}`,
+    safeToSpend: {
+      title: 'Cuánto puedo gastar hoy',
+      line: 'Puedo gastar hoy',
+      perDay: (days) => `por día, en los ${days} días que faltan (contando hoy)`,
+      lastDay: 'y hoy es el último día del mes',
+      shortfall: 'para cerrar el mes. Sin drama: aguanta lo que no sea urgente.',
+      nothingLeft: 'todo lo que entra este mes ya tiene destino.',
+      parts: {
+        spent: 'las salidas del mes',
+        fixed: 'los gastos fijos',
+        subscriptions: 'las suscripciones',
+        scheduled: 'las cuotas y programados',
+        goal: 'tu meta',
+      },
+      and: ' y ',
+      alreadyOut: (list) => `Ya descontados: ${list}.`,
+      rows: {
+        income: 'Ingreso del mes',
+        spent: 'Salidas del mes',
+        fixed: 'Fijos pendientes',
+        subscriptions: 'Suscripciones pendientes',
+        scheduled: 'Cuotas y programados',
+        goal: 'Para tu meta este mes',
+        available: (days) => (days === 1 ? 'Queda para hoy' : `Queda para ${days} días`),
+        missing: 'Falta',
+      },
+      note: 'Es una estimación: cuenta el ingreso del mes entero, aun lo que no llegó, y da por pagados los gastos fijos con fecha pasada. Lo que no registraste y no reconocí queda fuera.',
+      inviteCta: 'Contar mi ingreso',
+    },
     customizeHome: 'Personalizar Inicio',
     dismissAlertLabel: 'Ya lo resolví, cerrar',
     monthInGreen: 'Mes en positivo',
@@ -177,6 +206,7 @@ export const es: Dictionary = {
   profile: {
     verifyEmailLink: 'Confirmar mi correo',
     title: 'Más',
+    levelBadge: (level, xp) => `Nivel ${level} · ${xp} XP`,
     levelSummary: (level, xp, streakDays) =>
       `Nivel ${level} · ${xp} XP · ${streakDays} ${streakDays === 1 ? 'día' : 'días'} de racha`,
     connectedAccounts: 'Cuentas conectadas',
@@ -992,7 +1022,7 @@ export const es: Dictionary = {
       title: 'Próximos meses',
       emptyBody: 'Para proyectar, necesito saber cuánto entra y qué sale cada mes.',
       tellIncomeCta: 'Contar mis ingresos',
-      allGreen: (month, _amount) => `Los tres meses cierran en positivo. En ${month} deberían sobrar unos `,
+      allGreen: (month, amount) => `Los tres meses cierran en positivo. En ${month} deberían sobrar unos ${amount}.`,
       worstIsFirst: (month, amount) =>
         `${month} aprieta: faltan unos ${amount}. Frenar el día a día ahora lo resuelve.`,
       firstVsWorst: (firstMonth, firstGreen, worstMonth, worstAmount) =>
@@ -1449,7 +1479,7 @@ export const es: Dictionary = {
       },
     },
     personalizar: {
-      subtitle: 'Elige qué aparece y en qué orden. El saldo siempre queda arriba.',
+      subtitle: 'Elige qué aparece y en qué orden. Lo que puedes gastar hoy y el saldo siempre quedan arriba.',
       dismissedTitle: 'Avisos que cerraste en la X',
       dismissedBody:
         'Desaparecen hasta que haya novedades. Si surge otro gasto sin categoría, un recibo próximo o un límite superado, el aviso vuelve.',

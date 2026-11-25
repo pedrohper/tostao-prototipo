@@ -35,6 +35,7 @@ import { testOnlyKeyValueStore, type KeyValueStore } from '../lib/redis.js';
 import { AskTostaoUseCase } from './ask-tostao.js';
 import { SetAiConsentUseCase } from './ai-consent.js';
 import { PixKeyUseCase } from './pix-key.js';
+import { HomePrefsUseCase } from './home-prefs.js';
 import { CheckScamUseCase } from './check-scam.js';
 import { PendingActionUseCase } from './pending-actions.js';
 import { PendingActionStore } from '../services/pending-actions.js';
@@ -200,6 +201,7 @@ export function makeUseCases({
     pendingActions,
     setAiConsent: new SetAiConsentUseCase(repos),
     pixKey: new PixKeyUseCase(repos),
+    homePrefs: new HomePrefsUseCase(repos),
     checkScam,
     whatsappLink: new WhatsAppLinkUseCase(repos, whatsapp),
     whatsappMessage: new HandleWhatsAppMessageUseCase(

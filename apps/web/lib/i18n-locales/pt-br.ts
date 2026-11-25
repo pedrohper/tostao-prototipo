@@ -101,6 +101,35 @@ export const ptBR: Dictionary = {
     emptyLimitsHint: 'Põe um teto em delivery, mercado ou no que pesar mais. Eu aviso quando chegar perto.',
     showDismissedAlerts: (count) => `Mostrar ${count} ${count === 1 ? 'aviso dispensado' : 'avisos dispensados'}`,
     customizeHome: 'Personalizar o Início',
+    safeToSpend: {
+      title: 'Quanto posso gastar hoje',
+      line: 'Posso gastar hoje',
+      perDay: (days) => `por dia, nos ${days} dias que faltam (contando hoje)`,
+      lastDay: 'e hoje é o último dia do mês',
+      shortfall: 'pro mês fechar. Sem drama: segura o que não for urgente.',
+      nothingLeft: 'o que entra neste mês já tem destino.',
+      parts: {
+        spent: 'as saídas do mês',
+        fixed: 'os fixos',
+        subscriptions: 'as assinaturas',
+        scheduled: 'as parcelas e agendados',
+        goal: 'a sua meta',
+      },
+      and: ' e ',
+      alreadyOut: (list) => `Já tirei ${list}.`,
+      rows: {
+        income: 'Renda do mês',
+        spent: 'Saídas do mês',
+        fixed: 'Fixos que faltam',
+        subscriptions: 'Assinaturas que faltam',
+        scheduled: 'Parcelas e agendados',
+        goal: 'Pra meta neste mês',
+        available: (days) => (days === 1 ? 'Sobra pra hoje' : `Sobra pra ${days} dias`),
+        missing: 'Falta',
+      },
+      note: 'É uma estimativa: conto a renda do mês inteiro, mesmo a que ainda não caiu, e conta fixa com o dia já passado como paga. Conta que você não cadastrou e eu não reconheci fica de fora.',
+      inviteCta: 'Contar minha renda',
+    },
     dismissAlertLabel: 'Já resolvi, fechar',
     monthInGreen: 'Mês no azul',
     monthTight: 'Mês no aperto',
@@ -176,6 +205,7 @@ export const ptBR: Dictionary = {
   profile: {
     verifyEmailLink: 'Confirmar meu e-mail',
     title: 'Mais',
+    levelBadge: (level, xp) => `Nível ${level} · ${xp} XP`,
     levelSummary: (level, xp, streakDays) =>
       `Nível ${level} · ${xp} XP · ${streakDays} ${streakDays === 1 ? 'dia' : 'dias'} de ofensiva`,
     connectedAccounts: 'Contas conectadas',
@@ -987,7 +1017,7 @@ export const ptBR: Dictionary = {
       title: 'Próximos meses',
       emptyBody: 'Pra prever, eu preciso saber quanto entra e o que sai todo mês.',
       tellIncomeCta: 'Contar minha renda',
-      allGreen: (month, _amount) => `Os três meses fecham no azul. Em ${month} devem sobrar uns `,
+      allGreen: (month, amount) => `Os três meses fecham no azul. Em ${month} devem sobrar uns ${amount}.`,
       worstIsFirst: (month, amount) => `${month} aperta: faltam uns ${amount}. Segurar o dia a dia agora resolve.`,
       firstVsWorst: (firstMonth, firstGreen, worstMonth, worstAmount) =>
         `${firstMonth} ${firstGreen ? 'fecha no azul' : 'aperta'}, mas ${worstMonth} aperta${!firstGreen ? ' mais' : ''}: faltam uns ${worstAmount}. Segurar o dia a dia agora resolve.`,
@@ -1443,7 +1473,7 @@ export const ptBR: Dictionary = {
       },
     },
     personalizar: {
-      subtitle: 'Escolha o que aparece e em que ordem. O saldo fica sempre no topo.',
+      subtitle: 'Escolha o que aparece e em que ordem. O quanto dá pra gastar hoje e o saldo ficam sempre no topo.',
       dismissedTitle: 'Avisos que você fechou no X',
       dismissedBody:
         'Somem até ter novidade. Se surgir gasto novo sem categoria, outra conta pra vencer ou um limite estourado, o aviso volta.',

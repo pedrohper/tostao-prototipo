@@ -423,7 +423,7 @@ export function InvestmentComparison({
                 </span>
                 <span className="flex grow flex-col">
                   {atual && (
-                    <span className="text-[11px] font-bold tracking-[0.08em] text-laranja-texto uppercase">
+                    <span className="text-[12px] font-bold tracking-[0.08em] text-laranja-texto uppercase">
                       {labels.youAreHere}
                     </span>
                   )}
@@ -461,7 +461,7 @@ export function InvestmentComparison({
                         style={{ width: `${Math.min(100, (guardado / alvo) * 100)}%` }}
                       />
                     </div>
-                    <span className="text-xs text-tinta-suave tabular-nums">
+                    <span className="text-[13px] leading-[18px] text-tinta-suave tabular-nums">
                       {labels.reserveProgressText(money(guardado), money(alvo))}
                     </span>
                   </div>
@@ -519,7 +519,7 @@ export function InvestmentComparison({
                     style={{ width: `${Math.max(0, o.r.liquidoInCents / maxGanho) * 100}%` }}
                   />
                 </span>
-                <span className="flex justify-between gap-2 text-xs text-tinta-suave">
+                <span className="flex justify-between gap-2 text-[13px] leading-[18px] text-tinta-suave">
                   <span>{o.nota}</span>
                   <span className="whitespace-nowrap tabular-nums">
                     {o.r.liquidoInCents > 0 ? `+${money(o.r.liquidoInCents)}` : ''}

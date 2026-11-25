@@ -68,6 +68,10 @@ export default async function PrivacidadePage() {
             <td>Seu uso do app</td>
           </tr>
           <tr>
+            <td>Como você arrumou a tela Início (blocos, ordem e avisos que fechou)</td>
+            <td>Você, dentro do app</td>
+          </tr>
+          <tr>
             <td>Amigos que você adicionou (por código ou convite)</td>
             <td>Você</td>
           </tr>
@@ -237,7 +241,7 @@ export default async function PrivacidadePage() {
           </tr>
           <tr>
             <td>tostao-inicio</td>
-            <td>Lembra o que você escolheu mostrar ou esconder na tela Início</td>
+            <td>Cópia, neste aparelho, de como você arrumou a tela Início (a original fica na sua conta)</td>
             <td>1 ano</td>
           </tr>
           <tr>

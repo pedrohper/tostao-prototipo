@@ -36,10 +36,10 @@ export function PlannerCardGrid({ cards, openCardLabel }: { cards: PlannerCardVi
         return (
           <div
             key={card.id}
-            className="flex min-w-0 flex-col rounded-[22px] border border-linha bg-cartao transition-colors hover:border-tinta/35"
+            className="flex min-w-0 flex-col rounded-card border border-linha bg-cartao transition-colors hover:border-tinta/35"
           >
             <div className="relative flex min-h-[76px] items-center justify-between gap-2.5 p-4">
-              <Link href={card.href} aria-label={card.title} className="absolute inset-0 rounded-[22px]" />
+              <Link href={card.href} aria-label={card.title} className="absolute inset-0 rounded-card" />
               <div className="flex min-w-0 flex-1 items-center gap-3">
                 <span
                   className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${card.iconBg}`}
@@ -48,9 +48,9 @@ export function PlannerCardGrid({ cards, openCardLabel }: { cards: PlannerCardVi
                   <Icon src={card.icon} size={22} />
                 </span>
                 <div className="flex min-w-0 flex-col">
-                  <span className="truncate text-[15px] font-bold text-tinta">{card.title}</span>
+                  <span className="text-body font-bold break-words text-tinta">{card.title}</span>
                   {card.headline && (
-                    <span className="truncate font-display text-[17px] leading-6 font-extrabold text-tinta tabular-nums">
+                    <span className="font-display text-[17px] leading-6 font-extrabold break-words text-tinta tabular-nums">
                       {card.headline}
                     </span>
                   )}
@@ -60,7 +60,7 @@ export function PlannerCardGrid({ cards, openCardLabel }: { cards: PlannerCardVi
               <div className="relative z-[1] flex shrink-0 items-center gap-1">
                 {card.badge && (
                   <span
-                    className={`pointer-events-none rounded-full px-2.5 py-0.5 text-[11px] font-bold whitespace-nowrap ${BADGE_CLASSES[card.badge.tone]}`}
+                    className={`pointer-events-none rounded-full px-2.5 py-0.5 text-mini font-bold whitespace-nowrap ${BADGE_CLASSES[card.badge.tone]}`}
                   >
                     {card.badge.text}
                   </span>
@@ -106,7 +106,7 @@ export function PlannerCardGrid({ cards, openCardLabel }: { cards: PlannerCardVi
             )}
 
             {isOpen && (
-              <div className="flex items-center justify-between gap-3 border-t border-linha bg-papel-2/50 px-4 py-3 text-[13px] leading-[18px] text-tinta-suave">
+              <div className="flex items-center justify-between gap-3 border-t border-linha bg-papel-2/50 px-4 py-3 text-small leading-[18px] text-tinta-suave">
                 <p className="min-w-0">{card.summary}</p>
                 <Link
                   href={card.href}

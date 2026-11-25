@@ -46,7 +46,7 @@ export function CategorizeQueue({
   if (!current) {
     return (
       <div className="flex flex-col items-center gap-3 rounded-2xl bg-menta-clara p-5 text-center">
-        <p className="text-[15px] font-semibold">{w.categorizeDone}</p>
+        <p className="text-body font-semibold">{w.categorizeDone}</p>
         <Link href={exitHref} className="text-sm font-semibold underline">
           {w.exitMode}
         </Link>
@@ -71,20 +71,20 @@ export function CategorizeQueue({
   return (
     <section
       aria-label={w.categorizeMode}
-      className="flex flex-col gap-3 rounded-[22px] border border-linha bg-cartao p-4"
+      className="flex flex-col gap-3 rounded-card border border-linha bg-cartao p-4"
     >
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 flex-col">
-          <h2 className="text-[15px] font-bold">{w.categorizeTitle(ordered.length)}</h2>
+          <h2 className="text-body font-bold">{w.categorizeTitle(ordered.length)}</h2>
           <p className="text-xs text-tinta-suave">{w.categorizeHint}</p>
         </div>
-        <Link href={exitHref} className="text-[13px] font-semibold text-tinta-suave underline">
+        <Link href={exitHref} className="text-small font-semibold text-tinta-suave underline">
           {w.exitMode}
         </Link>
       </div>
       <div className="flex items-center justify-between gap-3 rounded-2xl bg-papel-2 px-3.5 py-3">
         <span className="flex min-w-0 flex-col">
-          <span className="truncate text-[15px] font-semibold">{current.customDescription || current.description}</span>
+          <span className="truncate text-body font-semibold">{current.customDescription || current.description}</span>
           <span className="text-xs text-tinta-suave">{shortDate(current.occurredAt, locale)}</span>
         </span>
         <span
@@ -108,7 +108,7 @@ export function CategorizeQueue({
           locale={locale}
         />
       </div>
-      <label className="flex min-h-11 cursor-pointer items-center gap-3 text-[13px] leading-[18px] text-tinta-suave">
+      <label className="flex min-h-11 cursor-pointer items-center gap-3 text-small leading-[18px] text-tinta-suave">
         <input
           type="checkbox"
           checked={remember}
@@ -122,7 +122,7 @@ export function CategorizeQueue({
           type="button"
           disabled={busy}
           onClick={() => setSkipped((prev) => [...prev, current.id])}
-          className="self-start text-[13px] font-semibold text-tinta-suave underline"
+          className="self-start text-small font-semibold text-tinta-suave underline"
         >
           {w.skip}
         </button>

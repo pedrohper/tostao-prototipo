@@ -188,7 +188,7 @@ function OpenBillsSummary({
           </span>
           <span className="flex min-w-0 flex-col">
             <span className="truncate text-xs font-semibold text-tinta-suave">{openBillsShortLabel}</span>
-            <span className="text-[15px] font-bold text-tinta tabular-nums sm:text-[17px]">
+            <span className="text-body font-bold text-tinta tabular-nums sm:text-[17px]">
               {openBillsInCents && openBillsInCents > 0
                 ? hidden
                   ? `R$ ${MASKED}`
@@ -256,12 +256,12 @@ export function MobileBalanceCard({
   const outcomeHref = buildWalletHref(month, 'saidas');
 
   return (
-    <div className="relative flex flex-col gap-3.5 rounded-[22px] border border-linha bg-cartao p-[18px]">
-      <Link href={accountsHref} aria-label={walletLabel} className="absolute inset-0 rounded-[22px]" />
+    <div className="relative flex flex-col gap-3.5 rounded-card border border-linha bg-cartao p-[18px]">
+      <Link href={accountsHref} aria-label={walletLabel} className="absolute inset-0 rounded-card" />
       <div className="relative flex flex-col items-center gap-2 text-center">
         {balanceInCents !== null ? (
           <div className="flex min-w-0 flex-col items-center gap-0.5">
-            <span className="text-[13px] font-semibold text-tinta-suave">{balanceLabel}</span>
+            <span className="text-small font-semibold text-tinta-suave">{balanceLabel}</span>
             <div className="flex items-center justify-center gap-1.5">
               <span className="font-display text-[40px] leading-[44px] font-extrabold tracking-[-0.5px] tabular-nums">
                 {hidden ? `R$ ${MASKED}` : money(balanceInCents)}
@@ -277,7 +277,7 @@ export function MobileBalanceCard({
         ) : (
           <div className="flex min-w-0 flex-col items-center gap-2">
             <div className="flex items-center justify-center gap-1.5">
-              <span className="text-[13px] font-semibold text-tinta-suave">{noConnectedBankHint}</span>
+              <span className="text-small font-semibold text-tinta-suave">{noConnectedBankHint}</span>
               <EyeButton
                 hidden={hidden}
                 onToggle={toggleHiddenBalance}
@@ -300,7 +300,7 @@ export function MobileBalanceCard({
           </span>
           <span className="flex min-w-0 flex-col">
             <span className="truncate text-xs font-semibold text-tinta-suave">{incomeLabel}</span>
-            <span className="text-[15px] font-bold text-verde-texto tabular-nums sm:text-[17px]">
+            <span className="text-body font-bold text-verde-texto tabular-nums sm:text-[17px]">
               {hidden ? `R$ ${MASKED}` : money(incomeInCents)}
             </span>
           </span>
@@ -314,7 +314,7 @@ export function MobileBalanceCard({
           </span>
           <span className="flex min-w-0 flex-col">
             <span className="truncate text-xs font-semibold text-tinta-suave">{outcomeLabel}</span>
-            <span className="text-[15px] font-bold text-vermelho-texto tabular-nums sm:text-[17px]">
+            <span className="text-body font-bold text-vermelho-texto tabular-nums sm:text-[17px]">
               {hidden ? `R$ ${MASKED}` : money(outcomeInCents)}
             </span>
           </span>
@@ -356,8 +356,8 @@ export function DesktopBalanceRow({
 
   return (
     <div className="grid grid-cols-2 gap-4 xl:grid-cols-[1.25fr_1fr_1fr] xl:gap-5">
-      <div className="relative col-span-2 flex min-w-0 flex-col gap-1 rounded-[22px] border border-linha bg-cartao p-[22px] text-tinta xl:col-span-1">
-        <Link href={accountsHref} aria-label={walletLabel} className="absolute inset-0 rounded-[22px]" />
+      <div className="relative col-span-2 flex min-w-0 flex-col gap-1 rounded-card border border-linha bg-cartao p-[22px] text-tinta xl:col-span-1">
+        <Link href={accountsHref} aria-label={walletLabel} className="absolute inset-0 rounded-card" />
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm font-semibold text-tinta-suave">{balanceLabelDesktop}</span>
           <EyeButton
@@ -372,11 +372,11 @@ export function DesktopBalanceRow({
           {balanceInCents !== null ? (hidden ? `R$ ${MASKED}` : money(balanceInCents)) : '—'}
         </span>
         {accountsPreview.length > 0 ? (
-          <span className="text-[13px] leading-[18px] text-tinta-suave">
+          <span className="text-small leading-[18px] text-tinta-suave">
             {accountsPreview.map((a) => `${a.name} ${hidden ? `R$ ${MASKED}` : money(a.balanceInCents)}`).join(' · ')}
           </span>
         ) : balanceInCents === null ? (
-          <span className="flex flex-col gap-2 text-[13px] leading-[18px] text-tinta-suave">
+          <span className="flex flex-col gap-2 text-small leading-[18px] text-tinta-suave">
             {noConnectedBankHint}
             {connectCta && <ConnectCta cta={connectCta} />}
           </span>
@@ -393,25 +393,23 @@ export function DesktopBalanceRow({
 
       <Link
         href={incomeHref}
-        className="flex min-w-0 flex-col gap-1 rounded-[22px] border border-linha bg-cartao p-[22px] text-tinta no-underline"
+        className="flex min-w-0 flex-col gap-1 rounded-card border border-linha bg-cartao p-[22px] text-tinta no-underline"
       >
         <span className="text-sm font-semibold text-tinta-suave">{incomeLabelDesktop}</span>
-        <span className="font-display text-[22px] leading-[28px] font-extrabold whitespace-nowrap text-verde-texto tabular-nums xl:text-[24px] xl:leading-[32px] min-[1400px]:text-[30px] min-[1400px]:leading-[38px]">
+        <span className="font-display text-title leading-[28px] font-extrabold whitespace-nowrap text-verde-texto tabular-nums xl:text-[24px] xl:leading-[32px] min-[1400px]:text-[30px] min-[1400px]:leading-[38px]">
           {hidden ? `R$ ${MASKED}` : `+ ${money(incomeInCents)}`}
         </span>
       </Link>
 
       <Link
         href={outcomeHref}
-        className="flex min-w-0 flex-col gap-1 rounded-[22px] border border-linha bg-cartao p-[22px] text-tinta no-underline"
+        className="flex min-w-0 flex-col gap-1 rounded-card border border-linha bg-cartao p-[22px] text-tinta no-underline"
       >
         <span className="text-sm font-semibold text-tinta-suave">{outcomeLabelDesktop}</span>
-        <span className="font-display text-[22px] leading-[28px] font-extrabold whitespace-nowrap tabular-nums xl:text-[24px] xl:leading-[32px] min-[1400px]:text-[30px] min-[1400px]:leading-[38px]">
+        <span className="font-display text-title leading-[28px] font-extrabold whitespace-nowrap tabular-nums xl:text-[24px] xl:leading-[32px] min-[1400px]:text-[30px] min-[1400px]:leading-[38px]">
           {hidden ? `R$ ${MASKED}` : money(outcomeInCents)}
         </span>
-        {percentOfIncomeLabel && !hidden && (
-          <span className="text-[13px] text-tinta-suave">{percentOfIncomeLabel}</span>
-        )}
+        {percentOfIncomeLabel && !hidden && <span className="text-small text-tinta-suave">{percentOfIncomeLabel}</span>}
       </Link>
     </div>
   );

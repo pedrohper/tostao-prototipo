@@ -22,6 +22,7 @@ import { patternFromDescription } from '../services/categorize.js';
 import { occurrenceDescription, occurrencesInMonth } from '../services/recurrence.js';
 import { listSubscriptions, subscriptionsFrom } from './list-subscriptions.js';
 import { loadFinance, sliceRange, summarizeMonth, summarizeMonths, type FinanceSnapshot } from './month-aggregation.js';
+import { paymentsOf, safeToSpend, takePayment } from './safe-to-spend.js';
 import { subscriptionBaseKey, subscriptionKey } from '../services/subscriptions.js';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -84,13 +85,15 @@ export class SaveFinancialPlanUseCase {
             ...g,
             id: g.id ?? prev?.id ?? randomUUID(),
             savedInCents: g.savedInCents ?? prev?.savedInCents ?? 0,
+            monthDeposit: prev?.monthDeposit,
           };
         });
         draft.goal = draft.goals[0] ?? null;
       } else if (draft.goal) {
         const primaryId = draft.goal.id ?? prevGoals[0]?.id ?? 'default';
         const primarySaved = draft.goal.savedInCents ?? prevGoals[0]?.savedInCents ?? before?.goal?.savedInCents ?? 0;
-        const updatedPrimary = { ...draft.goal, id: primaryId, savedInCents: primarySaved };
+        const monthDeposit = prevGoals.find((p) => p.id === primaryId)?.monthDeposit;
+        const updatedPrimary = { ...draft.goal, id: primaryId, savedInCents: primarySaved, monthDeposit };
         draft.goal = updatedPrimary;
         draft.goals = [updatedPrimary, ...prevGoals.slice(1)];
       } else if (prevGoals.length > 0) {
@@ -250,6 +253,18 @@ export function goalStatus(goal: Goal, cur: string, nextLeftInCents: number | nu
   };
 }
 
+/**
+ * Quanto do mês é das metas (T6.17): em cada uma, o maior entre o que ela pede por mês (calculado com o saldo do começo
+ * do mês) e o que já foi separado neste mês. Meta sem valor ou sem prazo só conta o que foi separado.
+ */
+export function goalReserveOfMonth(goals: Goal[], cur: string): number {
+  return goals.reduce((total, goal) => {
+    const deposited = goal.monthDeposit?.month === cur ? Math.max(0, goal.monthDeposit.amountInCents) : 0;
+    const atMonthStart = { ...goal, savedInCents: Math.max(0, (goal.savedInCents ?? 0) - deposited) };
+    return total + Math.max(goalStatus(atMonthStart, cur, null).monthlyNeededInCents ?? 0, deposited);
+  }, 0);
+}
+
 /** Criar, editar ou apagar metas sem passar pelo formulário da renda. */
 const EMPTY_PLAN: FinancialPlan = { salary: null, otherIncomes: [], fixedExpenses: [], benefits: [], goal: null };
 
@@ -273,6 +288,7 @@ export class SetGoalUseCase {
         id: goal.id ?? primary?.id ?? 'default',
         savedInCents: goal.savedInCents ?? primary?.savedInCents ?? 0,
       };
+      if (primary && primary.id === nextPrimary.id) nextPrimary.monthDeposit = primary.monthDeposit;
       const nextGoals = [nextPrimary, ...existing.slice(1)];
       result = { goal: nextPrimary, goals: nextGoals };
       return syncPlanGoals(base, nextGoals);
@@ -306,6 +322,7 @@ export class SetGoalUseCase {
         ...goal,
         id: prev.id ?? id,
         savedInCents: goal.savedInCents ?? prev.savedInCents ?? 0,
+        monthDeposit: prev.monthDeposit,
       };
       const nextGoals = existing.map((g, i) => (i === idx ? updated : g));
       result = { goal: updated, goals: nextGoals };
@@ -330,9 +347,13 @@ export class SetGoalUseCase {
 
 /** "Guardei R$ 50" soma; valor negativo tira. Nunca fica abaixo de zero. */
 export class GoalDepositUseCase {
-  constructor(private readonly repos: Pick<Repositories, 'plans'>) {}
+  constructor(
+    private readonly repos: Pick<Repositories, 'plans' | 'users'>,
+    private readonly now: () => Date = () => new Date(),
+  ) {}
 
   async execute({ userId, amountInCents, goalId }: { userId: string; amountInCents: number; goalId?: string }) {
+    const month = currentMonth(this.now(), await timezoneOf(this.repos.users, userId));
     let result!: { savedInCents: number; goalId: string | undefined };
     await this.repos.plans.mutate(userId, (plan) => {
       if (!plan) throw new ResourceNotFoundError('Meta');
@@ -341,8 +362,12 @@ export class GoalDepositUseCase {
       const idx = goalId ? existing.findIndex((g) => g.id === goalId) : 0;
       if (idx === -1) throw new ResourceNotFoundError('Meta');
       const target = existing[idx]!;
-      const savedInCents = Math.max(0, (target.savedInCents ?? 0) + amountInCents);
-      const nextGoals = existing.map((g, i) => (i === idx ? { ...g, savedInCents } : g));
+      const before = target.savedInCents ?? 0;
+      const savedInCents = Math.max(0, before + amountInCents);
+      // Quanto entrou neste mês (o "posso gastar hoje" não pode devolver nem descontar de novo o que já foi separado).
+      const earlier = target.monthDeposit?.month === month ? target.monthDeposit.amountInCents : 0;
+      const monthDeposit = { month, amountInCents: earlier + savedInCents - before };
+      const nextGoals = existing.map((g, i) => (i === idx ? { ...g, savedInCents, monthDeposit } : g));
       result = { savedInCents, goalId: target.id };
       return syncPlanGoals(plan, nextGoals);
     });
@@ -734,11 +759,21 @@ export function computeForecast(plan: FinancialPlan, data: ForecastData, now: Da
   const today = dayOf(now);
   const daysInMonth = daysInMonthOf(cur);
   const daysLeft = daysInMonth - today;
-  // Conta do dia 31 num mês de 30 dias vence no dia 30 (o último): ainda "falta" até lá.
-  const fixedLeft = plan.fixedExpenses
-    .filter((f) => Math.min(f.day, daysInMonth) > today)
-    .reduce((sum, f) => sum + f.amountInCents, 0);
+  const monthStart = monthRange(cur, tz).from;
   const endOfMonth = monthRange(cur, tz).to;
+  // As mesmas saídas que o resumo do mês soma (inclusive as anotadas com data mais pra frente).
+  const monthOutflows = sliceRange(data.txs, monthStart, endOfMonth).filter(
+    (t) => t.amountInCents < 0 && !t.isInternalTransfer && !(t.accountId && hiddenAccountIds.has(t.accountId)),
+  );
+  // Conta do dia 31 num mês de 30 dias vence no dia 30 (o último): ainda "falta" até lá. A que já está nas saídas do
+  // mês (anotada ou paga antes do vencimento) não é descontada de novo.
+  const payments = paymentsOf(monthOutflows, tz);
+  const fixedLeft = plan.fixedExpenses
+    .map((f) => ({ name: f.name, cents: f.amountInCents, day: Math.min(f.day, daysInMonth) }))
+    .filter((bill) => bill.day > today)
+    .sort((a, b) => a.day - b.day)
+    .filter((bill) => !takePayment(bill, payments))
+    .reduce((sum, bill) => sum + bill.cents, 0);
   // Assinatura parcelada que já acabou (installmentsLeft === 0) não cobra mais.
   const subsLeft = subs.subscriptions
     .filter(
@@ -751,7 +786,6 @@ export function computeForecast(plan: FinancialPlan, data: ForecastData, now: Da
   const accountIds = new Set(accounts.filter((a) => !a.hidden).map((a) => a.id));
   const subKeysActive = new Set(subs.subscriptions.map((x) => subscriptionBaseKey(x.key)));
   const big = Math.max(20000, Math.round(income * BIG_SPEND_FACTOR));
-  const monthStart = monthRange(cur, tz).from;
   const everyday = txWindow
     .filter(
       (t) =>
@@ -776,6 +810,24 @@ export function computeForecast(plan: FinancialPlan, data: ForecastData, now: Da
     dailyLeftInCents: dailyLeft,
     dailyPaceInCents: pacePerDay,
     leftInCents: incomeNow - curSummary.outcomeInCents - fixedLeft - subsLeft - dailyLeft,
+    ...safeToSpend({
+      now,
+      tz,
+      monthEnd: endOfMonth,
+      daysInMonth,
+      incomeInCents: incomeNow,
+      spentInCents: curSummary.outcomeInCents,
+      goalInCents: goalReserveOfMonth(resolveGoals(plan), cur),
+      monthOutflows,
+      fixedExpenses: plan.fixedExpenses,
+      subscriptions: subs.subscriptions,
+      installments: installmentsOfMonth(
+        pending.filter((i) => i.month < cur),
+        cur,
+      ),
+      rules: data.recurring ?? [],
+      hiddenAccountIds,
+    }),
   };
 
   // Sem salário informado (ex.: só criou a meta), a previsão não tem base: não diz se cabe.

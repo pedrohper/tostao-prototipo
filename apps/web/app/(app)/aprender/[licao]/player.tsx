@@ -163,7 +163,7 @@ export function LessonPlayer({
               <span className="text-xs font-bold tracking-wider text-laranja-texto uppercase">
                 {t.modulePrefix(moduleNumber, moduleTitle)}
               </span>
-              <span className="rounded-full bg-cartao/80 px-2.5 py-0.5 text-[11px] font-bold text-tinta">
+              <span className="rounded-full bg-cartao/80 px-2.5 py-0.5 text-[12px] font-bold text-tinta">
                 {t.hub.speakers[storyMeta.speaker]}
               </span>
             </div>
@@ -187,7 +187,7 @@ export function LessonPlayer({
               )}
               <p className="rounded-[20px] bg-cartao p-4 font-display text-xl leading-snug font-bold">
                 {hook.personalized && (
-                  <span className="mb-2 flex w-fit items-center gap-1 rounded-full bg-menta-clara px-2.5 py-0.5 font-sans text-[11px] font-bold tracking-wider text-verde-texto uppercase">
+                  <span className="mb-2 flex w-fit items-center gap-1 rounded-full bg-menta-clara px-2.5 py-0.5 font-sans text-[12px] font-bold tracking-wider text-verde-texto uppercase">
                     <Selo tipo="dados" className="mr-0" />
                     {tl.yourStatement}
                   </span>
@@ -240,7 +240,7 @@ export function LessonPlayer({
                     }`}
                   >
                     <span
-                      className={`self-start rounded-full px-2 py-0.5 text-[11px] font-bold tracking-wider uppercase ${
+                      className={`self-start rounded-full px-2 py-0.5 text-[12px] font-bold tracking-wider uppercase ${
                         vote === side ? 'bg-tinta text-papel' : 'bg-papel-2 text-tinta-suave'
                       }`}
                     >
@@ -327,7 +327,7 @@ export function LessonPlayer({
                     {t.weeklyChallengeEyebrow}
                   </span>
                   {challengeAccepted && (
-                    <span className="rounded-full bg-cartao/85 px-2.5 py-0.5 text-[11px] font-bold text-verde-texto">
+                    <span className="rounded-full bg-cartao/85 px-2.5 py-0.5 text-[12px] font-bold text-verde-texto">
                       {t.challengeAcceptedBadge}
                     </span>
                   )}

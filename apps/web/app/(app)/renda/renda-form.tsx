@@ -433,7 +433,7 @@ export function RendaForm({
                     </span>
                     <span className="shrink-0 text-right text-sm font-bold text-verde-texto tabular-nums">
                       {money(s.monthlyAvgInCents)}
-                      <span className="block text-[11px] font-medium text-tinta-suave">{t.perMonth}</span>
+                      <span className="block text-[12px] font-medium text-tinta-suave">{t.perMonth}</span>
                     </span>
                   </label>
                 ))}

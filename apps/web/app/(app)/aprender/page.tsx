@@ -186,7 +186,7 @@ export default async function AprenderPage({ searchParams }: { searchParams: Pro
             className="flex flex-col gap-1 rounded-[18px] bg-azul p-3 text-tinta no-underline"
           >
             <Mascot pose="pensando" size={56} alt="" />
-            <span className="flex items-center gap-1 text-[11px] font-bold tracking-[0.08em] text-tinta-suave uppercase">
+            <span className="flex items-center gap-1 text-[12px] font-bold tracking-[0.08em] text-tinta-suave uppercase">
               <Icon src="jogo/tribunal" size={18} />
               {th.tribunalTag}
             </span>
@@ -200,7 +200,7 @@ export default async function AprenderPage({ searchParams }: { searchParams: Pro
             className="flex flex-col gap-1 rounded-[18px] bg-amarelo-claro p-3 text-tinta no-underline"
           >
             <Mascot pose="caramelo-bravo" size={56} alt="" />
-            <span className="flex items-center gap-1 text-[11px] font-bold tracking-[0.08em] text-tinta-suave uppercase">
+            <span className="flex items-center gap-1 text-[12px] font-bold tracking-[0.08em] text-tinta-suave uppercase">
               <Icon src="jogo/batalha" size={18} />
               {th.battleTag}
             </span>
@@ -221,7 +221,7 @@ export default async function AprenderPage({ searchParams }: { searchParams: Pro
           >
             <Icon src="cat/role" size={40} />
             <span className="flex min-w-0 grow flex-col gap-0.5">
-              <span className="text-[11px] font-bold tracking-[0.08em] text-tinta-suave uppercase">
+              <span className="text-[12px] font-bold tracking-[0.08em] text-tinta-suave uppercase">
                 {th.friendsTag}
               </span>
               <span className="text-[15px] leading-[19px] font-bold">{friendsTitle}</span>
@@ -234,7 +234,7 @@ export default async function AprenderPage({ searchParams }: { searchParams: Pro
           >
             <Mascot pose="caramelo-moeda" size={44} alt="" />
             <span className="flex min-w-0 grow flex-col gap-0.5">
-              <span className="text-[11px] font-bold tracking-[0.08em] text-tinta-suave uppercase">
+              <span className="text-[12px] font-bold tracking-[0.08em] text-tinta-suave uppercase">
                 {th.invitesTag}
               </span>
               <span className="text-[15px] leading-[19px] font-bold">{th.invitesTitle}</span>

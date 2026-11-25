@@ -34,7 +34,7 @@ import type {
   RecurringRule,
   AutomationToken,
 } from '../domain/entities.js';
-import type { FinancialPlan, UpdateTostaoAutoConfigBody } from '@tostao/contracts';
+import type { FinancialPlan, StoredHomePrefs, UpdateTostaoAutoConfigBody } from '@tostao/contracts';
 
 export type NewUser = Pick<User, 'name' | 'email' | 'passwordHash'> &
   Partial<Pick<User, 'emailVerifiedAt' | 'termsAcceptedAt' | 'termsVersion'>>;
@@ -53,6 +53,11 @@ export interface UsersRepository {
   setAiConsent(id: string, at: Date | null): Promise<void>;
   /** Grava (já normalizada) ou apaga (null) a chave Pix. */
   setPixKey(id: string, pixKey: string | null): Promise<void>;
+  /**
+   * Muda as preferências da Home de forma atômica: `change` recebe o que está gravado e devolve o novo valor. Duas
+   * chamadas simultâneas da mesma pessoa fazem fila. `null` = pessoa não existe.
+   */
+  updateHomePrefs(id: string, change: (current: unknown) => StoredHomePrefs): Promise<StoredHomePrefs | null>;
   /** Apaga a pessoa e, em cascata, tudo que é dela (LGPD: direito de eliminação). */
   delete(id: string): Promise<void>;
 }

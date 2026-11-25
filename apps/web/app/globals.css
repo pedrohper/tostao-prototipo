@@ -30,6 +30,24 @@
 
   --font-display: 'Bricolage Grotesque', Inter, system-ui, sans-serif;
   --font-sans: Inter, system-ui, sans-serif;
+
+  /* T6.12 · escala de texto, tirada dos tamanhos mais usados: text-mini, text-small, text-body, text-title, text-hero.
+     12 px é o MÍNIMO do app (dinheiro nunca abaixo de 13 px). Já em uso na Home, Carteira, Anotar e navegação; o resto
+     migra quando cada arquivo for mexido. Nos três menores a altura de linha é a que o texto já herdava (1,5). */
+  --text-mini: 12px;
+  --text-mini--line-height: 1.5;
+  --text-small: 13px;
+  --text-small--line-height: 1.5;
+  --text-body: 15px;
+  --text-body--line-height: 1.5;
+  --text-title: 22px;
+  --text-title--line-height: 26px;
+  --text-hero: 28px;
+  --text-hero--line-height: 32px;
+
+  /* Cantos: rounded-card (cartões) e rounded-control (botões e campos). */
+  --radius-card: 22px;
+  --radius-control: 14px;
 }
 
 @custom-variant dark {

@@ -171,7 +171,7 @@ export default async function TostaoPage({ searchParams }: { searchParams?: Prom
       >
         <span>{t.auto.tabAuto}</span>
         {pendingCount > 0 && (
-          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-laranja px-1.5 text-[11px] font-bold text-tinta-fixa tabular-nums">
+          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-laranja px-1.5 text-[12px] font-bold text-tinta-fixa tabular-nums">
             {pendingCount}
           </span>
         )}

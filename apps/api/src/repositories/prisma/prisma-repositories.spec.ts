@@ -438,7 +438,9 @@ describe.skipIf(!url)('T1.4 no Postgres real', () => {
       const tag = uniq();
       const register = new RegisterUserUseCase(repos);
       await register.execute({ name: 'Um', email: `dup-${tag}@x.com`, password: '12345678' });
-      const before = await db.user.count();
+      // conta só os cadastros deste teste: outros arquivos criam usuários no mesmo banco ao mesmo tempo
+      const mine = () => db.user.count({ where: { email: { contains: tag } } });
+      const before = await mine();
       await expect(
         register.execute({ name: 'Dois', email: `DUP-${tag}@X.COM`, password: '12345678' }),
       ).rejects.toMatchObject({ statusCode: 409 });
@@ -452,7 +454,7 @@ describe.skipIf(!url)('T1.4 no Postgres real', () => {
       expect((settled.find((s) => s.status === 'rejected') as PromiseRejectedResult).reason).toMatchObject({
         statusCode: 409,
       });
-      expect(await db.user.count()).toBe(before + 1);
+      expect(await mine()).toBe(before + 1);
     });
 
     it('lançamento parcelado entra inteiro ou não entra (createMany): um valor 0 no meio derruba tudo', async () => {

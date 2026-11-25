@@ -64,7 +64,7 @@ export function PendingAlertsCard({
             </span>
           </div>
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="truncate text-[13px] font-medium text-tinta-suave">{pendingExpensesLabel}</span>
+            <span className="truncate text-small font-medium text-tinta-suave">{pendingExpensesLabel}</span>
             <span className="font-display text-[19px] leading-6 font-extrabold text-vermelho-texto tabular-nums">
               {hidden ? `R$ ${MASKED}` : money(pendingExpensesInCents)}
             </span>
@@ -99,7 +99,7 @@ export function PendingAlertsCard({
             </span>
           </div>
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="truncate text-[13px] font-medium text-tinta-suave">{pendingIncomesLabel}</span>
+            <span className="truncate text-small font-medium text-tinta-suave">{pendingIncomesLabel}</span>
             <span className="font-display text-[19px] leading-6 font-extrabold text-verde-texto tabular-nums">
               {hidden ? `R$ ${MASKED}` : money(pendingIncomesInCents)}
             </span>

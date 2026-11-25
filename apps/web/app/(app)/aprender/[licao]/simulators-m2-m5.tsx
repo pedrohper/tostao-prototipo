@@ -175,7 +175,7 @@ function RaioXDoCetNoPix() {
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="flex justify-between text-xs font-semibold">
+          <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
             <span>Parcela do banco</span>
             <span className="font-bold">{money(parcelaCents)}</span>
           </span>
@@ -354,14 +354,14 @@ function TermometroDeSangria() {
                   </span>
                   <span className="text-xs font-bold text-tinta">{d.nome}</span>
                 </button>
-                <span className="rounded-full bg-rosa px-2 py-0.5 text-[11px] font-bold text-vermelho-texto">
+                <span className="rounded-full bg-rosa px-2 py-0.5 text-[12px] font-bold text-vermelho-texto">
                   {d.taxa}%/mês · dobra em {mesesDobra.toFixed(1).replace('.', ',')}m
                 </span>
               </div>
 
               {d.ativa && (
                 <div className="mt-2.5 flex flex-col gap-1">
-                  <div className="flex justify-between text-[11px] font-semibold text-tinta-suave">
+                  <div className="flex justify-between text-[13px] font-semibold text-tinta-suave">
                     <span>Saldo: {money(d.saldo * 100)}</span>
                     <span>Sangria: {money(Math.round(d.saldo * 100 * (d.taxa / 100)))}/mês</span>
                   </div>
@@ -507,7 +507,7 @@ function AvalancheVsBolaDeNeve() {
         </div>
       </div>
 
-      <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
+      <p className="rounded-xl bg-papel-2 p-3 text-[13px] leading-relaxed text-tinta-suave">
         <Selo tipo="dados" />
         <b>Comparativo ({atual.meses} meses p/ zerar tudo):</b>{' '}
         {economiaAvalanche > 0 ? (
@@ -586,7 +586,7 @@ function CalculadoraValorOriginal() {
         </div>
       </div>
 
-      <div className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
+      <div className="rounded-xl bg-amarelo-claro p-3 text-[13px] leading-relaxed text-laranja-texto">
         <Selo tipo="ok" />
         <b>Faixa de contraoferta realista à vista:</b> entre <b>{money(ofertaMinCents)}</b> e{' '}
         <b>{money(ofertaMaxCents)}</b>. Nunca aceite a primeira proposta parcelada sem saber quanto da dívida é só bola
@@ -676,7 +676,7 @@ function CalculadoraMinimoExistencial() {
   return (
     <div className="flex flex-col gap-3.5">
       <label className="flex flex-col gap-1">
-        <span className="flex justify-between text-xs font-semibold">
+        <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
           <span>Aluguel / Moradia</span>
           <span className="font-bold">{money(moradia * 100)}</span>
         </span>
@@ -684,7 +684,7 @@ function CalculadoraMinimoExistencial() {
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="flex justify-between text-xs font-semibold">
+        <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
           <span>Alimentação básica</span>
           <span className="font-bold">{money(alimentacao * 100)}</span>
         </span>
@@ -698,7 +698,7 @@ function CalculadoraMinimoExistencial() {
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="flex justify-between text-xs font-semibold">
+        <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
           <span>Água, luz e transporte</span>
           <span className="font-bold">{money(basicos * 100)}</span>
         </span>
@@ -706,7 +706,7 @@ function CalculadoraMinimoExistencial() {
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="flex justify-between text-xs font-semibold">
+        <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
           <span>Sua renda mensal disponível</span>
           <span className="font-bold">{money(rendaCents)}</span>
         </span>
@@ -726,7 +726,7 @@ function CalculadoraMinimoExistencial() {
         </div>
       </div>
 
-      <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
+      <p className="rounded-xl bg-papel-2 p-3 text-[13px] leading-relaxed text-tinta-suave">
         <Selo tipo="lei" />
         <b>Piso legal vs. vida real:</b> o decreto federal protege pelo menos <b>{money(PISO_LEGAL_CENTS)}</b> da renda
         na Lei do Superendividamento, mas o seu mínimo de sobrevivência real é <b>{money(minimoRealCents)}</b>. Só
@@ -794,7 +794,9 @@ function CalculadoraCustoBasico() {
                   {it.label}
                 </span>
               </div>
-              <span className="font-display text-xs font-extrabold text-tinta">{money(it.valor)}</span>
+              <span className="font-display text-[13px] leading-[18px] font-extrabold text-tinta">
+                {money(it.valor)}
+              </span>
             </button>
           );
         })}
@@ -802,15 +804,15 @@ function CalculadoraCustoBasico() {
 
       <div className="grid grid-cols-3 gap-2">
         <div className="rounded-xl bg-amarelo-claro p-2.5 text-center">
-          <span className="text-[11px] font-semibold text-tinta-suave block">1 mês</span>
+          <span className="text-[12px] font-semibold text-tinta-suave block">1 mês</span>
           <p className="font-display text-sm font-extrabold text-tinta">{money(custoBasicoCents)}</p>
         </div>
         <div className="rounded-xl bg-azul p-2.5 text-center">
-          <span className="text-[11px] font-semibold text-tinta-suave block">3 meses</span>
+          <span className="text-[12px] font-semibold text-tinta-suave block">3 meses</span>
           <p className="font-display text-sm font-extrabold text-tinta">{money(custoBasicoCents * 3)}</p>
         </div>
         <div className="rounded-xl bg-menta-clara p-2.5 text-center">
-          <span className="text-[11px] font-semibold text-tinta-suave block">6 meses</span>
+          <span className="text-[12px] font-semibold text-tinta-suave block">6 meses</span>
           <p className="font-display text-sm font-extrabold text-tinta">{money(custoBasicoCents * 6)}</p>
         </div>
       </div>
@@ -840,21 +842,21 @@ function ComparadorLiquidezSeguranca() {
 
       <div className="grid grid-cols-2 gap-2.5">
         <div className="rounded-2xl bg-menta-clara p-3">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-verde-texto">Reserva D+0</span>
+          <span className="text-[12px] font-bold uppercase tracking-wider text-verde-texto">Reserva D+0</span>
           <p className="text-xs font-semibold text-tinta mt-1">CDB 100% CDI / Selic</p>
           <p className="font-display text-xl font-extrabold text-verde-texto mt-1">R$ 0,00</p>
-          <span className="text-[11px] text-verde-texto">de juros pagos</span>
+          <span className="text-[12px] text-verde-texto">de juros pagos</span>
         </div>
 
         <div className="rounded-2xl bg-rosa p-3">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-vermelho-texto">Travado D+30</span>
+          <span className="text-[12px] font-bold uppercase tracking-wider text-vermelho-texto">Travado D+30</span>
           <p className="text-xs font-semibold text-tinta mt-1">Cai no rotativo 30d</p>
           <p className="font-display text-xl font-extrabold text-vermelho-texto mt-1">−{money(prejuizoTravadoCents)}</p>
-          <span className="text-[11px] text-vermelho-texto">prejuízo líquido</span>
+          <span className="text-[12px] text-vermelho-texto">prejuízo líquido</span>
         </div>
       </div>
 
-      <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
+      <p className="rounded-xl bg-papel-2 p-3 text-[13px] leading-relaxed text-tinta-suave">
         <Selo tipo="dica" />
         <b>Liquidez vale mais que 0,1% de rentabilidade:</b> mesmo que o investimento travado renda{' '}
         {money(rendimentoTravadoCents)} no mês, o rotativo cobra <b>{money(custoRotativoCents)}</b> até o dinheiro
@@ -983,7 +985,7 @@ function ReconstrucaoDoMuro() {
         </div>
       </div>
 
-      <p className="text-xs leading-relaxed text-tinta-suave">
+      <p className="text-[13px] leading-relaxed text-tinta-suave">
         <Selo tipo="dica" />
         <b>Usar a reserva não é fracasso:</b> ela cumpriu o papel dela. Coloque a reposição de{' '}
         <b>{money(porMes * 100)}/mês</b> como conta fixa até fechar os <b>{meses} meses</b>.
@@ -1093,7 +1095,7 @@ function AportesVsAumentoDeRenda() {
   return (
     <div className="flex flex-col gap-4">
       <label className="flex flex-col gap-1">
-        <span className="flex justify-between text-xs font-semibold">
+        <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
           <span>Cenário A: aporte desde o dia 1 (10 anos)</span>
           <span className="font-bold">{money(aporteInicial * 100)}/mês</span>
         </span>
@@ -1107,7 +1109,7 @@ function AportesVsAumentoDeRenda() {
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="flex justify-between text-xs font-semibold">
+        <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
           <span>Cenário B: aporte após 3 anos de carreira (7 anos)</span>
           <span className="font-bold">{money(aportePosCarreira * 100)}/mês</span>
         </span>
@@ -1122,7 +1124,7 @@ function AportesVsAumentoDeRenda() {
 
       <div className="flex flex-col gap-2.5">
         <div className="rounded-xl bg-amarelo-claro p-3">
-          <div className="flex justify-between text-xs font-semibold">
+          <div className="flex justify-between text-[13px] leading-[18px] font-semibold">
             <span>Só juros compostos ({money(aporteInicial * 100)}/mês)</span>
             <span className="font-display font-extrabold">{money(cenarioACents)}</span>
           </div>
@@ -1132,7 +1134,7 @@ function AportesVsAumentoDeRenda() {
         </div>
 
         <div className="rounded-xl bg-menta-clara p-3">
-          <div className="flex justify-between text-xs font-semibold text-verde-texto">
+          <div className="flex justify-between text-[13px] leading-[18px] font-semibold text-verde-texto">
             <span>Carreira + aporte maior ({money(aportePosCarreira * 100)}/mês)</span>
             <span className="font-display font-extrabold">{money(cenarioBCents)}</span>
           </div>
@@ -1142,7 +1144,7 @@ function AportesVsAumentoDeRenda() {
         </div>
       </div>
 
-      <p className="text-xs leading-relaxed text-tinta-suave">
+      <p className="text-[13px] leading-relaxed text-tinta-suave">
         <Selo tipo="alta" />
         <b>Renda é o motor do aporte (0,8%/mês em 10 anos):</b> aumentar sua capacidade de ganhar gera{' '}
         <b>
@@ -1239,7 +1241,7 @@ function AlocacaoRendaExtra() {
 
       <div className="flex flex-col gap-2.5">
         <label className="flex flex-col gap-1">
-          <span className="flex justify-between text-xs font-semibold">
+          <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
             <span>Pendências / Dívidas</span>
             <span className="font-bold text-laranja-texto">
               {pctPendencias}% ({money(pendenciasCents)})
@@ -1260,7 +1262,7 @@ function AlocacaoRendaExtra() {
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="flex justify-between text-xs font-semibold">
+          <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
             <span>Reserva de emergência</span>
             <span className="font-bold text-verde-texto">
               {pctReserva}% ({money(reservaCents)})
@@ -1289,20 +1291,20 @@ function AlocacaoRendaExtra() {
 
       <div className="grid grid-cols-3 gap-2">
         <div className="rounded-xl bg-amarelo-claro p-2.5 text-center">
-          <span className="text-[11px] font-semibold text-tinta-suave block">Pendências</span>
+          <span className="text-[12px] font-semibold text-tinta-suave block">Pendências</span>
           <p className="font-display text-sm font-extrabold">{money(pendenciasCents)}</p>
         </div>
         <div className="rounded-xl bg-menta-clara p-2.5 text-center">
-          <span className="text-[11px] font-semibold text-tinta-suave block">Reserva</span>
+          <span className="text-[12px] font-semibold text-tinta-suave block">Reserva</span>
           <p className="font-display text-sm font-extrabold">{money(reservaCents)}</p>
         </div>
         <div className="rounded-xl bg-rosa p-2.5 text-center">
-          <span className="text-[11px] font-semibold text-tinta-suave block">Lazer ({pctLazer}%)</span>
+          <span className="text-[12px] font-semibold text-tinta-suave block">Lazer ({pctLazer}%)</span>
           <p className="font-display text-sm font-extrabold">{money(lazerCents)}</p>
         </div>
       </div>
 
-      <p className="text-xs leading-relaxed text-tinta-suave">
+      <p className="text-[13px] leading-relaxed text-tinta-suave">
         <Selo tipo="brilho" />
         <b>Regra do esforço recompensado:</b> separe uma fatia planejada para o lazer ({money(lazerCents)}) sem culpa —
         assim você mantém o gás para os próximos extras sem torrar tudo.

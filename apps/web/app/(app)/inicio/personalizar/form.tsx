@@ -42,6 +42,7 @@ export function PersonalizarForm({
   const [ordem, setOrdem] = useState(linhas.map((l) => l.id));
   const [off, setOff] = useState(new Set(ocultos));
   const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const byId = new Map(linhas.map((l) => [l.id, l]));
   const mover = (i: number, d: number) => {
     const j = i + d;
@@ -58,7 +59,7 @@ export function PersonalizarForm({
           const on = !off.has(id);
           return (
             <li key={id} className="flex items-center gap-0.5 border-b border-linha last:border-b-0">
-              <label className="flex min-h-14 min-w-0 grow cursor-pointer items-center gap-3">
+              <label className="flex min-h-14 min-w-0 grow cursor-pointer items-center gap-3 py-2">
                 <input
                   type="checkbox"
                   checked={on}
@@ -71,7 +72,7 @@ export function PersonalizarForm({
                   className="h-[22px] w-[22px] shrink-0 accent-tinta"
                 />
                 <span className="flex min-w-0 flex-col">
-                  <span className={`text-[15px] font-semibold ${on ? '' : 'text-tinta-suave'}`}>{l.nome}</span>
+                  <span className={`text-body font-semibold ${on ? '' : 'text-tinta-suave'}`}>{l.nome}</span>
                   <span className="text-xs text-tinta-suave">{l.dica}</span>
                 </span>
               </label>
@@ -99,7 +100,7 @@ export function PersonalizarForm({
       </ul>
       <div className="flex flex-col gap-0.5 rounded-2xl bg-amarelo-claro px-3.5 py-3">
         <span className="text-sm font-bold">{t.dismissedTitle}</span>
-        <span className="text-[13px] leading-[19px]">{t.dismissedBody}</span>
+        <span className="text-small leading-[19px]">{t.dismissedBody}</span>
       </div>
       <button
         type="button"
@@ -111,10 +112,21 @@ export function PersonalizarForm({
       >
         {t.resetDefault}
       </button>
+      {error && (
+        <p role="alert" className="rounded-2xl bg-amarelo-claro px-3.5 py-3 text-small leading-[19px] font-semibold">
+          {error}
+        </p>
+      )}
       <button
         type="button"
         disabled={pending}
-        onClick={() => start(() => saveHomePrefs(ordem, [...off]))}
+        onClick={() =>
+          start(async () => {
+            setError(null);
+            const result = await saveHomePrefs(ordem, [...off]); // quando dá certo, redireciona pra Home
+            if (result) setError(result.error);
+          })
+        }
         className="sticky bottom-[104px] flex h-[52px] items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel disabled:opacity-60 md:bottom-6"
       >
         {pending ? savingLabel : saveLabel}

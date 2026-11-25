@@ -50,7 +50,7 @@ export function TransferLinkForms({ t, accounts, back }: { t: TransactionDTO; ac
   if (t.linkKind) {
     return (
       <div className="flex flex-col gap-3">
-        <p className="rounded-[14px] bg-azul px-3 py-2.5 text-sm leading-5 text-tinta">
+        <p className="rounded-control bg-azul px-3 py-2.5 text-sm leading-5 text-tinta">
           Ligado a <b>{linked?.name ?? 'outra conta sua'}</b> como {KIND_LABEL[t.linkKind]}. Não conta como gasto nem
           renda.
         </p>

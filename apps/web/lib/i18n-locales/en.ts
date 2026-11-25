@@ -100,6 +100,35 @@ export const en: Dictionary = {
     setAction: 'Set',
     emptyLimitsHint: 'Set a cap on delivery, groceries, or your biggest spend. I will warn you before you hit it.',
     showDismissedAlerts: (count) => `Restore ${count} ${count === 1 ? 'dismissed alert' : 'dismissed alerts'}`,
+    safeToSpend: {
+      title: 'What can I spend today',
+      line: 'Spend today',
+      perDay: (days) => `per day, for the ${days} days left (today included)`,
+      lastDay: 'and today is the last day of the month',
+      shortfall: 'to close the month. No drama: hold what is not urgent.',
+      nothingLeft: 'everything coming in this month is already spoken for.',
+      parts: {
+        spent: 'this month spending',
+        fixed: 'fixed bills',
+        subscriptions: 'subscriptions',
+        scheduled: 'installments and scheduled entries',
+        goal: 'your goal',
+      },
+      and: ' and ',
+      alreadyOut: (list) => `Already taken out: ${list}.`,
+      rows: {
+        income: 'Monthly income',
+        spent: 'Month spending',
+        fixed: 'Fixed bills left',
+        subscriptions: 'Subscriptions left',
+        scheduled: 'Installments and scheduled',
+        goal: 'For your goal this month',
+        available: (days) => (days === 1 ? 'Left for today' : `Left for ${days} days`),
+        missing: 'Missing',
+      },
+      note: 'This is an estimate: it counts the whole month income, even what has not arrived, and treats fixed bills past their date as paid. Bills you did not add and I did not detect are left out.',
+      inviteCta: 'Add my income',
+    },
     customizeHome: 'Customize Home',
     dismissAlertLabel: 'Done, dismiss',
     monthInGreen: 'In the green',
@@ -176,6 +205,7 @@ export const en: Dictionary = {
   profile: {
     verifyEmailLink: 'Confirm my email',
     title: 'More',
+    levelBadge: (level, xp) => `Level ${level} · ${xp} XP`,
     levelSummary: (level, xp, streakDays) => `Level ${level} · ${xp} XP · ${streakDays}-day streak`,
     connectedAccounts: 'Connected accounts',
     hiddenAccountHint: 'Hidden accounts are excluded from totals and screens, but keep syncing.',
@@ -985,7 +1015,8 @@ export const en: Dictionary = {
       title: 'Upcoming months',
       emptyBody: 'To forecast ahead, I need to know what comes in and goes out every month.',
       tellIncomeCta: 'Add my income',
-      allGreen: (month, _amount) => `All three months finish in the green. In ${month} you should have about `,
+      allGreen: (month, amount) =>
+        `All three months finish in the green. In ${month} you should have about ${amount} left.`,
       worstIsFirst: (month, amount) =>
         `${month} gets tight: about ${amount} short. Holding back on daily spending now fixes it.`,
       firstVsWorst: (firstMonth, firstGreen, worstMonth, worstAmount) =>
@@ -1443,7 +1474,7 @@ export const en: Dictionary = {
       },
     },
     personalizar: {
-      subtitle: 'Choose what shows up and in what order. Your balance always stays on top.',
+      subtitle: 'Choose what shows up and in what order. What you can spend today and your balance always stay on top.',
       dismissedTitle: 'Alerts you dismissed',
       dismissedBody:
         'They stay hidden until something new happens — a new uncategorized expense, upcoming bill, or exceeded budget.',
