@@ -2,15 +2,44 @@ import type { Repositories } from '../repositories/types.js';
 import type { PushGateway, PushPayload } from '../gateways/push-gateway.js';
 import type { WhatsAppGateway } from '../gateways/whatsapp-gateway.js';
 import { brDay, EngagementUseCase } from '../use-cases/engagement.js';
+import { ForecastUseCase } from '../use-cases/financial-plan.js';
 
 const money = (c: number) => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const BR = 3 * 60 * 60 * 1000;
+/** O "posso gastar hoje" é um aviso de manhã: quem liga (ou o servidor que volta) depois disso recebe amanhã. */
+const DAILY_FROM_HOUR = 9;
+const DAILY_UNTIL_HOUR = 12;
 /** Quantos usuários elegíveis a cada página da varredura de WhatsApp. */
 const NOTIFY_PAGE = 500;
+
+/** O texto do aviso diário, a partir da mesma conta que a Início mostra. */
+export function safeToSpendNotice(perDayInCents: number, availableInCents: number): PushPayload {
+  const base = { url: '/inicio', tag: 'hoje' };
+  if (availableInCents < 0) {
+    return {
+      ...base,
+      title: `Falta ${money(-availableInCents)} pro mês fechar`,
+      body: 'Sem drama: segura o que não for urgente. Toca pra ver a conta.',
+    };
+  }
+  if (perDayInCents <= 0) {
+    return {
+      ...base,
+      title: 'Hoje o ideal é não gastar',
+      body: 'O que entrou já tem destino até o fim do mês. Toca pra ver a conta.',
+    };
+  }
+  return {
+    ...base,
+    title: `Hoje dá pra gastar ${money(perDayInCents)}`,
+    body: 'Já tirei o que ainda falta sair no mês. Toca pra ver a conta.',
+  };
+}
 
 /**
  * Roda a cada 15 min. Cada aviso tem uma chave e sai uma vez só:
  * - 9h: o que vence hoje ou daqui a 2 dias (fatura, conta fixa, assinatura)
+ * - 9h às 12h: quanto dá pra gastar hoje (só push, e só pra quem ligou: `notifySafeToSpend`)
  * - 20h: ofensiva em risco (tem ofensiva e hoje nenhuma missão)
  * - domingo 19h: resumo da semana
  * Respeita as preferências salvas em TostaoAutoConfig (notifyPush / notifyWhatsapp / tostaoPrevisao).
@@ -23,6 +52,7 @@ export async function runNotifications(
 ) {
   if (!push.enabled && !whatsapp?.enabled) return { sent: 0 };
   const engagement = new EngagementUseCase(repos, () => now);
+  const forecast = new ForecastUseCase(repos, () => now);
   const br = new Date(now.getTime() - BR);
   const hour = br.getUTCHours();
   const today = brDay(now);
@@ -67,6 +97,21 @@ export async function runNotifications(
       const config = await repos.tostaoAuto.getConfig(userId);
       const canPush = push.enabled && config.notifyPush;
       const canWa = Boolean(whatsapp?.enabled && config.notifyWhatsapp);
+      // Tem interruptor próprio: quem pediu o aviso diário recebe mesmo com os "avisos urgentes" desligados.
+      const canDaily = push.enabled && config.notifySafeToSpend;
+      if (!canPush && !canWa && !canDaily) continue;
+
+      if (canDaily && hour >= DAILY_FROM_HOUR && hour < DAILY_UNTIL_HOUR) {
+        const { thisMonth } = await forecast.execute({ userId, months: 1 });
+        // Sem renda informada não existe a conta: não manda nada.
+        if (thisMonth?.safeToSpend && thisMonth.safeToSpendTodayInCents !== undefined) {
+          await deliverPush(
+            userId,
+            `hoje:${today}`,
+            safeToSpendNotice(thisMonth.safeToSpendTodayInCents, thisMonth.safeToSpend.availableInCents),
+          );
+        }
+      }
       if (!canPush && !canWa) continue;
 
       if (hour >= 9 && config.tostaoPrevisao) {

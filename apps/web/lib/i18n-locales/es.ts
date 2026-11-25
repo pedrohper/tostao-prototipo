@@ -304,6 +304,9 @@ export const es: Dictionary = {
     watchesSubtitle: 'Elige qué vigilan Tostão y Caramelo por ti y por dónde llegan los avisos.',
     pushChannelLabel: 'Avisos urgentes en el móvil',
     whatsappChannelLabel: 'Avisos en el WhatsApp conectado',
+    safeToSpendPushLabel: 'Cuánto puedo gastar hoy, a las 9',
+    safeToSpendPushHint:
+      'Un aviso al día en el celular (necesita los avisos activados en el aparato). El valor aparece en la pantalla de bloqueo.',
     routines: {
       caramelo_extrato: {
         title: 'Caramelo organiza el extracto',
@@ -483,6 +486,7 @@ export const es: Dictionary = {
     privacyLink: 'Privacidad',
     updatedOn: (date) => `Actualizado el ${date}`,
     updatedDate: '21 de noviembre de 2026',
+    privacyUpdatedDate: '25 de noviembre de 2026',
     summaryHeading: 'Resumen sin lenguaje legal',
     privacyTitle: 'Política de privacidad',
     termsTitle: 'Términos de uso',

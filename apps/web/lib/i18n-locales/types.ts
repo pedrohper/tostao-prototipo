@@ -275,6 +275,8 @@ export interface Dictionary {
     watchesSubtitle: string;
     pushChannelLabel: string;
     whatsappChannelLabel: string;
+    safeToSpendPushLabel: string;
+    safeToSpendPushHint: string;
     routines: {
       caramelo_extrato: { title: string; description: string; badge: string };
       tostao_previsao: { title: string; description: string; badge: string };
@@ -434,6 +436,7 @@ export interface Dictionary {
     privacyLink: string;
     updatedOn: (date: string) => string;
     updatedDate: string;
+    privacyUpdatedDate: string;
     summaryHeading: string;
     privacyTitle: string;
     termsTitle: string;

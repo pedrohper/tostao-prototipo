@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default async function PrivacidadePage() {
   const { t } = await getI18n();
   return (
-    <LegalPage title={t.legal.privacyTitle}>
+    <LegalPage title={t.legal.privacyTitle} documento="privacidade">
       <Resumo>
         <ul>
           <li>
@@ -23,9 +23,9 @@ export default async function PrivacidadePage() {
             (hash), nem a gente consegue ler.
           </li>
           <li>
-            Pra conversa com o Tostão e a categoria automática, e só se você der o seu aceite, um resumo dos seus
-            números, com dados pessoais mascarados, vai pra um serviço de inteligência artificial (DeepSeek), fora do
-            Brasil.
+            Pra conversa com o Tostão, a categoria automática e o &quot;Isso é golpe?&quot;, e só se você der o seu
+            aceite, um resumo dos seus números ou a mensagem que você colar, com dados pessoais mascarados, vai pra um
+            serviço de inteligência artificial (DeepSeek), fora do Brasil.
           </li>
           <li>Você pode ver, corrigir, baixar uma cópia (JSON), desconectar e apagar tudo quando quiser, no Perfil.</li>
         </ul>
@@ -58,6 +58,10 @@ export default async function PrivacidadePage() {
           <tr>
             <td>Gastos anotados na mão, categorias, limites, renda, dia do salário, contas fixas e meta</td>
             <td>Você, dentro do app</td>
+          </tr>
+          <tr>
+            <td>Mensagem suspeita colada no &quot;Isso é golpe?&quot; (usada na hora e não guardada)</td>
+            <td>Você, dentro do app ou pelo WhatsApp</td>
           </tr>
           <tr>
             <td>Acertos: nomes de pessoas e anotações ligadas a divisões, empréstimos ou dívidas</td>
@@ -121,7 +125,10 @@ export default async function PrivacidadePage() {
             <td>Seu consentimento, dado no ambiente do banco e revogável a qualquer momento (inciso I)</td>
           </tr>
           <tr>
-            <td>Responder na conversa com o Tostão e sugerir categorias com inteligência artificial</td>
+            <td>
+              Responder na conversa com o Tostão, sugerir categorias e conferir mensagens suspeitas com inteligência
+              artificial
+            </td>
             <td>Execução do contrato (inciso V); você pode não usar a conversa e categorizar na mão</td>
           </tr>
           <tr>
@@ -151,7 +158,10 @@ export default async function PrivacidadePage() {
           automática, <b>só depois do seu aceite</b> (você pode revogar quando quiser). Antes de enviar, nós mascaramos
           dados pessoais (CPF, e-mail, telefone, chaves Pix e nomes em transações). Recebe seu primeiro nome, suas
           mensagens e um resumo dos seus números (saldos, gastos por categoria, renda, assinaturas, limites e meta) ou a
-          descrição e o valor das transações sem categoria. Não recebe e-mail, senha nem dados de acesso ao banco.
+          descrição e o valor das transações sem categoria. No &quot;Isso é golpe?&quot;, recebe o texto que você colar,
+          com CPF, e-mail, telefone, números de conta e cartão e o seu nome mascarados; nomes de outras pessoas e links
+          que estejam na mensagem vão junto, e o Tostão não guarda a mensagem nem a resposta. Não recebe o seu e-mail,
+          senha nem dados de acesso ao banco.
         </li>
         <li>
           <b>Resend</b> (Estados Unidos): envia os e-mails da sua conta (verificação de e-mail e redefinição de senha).
@@ -167,7 +177,8 @@ export default async function PrivacidadePage() {
         </li>
         <li>
           <b>Serviço de avisos do seu navegador</b> (Google, Apple ou Mozilla, conforme o aparelho): só se você ligar os
-          avisos. Leva o texto do aviso (ex.: "Fatura vence em 2 dias") até o seu celular.
+          avisos. Leva o texto do aviso (ex.: "Fatura vence em 2 dias" ou, se você ligar o aviso diário, quanto dá pra
+          gastar hoje) até o seu celular.
         </li>
         <li>
           <b>Provedor de hospedagem (infraestrutura de nuvem)</b>: onde o site, a API e o banco de dados rodam. Guarda

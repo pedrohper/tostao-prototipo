@@ -39,6 +39,16 @@ describe('Política de Privacidade', () => {
     expect(privacy).toMatch(/só depois do seu aceite/);
   });
 
+  it('conta o que o "Isso é golpe?" manda pra IA, e o aviso do app diz o mesmo', () => {
+    const card = readFileSync(join(__dirname, '..', 'components', 'ai-consent-card.tsx'), 'utf8');
+    for (const src of [privacy, card]) {
+      expect(src).toContain('Isso é golpe?');
+      expect(src.replace(/\s+/g, ' ')).toMatch(/não (a )?guarda(da)?/);
+      expect(src.replace(/\s+/g, ' ')).toMatch(/[Nn]omes? de outras? pessoas?/);
+    }
+    expect(privacy).toContain('documento="privacidade"');
+  });
+
   it('cita os direitos do titular, incluindo o download dos dados no Perfil', () => {
     expect(privacy).toContain('LGPD (art. 18)');
     expect(privacy).toContain('Baixar meus dados (JSON)');

@@ -364,6 +364,20 @@ export function TostaoAutoConfigPanel({
             className="h-5 w-5 shrink-0 accent-tinta"
           />
         </label>
+        <label className="flex min-h-11 cursor-pointer items-center justify-between gap-3 text-sm font-semibold">
+          <span className="flex flex-col">
+            <span>{t.auto.safeToSpendPushLabel}</span>
+            <span className="text-[12px] leading-[17px] font-normal text-tinta-suave">
+              {t.auto.safeToSpendPushHint}
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            checked={config.notifySafeToSpend}
+            onChange={() => toggle('notifySafeToSpend')}
+            className="h-5 w-5 shrink-0 accent-tinta"
+          />
+        </label>
       </div>
     </div>
   );

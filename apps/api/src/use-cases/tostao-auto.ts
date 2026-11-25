@@ -116,6 +116,7 @@ export function presentTostaoConfig(config: TostaoAutoConfig): TostaoAutoConfigD
     olheiroAcertos: config.olheiroAcertos,
     notifyPush: config.notifyPush,
     notifyWhatsapp: config.notifyWhatsapp,
+    notifySafeToSpend: config.notifySafeToSpend,
     lastCheckedAt: config.lastCheckedAt ? config.lastCheckedAt.toISOString() : null,
   };
 }

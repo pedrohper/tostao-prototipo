@@ -6,23 +6,28 @@ import { getDictionary, type Locale } from '@/lib/i18n';
 
 /** Desktop sidebar footer: clickable streak/XP card (opens streak sequence + missions) and quick "Log expense" action. */
 export function SidebarFooter({
-  xp,
-  level,
-  streakDays,
-  missions = null,
   locale = 'pt-BR',
-}: {
-  xp: number;
-  level: number;
-  streakDays: number;
-  missions?: MissionsResponse | null;
-  locale?: Locale;
-}) {
+  ...dados
+}: { locale?: Locale } & (
+  | { carregando: true }
+  | { carregando?: false; xp: number; level: number; streakDays: number; missions?: MissionsResponse | null }
+)) {
   const t = getDictionary(locale);
 
   return (
     <div className="mt-auto hidden flex-col gap-3 md:flex">
-      <SidebarStreakButton xp={xp} level={level} streakDays={streakDays} missions={missions} locale={locale} />
+      {dados.carregando ? (
+        // Mesma altura do cartão da ofensiva: nada pula quando ele chega.
+        <div aria-hidden="true" className="h-[108px] animate-pulse rounded-2xl bg-papel-2 motion-reduce:animate-none" />
+      ) : (
+        <SidebarStreakButton
+          xp={dados.xp}
+          level={dados.level}
+          streakDays={dados.streakDays}
+          missions={dados.missions ?? null}
+          locale={locale}
+        />
+      )}
       <Link
         href="/anotar"
         className="flex h-12 items-center justify-center gap-2 rounded-full bg-tinta text-body font-semibold text-papel no-underline"

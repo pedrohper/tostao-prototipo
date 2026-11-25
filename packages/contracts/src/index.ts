@@ -931,6 +931,8 @@ export type TostaoAutoConfigDTO = {
   olheiroAcertos: boolean;
   notifyPush: boolean;
   notifyWhatsapp: boolean;
+  /** Aviso diário das 9h com o "posso gastar hoje". */
+  notifySafeToSpend: boolean;
   lastCheckedAt: string | null;
 };
 
@@ -941,6 +943,7 @@ export const updateTostaoAutoConfigBody = z.object({
   olheiroAcertos: z.boolean().optional(),
   notifyPush: z.boolean().optional(),
   notifyWhatsapp: z.boolean().optional(),
+  notifySafeToSpend: z.boolean().optional(),
 });
 export type UpdateTostaoAutoConfigBody = z.infer<typeof updateTostaoAutoConfigBody>;
 
