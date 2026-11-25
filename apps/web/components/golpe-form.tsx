@@ -114,7 +114,8 @@ export function GolpeForm({ consented }: { consented: boolean }) {
         />
         <p className="text-xs leading-[18px] text-tinta-suave">
           Só texto (print eu ainda não leio). Antes de ir pra IA (DeepSeek), escondo CPF, e-mail, telefone, números de
-          conta e cartão e o seu nome. Nada fica salvo no Tostão.
+          conta e cartão e o seu nome. Nomes de outras pessoas e links que estiverem na mensagem vão junto. Nada fica
+          salvo no Tostão.
         </p>
         <button
           type="submit"

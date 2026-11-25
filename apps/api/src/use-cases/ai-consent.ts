@@ -10,7 +10,7 @@ export async function requireAiConsent(users: Pick<UsersRepository, 'findById'>,
 }
 
 /** Versão do texto do aviso de IA aceito (muda quando o aviso mudar). */
-export const AI_CONSENT_VERSION = '2026-11-20';
+export const AI_CONSENT_VERSION = '2026-11-25';
 
 /** Aceitar (true) registra a data; revogar (false) apaga: a IA volta a ficar bloqueada na hora. */
 export class SetAiConsentUseCase {

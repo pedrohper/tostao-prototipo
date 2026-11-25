@@ -4,7 +4,7 @@ import { hashPassword } from '../lib/password.js';
 import { normalizeInviteCode } from './invites.js';
 
 /** Versão do texto de Termos/Privacidade aceito no cadastro. Mude quando os textos legais mudarem. */
-export const TERMS_VERSION = '2026-11-20';
+export const TERMS_VERSION = '2026-11-25';
 
 type Input = { name: string; email: string; password: string; inviteCode?: string | null };
 
