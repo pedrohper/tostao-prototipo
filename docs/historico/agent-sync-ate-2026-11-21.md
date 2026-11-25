@@ -622,7 +622,7 @@ Entradas de `## Execução` anteriores a 2026-11-22 movidas do [`AGENT_SYNC.md`]
 ### 2026-11-14 · Antigravity · Unificação Tostão + Jarvis (Segundo Cérebro no WhatsApp/App)
 
 - `apps/api/src/use-cases/tostao-tools.ts`: adicionadas as ferramentas `JARVIS_TOOLS` (`salvar_nota_obsidian`, `buscar_notas_obsidian`, `criar_flashcards_anki`) integradas ao cofre `/home/optiplex/obsidian_vault` e ao OptiPlex Hub 2.0 (`127.0.0.1:8088`).
-- `apps/api/src/use-cases/ask-tostao.ts`: quando o usuário é o Pedro (`pereirahenrique0104@gmail.com` / `4ca4a890-737a-4ef2-aca0-945cae9d2feb`), ativa `[...TOSTAO_TOOLS, ...JARVIS_TOOLS]` e instruções de Segundo Cérebro no prompt de sistema, mantendo o histórico de 12 mensagens unificado.
+- `apps/api/src/use-cases/ask-tostao.ts`: quando o usuário é o Pedro (`<e-mail e id omitidos>`), ativa `[...TOSTAO_TOOLS, ...JARVIS_TOOLS]` e instruções de Segundo Cérebro no prompt de sistema, mantendo o histórico de 12 mensagens unificado.
 - Fluxo n8n `TostaoWhatsApp01` (`Tostão & Jarvis - WhatsApp Unificado`): removida a bifurcação `É nota Obsidian?` e desativado o fluxo órfão `JcMHoyO6nNv8Qnl6`; agora 100% das mensagens de texto e áudio passam pelo cérebro único do `Tostão API` (`http://172.18.0.1:3334/whatsapp/n8n`).
 - Sem migration. Validado com `pnpm --filter @tostao/api test` (161 testes passando) e `tsc --noEmit`.
 
