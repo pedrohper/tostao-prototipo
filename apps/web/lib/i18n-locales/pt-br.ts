@@ -481,6 +481,7 @@ export const ptBR: Dictionary = {
     privacyLink: 'Privacidade',
     updatedOn: (date) => `Atualizado em ${date}`,
     updatedDate: '21 de novembro de 2026',
+    privacyUpdatedDate: '25 de novembro de 2026',
     summaryHeading: 'Resumo sem juridiquês',
     privacyTitle: 'Política de privacidade',
     termsTitle: 'Termos de uso',

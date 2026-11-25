@@ -21,7 +21,16 @@ export function Controlador() {
   return <>{cnpj ? `${entity}, CNPJ ${cnpj}` : entity}</>;
 }
 
-export async function LegalPage({ title, children }: { title: string; children: React.ReactNode }) {
+export async function LegalPage({
+  title,
+  children,
+  documento = 'termos',
+}: {
+  title: string;
+  children: React.ReactNode;
+  /** Cada documento tem a própria data de atualização. */
+  documento?: 'termos' | 'privacidade';
+}) {
   const { t } = await getI18n();
   const l = t.legal;
   return (
@@ -30,7 +39,9 @@ export async function LegalPage({ title, children }: { title: string; children: 
         <SiteHeader />
         <main className={s.doc}>
           <h1 className={s.disp}>{title}</h1>
-          <p className={s.atualizado}>{l.updatedOn(l.updatedDate)}</p>
+          <p className={s.atualizado}>
+            {l.updatedOn(documento === 'privacidade' ? l.privacyUpdatedDate : l.updatedDate)}
+          </p>
           {children}
         </main>
         <SiteFooter />

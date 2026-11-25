@@ -434,6 +434,7 @@ export interface Dictionary {
     privacyLink: string;
     updatedOn: (date: string) => string;
     updatedDate: string;
+    privacyUpdatedDate: string;
     summaryHeading: string;
     privacyTitle: string;
     termsTitle: string;

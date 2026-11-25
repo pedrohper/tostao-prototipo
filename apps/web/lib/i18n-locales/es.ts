@@ -483,6 +483,7 @@ export const es: Dictionary = {
     privacyLink: 'Privacidad',
     updatedOn: (date) => `Actualizado el ${date}`,
     updatedDate: '21 de noviembre de 2026',
+    privacyUpdatedDate: '25 de noviembre de 2026',
     summaryHeading: 'Resumen sin lenguaje legal',
     privacyTitle: 'Política de privacidad',
     termsTitle: 'Términos de uso',

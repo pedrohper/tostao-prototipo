@@ -479,6 +479,7 @@ export const en: Dictionary = {
     privacyLink: 'Privacy',
     updatedOn: (date) => `Updated on ${date}`,
     updatedDate: 'November 21, 2026',
+    privacyUpdatedDate: 'November 25, 2026',
     summaryHeading: 'Plain-English summary',
     privacyTitle: 'Privacy policy',
     termsTitle: 'Terms of use',

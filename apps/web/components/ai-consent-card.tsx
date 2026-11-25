@@ -37,6 +37,11 @@ export function AiConsentCard({ onAccepted, compact = false }: { onAccepted?: ()
         enviadas.
       </p>
       <p className="m-0 text-[14px] leading-[21px]">
+        No <strong>&ldquo;Isso é golpe?&rdquo;</strong> vai o texto que você colar, com CPF, e-mail, telefone, números
+        de conta/cartão e o seu nome mascarados. Nome de outra pessoa que esteja na mensagem pode ir junto. O Tostão não
+        guarda a mensagem nem a resposta.
+      </p>
+      <p className="m-0 text-[14px] leading-[21px]">
         A IA <strong>nunca grava nada sozinha</strong>: qualquer lançamento sugerido só vale depois do seu
         &ldquo;confirmar&rdquo;. Você pode desativar quando quiser. Detalhes na{' '}
         <Link href="/privacidade" className="font-semibold underline">
