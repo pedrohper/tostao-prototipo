@@ -25,6 +25,8 @@ export type UserDataExport = {
     termsAcceptedAt: string | null;
     termsVersion: string | null;
     aiConsentAt: string | null;
+    /** Chave Pix cadastrada pro "Cobrar" dos acertos (null = nenhuma). */
+    pixKey: string | null;
     /** Só diz SE existe senha; o hash nunca sai. */
     hasPassword: boolean;
   };
@@ -150,6 +152,7 @@ export class ExportUserDataUseCase {
         termsAcceptedAt: iso(user.termsAcceptedAt),
         termsVersion: user.termsVersion,
         aiConsentAt: iso(user.aiConsentAt),
+        pixKey: user.pixKey,
         hasPassword: user.passwordHash !== null,
       },
       consents: mine(consents)

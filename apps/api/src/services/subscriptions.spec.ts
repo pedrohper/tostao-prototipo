@@ -240,3 +240,69 @@ describe('T1.5 · assinaturas: parcela x data, faixa de valor, duplicata e fuso'
     expect(brt[0]!.chargeCount).toBe(3);
   });
 });
+
+describe('T6.18 · reajuste de assinatura', () => {
+  const increase = (txs: Transaction[]) => detectSubscriptions(txs, NOW).map((s) => s.priceIncrease);
+  const series = (values: number[], description = 'NETFLIX.COM') =>
+    values.map((v, i) => tx(description, -v, `2026-${String(11 - values.length + 1 + i).padStart(2, '0')}-05`));
+
+  it('mais de 5% sobre a cobrança anterior vira reajuste, com o valor de antes e o de agora', () => {
+    const [up] = increase(series([2090, 2090, 2290]));
+    expect(up).toEqual({ fromInCents: 2090, toInCents: 2290, chargedAt: new Date('2026-11-05T12:00:00Z') });
+  });
+
+  it('exatamente 5%, menos que isso ou queda de preço não contam', () => {
+    expect(increase(series([2000, 2000, 2100]))).toEqual([null]);
+    expect(increase(series([2000, 2000, 2101]))[0]).toMatchObject({ fromInCents: 2000, toInCents: 2101 });
+    expect(increase(series([2000, 2000, 2090]))).toEqual([null]);
+    expect(increase(series([2500, 2500, 2200]))).toEqual([null]);
+  });
+
+  it('compra que varia todo mês (corrida, mercado) não vira reajuste nem "vai cobrar"', () => {
+    const rides = detectSubscriptions(series([2000, 2300, 2700], '99 APP'), NOW);
+    expect(rides.map((s) => [s.priceIncrease, s.steadyPrice])).toEqual([[null, false]]);
+    expect(increase(series([2000, 2300]))).toEqual([null]); // só 2 cobranças: não dá pra saber se o preço era fixo
+  });
+
+  it('preço fixo, variação de câmbio pequena e reajuste contam como preço firme', () => {
+    const steady = (values: number[]) => detectSubscriptions(series(values), NOW)[0]!.steadyPrice;
+    expect(steady([2090, 2090])).toBe(true);
+    expect(steady([2090, 2150])).toBe(true);
+    expect(steady([2090, 2090, 2490])).toBe(true);
+  });
+
+  it('compara só com a anterior: reajuste de meses atrás não reaparece', () => {
+    expect(increase(series([2000, 2300, 2300]))).toEqual([null]);
+  });
+
+  it('parcela de plano anual não é reajuste', () => {
+    expect(
+      increase([tx('Amazon Prime 4/12', -1500, '2026-10-05'), tx('Amazon Prime 5/12', -1660, '2026-11-05')]),
+    ).toEqual([null]);
+  });
+
+  it('salto grande (fora da faixa) conta quando o preço era fixo e há uma só cobrança um ciclo depois', () => {
+    const [up] = increase(series([2090, 2090, 2090, 2890]));
+    expect(up).toEqual({ fromInCents: 2090, toInCents: 2890, chargedAt: new Date('2026-11-05T12:00:00Z') });
+  });
+
+  it('salto grande sem histórico fixo, com compras no meio, fora do ciclo ou acima do dobro não conta', () => {
+    expect(increase(series([2090, 2090, 2890]))).toEqual([null]); // só 2 cobranças iguais antes
+    expect(increase(series([2090, 2190, 2090, 2890]))).toEqual([null]); // preço não era fixo
+    expect(increase(series([2090, 2090, 2090, 5000]))).toEqual([null]); // mais que o dobro: outra compra
+    const base = series([2090, 2090, 2090], 'LOJA APLICATIVOS'); // 05/09, 05/10 e 05/11
+    expect(increase([...base, tx('LOJA APLICATIVOS', -2890, '2026-11-12')])).toEqual([null]); // 7 dias depois
+  });
+
+  it('duas compras soltas depois da última cobrança derrubam a leitura de salto', () => {
+    const fixed = [
+      tx('APPSTORE', -990, '2026-07-05'),
+      tx('APPSTORE', -990, '2026-08-05'),
+      tx('APPSTORE', -990, '2026-09-05'),
+    ];
+    expect(increase([...fixed, tx('APPSTORE', -1590, '2026-10-05')])[0]).toMatchObject({ toInCents: 1590 });
+    expect(increase([...fixed, tx('APPSTORE', -1590, '2026-10-05'), tx('APPSTORE', -1900, '2026-10-20')])).toEqual([
+      null,
+    ]);
+  });
+});

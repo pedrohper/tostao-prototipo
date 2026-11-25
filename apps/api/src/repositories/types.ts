@@ -51,6 +51,8 @@ export interface UsersRepository {
   markEmailVerified(id: string, at: Date): Promise<void>;
   /** Registra (at) ou revoga (null) o consentimento pra IA. */
   setAiConsent(id: string, at: Date | null): Promise<void>;
+  /** Grava (já normalizada) ou apaga (null) a chave Pix. */
+  setPixKey(id: string, pixKey: string | null): Promise<void>;
   /** Apaga a pessoa e, em cascata, tudo que é dela (LGPD: direito de eliminação). */
   delete(id: string): Promise<void>;
 }

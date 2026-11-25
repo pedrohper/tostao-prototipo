@@ -72,9 +72,13 @@ export function makeLimiters(app: FastifyInstance) {
     resendVerificationByUser: make('resend-verification:user', 5, FIFTEEN_MINUTES, user),
 
     deleteAccountByUser: make('me-delete:user', 5, FIFTEEN_MINUTES, user),
-    /** Exportação LGPD: junta o histórico inteiro numa resposta, então só 2 por dia por pessoa. */
+    /** Exportação (JSON da LGPD e CSV): junta o histórico inteiro numa resposta, então só 2 por dia por pessoa. */
     exportByUser: make('me-export:user', 2, ONE_DAY, user),
     friendsByUser: make('friends:user', 10, FIFTEEN_MINUTES, user),
+    /** Cadastrar, trocar ou apagar a chave Pix. */
+    pixKeyByUser: make('pix-key:user', 20, FIFTEEN_MINUTES, user),
+    /** "Isso é golpe?": além da cota diária da IA, 10 análises por 15 min por pessoa. */
+    scamCheckByUser: make('scam-check:user', 10, FIFTEEN_MINUTES, user),
     autoCategorizeByUser: make('auto-categorize:user', 5, ONE_DAY, user),
     /** Operações caras, cada uma com o seu contador (10 por 15 min por usuário). */
     importsByUser: make('imports:user', 10, FIFTEEN_MINUTES, user),

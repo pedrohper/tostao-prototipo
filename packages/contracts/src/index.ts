@@ -3,6 +3,9 @@
 // e o tipo inferido (z.infer) tipa a web. Um lugar só pra mudar.
 import { z } from 'zod';
 export * from './juros';
+export * from './pix';
+export * from './golpe';
+export * from './export';
 
 // ---------- Auth ----------
 // bcrypt só lê os 72 primeiros BYTES da senha (o resto seria ignorado em silêncio). Rejeitamos acima disso.

@@ -316,18 +316,27 @@ export function ChatClient({
             {error}
           </p>
         )}
-        <div role="group" aria-label={tc.followUpsAria} className="flex w-full min-w-0 gap-2 overflow-x-auto pb-0.5">
-          {(followUps ?? t.suggestions).map((q) => (
-            <button
-              key={q}
-              type="button"
-              disabled={sending}
-              onClick={() => void send(q)}
-              className="h-9 shrink-0 rounded-full bg-papel-2 px-3.5 text-[13px] font-semibold text-tinta disabled:opacity-50"
-            >
-              {q}
-            </button>
-          ))}
+        <div className="flex w-full min-w-0 gap-2 overflow-x-auto pb-0.5">
+          <Link
+            href="/tostao/golpe"
+            className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border-[1.5px] border-tinta bg-cartao pr-3.5 pl-2 text-[13px] font-semibold text-tinta no-underline"
+          >
+            <Mascot pose="urubu-pix" size={24} alt="" still />
+            Isso é golpe?
+          </Link>
+          <div role="group" aria-label={tc.followUpsAria} className="flex gap-2">
+            {(followUps ?? t.suggestions).map((q) => (
+              <button
+                key={q}
+                type="button"
+                disabled={sending}
+                onClick={() => void send(q)}
+                className="h-9 shrink-0 rounded-full bg-papel-2 px-3.5 text-[13px] font-semibold text-tinta disabled:opacity-50"
+              >
+                {q}
+              </button>
+            ))}
+          </div>
         </div>
         <form
           onSubmit={(e) => {

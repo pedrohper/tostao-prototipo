@@ -3,6 +3,15 @@ import { normalizeDescription } from '../lib/text.js';
 import { civilParts } from '../lib/tz.js';
 
 const DAY = 24 * 60 * 60 * 1000;
+/** Alta que vira aviso: MAIS de 5% sobre a cobrança anterior. */
+export const PRICE_INCREASE_PERCENT = 5;
+
+export type PriceIncrease = {
+  fromInCents: number;
+  toInCents: number;
+  /** Quando caiu a cobrança mais cara. */
+  chargedAt: Date;
+};
 
 export type Subscription = {
   /** Chave de agrupamento: é o que a pessoa marca como "não é assinatura". */
@@ -19,6 +28,13 @@ export type Subscription = {
   accountId: string | null;
   /** Mesmo serviço cobrando em dobro (ex.: dois Prime ativos): nome da outra cobrança. */
   duplicateOf: string | null;
+  /** Reajuste visto no histórico (usado pelo Tostão Automático). null = o preço não subiu. */
+  priceIncrease: PriceIncrease | null;
+  /**
+   * As duas últimas cobranças batem (até 5%), é parcela ou houve reajuste de um preço que era fixo. Sem isso é compra
+   * que se repete (corrida, mercado), e o Tostão não deve afirmar "vai cobrar R$ X".
+   */
+  steadyPrice: boolean;
 };
 
 // Parcela no fim/meio da descrição: "5/12", "PARC 03/10", "PARCELA 2 DE 6" (sem diferenciar maiúscula)
@@ -122,6 +138,8 @@ export function detectSubscriptions(transactions: Transaction[], now: Date, tz?:
       const nextChargeAt = new Date(last.occurredAt.getTime() + Math.round(gap) * DAY);
       const parcel = installmentOf(normalizeDescription(last.description));
       const installmentsLeft = parcel ? Math.max(0, parcel.total - parcel.n) : null;
+      // Parcela não é reajuste (a 1ª costuma vir uns centavos diferente das outras).
+      const priceIncrease = parcel ? null : priceIncreaseOf(txs, all, bands);
       // Dois planos da MESMA loja (faixas de valor diferentes) precisam de chaves diferentes, senão "ignorar um"
       // esconde os dois e o aviso de duplicidade se confunde. A faixa entra na chave só quando há mais de uma.
       const bandKey =
@@ -138,6 +156,9 @@ export function detectSubscriptions(transactions: Transaction[], now: Date, tz?:
         installmentsLeft,
         accountId: last.accountId,
         duplicateOf: null,
+        priceIncrease,
+        steadyPrice:
+          parcel !== null || priceIncrease !== null || samePrice(chargeCents(txs[txs.length - 2]!), chargeCents(last)),
       });
     }
   }
@@ -163,6 +184,50 @@ function markDuplicates(subs: Subscription[]): Subscription[] {
     );
     return twin ? { ...s, duplicateOf: twin.name } : s;
   });
+}
+
+const chargeCents = (t: Transaction) => Math.abs(t.amountInCents);
+
+/** Conta em centavos inteiros: exatamente 5% não passa. */
+const roseEnough = (from: number, to: number) => to * 100 > from * (100 + PRICE_INCREASE_PERCENT);
+const samePrice = (a: number, b: number) => Math.abs(a - b) * 100 <= Math.max(a, b) * PRICE_INCREASE_PERCENT;
+
+/**
+ * Reajuste de uma assinatura (`band` = cobranças dela; `all` = tudo da mesma loja, em ordem de data). Dois casos:
+ * 1. salto grande, que cai fora da faixa de ±25% e por isso não entrou na assinatura: só vale se o preço era fixo
+ *    (3 cobranças iguais), depois dele há UMA única cobrança da loja, um ciclo depois, e no máximo o dobro. Sem essas
+ *    travas, qualquer compra solta na mesma loja viraria "aumento";
+ * 2. a última cobrança da assinatura veio mais cara que a anterior, e antes disso o preço era fixo (as duas cobranças
+ *    anteriores iguais). Valor que varia todo mês (corrida, mercado, conta de consumo) não é "reajuste".
+ */
+function priceIncreaseOf(band: Transaction[], all: Transaction[], bands: Transaction[][]): PriceIncrease | null {
+  const last = band[band.length - 1]!;
+  const increase = (from: Transaction, to: Transaction): PriceIncrease => ({
+    fromInCents: chargeCents(from),
+    toInCents: chargeCents(to),
+    chargedAt: to.occurredAt,
+  });
+
+  const later = all.filter((t) => t.occurredAt.getTime() > last.occurredAt.getTime());
+  const recent = band.slice(-3);
+  if (later.length === 1 && recent.length === 3 && recent.every((t) => chargeCents(t) === chargeCents(last))) {
+    const jump = later[0]!;
+    const days = (jump.occurredAt.getTime() - last.occurredAt.getTime()) / DAY;
+    const alone = bands.some((b) => b.length === 1 && b[0] === jump);
+    if (
+      alone &&
+      days >= 25 &&
+      days <= 35 &&
+      roseEnough(chargeCents(last), chargeCents(jump)) &&
+      chargeCents(jump) <= 2 * chargeCents(last)
+    )
+      return increase(last, jump);
+  }
+
+  const previous = band[band.length - 2]!;
+  const beforePrevious = band[band.length - 3];
+  if (!beforePrevious || chargeCents(beforePrevious) !== chargeCents(previous)) return null;
+  return roseEnough(chargeCents(previous), chargeCents(last)) ? increase(previous, last) : null;
 }
 
 /** Agrupa valores parecidos (até 25% da mediana do grupo), mantendo a ordem por data. */

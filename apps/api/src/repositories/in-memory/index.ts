@@ -126,6 +126,7 @@ export class InMemoryUsersRepository implements UsersRepository {
       termsAcceptedAt: data.termsAcceptedAt ?? null,
       termsVersion: data.termsVersion ?? null,
       aiConsentAt: null,
+      pixKey: null,
       timezone: 'America/Sao_Paulo',
     };
     this.items.push(user);
@@ -145,6 +146,10 @@ export class InMemoryUsersRepository implements UsersRepository {
   async setAiConsent(id: string, at: Date | null) {
     const u = this.items.find((x) => x.id === id);
     if (u) u.aiConsentAt = at;
+  }
+  async setPixKey(id: string, pixKey: string | null) {
+    const u = this.items.find((x) => x.id === id);
+    if (u) u.pixKey = pixKey;
   }
   async delete(id: string) {
     this.items = this.items.filter((u) => u.id !== id);

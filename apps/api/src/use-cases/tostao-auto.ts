@@ -12,23 +12,31 @@ import { NEUTRAL_CATEGORY_ID } from '../domain/entities.js';
 import { ResourceNotFoundError } from '../domain/errors.js';
 import { currentMonth, monthRange } from '../lib/month.js';
 import { timezoneOf } from '../lib/user-tz.js';
+import { civilDay, civilMonth, diffCivilDays } from '../lib/tz.js';
 import type { Repositories, UpsertTostaoInsight } from '../repositories/types.js';
 import type { AutoCategorizeUseCase } from './auto-categorize.js';
 import { GetBudgetsUseCase } from './budgets.js';
 import { EngagementUseCase } from './engagement.js';
 import { ForecastUseCase } from './financial-plan.js';
 import { ListSubscriptionsUseCase } from './list-subscriptions.js';
+import { subscriptionBaseKey, type Subscription } from '../services/subscriptions.js';
 import { findManualDuplicates } from '../services/reconcile-manual.js';
 import { BET_HINT } from '../services/bets.js';
 import { looksInternalByDescription } from '../services/internal-transfers.js';
 import { normalizeDescription } from '../lib/text.js';
 
 const DAY = 24 * 60 * 60 * 1000;
+/** Reajuste de assinatura vira aviso enquanto a cobrança mais cara é recente (um ciclo). */
+const PRICE_ALERT_DAYS = 35;
+/** "Vai cobrar": de hoje até daqui a 3 dias. */
+const CHARGE_SOON_DAYS = 3;
 const SEVERITY_RANK = { urgent: 0, warning: 1, info: 2 } as const;
 
 const SPLIT_HINT = /\b(racha|rachamos|divid\w*|emprest\w*|acerto|reembolso|vaquinha)\b/i;
 
 const money = (cents: number) => (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+/** 'AAAA-MM-DD' -> 'DD/MM'. */
+const dayMonth = (day: string) => `${day.slice(8, 10)}/${day.slice(5, 7)}`;
 
 function actionMeta(insight: TostaoInsight): { actionLabel: string; actionHref: string | null; canApply: boolean } {
   const p = insight.payload;
@@ -63,6 +71,13 @@ function actionMeta(insight: TostaoInsight): { actionLabel: string; actionHref: 
       return { actionLabel: 'Ver previsão', actionHref: '/previsao?voltar=/tostao?aba=automatico', canApply: true };
     case 'due_soon':
       return { actionLabel: 'Ver na carteira', actionHref: '/carteira', canApply: true };
+    case 'subscription_price_up':
+    case 'subscription_charge_soon':
+      return {
+        actionLabel: 'Ver assinaturas',
+        actionHref: '/assinaturas?voltar=/tostao?aba=automatico',
+        canApply: true,
+      };
     case 'budget_alert':
       return { actionLabel: 'Ajustar limites', actionHref: '/limites?voltar=/tostao?aba=automatico', canApply: true };
     case 'goal_off_track':
@@ -176,8 +191,15 @@ export class RunTostaoChecksUseCase {
 
     const candidates: UpsertTostaoInsight[] = [];
 
+    // Já sem as ignoradas ("não é assinatura") e sem as de conta oculta.
+    const subs =
+      config.carameloExtrato || config.tostaoPrevisao
+        ? (await new ListSubscriptionsUseCase(this.repos, () => now).execute({ userId })).subscriptions
+        : [];
+
     if (config.carameloExtrato) {
-      candidates.push(...(await this.checkCaramelo(userId, month, visibleMonthTxs, visibleRecentTxs, now)));
+      candidates.push(...this.checkCaramelo(userId, month, visibleMonthTxs, visibleRecentTxs, subs));
+      candidates.push(...this.checkReajustes(userId, subs, tz, now));
     }
 
     const forecast =
@@ -187,6 +209,7 @@ export class RunTostaoChecksUseCase {
 
     if (config.tostaoPrevisao && forecast) {
       candidates.push(...(await this.checkPrevisao(userId, forecast, now)));
+      candidates.push(...this.checkCobrancasChegando(userId, subs, tz, now));
     }
     if (config.guardiaoLimites) {
       candidates.push(...(await this.checkLimites(userId, month, forecast)));
@@ -214,12 +237,12 @@ export class RunTostaoChecksUseCase {
     return { ...buildStateResponse(allInsights, updatedConfig), generated };
   }
 
-  private async checkCaramelo(
+  private checkCaramelo(
     userId: string,
     month: string,
     monthTxs: Transaction[],
     recentTxs: Transaction[],
-    now: Date,
+    subs: Subscription[],
   ) {
     const out: UpsertTostaoInsight[] = [];
     const uncat = monthTxs
@@ -245,8 +268,7 @@ export class RunTostaoChecksUseCase {
       });
     }
 
-    const subs = await new ListSubscriptionsUseCase(this.repos, () => now).execute({ userId });
-    for (const s of subs.subscriptions) {
+    for (const s of subs) {
       if (!s.duplicateOf) continue;
       out.push({
         userId,
@@ -335,8 +357,9 @@ export class RunTostaoChecksUseCase {
       });
     }
 
+    // Assinatura fica de fora: ela tem aviso próprio (checkCobrancasChegando), senão sairia em dobro.
     const { reminders } = await new EngagementUseCase(this.repos, () => now).reminders(userId, 2);
-    for (const r of reminders.slice(0, 2)) {
+    for (const r of reminders.filter((x) => x.kind !== 'assinatura').slice(0, 2)) {
       const when = r.daysLeft === 0 ? 'Vence hoje' : r.daysLeft === 1 ? 'Vence amanhã' : 'Vence em 2 dias';
       out.push({
         userId,
@@ -351,6 +374,68 @@ export class RunTostaoChecksUseCase {
     }
 
     return out;
+  }
+
+  /** "X subiu de R$ A para R$ B". Uma vez por cobrança: a chave leva a loja, o preço novo e o mês. */
+  private checkReajustes(userId: string, subs: Subscription[], tz: string, now: Date): UpsertTostaoInsight[] {
+    return subs.flatMap((s): UpsertTostaoInsight[] => {
+      const up = s.priceIncrease;
+      if (!up || now.getTime() - up.chargedAt.getTime() > PRICE_ALERT_DAYS * DAY) return [];
+      const percent = Math.round(((up.toInCents - up.fromInCents) * 100) / up.fromInCents);
+      return [
+        {
+          userId,
+          routine: 'caramelo_extrato',
+          kind: 'subscription_price_up',
+          severity: 'warning',
+          title: `${s.name} subiu de ${money(up.fromInCents)} para ${money(up.toInCents)}`,
+          body: `A cobrança de ${dayMonth(civilDay(up.chargedAt, tz))} veio ${percent}% mais cara que a anterior. Vale ver se o preço novo ainda compensa pra você.`,
+          payload: {
+            subscriptionKey: s.key,
+            subscriptionName: s.name,
+            fromInCents: up.fromInCents,
+            toInCents: up.toInCents,
+            chargedAt: up.chargedAt.toISOString(),
+          },
+          // A loja sem o sufixo de faixa (@): ele muda quando aparece um segundo plano e o aviso sairia de novo.
+          dedupeKey: `caramelo:sub-up:${subscriptionBaseKey(s.key)}:${up.toInCents}:${civilMonth(up.chargedAt, tz)}`,
+        },
+      ];
+    });
+  }
+
+  /** "X vai cobrar R$ A em 3 dias", pela data prevista no padrão mensal. Um aviso por cobrança, que vai se atualizando. */
+  private checkCobrancasChegando(userId: string, subs: Subscription[], tz: string, now: Date): UpsertTostaoInsight[] {
+    const today = civilDay(now, tz);
+    return subs.flatMap((s): UpsertTostaoInsight[] => {
+      // Salto de preço numa cobrança depois da última da assinatura: a previsão com o preço antigo não vale mais.
+      if (!s.active || !s.steadyPrice || (s.priceIncrease && s.priceIncrease.chargedAt > s.lastChargedAt)) return [];
+      const dueDate = civilDay(s.nextChargeAt, tz);
+      const daysLeft = diffCivilDays(today, dueDate);
+      if (daysLeft < 0 || daysLeft > CHARGE_SOON_DAYS) return [];
+      const when = daysLeft === 0 ? 'hoje' : daysLeft === 1 ? 'amanhã' : `em ${daysLeft} dias`;
+      return [
+        {
+          userId,
+          routine: 'tostao_previsao',
+          kind: 'subscription_charge_soon',
+          severity: daysLeft === 0 ? 'urgent' : daysLeft <= 2 ? 'warning' : 'info',
+          title: `${s.name} vai cobrar ${money(s.amountInCents)} ${when}`,
+          body:
+            s.installmentsLeft === null
+              ? `Previsão pra ${dayMonth(dueDate)}, pelo ritmo dos últimos meses. Se não usa mais, dá tempo de cancelar.`
+              : `Próxima parcela prevista pra ${dayMonth(dueDate)}, pelo ritmo dos últimos meses.`,
+          payload: {
+            subscriptionKey: s.key,
+            subscriptionName: s.name,
+            amountInCents: s.amountInCents,
+            dueDate,
+            daysLeft,
+          },
+          dedupeKey: `tostao:sub-soon:${subscriptionBaseKey(s.key)}:${s.amountInCents}:${dueDate.slice(0, 7)}`,
+        },
+      ];
+    });
   }
 
   private async checkLimites(

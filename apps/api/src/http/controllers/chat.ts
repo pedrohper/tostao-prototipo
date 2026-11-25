@@ -2,17 +2,20 @@ import type { FastifyInstance } from 'fastify';
 import {
   chatBody,
   pendingActionBody,
+  scamCheckBody,
   type ChatHistoryResponse,
   type ChatMessageDTO,
   type ChatReplyResponse,
   type ChatStreamEvent,
   type ConfirmPendingActionResponse,
   type PendingActionDTO,
+  type ScamCheckResponse,
 } from '@tostao/contracts';
 import type { PendingAction } from '../../services/pending-actions.js';
 import type { AskStreamEvent } from '../../use-cases/ask-tostao.js';
 import type { UseCases } from '../../use-cases/factories.js';
 import { verifyJwt } from '../middlewares/verify-jwt.js';
+import type { Limiters } from '../rate-limits.js';
 
 const dto = (m: { id: string; role: 'user' | 'assistant'; content: string; createdAt: Date }): ChatMessageDTO => ({
   id: m.id,
@@ -41,6 +44,18 @@ const pendingDto = (a: PendingAction): PendingActionDTO => ({
  */
 export const SSE_HEARTBEAT_MS = 5_000;
 
+/**
+ * "Isso é golpe?" responde de uma vez só (sem streaming), e a IA pode passar dos 10 s do `connectionTimeout`.
+ * Folga só nesta rota, acima do teto da própria análise (SCAM_AI_TIMEOUT_MS).
+ */
+export const SCAM_SOCKET_TIMEOUT_MS = 30_000;
+
+/**
+ * O `POST /chat` (usado quando o streaming falha) também responde de uma vez só. Cada chamada à IA tem teto de 45 s e
+ * um turno com ferramenta faz mais de uma: sem folga, o socket caía aos 10 s e a resposta se perdia.
+ */
+export const CHAT_SOCKET_TIMEOUT_MS = 120_000;
+
 /** Evento do caso de uso (objetos de domínio) -> evento do contrato (DTOs). */
 function toStreamEvent(e: AskStreamEvent): ChatStreamEvent {
   if (e.type !== 'done') return e;
@@ -56,7 +71,7 @@ function toStreamEvent(e: AskStreamEvent): ChatStreamEvent {
 }
 
 // Conversa com o Tostão
-export function chatRoutes(app: FastifyInstance, uc: UseCases) {
+export function chatRoutes(app: FastifyInstance, uc: UseCases, limits: Limiters) {
   app.get('/chat', { onRequest: verifyJwt }, async (request) => {
     const { messages } = await uc.chatHistory.execute({ userId: request.user.sub });
     return { messages: messages.map(dto) } satisfies ChatHistoryResponse;
@@ -64,6 +79,7 @@ export function chatRoutes(app: FastifyInstance, uc: UseCases) {
 
   app.post('/chat', { onRequest: verifyJwt }, async (request) => {
     const { message } = chatBody.parse(request.body);
+    request.raw.socket.setTimeout?.(CHAT_SOCKET_TIMEOUT_MS);
     const r = await uc.askTostao.execute({ userId: request.user.sub, message });
     return {
       question: dto(r.question),
@@ -121,6 +137,13 @@ export function chatRoutes(app: FastifyInstance, uc: UseCases) {
       if (!reply.raw.writableEnded) reply.raw.end();
     }
     return reply;
+  });
+
+  // "Isso é golpe?" (T6.20): avalia uma mensagem colada. Não grava nada; o corpo não vai pro log.
+  app.post('/chat/scam-check', { onRequest: verifyJwt, preHandler: limits.scamCheckByUser }, async (request) => {
+    const { message } = scamCheckBody.parse(request.body);
+    request.raw.socket.setTimeout?.(SCAM_SOCKET_TIMEOUT_MS); // o `?.` é pro app.inject dos testes
+    return (await uc.checkScam.execute({ userId: request.user.sub, message })) satisfies ScamCheckResponse;
   });
 
   // A IA só PROPÕE lançar uma transação; é aqui que a pessoa confirma (ou cancela). Uso único, vale 5 min.

@@ -1,4 +1,5 @@
 import { createHash, randomInt } from 'node:crypto';
+import { SCAM_MESSAGE_MAX, SCAM_MESSAGE_MIN } from '@tostao/contracts';
 import type { Repositories } from '../repositories/types.js';
 import type { WhatsAppGateway } from '../gateways/whatsapp-gateway.js';
 import { AppError, ConflictError } from '../domain/errors.js';
@@ -8,6 +9,8 @@ import type { CreateManualTransactionUseCase } from './create-manual-transaction
 import type { AutoCategorizeUseCase } from './auto-categorize.js';
 import type { PendingActionUseCase } from './pending-actions.js';
 import { parseExpense } from '../services/parse-expense.js';
+import { scamChecklist, scamWhatsAppText } from '../services/scam-check.js';
+import type { CheckScamUseCase } from './check-scam.js';
 
 const brl = (cents: number) => (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 /** Data de hoje (ou de N dias atrás) em São Paulo, ao meio-dia, igual ao "Anotar" do app. */
@@ -75,12 +78,16 @@ export class WhatsAppLinkUseCase {
   }
 }
 
+/** "golpe?" no começo: o resto é a mensagem recebida, pra avaliar. */
+const SCAM_MESSAGE = /^\s*golpe\s*\?([\s\S]*)$/i;
+
 const CONFIRM_YES = /^\s*(sim|s|confirmo|confirmar|pode|ok)\s*[.!]?\s*$/i;
 const CONFIRM_NO = /^\s*(n[aã]o|nao|n|cancelar|cancela)\s*[.!]?\s*$/i;
 
 /**
  * Mensagem que chegou no número do Tostão.
  * - "VINCULAR <código>" válido: liga o número à conta (nunca troca um número que já é de alguém).
+ * - Número já ligado e "golpe? <mensagem recebida>": avalia os sinais de golpe (nada disso vira gasto nem chat).
  * - Número já ligado e "gastei 25 no ifood": anota na hora (mesmo "Anotar" do app, categoria pelas regras ou pela IA).
  * - Número já ligado, outra coisa: responde com o mesmo chat do app (mesmo contexto e mesmo limite por dia).
  * - Número desconhecido: explica como ligar. Nunca mostra dado de ninguém pra número não ligado.
@@ -101,6 +108,7 @@ export class HandleWhatsAppMessageUseCase {
     private readonly kv?: KeyValueStore,
     /** "SIM"/"NÃO" confirmam ou cancelam o que a IA propôs (registrar_transacao). */
     private readonly pending?: Pick<PendingActionUseCase, 'confirm' | 'cancel' | 'hasPending'>,
+    private readonly scam?: Pick<CheckScamUseCase, 'execute'>,
   ) {}
 
   /**
@@ -124,6 +132,12 @@ export class HandleWhatsAppMessageUseCase {
         'Oi! Eu sou o Tostão 🐷. Pra conversar comigo aqui, abre o app em Perfil > WhatsApp, gera um código e me manda assim: VINCULAR TOST-XXXXXXXXXXXX. (O código vale 5 minutos.)',
       );
       return 'desconhecido';
+    }
+    // Vem antes do resto: a mensagem colada é de um desconhecido e não pode virar gasto, confirmação nem pergunta.
+    const scamMatch = this.scam ? SCAM_MESSAGE.exec(text) : null;
+    if (scamMatch) {
+      await reply(await this.checkScam(link.userId, scamMatch[1]!));
+      return 'golpe';
     }
     // Resposta a uma proposta da IA ("Responda SIM para confirmar"): só vale se houver proposta pendente.
     if (
@@ -172,6 +186,22 @@ export class HandleWhatsAppMessageUseCase {
       }
     }
     return 'respondido';
+  }
+
+  private async checkScam(userId: string, rest: string) {
+    const message = rest.trim().slice(0, SCAM_MESSAGE_MAX);
+    if (message.length < SCAM_MESSAGE_MIN) {
+      return 'Manda tudo junto: escreve *golpe?* e cola a mensagem que você recebeu logo depois. Só texto, porque print eu ainda não leio. 🐷';
+    }
+    try {
+      return scamWhatsAppText(await this.scam!.execute({ userId, message }));
+    } catch (e) {
+      if (e instanceof AppError && e.code === 'AI_CONSENT_REQUIRED') {
+        return `Pra eu analisar com IA, abre o app (aba Tostão) e aceita o aviso de uso de IA. Enquanto isso:\n\n${scamWhatsAppText(scamChecklist('sem_ia'))}`;
+      }
+      console.warn('[golpe][wa] falhou:', (e as Error).message);
+      return scamWhatsAppText(scamChecklist('falha'));
+    }
   }
 
   private async tryLink(from: string, rawCode: string, reply: (text: string) => Promise<void>) {

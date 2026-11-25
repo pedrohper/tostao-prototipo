@@ -9,6 +9,7 @@ const URGENT_PATHS: Record<string, string> = {
   budget_alert: '/limites',
   tigrinho_bet_risk: '/batalha',
   due_soon: '/carteira',
+  subscription_charge_soon: '/assinaturas',
 };
 
 /**

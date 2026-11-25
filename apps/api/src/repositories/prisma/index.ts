@@ -151,6 +151,9 @@ class PrismaUsersRepository implements UsersRepository {
   async setAiConsent(id: string, at: Date | null) {
     await this.db.user.update({ where: { id }, data: { aiConsentAt: at } });
   }
+  async setPixKey(id: string, pixKey: string | null) {
+    await this.db.user.update({ where: { id }, data: { pixKey } });
+  }
   async delete(id: string) {
     await this.db.user.delete({ where: { id } });
   } // o resto vai junto (onDelete: Cascade)
