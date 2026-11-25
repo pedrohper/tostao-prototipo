@@ -115,9 +115,24 @@ describe('refresh token: janela de tolerância de 30 s no reuso (T6.4)', () => {
     const actions = repos.audit.items.map((a) => a.action);
     expect(actions).toEqual(['refresh_grace_used']);
     expect(actions).not.toContain('refresh_reuse_detected');
-    // e os dois tokens renovam normalmente
-    await expect(sessions.rotate(first.refreshToken)).resolves.toHaveProperty('userId');
+    // o primeiro dos dois que renovar continua; o outro ramo morre junto
     await expect(sessions.rotate(retry.refreshToken)).resolves.toHaveProperty('userId');
+    expect(repos.refreshTokens.items.filter((t) => !t.revokedAt)).toHaveLength(1);
+  });
+
+  it('cópia usada dentro da janela é denunciada: quando o outro ramo renova e o primeiro volta, a família cai', async () => {
+    const { repos, user, sessions, tick } = await setup();
+    const { refreshToken: p } = await sessions.open(user.id);
+    const victim = await sessions.rotate(p);
+    tick(5_000);
+    const thief = await sessions.rotate(p); // quem copiou P ganha um irmão pela janela
+    tick(15 * 60_000);
+    const thiefNext = await sessions.rotate(thief.refreshToken);
+    await expect(sessions.rotate(victim.refreshToken)).rejects.toBeInstanceOf(InvalidRefreshTokenError);
+    expect(repos.audit.items.map((a) => a.action)).toContain('refresh_reuse_detected');
+    // derrubada a família, a cópia também não renova mais
+    await expect(sessions.rotate(thiefNext.refreshToken)).rejects.toBeInstanceOf(InvalidRefreshTokenError);
+    expect(repos.refreshTokens.items.every((t) => t.revokedAt !== null)).toBe(true);
   });
 
   it('o limite é 30 s: em 30 s ainda vale; em 31 s derruba a família e grava refresh_reuse_detected', async () => {

@@ -87,6 +87,33 @@ describe.skipIf(!url)('sessão, reset e verificação: concorrência no Postgres
     expect(await db.refreshToken.count({ where: { userId: b.id, revokedAt: null } })).toBe(0);
   });
 
+  it('depois da janela só um ramo sobrevive: renovar um irmão mata o outro, e reapresentá-lo derruba a família', async () => {
+    const repos = makePrismaRepositories(db);
+    const user = await newUser(`branch-${Date.now()}@x.com`);
+    const sessions = new SessionsUseCase(repos);
+    const { refreshToken: p } = await sessions.open(user.id);
+    const first = await sessions.rotate(p);
+    const sibling = await sessions.rotate(p);
+    await sessions.rotate(sibling.refreshToken);
+    expect(await db.refreshToken.count({ where: { userId: user.id, revokedAt: null } })).toBe(1);
+    await expect(sessions.rotate(first.refreshToken)).rejects.toThrow();
+    expect(await db.refreshToken.count({ where: { userId: user.id, revokedAt: null } })).toBe(0);
+  });
+
+  it('logout e logout-all simultâneos à renovação não deixam token vivo', async () => {
+    const repos = makePrismaRepositories(db);
+    const user = await newUser(`race-${Date.now()}@x.com`);
+    const sessions = new SessionsUseCase(repos);
+    for (let i = 0; i < 20; i++) {
+      const { refreshToken } = await sessions.open(user.id);
+      await Promise.allSettled([
+        sessions.rotate(refreshToken),
+        i % 2 === 0 ? sessions.logout(refreshToken) : sessions.logoutAll(user.id),
+      ]);
+      expect(await db.refreshToken.count({ where: { userId: user.id, revokedAt: null } })).toBe(0);
+    }
+  });
+
   it('rotação mantém a família e encadeia replacedById; apagar o usuário leva os tokens (cascade)', async () => {
     const repos = makePrismaRepositories(db);
     const user = await newUser(`chain-${Date.now()}@x.com`);

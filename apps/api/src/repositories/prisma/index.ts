@@ -746,10 +746,19 @@ class PrismaPasswordResetsRepository implements PasswordResetsRepository {
       await tx.user.update({ where: { id: reset.userId }, data: { passwordHash } });
       await tx.user.updateMany({ where: { id: reset.userId, emailVerifiedAt: null }, data: { emailVerifiedAt: now } });
       await tx.passwordReset.updateMany({ where: { userId: reset.userId, usedAt: null }, data: { usedAt: now } });
+      await lockSessions(tx, reset.userId);
       await tx.refreshToken.updateMany({ where: { userId: reset.userId, revokedAt: null }, data: { revokedAt: now } });
       return { userId: reset.userId };
     });
   }
+}
+
+/**
+ * Serializa rotação e revogação das sessões de uma pessoa até o fim da transação. Sem isso, um logout (ou troca de
+ * senha) no mesmo instante de uma renovação não enxerga o token que ainda está sendo criado, e ele sobrevive.
+ */
+async function lockSessions(tx: Prisma.TransactionClient, userId: string) {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`sessions:${userId}`}))`;
 }
 
 class PrismaRefreshTokensRepository implements RefreshTokensRepository {
@@ -769,6 +778,9 @@ class PrismaRefreshTokensRepository implements RefreshTokensRepository {
     graceMs?: number;
   }): Promise<RotateRefreshResult> {
     return inTx(this.db, async (tx) => {
+      const owner = await tx.refreshToken.findUnique({ where: { tokenHash }, select: { userId: true } });
+      if (!owner) return { status: 'invalid' } as const;
+      await lockSessions(tx, owner.userId);
       const claimed = await tx.refreshToken.updateMany({
         where: { tokenHash, revokedAt: null, expiresAt: { gt: now } },
         data: { revokedAt: now },
@@ -776,6 +788,12 @@ class PrismaRefreshTokensRepository implements RefreshTokensRepository {
       const current = await tx.refreshToken.findUnique({ where: { tokenHash } });
       if (!current) return { status: 'invalid' } as const;
       if (claimed.count === 1) {
+        // Um ramo vivo só por família: os irmãos emitidos pela janela morrem na próxima troca normal. Se quem tem um
+        // deles aparecer depois, é reuso (é isso que denuncia uma cópia feita dentro da janela).
+        await tx.refreshToken.updateMany({
+          where: { familyId: current.familyId, revokedAt: null },
+          data: { revokedAt: now },
+        });
         const created = await tx.refreshToken.create({
           data: { ...next, userId: current.userId, familyId: current.familyId },
         });
@@ -803,16 +821,22 @@ class PrismaRefreshTokensRepository implements RefreshTokensRepository {
       return { status: 'invalid' } as const; // vencido
     });
   }
-  async revokeFamilyOf(tokenHash: string, now: Date) {
-    const row = await this.db.refreshToken.findUnique({ where: { tokenHash }, select: { familyId: true } });
-    if (!row) return;
-    await this.db.refreshToken.updateMany({
-      where: { familyId: row.familyId, revokedAt: null },
-      data: { revokedAt: now },
+  revokeFamilyOf(tokenHash: string, now: Date): Promise<void> {
+    return inTx(this.db, async (tx) => {
+      const row = await tx.refreshToken.findUnique({ where: { tokenHash }, select: { familyId: true, userId: true } });
+      if (!row) return;
+      await lockSessions(tx, row.userId);
+      await tx.refreshToken.updateMany({
+        where: { familyId: row.familyId, revokedAt: null },
+        data: { revokedAt: now },
+      });
     });
   }
-  async revokeAllForUser(userId: string, now: Date) {
-    await this.db.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: now } });
+  revokeAllForUser(userId: string, now: Date): Promise<void> {
+    return inTx(this.db, async (tx) => {
+      await lockSessions(tx, userId);
+      await tx.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: now } });
+    });
   }
 }
 
