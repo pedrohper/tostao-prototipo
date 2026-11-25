@@ -197,7 +197,7 @@ Mova toda a Execução anterior a 2026-11-22 para `docs/historico/agent-sync-ate
 
 ## T6.8 — Prints automáticos das telas
 
-- [ ] Concluída
+- [x] Concluída
 
 ### Problema atual
 
@@ -218,7 +218,7 @@ automática de imagens. Documente no README que, no servidor, precisa uma vez de
 
 ## T6.9 — Home rápida: Suspense por bloco
 
-- [ ] Concluída
+- [x] Concluída
 
 ### Problema atual
 
@@ -239,7 +239,7 @@ comportamento do `orFallback` e do `rethrowIfRedirect`.
 
 ## T6.10 — Home enxuta e "Jogos" agrupados
 
-- [ ] Concluída
+- [x] Concluída
 
 ### Correção técnica
 
@@ -251,7 +251,7 @@ comportamento do `orFallback` e do `rethrowIfRedirect`.
 
 ## T6.11 — Preferências da Home no servidor
 
-- [ ] Concluída
+- [x] Concluída
 
 ### Correção técnica
 
@@ -265,7 +265,7 @@ servidor estiver vazio e o cookie existir, sobe o cookie e apaga. O cookie conti
 
 ## T6.12 — Escala de design (tokens) e texto mínimo de 12 px
 
-- [ ] Concluída
+- [x] Concluída
 
 ### Problema atual
 
@@ -291,7 +291,7 @@ São 1.388 tamanhos em pixel escritos à mão: 12 tamanhos de fonte (`text-[15px
 
 ## T6.13 — `SimuladorShell` + 3 pilotos
 
-- [ ] Concluída
+- [x] Concluída
 
 ### Problema atual
 
@@ -323,7 +323,7 @@ dinheiro, e cada um repete o layout à mão.
 
 ## T6.14 — Galeria que ensina antes
 
-- [ ] Concluída
+- [x] Concluída
 
 ### Correção técnica
 
@@ -334,7 +334,7 @@ completa".
 
 ## T6.15 — Migrar os demais simuladores
 
-- [ ] Concluída
+- [ ] Concluída (aguarda o Pedro aprovar os pilotos da T6.13)
 
 Só depois da aprovação dos pilotos. Em lotes de ~8 por PR, módulo por módulo. Cada lote: mesmos resultados numéricos
 (teste), pergunta e palpites escritos no tom do Tostão (amigo sincero, sem julgamento) e prints. Ao fim, o `SimuladorShell`
@@ -346,7 +346,7 @@ Só depois da aprovação dos pilotos. Em lotes de ~8 por PR, módulo por módul
 
 ## T6.16 — Cobrar no Pix (Acertos)
 
-- [ ] Concluída
+- [x] Concluída
 
 ### Correção técnica
 
@@ -359,7 +359,7 @@ Só depois da aprovação dos pilotos. Em lotes de ~8 por PR, módulo por módul
 
 ## T6.17 — "Quanto posso gastar hoje"
 
-- [ ] Concluída
+- [x] Concluída
 
 ### Correção técnica
 
@@ -377,7 +377,7 @@ pelo push que já existe, desligado por padrão.
 
 ## T6.18 — Assinatura que subiu de preço e cobrança chegando
 
-- [ ] Concluída
+- [x] Concluída
 
 Investigue `services/subscriptions.ts` primeiro: se o histórico de valores já existir, é só a parte de aviso. Avisos novos
 no Tostão Automático (achados): "X subiu de R$ A para R$ B" (alta > 5% em relação à cobrança anterior) e "X vai cobrar
@@ -385,7 +385,7 @@ R$ A em 3 dias". Sem duplicar aviso (use o mecanismo de reabrir achados que já 
 
 ## T6.19 — Resumo do mês compartilhável
 
-- [ ] Concluída
+- [x] Concluída
 
 Em `/fechamento`, um botão "Compartilhar". Gera uma imagem 1080×1920 com `next/og` (`ImageResponse`) numa rota
 autenticada da web: mês, % guardado, maior categoria de gasto, ofensiva e o mascote. **Valores em R$ escondidos por padrão**
@@ -394,7 +394,7 @@ Sem nome nem e-mail da pessoa na imagem.
 
 ## T6.20 — "Isso é golpe?"
 
-- [ ] Concluída
+- [x] Concluída
 
 No chat (`/tostao`), um atalho "Isso é golpe?": a pessoa cola a mensagem recebida e a IA avalia com um prompt dedicado:
 sinais de golpe, nível de risco (baixo/médio/alto) e o que fazer, com o personagem Urubu do Pix. **Passa pelo
@@ -404,7 +404,7 @@ que começa com "golpe?" segue o mesmo fluxo. Só texto (o DeepSeek não lê ima
 
 ## T6.21 — Exportar planilha (CSV)
 
-- [ ] Concluída
+- [x] Concluída
 
 `GET /me/export.csv?from=&to=`: lançamentos com data, descrição, categoria, conta, valor em reais (vírgula decimal, `;`
 como separador, BOM UTF-8 pro Excel abrir certo). Mesmo limite e mesmo `AuditLog` do export JSON. Botão em `/mais` ao lado

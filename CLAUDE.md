@@ -43,7 +43,7 @@ Login exige HTTPS (cookie secure em produção).
 
 ## Passagem entre agentes (AGENT_SYNC.md)
 
-- **Antes de codar:** leia `AGENT_SYNC.md` na raiz (Plano, Execução, Code Review). O histórico anterior a 2026-11-22 fica em `docs/historico/agent-sync-ate-2026-11-21.md`. Veja se alguém já está mexendo no mesmo lugar e se há achado de review aberto pra você.
+- **Antes de codar:** leia `AGENT_SYNC.md` na raiz (Plano, Execução, Code Review). O histórico antigo fica em `docs/historico/`. Veja se alguém já está mexendo no mesmo lugar e se há achado de review aberto pra você.
 - **Ao terminar:** registre em `AGENT_SYNC.md` > Execução o que mudou, migration/env nova, como validou e o que ficou de fora, no mesmo PR. Tire o item do Plano.
 - O Gemini revisa o `git diff` da entrega e escreve em Code Review. Achado bloqueante aberto se resolve antes da próxima feature.
 
