@@ -1,7 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import type { PersonDetailResponse } from '@tostao/contracts';
+import type { PersonDetailResponse, PixKeyResponse } from '@tostao/contracts';
 import { api } from '@/lib/api';
+import { getMe } from '@/lib/api-queries';
+import { CobrarPix } from '@/components/cobrar-pix';
+import { pixBrCode, pixChargeMessage } from '@/lib/pix-brcode';
+import { orFallback } from '@/lib/rethrow';
 import { erroDe } from '@/lib/erros';
 import { isSafePathSegment, safePathSegment } from '@/lib/safe-redirect';
 import { money, monthName, resolveBackHref, shortDate } from '@/lib/format';
@@ -41,6 +45,19 @@ export default async function PessoaPage({
   const back = voltar ? `/acertos/${p.id}?voltar=${encodeURIComponent(backHref)}` : `/acertos/${p.id}`;
   const createLabel = locale === 'en' ? 'New split' : locale === 'es' ? 'Nuevo ajuste' : 'Criar acerto';
   const errMsg = erroDe(erro);
+  // "Cobrar no Pix" só quando a pessoa te deve: é o único caso em que a chave precisa sair da API. Se a busca falhar,
+  // o botão some e o resto da tela continua.
+  const [pix, me] = await Promise.all([
+    deve ? api<PixKeyResponse>('/me/pix-key').catch(orFallback(null)) : null,
+    deve ? getMe().catch(orFallback(null)) : null,
+  ]);
+  const cobranca =
+    pix?.pixKey && me
+      ? {
+          code: pixBrCode({ key: pix.pixKey, amountInCents: p.balanceInCents, name: me.name }),
+          message: pixChargeMessage(p.name, money(p.balanceInCents)),
+        }
+      : null;
 
   return (
     <PageFrame size="analytics" className="pb-24 md:pb-0">
@@ -94,6 +111,22 @@ export default async function PessoaPage({
               {money(Math.abs(p.balanceInCents))}
             </span>
           </div>
+
+          {cobranca && <CobrarPix key={cobranca.code} code={cobranca.code} message={cobranca.message} />}
+
+          {pix && !pix.pixKey && (
+            <div className="flex flex-col gap-2">
+              <Link
+                href={`/perfil?voltar=${encodeURIComponent(back)}#pix`}
+                className="flex h-[54px] items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel no-underline"
+              >
+                Cobrar no Pix
+              </Link>
+              <p className="text-center text-[13px] leading-[18px] text-tinta-suave">
+                Antes, cadastra a sua chave Pix no perfil. É rapidinho.
+              </p>
+            </div>
+          )}
 
           {texto && (
             <a

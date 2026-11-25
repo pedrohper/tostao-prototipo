@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import type { BattlesResponse } from '@tostao/contracts';
+import type { BattlesResponse, PixKeyResponse } from '@tostao/contracts';
 import { ExportDataButton } from '@/components/export-data-button';
 import { Mascot } from '@/components/mascote';
+import { PixKeyCard } from '@/components/pix-key-card';
 import { BackLink, Eyebrow, PageFrame } from '@/components/ui';
 import { api } from '@/lib/api';
 import { resolveBackHref } from '@/lib/format';
@@ -9,17 +10,19 @@ import { getI18n } from '@/lib/i18n-server';
 import { logout } from '@/lib/session-actions';
 import { modules } from '@/lib/lessons';
 import { NO_PROGRESS, xpFrom } from '@/lib/xp';
+import { orFallback } from '@/lib/rethrow';
 import { getMe, getProgress } from '@/lib/api-queries';
 
 export default async function PerfilPage({ searchParams }: { searchParams?: Promise<{ voltar?: string }> }) {
   const sp = (await searchParams) ?? {};
   const backHref = resolveBackHref(sp.voltar, '/mais');
 
-  const [profile, { done, streakDays, bonusXp = 0 }, battles, { t }] = await Promise.all([
+  const [profile, { done, streakDays, bonusXp = 0 }, battles, { t }, pix] = await Promise.all([
     getMe(),
     getProgress().catch(() => NO_PROGRESS),
     api<BattlesResponse>('/battles').catch(() => null),
     getI18n(),
+    api<PixKeyResponse>('/me/pix-key').catch(orFallback(null)),
   ]);
 
   const { xp, level } = xpFrom(done.length, bonusXp);
@@ -90,6 +93,8 @@ export default async function PerfilPage({ searchParams }: { searchParams?: Prom
           </div>
         </div>
       </section>
+
+      {pix && <PixKeyCard initial={pix} />}
 
       {/* Gestão da conta */}
       <section className="flex flex-col divide-y divide-linha rounded-[22px] border border-linha bg-cartao px-[18px] py-1">

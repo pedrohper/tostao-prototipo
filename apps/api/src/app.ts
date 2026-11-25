@@ -56,6 +56,7 @@ export const LOG_REDACT_PATHS = [
   '*.token',
   '*.refreshToken',
   '*.apiKey',
+  '*.pixKey',
 ];
 
 /** WEB_ORIGIN aceita uma lista separada por vírgula (ex.: o site e um domínio de preview). */

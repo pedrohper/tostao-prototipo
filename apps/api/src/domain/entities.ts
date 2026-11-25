@@ -15,6 +15,8 @@ export type User = {
   termsVersion: string | null;
   /** Consentimento LGPD pra usar IA. null = não aceitou (chat e categorização automática bloqueados). */
   aiConsentAt: Date | null;
+  /** Chave Pix opcional, na forma canônica (só serve pro "Cobrar" dos acertos). Dado pessoal: nunca em log. */
+  pixKey: string | null;
   /** Fuso da pessoa (IANA). Dia civil e fechamento de mês usam isto. */
   timezone: string;
   createdAt: Date;

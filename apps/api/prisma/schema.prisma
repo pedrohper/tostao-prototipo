@@ -27,6 +27,8 @@ model User {
   termsVersion    String?   @map("terms_version")
   // Consentimento explícito pra mandar dados (mascarados) pra IA (LGPD). null = não aceitou: IA bloqueada.
   aiConsentAt     DateTime? @map("ai_consent_at") @db.Timestamptz(3)
+  // Chave Pix opcional (T6.16), já na forma canônica. Dado pessoal: sai no export LGPD, some com a conta, não vai pra log.
+  pixKey          String?   @map("pix_key")
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   oauthAccounts           OAuthAccount[]

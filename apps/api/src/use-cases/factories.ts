@@ -34,6 +34,7 @@ import { HandleWhatsAppMessageUseCase, WhatsAppLinkUseCase } from './whatsapp.js
 import { testOnlyKeyValueStore, type KeyValueStore } from '../lib/redis.js';
 import { AskTostaoUseCase } from './ask-tostao.js';
 import { SetAiConsentUseCase } from './ai-consent.js';
+import { PixKeyUseCase } from './pix-key.js';
 import { PendingActionUseCase } from './pending-actions.js';
 import { PendingActionStore } from '../services/pending-actions.js';
 import { RegisterUserUseCase } from './register-user.js';
@@ -194,6 +195,7 @@ export function makeUseCases({
     askTostao,
     pendingActions,
     setAiConsent: new SetAiConsentUseCase(repos),
+    pixKey: new PixKeyUseCase(repos),
     whatsappLink: new WhatsAppLinkUseCase(repos, whatsapp),
     whatsappMessage: new HandleWhatsAppMessageUseCase(
       repos,
