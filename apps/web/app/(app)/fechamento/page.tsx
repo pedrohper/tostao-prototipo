@@ -7,7 +7,7 @@ import type { Dictionary } from '@/lib/i18n';
 import { getI18n } from '@/lib/i18n-server';
 import { Mascot } from '@/components/mascote';
 import { NO_PROGRESS, xpFrom } from '@/lib/xp';
-import { ShareButton } from './share-button';
+import { CompartilharMes } from '@/components/compartilhar-mes';
 import { Cartas } from './cartas';
 import { getProgress } from '@/lib/api-queries';
 
@@ -280,13 +280,7 @@ export default async function FechamentoPage({
         ) : (
           <Cartas
             cartas={cartas}
-            share={
-              <ShareButton
-                text={f.shareText(nome, titulo.toLowerCase())}
-                shareLabel={f.shareBtn}
-                copiedLabel={f.copiedBtn}
-              />
-            }
+            share={<CompartilharMes key={month} month={month} monthName={nome} />}
             locale={locale}
             header={
               <>
