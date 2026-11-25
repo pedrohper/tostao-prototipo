@@ -6,7 +6,6 @@ import { Selo } from '@/components/selo';
 import { CampoOpcoes, Quadros } from '@/components/simulador-campos';
 import { CampoDinheiro, SimuladorShell } from '@/components/simulador-shell';
 import { money } from '@/lib/format';
-import { valorQueCabe } from './apoio-m6-m8';
 
 export function calcularRetornoDasFerias({ salarioCents, gastouTudo }: { salarioCents: number; gastouTudo: boolean }) {
   const tercoCents = Math.round(salarioCents / 3);
@@ -49,7 +48,7 @@ export function ContaRetornoFerias() {
       ]}
       resultado={{
         rotulo: 'Saldo no mês de volta',
-        valor: valorQueCabe(money(saldoNaVoltaCents), 'no mês'),
+        valor: money(saldoNaVoltaCents),
         nota: gastouTudo ? 'Buraco no orçamento!' : 'Contas do mês cobertas',
         tom: gastouTudo ? 'ruim' : 'bom',
         salarioCents: salario,

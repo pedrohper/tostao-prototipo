@@ -2,9 +2,9 @@
 // m7-l1: Calculadora do CDI, no SimuladorShell (T6.15). A conta é a de sempre, agora em centavos desde a entrada.
 import { useState } from 'react';
 import { Selo } from '@/components/selo';
+import { Quadros } from '@/components/simulador-campos';
 import { CampoDinheiro, CampoRegua, SimuladorShell } from '@/components/simulador-shell';
 import { money } from '@/lib/format';
-import { QuadrosEmLinhas } from './apoio-m6-m8';
 
 export function calcularCdi({ valorCents, meses }: { valorCents: number; meses: number }) {
   const valor = valorCents / 100;
@@ -97,7 +97,7 @@ export function CalculadoraCDI() {
         />
       }
       detalhes={
-        <QuadrosEmLinhas
+        <Quadros
           itens={[
             {
               rotulo: 'CDB 100% CDI (líquido)',

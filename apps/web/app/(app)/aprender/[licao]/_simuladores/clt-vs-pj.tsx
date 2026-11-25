@@ -2,10 +2,10 @@
 // m6-l5: Equivalência CLT x PJ, no SimuladorShell (T6.15). A conta é a de sempre, agora em centavos desde a entrada.
 import { useState } from 'react';
 import { Selo } from '@/components/selo';
+import { Quadros } from '@/components/simulador-campos';
 import { CampoDinheiro, SimuladorShell } from '@/components/simulador-shell';
 import { money } from '@/lib/format';
 import { calcInssCents, calcIrrfCents } from './inss-irrf-clt';
-import { QuadrosEmLinhas, valorQueCabe } from './apoio-m6-m8';
 
 export type CltPjEntrada = { cltBrutoCents: number; beneficiosCents: number; pjMensalCents: number };
 
@@ -64,7 +64,7 @@ export function EquivalenciaCltPj() {
       ]}
       resultado={{
         rotulo: pjVence ? 'O PJ paga a mais por ano' : 'A CLT vence por ano',
-        valor: valorQueCabe(money(Math.abs(diffAnualCents)), 'por ano'),
+        valor: money(Math.abs(diffAnualCents)),
         nota: `CLT ~${money(Math.round(cltAnualCents / 12))}/mês · PJ ~${money(Math.round(pjAnualCents / 12))}/mês`,
         tom: pjVence ? 'bom' : 'atencao',
         diffAnualCents,
@@ -111,7 +111,7 @@ export function EquivalenciaCltPj() {
         </>
       }
       detalhes={
-        <QuadrosEmLinhas
+        <Quadros
           itens={[
             {
               rotulo: 'CLT líquido/ano',

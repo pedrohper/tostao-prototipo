@@ -10,7 +10,7 @@ vi.mock('react', async (importOriginal) => {
 import { useState } from 'react';
 import { Selo } from './selo';
 import { CampoLista, CampoOpcoes, CampoSimNao, Quadros } from './simulador-campos';
-import { SimuladorShell, valorEhFrase } from './simulador-shell';
+import { letraDoNumero, SimuladorShell, valorEhFrase } from './simulador-shell';
 import { aberto, grande, plain, tocar, tudo } from './simulador.testutil';
 
 function Exemplo() {
@@ -92,6 +92,16 @@ describe('controles', () => {
     expect(grande(tela)).toBe('Escolha b-s-x');
   });
 
+  it('quadros: lado a lado só com dois valores curtos, senão um por linha', () => {
+    const lado = (valores: string[]) =>
+      renderToString(<Quadros itens={valores.map((valor, i) => ({ rotulo: `R${i}`, valor }))} />).includes(
+        'grid-cols-2',
+      );
+    expect(lado(['R$ 80,00', 'R$ 800,00'])).toBe(true);
+    expect(lado(['R$ 80,00', 'R$ 1.600,00'])).toBe(false);
+    expect(lado(['1', '2', '3'])).toBe(false);
+  });
+
   it('quadros: os rótulos e valores aparecem', () => {
     const tela = aberto(() => (
       <Quadros
@@ -110,6 +120,13 @@ describe('resultado por extenso', () => {
   it('número usa letra grande; frase longa, menor', () => {
     expect(valorEhFrase('R$ 12.345,67')).toBe(false);
     expect(valorEhFrase('Alto risco de golpe')).toBe(true);
+  });
+
+  it('o número grande não passa de 36 px e encolhe com o cartão quando é comprido', () => {
+    expect(letraDoNumero('R$ 984,00')).toBe('min(36px, 17.92cqi)');
+    expect(letraDoNumero('R$ 1.234.567,00')).toBe('min(36px, 10.75cqi)');
+    // 214 px é o cartão em 320 px: o valor comprido cabe (letra x 0,62 x caracteres <= largura).
+    expect(((10.75 / 100) * 214 * 0.62 * 15) | 0).toBeLessThanOrEqual(214);
   });
 });
 

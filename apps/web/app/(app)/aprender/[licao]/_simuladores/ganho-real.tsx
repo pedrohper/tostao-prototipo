@@ -2,7 +2,7 @@
 // m7-l5: Calculadora do ganho real, no SimuladorShell (T6.15). A conta é a de sempre, com a base em centavos.
 import { useState } from 'react';
 import { CampoRegua, SimuladorShell } from '@/components/simulador-shell';
-import { QuadrosEmLinhas } from './apoio-m6-m8';
+import { Quadros } from '@/components/simulador-campos';
 import { money } from '@/lib/format';
 
 export const BASE_DO_GANHO_REAL_CENTS = 1_000_000;
@@ -83,7 +83,7 @@ export function CalculadoraGanhoReal() {
         />
       }
       detalhes={
-        <QuadrosEmLinhas
+        <Quadros
           itens={[
             { rotulo: 'R$ 10 mil em 1 ano', valor: money(em1AnoCents), nota: 'em poder de compra' },
             { rotulo: 'R$ 10 mil em 5 anos', valor: money(em5AnosCents), nota: 'em poder de compra' },

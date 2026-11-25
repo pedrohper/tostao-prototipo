@@ -3,9 +3,9 @@
 // entrada.
 import { useState } from 'react';
 import { Selo } from '@/components/selo';
+import { Quadros } from '@/components/simulador-campos';
 import { CampoDinheiro, CampoRegua, SimuladorShell } from '@/components/simulador-shell';
 import { money } from '@/lib/format';
-import { QuadrosEmLinhas } from './apoio-m6-m8';
 
 export function simularVolatilidade({ valorCents, quedaPct }: { valorCents: number; quedaPct: number }) {
   const aposQuedaCents = Math.round(valorCents * (1 - quedaPct / 100));
@@ -84,7 +84,7 @@ export function TesteCardiacoVolatilidade() {
         />
       }
       detalhes={
-        <QuadrosEmLinhas
+        <Quadros
           itens={[
             { rotulo: `Cripto (−${queda}%)`, valor: money(aposQuedaCents), tom: 'ruim' },
             { rotulo: 'Renda Fixa (+1%)', valor: money(rendaFixaCents), tom: 'bom' },

@@ -6,7 +6,6 @@ import { Selo } from '@/components/selo';
 import { Quadros } from '@/components/simulador-campos';
 import { CampoDinheiro, CampoRegua, SimuladorShell } from '@/components/simulador-shell';
 import { money } from '@/lib/format';
-import { valorQueCabe } from './apoio-m6-m8';
 
 export function calcularSaqueAniversario({ brutoCents, anos }: { brutoCents: number; anos: number }) {
   const depositoMensalCents = Math.round(brutoCents * 0.08);
@@ -64,7 +63,7 @@ export function SaqueAniversarioVsRescisao() {
       ]}
       resultado={{
         rotulo: 'No saque-aniversário, você saca',
-        valor: valorQueCabe(money(saqueAniversarioCents), 'de multa'),
+        valor: money(saqueAniversarioCents),
         nota: `Só a multa. ${money(travadoCents)} do saldo ficam retidos`,
         tom: 'ruim',
         saqueAniversarioCents,

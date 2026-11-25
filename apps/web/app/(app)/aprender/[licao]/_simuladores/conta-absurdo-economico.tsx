@@ -6,6 +6,7 @@ import { Selo } from '@/components/selo';
 import { CampoOpcoes, Quadros } from '@/components/simulador-campos';
 import { CampoDinheiro, CampoRegua, SimuladorShell } from '@/components/simulador-shell';
 import { money } from '@/lib/format';
+import { formatCompactMoney } from './formato-compacto';
 
 export type AbsurdoEntrada = { porVideoCents: number; minutosDia: number; usuarios: number };
 
@@ -13,19 +14,6 @@ export function calcularContaDoAbsurdo({ porVideoCents, minutosDia, usuarios }: 
   const videosDia = minutosDia * 2; // 30s por vídeo
   const custoDiaCents = videosDia * porVideoCents * usuarios;
   return { videosDia, custoDiaCents, custoMesCents: custoDiaCents * 30 };
-}
-
-/** Valores enormes por extenso: "R$ 900,00 milhões" (e no singular abaixo de 2: "R$ 1,50 milhão"). */
-export function formatCompactMoney(reais: number): string {
-  if (!Number.isFinite(reais) || reais >= 1e15) return 'R$ ∞ (astronômico)';
-  const escala = (divisor: number, um: string, varios: string) => {
-    const quanto = (reais / divisor).toFixed(2);
-    return `R$ ${quanto.replace('.', ',')} ${Number(quanto) < 2 ? um : varios}`;
-  };
-  if (reais >= 1e12) return escala(1e12, 'trilhão', 'trilhões');
-  if (reais >= 1e9) return escala(1e9, 'bilhão', 'bilhões');
-  if (reais >= 1e6) return escala(1e6, 'milhão', 'milhões');
-  return money(Math.round(reais * 100));
 }
 
 const compacto = (cents: number) => formatCompactMoney(cents / 100);

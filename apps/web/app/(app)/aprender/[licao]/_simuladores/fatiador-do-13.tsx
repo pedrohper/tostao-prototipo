@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Quadros } from '@/components/simulador-campos';
 import { CampoDinheiro, CampoRegua, SimuladorShell } from '@/components/simulador-shell';
 import { money } from '@/lib/format';
-import { valorQueCabe } from './apoio-m6-m8';
 
 export type DecimoEntrada = { liquidoCents: number; dividasPct: number; janeiroPct: number };
 
@@ -68,7 +67,7 @@ export function FatiadorDecimoTerceiro() {
       ]}
       resultado={{
         rotulo: 'Sobra pras festas',
-        valor: valorQueCabe(money(festasCents), 'pras festas'),
+        valor: money(festasCents),
         nota: `${festasPct}% do 13º`,
         tom: festasCents > 0 ? 'bom' : 'atencao',
         liquidoCents: liquido,

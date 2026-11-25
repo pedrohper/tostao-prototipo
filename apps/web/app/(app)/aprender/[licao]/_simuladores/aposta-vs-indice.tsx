@@ -3,9 +3,9 @@
 // entrada.
 import { useState } from 'react';
 import { Selo } from '@/components/selo';
+import { Quadros } from '@/components/simulador-campos';
 import { CampoDinheiro, SimuladorShell } from '@/components/simulador-shell';
 import { money } from '@/lib/format';
-import { QuadrosEmLinhas, valorQueCabe } from './apoio-m6-m8';
 
 export function compararApostaComIndice({ valorCents }: { valorCents: number }) {
   const acaoUnicaCents = Math.round(valorCents * 0.6); // -40%
@@ -48,7 +48,7 @@ export function ApostaIndividualVsIndice() {
       ]}
       resultado={{
         rotulo: 'Diferença entre os dois caminhos',
-        valor: valorQueCabe(money(diferencaCents), 'de diferença'),
+        valor: money(diferencaCents),
         nota: 'A favor do índice, neste cenário',
         tom: 'atencao',
         valorCents: valor,
@@ -74,7 +74,7 @@ export function ApostaIndividualVsIndice() {
         />
       }
       detalhes={
-        <QuadrosEmLinhas
+        <Quadros
           itens={[
             {
               rotulo: '1 Ação (queda de −40%)',

@@ -1,20 +1,21 @@
-// T4.5 · todos os simuladores das lições: renderizam sem quebrar, sem emoji nativo, e os 4 com contexto mostram
-// os números reais da pessoa (e, sem contexto, os valores didáticos de sempre). renderToString = markup inicial.
+// T4.5 e T6.15 · todos os simuladores das lições: um layout só, renderizam sem quebrar, sem emoji nativo, e os 4 com
+// contexto avisam de onde vieram os números (os valores de cada um são conferidos nas specs por módulo).
 import { renderToString } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
+vi.mock('react', async (importOriginal) => {
+  const { comGanchosDeTeste } = await import('./mini-render.testutil');
+  return comGanchosDeTeste(await importOriginal<typeof import('react')>());
+});
 
 import { SIMULATORS } from '@/app/(app)/aprender/[licao]/simulators';
 import { SimulatorView } from './simulator-view';
+import { aberto, plain as limpo, tudo } from './simulador.testutil';
 import { modules } from '@/lib/lessons';
 import type { LessonUserContext } from '@/lib/lesson-context';
 
-const plain = (s: string) =>
-  s
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\u00a0/g, ' ')
-    .replace(/\s+/g, ' ');
+const plain = (s: string) => limpo(s.replace(/<[^>]+>/g, ' '));
 const lessonIds = modules.flatMap((m) => m.lessons.map((l) => l.id));
 
 const ctx: LessonUserContext = {
@@ -45,20 +46,50 @@ describe('os 45 simuladores', () => {
     }
   });
 
-  it('nenhum usa emoji nativo (selos do Tostão no lugar) nem <input type="range"> cru', () => {
-    let sliders = 0;
+  it('o SimuladorShell é o único layout, com e sem os números da pessoa', () => {
     for (const id of lessonIds) {
-      const html = renderToString(<SimulatorView id={id} locale="pt-BR" userContext={null} />);
-      expect(html, id).not.toMatch(/\p{Extended_Pictographic}/u);
-      // todo slider é o do design system (nenhum <input type="range"> cru sobrando)
-      const ranges = html.match(/<input[^>]*type="range"[^>]*>/g) ?? [];
-      expect(
-        ranges.every((tag) => tag.includes('class="tostao-slider"')),
-        id,
-      ).toBe(true);
-      sliders += html.match(/class="tostao-slider"/g)?.length ?? 0;
+      for (const userContext of [null, ctx]) {
+        const html = renderToString(<SimulatorView id={id} locale="pt-BR" userContext={userContext} />);
+        expect(html.match(/data-simulador-shell/g), id).toHaveLength(1);
+      }
     }
-    expect(sliders).toBeGreaterThan(40); // os sliders de verdade (o resto aparece só em outros estados)
+  });
+
+  it('abertos no resultado: sem emoji nativo, régua só a do design system e nada de NaN na tela', () => {
+    let reguas = 0;
+    for (const id of lessonIds) {
+      for (const userContext of [null, ctx]) {
+        const Sim = SIMULATORS[id]!;
+        const tela = aberto(() => <Sim locale="pt-BR" userContext={userContext} />);
+        const texto = tudo(tela);
+        expect(texto, id).not.toMatch(/\p{Extended_Pictographic}/u);
+        expect(texto, id).not.toMatch(/NaN|Infinity|undefined|\[object/);
+        // todo slider é o do design system (nenhum <input type="range"> cru sobrando)
+        const ranges = tela.todos((no) => no.tag === 'input' && no.props.type === 'range');
+        expect(
+          ranges.every((no) => no.props.className === 'tostao-slider' && no.props['aria-label']),
+          id,
+        ).toBe(true);
+        reguas += ranges.length;
+      }
+    }
+    expect(reguas).toBeGreaterThan(100); // os sliders de verdade (as listas e escolhas não usam régua)
+  });
+
+  it('quem tem palpite abre perguntando, com 2 ou 3 opções diferentes', () => {
+    let comPalpite = 0;
+    for (const id of lessonIds) {
+      for (const userContext of [null, ctx]) {
+        const html = renderToString(<SimulatorView id={id} locale="pt-BR" userContext={userContext} />);
+        if (!html.includes('Pular palpite')) continue;
+        comPalpite++;
+        const opcoes = [...html.matchAll(/<button[^>]*role="radio"[^>]*>(.*?)<\/button>/g)].map((m) => plain(m[1]!));
+        expect(opcoes.length, id).toBeGreaterThanOrEqual(2);
+        expect(opcoes.length, id).toBeLessThanOrEqual(3);
+        expect(new Set(opcoes).size, `${id}: ${opcoes.join(' / ')}`).toBe(opcoes.length);
+      }
+    }
+    expect(comPalpite).toBe(44 * 2); // só o quiz da falsa central (m9-l1) abre direto
   });
 });
 
@@ -66,65 +97,14 @@ describe('simuladores com os números da pessoa', () => {
   const render = (id: string, userContext: LessonUserContext | null) =>
     plain(renderToString(<SimulatorView id={id} locale="pt-BR" userContext={userContext} />));
 
-  it('M1-L1 Ralo: delivery real calibra a frequência e o salário real entra na conta', () => {
-    const html = renderToString(<SimulatorView id="m1-l1" locale="pt-BR" userContext={ctx} />);
-    expect(html).toContain('value="5"'); // vezes por semana
-    const t = plain(html);
-    expect(t).toContain('Ajustado ao seu delivery de novembro');
-    expect(t).toContain('salários de R$ 2.500,00 por ano');
-  });
-
-  it('M1-L1 Ralo sem contexto: os valores didáticos de sempre (R$ 20, 4x e salário de R$ 1.307,90)', () => {
-    const html = renderToString(<SimulatorView id="m1-l1" locale="pt-BR" userContext={null} />);
-    expect(html).toContain('value="20"');
-    expect(html).toContain('value="4"');
-    const t = plain(html);
-    expect(t).toContain('salários de R$ 1.307,90 por ano');
-    expect(t).not.toContain('Ajustado ao seu delivery');
-  });
-
-  it('M1-L2 Fatias: renda real e percentuais da pessoa; régua cobre renda fora do intervalo', () => {
-    const html = renderToString(<SimulatorView id="m1-l2" locale="pt-BR" userContext={ctx} />);
-    expect(plain(html)).toContain('Começa com a sua renda e os seus gastos de novembro');
-    expect(html).toContain('value="2500"'); // renda
-    expect(html).toContain('value="40"'); // necessidades: 100.000 / 250.000
-    expect(html).toContain('value="32"'); // desejos: 80.000 / 250.000
-    const rich = renderToString(
-      <SimulatorView id="m1-l2" locale="pt-BR" userContext={{ ...ctx, incomeCents: 900_000 }} />,
-    );
-    expect(rich).toContain('max="9000"'); // acima dos R$ 6.000 didáticos
-  });
-
-  it('M1-L2 Fatias sem contexto: 55/30 e R$ 2.000', () => {
-    const html = renderToString(<SimulatorView id="m1-l2" locale="pt-BR" userContext={null} />);
-    expect(html).toContain('value="2000"');
-    expect(html).toContain('value="55"');
-    expect(html).toContain('value="30"');
-  });
-
-  it('M1-L3 Bisturi: as assinaturas reais no lugar da lista genérica', () => {
-    const t = render('m1-l3', ctx);
-    expect(t).toContain('Netflix');
-    expect(t).toContain('Spotify');
-    expect(t).toContain('R$ 55,90');
-    expect(t).toContain('Estas são as assinaturas que o Tostão achou no seu extrato');
-    expect(t).not.toContain('Plano celular pós-pago');
-  });
-
-  it('M1-L3 Bisturi sem assinaturas: a lista didática com o celular já marcado', () => {
-    const t = render('m1-l3', { ...ctx, subscriptions: [] });
-    expect(t).toContain('Plano celular pós-pago');
-    expect(t).not.toContain('achou no seu extrato');
-  });
-
-  it('M4-L5 Termômetro: saldo das contas e custo do mês; sem contexto 3.600 e 1.800', () => {
-    const real = renderToString(<SimulatorView id="m4-l5" locale="pt-BR" userContext={ctx} />);
-    expect(real).toContain('value="4000"'); // saldo R$ 4.000
-    expect(real).toContain('value="1000"'); // necessidades R$ 1.000
-    expect(plain(real)).toContain('Saldo das suas contas e custo do mês já estão aí');
-    const didatico = renderToString(<SimulatorView id="m4-l5" locale="pt-BR" userContext={null} />);
-    expect(didatico).toContain('value="3600"');
-    expect(didatico).toContain('value="1800"');
+  it('M1-L1, M1-L2, M1-L3 e M4-L5 avisam de onde vieram os números', () => {
+    expect(render('m1-l1', ctx)).toContain('Ajustado ao seu delivery de novembro');
+    expect(render('m1-l2', ctx)).toContain('Começa com a sua renda e os seus gastos de novembro');
+    expect(render('m1-l3', ctx)).toContain('Estas são as assinaturas que o Tostão achou no seu extrato');
+    expect(render('m4-l5', ctx)).toContain('Saldo das suas contas e custo do mês já estão aí');
+    for (const id of ['m1-l1', 'm1-l2', 'm1-l3', 'm4-l5']) {
+      expect(render(id, null), id).not.toMatch(/seu delivery|seu extrato|sua renda e os seus|suas contas e custo/);
+    }
   });
 
   it('lições sem personalização ignoram o contexto (o mesmo markup com e sem)', () => {

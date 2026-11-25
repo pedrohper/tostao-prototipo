@@ -54,8 +54,12 @@ export function SemaforoDaEmergencia() {
   return (
     <SimuladorShell
       pergunta="Dá pra mexer na reserva por causa desse gasto?"
+      aviso={
+        <p className="text-[14px] leading-snug text-tinta-suave">
+          Exemplo: o notebook que você usa pra trabalhar pifou.
+        </p>
+      }
       cenario={[
-        { rotulo: 'Exemplo: o notebook que você usa pra trabalhar pifou', valor: 'hoje' },
         { rotulo: 'Foi algo inesperado?', valor: simOuNao(inesperado) },
         { rotulo: 'É essencial / urgente hoje?', valor: simOuNao(urgente) },
         { rotulo: 'Tem alternativa mais barata?', valor: simOuNao(alternativa) },

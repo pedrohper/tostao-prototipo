@@ -62,6 +62,14 @@ const TONS: Record<TomDoResultado, { fundo: string; rotulo: string }> = {
 /** Número cabe grande; um veredito por extenso ("Alto risco de golpe") precisa de letra menor pra não virar parede. */
 export const valorEhFrase = (valor: string) => valor.length > 16;
 
+/**
+ * Letra do número grande: 36 px enquanto couber na largura do cartão; um valor comprido ("R$ 1.234.567,00" em 320 px)
+ * encolhe junto com o cartão em vez de partir no meio. `cqi` = 1% da largura do cartão; 0,62 = largura média de um
+ * caractere em relação à letra.
+ */
+export const letraDoNumero = (valor: string) =>
+  `min(36px, ${(100 / (Math.max(valor.length, 1) * 0.62)).toFixed(2)}cqi)`;
+
 export function SimuladorShell<R extends ResultadoDoSimulador, Id extends string>({
   pergunta,
   aviso,
@@ -143,12 +151,17 @@ export function SimuladorShell<R extends ResultadoDoSimulador, Id extends string
         className={revelado ? 'sticky top-0 z-[5] -mx-1 bg-cartao px-1 py-2' : 'sr-only'}
       >
         {revelado && (
-          <div className={`flex flex-col items-center gap-1 rounded-[20px] px-4 py-3.5 text-center ${tom.fundo}`}>
+          <div
+            className={`@container flex flex-col items-center gap-1 rounded-[20px] px-4 py-3.5 text-center ${tom.fundo}`}
+          >
             <span className={`text-[13px] leading-tight font-bold ${tom.rotulo}`}>{resultado.rotulo}</span>
             <span
-              className={`font-display font-extrabold text-balance break-words text-tinta tabular-nums ${
-                valorEhFrase(resultado.valor) ? 'text-[22px] leading-[27px]' : 'text-[36px] leading-[40px]'
+              className={`max-w-full font-display font-extrabold text-tinta tabular-nums ${
+                valorEhFrase(resultado.valor)
+                  ? 'text-[22px] leading-[27px] text-balance break-words'
+                  : 'leading-[1.1] whitespace-nowrap'
               }`}
+              style={valorEhFrase(resultado.valor) ? undefined : { fontSize: letraDoNumero(resultado.valor) }}
             >
               {resultado.valor}
             </span>
@@ -187,7 +200,7 @@ export function SimuladorShell<R extends ResultadoDoSimulador, Id extends string
               <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5 [&::-webkit-details-marker]:hidden">
                 <span className="flex min-w-0 flex-col gap-0.5">
                   <span className="text-[15px] font-semibold">Ajustar mais</span>
-                  {resumoExtras && <span className="text-xs leading-snug text-tinta-suave">{resumoExtras}</span>}
+                  {resumoExtras && <span className="text-[13px] leading-snug text-tinta-suave">{resumoExtras}</span>}
                 </span>
                 <svg
                   width="20"
@@ -399,7 +412,7 @@ export function CampoDinheiro({
         }}
         style={{ height: 44 }}
       />
-      {dica && !aviso && <span className="text-xs text-tinta-suave">{dica}</span>}
+      {dica && !aviso && <span className="text-[13px] leading-snug text-tinta-suave">{dica}</span>}
       {aviso && (
         <span id={`${id}-aviso`} role="alert" className="text-xs leading-snug font-semibold text-laranja-texto">
           {aviso}

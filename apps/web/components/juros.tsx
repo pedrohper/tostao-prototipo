@@ -109,58 +109,36 @@ function Linha({ label, children, forte = false }: { label: string; children: Re
 
 // ---------- Compensa parcelar? ----------
 
-export function InstallmentCalculator({
-  taxas,
-  compacto = false,
-  locale = 'pt-BR',
-}: {
-  taxas: TaxasResponse;
-  compacto?: boolean;
-  locale?: Locale;
-}) {
+export function InstallmentCalculator({ taxas, locale = 'pt-BR' }: { taxas: TaxasResponse; locale?: Locale }) {
   const labels = getDictionary(locale).pages.calculators;
   const [modo, setModo] = useState<'loja' | 'emprestimo'>('loja');
   return (
     <div className="flex flex-col gap-3.5">
-      {!compacto && (
-        <div className="grid grid-cols-2 gap-1 rounded-full bg-papel-2 p-1" role="tablist">
-          {(
-            [
-              ['loja', labels.tabStore],
-              ['emprestimo', labels.tabLoan],
-            ] as const
-          ).map(([m, l]) => (
-            <button
-              key={m}
-              type="button"
-              role="tab"
-              aria-selected={modo === m}
-              onClick={() => setModo(m)}
-              className={`h-[38px] rounded-full text-sm font-semibold ${modo === m ? 'bg-tinta text-papel' : 'text-tinta'}`}
-            >
-              {l}
-            </button>
-          ))}
-        </div>
-      )}
-      {modo === 'loja' ? (
-        <NaLoja taxas={taxas} compacto={compacto} labels={labels} />
-      ) : (
-        <Emprestimo taxas={taxas} labels={labels} />
-      )}
+      <div className="grid grid-cols-2 gap-1 rounded-full bg-papel-2 p-1" role="tablist">
+        {(
+          [
+            ['loja', labels.tabStore],
+            ['emprestimo', labels.tabLoan],
+          ] as const
+        ).map(([m, l]) => (
+          <button
+            key={m}
+            type="button"
+            role="tab"
+            aria-selected={modo === m}
+            onClick={() => setModo(m)}
+            className={`h-[38px] rounded-full text-sm font-semibold ${modo === m ? 'bg-tinta text-papel' : 'text-tinta'}`}
+          >
+            {l}
+          </button>
+        ))}
+      </div>
+      {modo === 'loja' ? <NaLoja taxas={taxas} labels={labels} /> : <Emprestimo taxas={taxas} labels={labels} />}
     </div>
   );
 }
 
-function NaLoja({
-  taxas,
-  compacto,
-  labels,
-}: {
-  taxas: TaxasResponse;
-  compacto: boolean;
-  labels: Dictionary['pages']['calculators'];
-}) {
+function NaLoja({ taxas, labels }: { taxas: TaxasResponse; labels: Dictionary['pages']['calculators'] }) {
   const [aVista, setAVista] = useState('900,00');
   const [parcela, setParcela] = useState('100,00');
   const [n, setN] = useState(10);
@@ -206,7 +184,7 @@ function NaLoja({
               {labels.tieBody(money(Math.abs(v.saldoParcelandoInCents)))}
             </Fala>
           )}
-          {!compacto && juntar !== null && juntar > 0 && (
+          {juntar !== null && juntar > 0 && (
             <p className="text-sm leading-5 text-tinta-suave">
               {labels.saveInsteadNote(money(pa), money(av), juntar, juntar < n)}
             </p>

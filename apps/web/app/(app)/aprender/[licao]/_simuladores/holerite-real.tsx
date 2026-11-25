@@ -6,7 +6,6 @@ import { Selo } from '@/components/selo';
 import { Quadros } from '@/components/simulador-campos';
 import { CampoDinheiro, SimuladorShell } from '@/components/simulador-shell';
 import { money } from '@/lib/format';
-import { valorQueCabe } from './apoio-m6-m8';
 import { calcInssCents, calcIrrfCents } from './inss-irrf-clt';
 
 export function calcularHolerite({ brutoCents }: { brutoCents: number }) {
@@ -51,7 +50,7 @@ export function CalculadoraHoleriteReal() {
       ]}
       resultado={{
         rotulo: 'Líquido real que cai na conta',
-        valor: valorQueCabe(money(liquidoCents), 'na conta'),
+        valor: money(liquidoCents),
         nota: `−${descontoPct.toFixed(1).replace('.', ',')}% de descontos`,
         tom: 'bom',
         brutoCents: bruto,

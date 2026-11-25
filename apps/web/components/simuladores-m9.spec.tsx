@@ -12,9 +12,9 @@ import {
   ContaAbsurdoEconomico,
   calcularContaDoAbsurdo,
   faixasDoAbsurdo,
-  formatCompactMoney,
   palpiteCertoDoAbsurdo,
 } from '@/app/(app)/aprender/[licao]/_simuladores/conta-absurdo-economico';
+import { formatCompactMoney } from '@/app/(app)/aprender/[licao]/_simuladores/formato-compacto';
 import {
   EscrutinioDaVaga,
   SINAIS_DA_VAGA,

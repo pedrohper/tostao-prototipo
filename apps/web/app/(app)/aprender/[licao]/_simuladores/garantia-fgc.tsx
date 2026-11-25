@@ -5,7 +5,6 @@ import { Selo } from '@/components/selo';
 import { Quadros } from '@/components/simulador-campos';
 import { CampoDinheiro, SimuladorShell } from '@/components/simulador-shell';
 import { money } from '@/lib/format';
-import { QuadrosEmLinhas, valorQueCabe } from './apoio-m6-m8';
 
 export const LIMITE_POR_BANCO_CENTS = 25_000_000;
 export const TETO_GLOBAL_CENTS = 100_000_000;
@@ -68,7 +67,7 @@ export function RaioXGarantiaFGC() {
       ]}
       resultado={{
         rotulo: 'Sem garantia (risco)',
-        valor: valorQueCabe(money(descobertoCents), 'sem garantia'),
+        valor: money(descobertoCents),
         nota: `${money(cobertoCents)} protegidos pelo FGC`,
         tom: descobertoCents > 0 ? 'ruim' : 'bom',
         descobertoCents,
@@ -94,7 +93,7 @@ export function RaioXGarantiaFGC() {
       }
       detalhes={
         <>
-          <QuadrosEmLinhas
+          <Quadros
             itens={[
               { rotulo: 'Protegido pelo FGC', valor: money(cobertoCents), tom: 'bom' },
               {

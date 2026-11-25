@@ -6,15 +6,7 @@ import { Selo } from '@/components/selo';
 import { Quadros } from '@/components/simulador-campos';
 import { CampoDinheiro, CampoRegua, SimuladorShell } from '@/components/simulador-shell';
 import { money } from '@/lib/format';
-import { valorQueCabe } from './apoio-m6-m8';
-
-export function formatCompactMoney(reais: number): string {
-  if (!Number.isFinite(reais) || reais >= 1e15) return 'R$ ∞ (astronômico)';
-  if (reais >= 1e12) return `R$ ${(reais / 1e12).toFixed(2).replace('.', ',')} trilhões`;
-  if (reais >= 1e9) return `R$ ${(reais / 1e9).toFixed(2).replace('.', ',')} bilhões`;
-  if (reais >= 1e6) return `R$ ${(reais / 1e6).toFixed(2).replace('.', ',')} milhões`;
-  return money(Math.round(reais * 100));
-}
+import { formatCompactMoney } from './formato-compacto';
 
 export function projetarPromessa({ taxaMesPct, aporteCents }: { taxaMesPct: number; aporteCents: number }) {
   const aporte = aporteCents / 100;
@@ -67,7 +59,7 @@ export function DetectorCharlatanismo() {
       ]}
       resultado={{
         rotulo: 'Em 20 anos, a promessa diz que vira',
-        valor: valorQueCabe(formatCompactMoney(em20AnosReais), 'no fim'),
+        valor: formatCompactMoney(em20AnosReais),
         nota: `Sem colocar nada além dos ${money(aporte)}`,
         tom: 'ruim',
         aporteCents: aporte,

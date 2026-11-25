@@ -17,10 +17,10 @@ import {
 } from '@/app/(app)/aprender/[licao]/_simuladores/aposta-vs-indice';
 import {
   DetectorCharlatanismo,
-  formatCompactMoney,
   palpiteCertoDaPromessa,
   projetarPromessa,
 } from '@/app/(app)/aprender/[licao]/_simuladores/detector-de-charlatanismo';
+import { formatCompactMoney } from '@/app/(app)/aprender/[licao]/_simuladores/formato-compacto';
 import { MODULO_8 } from '@/app/(app)/aprender/[licao]/_simuladores/modulo-8';
 import {
   calcularRendaDeFiis,
@@ -164,7 +164,11 @@ describe('módulo 8: a matemática não mudou (todas as posições das réguas d
           em10AnosReais: antes.em10Anos,
           em20AnosReais: antes.em20Anos,
         });
-        for (const v of Object.values(antes)) expect(formatCompactMoney(v)).toBe(antesCompacto(v));
+        // A única diferença pro texto de antes é o singular abaixo de 2 ("R$ 1,50 milhão").
+        for (const v of Object.values(antes)) {
+          const comSingular = antesCompacto(v).replace(/R\$ (1,\d\d) (milh|bilh|trilh)ões/, 'R$ $1 $2ão');
+          expect(formatCompactMoney(v)).toBe(comSingular);
+        }
       }
     expect(casos).toBe(27 * 20);
   });
@@ -215,7 +219,7 @@ describe('m8-l2 · Renda passiva em FIIs', () => {
 
   it('valores didáticos: 118 cotas e R$ 11.800,00', () => {
     const tela = aberto(RendaPassivaFIIs);
-    expect(grande(tela)).toContain('R$ 11.800,00 investidos 118 cotas de R$ 100,00');
+    expect(grande(tela)).toContain('R$ 11.800,00 118 cotas de R$ 100,00');
     expect(tudo(tela)).toContain('Cotas necessárias 118 R$ 0,85/cota');
     expect(tudo(tela)).toContain('Capital acumulado R$ 11.800,00 para gerar a meta');
     mover(tela, 'Meta de renda mensal isenta', 235_000);

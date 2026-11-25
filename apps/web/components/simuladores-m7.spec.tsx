@@ -229,7 +229,7 @@ describe('m7-l2 · Raio-x do FGC', () => {
 
   it('valores didáticos: R$ 30 mil sem garantia, com o aviso de antes', () => {
     const tela = aberto(RaioXGarantiaFGC);
-    expect(grande(tela)).toContain('Sem garantia (risco) R$ 30.000,00 sem garantia R$ 580.000,00 protegidos pelo FGC');
+    expect(grande(tela)).toContain('Sem garantia (risco) R$ 30.000,00 R$ 580.000,00 protegidos pelo FGC');
     const t = tudo(tela);
     expect(t).toContain('Banco B R$ 280.000,00 Acima de R$ 250 mil!');
     expect(t).toContain('Você tem R$ 30.000,00 acima do limite de R$ 250 mil por instituição.');

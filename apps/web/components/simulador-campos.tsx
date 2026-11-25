@@ -196,12 +196,15 @@ export type Quadro = { rotulo: string; valor: string; tom?: TomDoResultado; nota
 
 const FUNDOS: Record<TomDoResultado, string> = { bom: 'bg-menta-clara', atencao: 'bg-amarelo-claro', ruim: 'bg-rosa' };
 
+/** Até este tamanho ("R$ 800,00") dois valores cabem lado a lado em 320 px. */
+const CABE_LADO_A_LADO = 9;
+
 /**
- * Os números de apoio ("em 3 meses", "em 1 ano"). Dois ficam lado a lado; três ou mais viram linhas, que cabem em
- * 320 px sem quebrar o valor. Vai em `detalhes` do shell.
+ * Os números de apoio ("em 3 meses", "em 1 ano"). Dois valores curtos ficam lado a lado; o resto vira linhas, que
+ * cabem em 320 px sem partir o valor. Vai em `detalhes` do shell.
  */
 export function Quadros({ titulo, itens }: { titulo?: string; itens: readonly Quadro[] }) {
-  const lado = itens.length === 2;
+  const lado = itens.length === 2 && itens.every((item) => item.valor.length <= CABE_LADO_A_LADO);
   return (
     <section className="flex flex-col gap-2" aria-label={titulo ?? 'Comparação'}>
       {titulo && <h3 className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">{titulo}</h3>}

@@ -10,7 +10,6 @@ vi.mock('react', async (importOriginal) => {
   return comGanchosDeTeste(await importOriginal<typeof import('react')>());
 });
 
-import { valorQueCabe } from '@/app/(app)/aprender/[licao]/_simuladores/apoio-m6-m8';
 import {
   compararCltPj,
   EquivalenciaCltPj,
@@ -40,7 +39,6 @@ import {
   SaqueAniversarioVsRescisao,
 } from '@/app/(app)/aprender/[licao]/_simuladores/saque-aniversario';
 import { money } from '@/lib/format';
-import { valorEhFrase } from './simulador-shell';
 import { montar } from './mini-render.testutil';
 import {
   aberto,
@@ -395,18 +393,6 @@ describe('m6-l5 · CLT x PJ', () => {
     const falta = reais(Math.abs(antes.diffAnual) / 100);
     expect(grande(tela)).toContain(`A CLT vence por ano ${falta}`);
     expect(tudo(tela)).toContain(`A CLT vence por ${falta}/ano quando somamos 13º, 1/3 de férias, FGTS e benefícios.`);
-  });
-});
-
-describe('o número grande cabe em 320 px', () => {
-  it('valor curto fica sozinho; com 12 caracteres ou mais ganha o complemento e vai pra letra menor', () => {
-    expect(valorQueCabe(money(864_000), 'na conta')).toBe(money(864_000));
-    const longo = valorQueCabe(money(1_108_107), 'na conta');
-    expect(plain(longo)).toBe('R$ 11.081,07 na conta');
-    expect(valorEhFrase(longo)).toBe(true);
-    const tela = aberto(CalculadoraHoleriteReal);
-    mover(tela, 'Salário bruto CLT', 1_500_000);
-    expect(grande(tela)).toContain(`${reais(antesHolerite(15000).liquidoCents / 100)} na conta`);
   });
 });
 

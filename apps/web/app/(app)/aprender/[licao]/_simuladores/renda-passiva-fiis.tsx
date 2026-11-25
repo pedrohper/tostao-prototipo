@@ -2,9 +2,9 @@
 // m8-l2: Renda passiva em FIIs, no SimuladorShell (T6.15). A conta é a de sempre, agora com a meta em centavos desde a
 // entrada.
 import { useState } from 'react';
+import { Quadros } from '@/components/simulador-campos';
 import { CampoDinheiro, CampoRegua, SimuladorShell } from '@/components/simulador-shell';
 import { money } from '@/lib/format';
-import { QuadrosEmLinhas, valorQueCabe } from './apoio-m6-m8';
 
 export const PRECO_DA_COTA_CENTS = 10_000;
 
@@ -52,7 +52,7 @@ export function RendaPassivaFIIs() {
       ]}
       resultado={{
         rotulo: 'Capital acumulado pra gerar a meta',
-        valor: valorQueCabe(money(capitalCents), 'investidos'),
+        valor: money(capitalCents),
         nota: `${cotas} cotas de ${money(PRECO_DA_COTA_CENTS)}`,
         tom: 'atencao',
         metaCents: meta,
@@ -89,7 +89,7 @@ export function RendaPassivaFIIs() {
         />
       }
       detalhes={
-        <QuadrosEmLinhas
+        <Quadros
           itens={[
             { rotulo: 'Cotas necessárias', valor: String(cotas), nota: `${money(dividendoPorCotaCents)}/cota` },
             { rotulo: 'Capital acumulado', valor: money(capitalCents), tom: 'bom', nota: 'para gerar a meta' },
