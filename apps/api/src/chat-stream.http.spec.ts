@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ChatStreamEvent } from '@tostao/contracts';
 import { buildApp, CONNECTION_TIMEOUT_MS } from './app.js';
-import { SSE_HEARTBEAT_MS } from './http/controllers/chat.js';
+import { CHAT_SOCKET_TIMEOUT_MS, SSE_HEARTBEAT_MS } from './http/controllers/chat.js';
 import { makeInMemoryRepositories } from './repositories/in-memory/index.js';
 import { FakeBankGateway } from './gateways/fake-bank-gateway.js';
 import { FakeAiGateway } from './gateways/ai-gateway.js';
@@ -165,4 +165,25 @@ describe('POST /chat/stream', () => {
   it('heartbeat do SSE bem abaixo do connectionTimeout da API (senão IA lenta derruba o stream no meio: provado no teste real, 12 s sem token)', () => {
     expect(SSE_HEARTBEAT_MS).toBeLessThanOrEqual(CONNECTION_TIMEOUT_MS / 2);
   });
+
+  it('POST /chat com IA lenta (acima do connectionTimeout) ainda entrega a resposta num socket de verdade', async () => {
+    const { app, ai, auth } = await boot();
+    const reply = ai.reply.bind(ai);
+    ai.reply = async (...args: Parameters<typeof reply>) => {
+      await new Promise((resolve) => setTimeout(resolve, CONNECTION_TIMEOUT_MS + 1_500));
+      return reply(...args);
+    };
+    const url = await app.listen({ port: 0, host: '127.0.0.1' });
+    try {
+      const res = await fetch(`${url}/chat`, {
+        method: 'POST',
+        headers: { ...auth, 'content-type': 'application/json' },
+        body: JSON.stringify({ message: 'oi' }),
+      });
+      expect(res.status).toBe(200);
+      expect(CHAT_SOCKET_TIMEOUT_MS).toBeGreaterThan(2 * 45_000);
+    } finally {
+      await app.close();
+    }
+  }, 30_000);
 });

@@ -50,6 +50,12 @@ export const SSE_HEARTBEAT_MS = 5_000;
  */
 export const SCAM_SOCKET_TIMEOUT_MS = 30_000;
 
+/**
+ * O `POST /chat` (usado quando o streaming falha) também responde de uma vez só. Cada chamada à IA tem teto de 45 s e
+ * um turno com ferramenta faz mais de uma: sem folga, o socket caía aos 10 s e a resposta se perdia.
+ */
+export const CHAT_SOCKET_TIMEOUT_MS = 120_000;
+
 /** Evento do caso de uso (objetos de domínio) -> evento do contrato (DTOs). */
 function toStreamEvent(e: AskStreamEvent): ChatStreamEvent {
   if (e.type !== 'done') return e;
@@ -73,6 +79,7 @@ export function chatRoutes(app: FastifyInstance, uc: UseCases, limits: Limiters)
 
   app.post('/chat', { onRequest: verifyJwt }, async (request) => {
     const { message } = chatBody.parse(request.body);
+    request.raw.socket.setTimeout?.(CHAT_SOCKET_TIMEOUT_MS);
     const r = await uc.askTostao.execute({ userId: request.user.sub, message });
     return {
       question: dto(r.question),
