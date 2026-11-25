@@ -210,7 +210,7 @@ export async function buildApp({
   peopleRoutes(app, uc);
   planningRoutes(app, uc);
   gamesRoutes(app, uc);
-  chatRoutes(app, uc);
+  chatRoutes(app, uc, limits);
   whatsappRoutes(app, uc, whatsapp, whatsappVerifyToken, audioTranscriber, limits);
   // Entrega o handler do n8n à ponte isolada (http/n8n-bridge.ts); no app principal essa rota não existe.
   app.decorate('registerN8nRoute', (instance: FastifyInstance) => registerN8nRoute(instance, uc, n8nWhatsAppSecret));

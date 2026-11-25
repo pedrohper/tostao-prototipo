@@ -53,9 +53,9 @@ function stripAccents(s: string) {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
-/** Descrição de extrato -> texto seguro pra IA. Idempotente. */
-export function scrubFinancialText(text: string): string {
-  let out = tidy(text)
+/** Documentos, contatos e números de conta/cartão viram marcadores. A ordem importa: do mais específico ao genérico. */
+function maskIdentifiers(text: string) {
+  return text
     .replace(CNPJ, '[CNPJ]')
     .replace(CPF, '[CPF]')
     .replace(UUID, '[ID]')
@@ -63,6 +63,11 @@ export function scrubFinancialText(text: string): string {
     .replace(CARD_SPACED, '[ID]')
     .replace(PHONE, '[TEL]')
     .replace(LONG_NUMBER, '[ID]');
+}
+
+/** Descrição de extrato -> texto seguro pra IA. Idempotente. */
+export function scrubFinancialText(text: string): string {
+  let out = maskIdentifiers(tidy(text));
 
   // "PIX ENVIADO JOAO DA SILVA" -> "PIX ENVIADO [PESSOA]" (mantém só o tipo da transferência).
   const m = TRANSFER_PREFIX.exec(out);
@@ -73,6 +78,37 @@ export function scrubFinancialText(text: string): string {
     }
   }
   return out;
+}
+
+/** Largura zero, controle de direção e BOM: servem pra esconder texto ou furar a máscara. */
+const INVISIBLE = /[\u00ad\u180e\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff]/g;
+const NAME_PARTICLES = new Set(['das', 'dos', 'del']);
+const foldName = (s: string) => stripAccents(s).toLowerCase();
+
+/**
+ * Mensagem de um desconhecido colada pela pessoa ("Isso é golpe?") -> texto seguro pra IA. Mesmas máscaras do extrato,
+ * mas sem cortar em uma linha, e escondendo o nome de quem colou (golpe costuma chamar a vítima pelo nome).
+ * Nomes de terceiros não têm como ser reconhecidos com segurança num texto livre. Link fica: é o principal sinal.
+ */
+export function scrubPastedMessage(text: string, ownName?: string | null, max = 2000): string {
+  const clean = text
+    .normalize('NFKC') // dígito "largo" vira dígito comum, senão o CPF escapa
+    .replace(INVISIBLE, '')
+    // eslint-disable-next-line no-control-regex -- remover caractere de controle (menos a quebra de linha) é o objetivo
+    .replace(/[\u0000-\u0009\u000b-\u001f\u007f]+/g, ' ')
+    .replace(/[<>]/g, ' ') // não deixa fechar o bloco delimitado do prompt
+    .replace(/[^\S\n]+/g, ' ')
+    .replace(/ ?\n[ \n]*/g, '\n')
+    .trim()
+    .slice(0, max);
+  const own = new Set(
+    (ownName ?? '')
+      .split(/\s+/)
+      .map(foldName)
+      .filter((part) => part.length >= 3 && !NAME_PARTICLES.has(part)),
+  );
+  const masked = maskIdentifiers(clean);
+  return own.size ? masked.replace(/\p{L}+/gu, (word) => (own.has(foldName(word)) ? '[NOME]' : word)) : masked;
 }
 
 /** Só o primeiro nome vai pra IA ("Pedro Henrique Pereira" -> "Pedro"). */

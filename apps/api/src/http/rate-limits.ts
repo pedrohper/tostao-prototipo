@@ -77,6 +77,8 @@ export function makeLimiters(app: FastifyInstance) {
     friendsByUser: make('friends:user', 10, FIFTEEN_MINUTES, user),
     /** Cadastrar, trocar ou apagar a chave Pix. */
     pixKeyByUser: make('pix-key:user', 20, FIFTEEN_MINUTES, user),
+    /** "Isso é golpe?": além da cota diária da IA, 10 análises por 15 min por pessoa. */
+    scamCheckByUser: make('scam-check:user', 10, FIFTEEN_MINUTES, user),
     autoCategorizeByUser: make('auto-categorize:user', 5, ONE_DAY, user),
     /** Operações caras, cada uma com o seu contador (10 por 15 min por usuário). */
     importsByUser: make('imports:user', 10, FIFTEEN_MINUTES, user),

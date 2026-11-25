@@ -35,6 +35,7 @@ import { testOnlyKeyValueStore, type KeyValueStore } from '../lib/redis.js';
 import { AskTostaoUseCase } from './ask-tostao.js';
 import { SetAiConsentUseCase } from './ai-consent.js';
 import { PixKeyUseCase } from './pix-key.js';
+import { CheckScamUseCase } from './check-scam.js';
 import { PendingActionUseCase } from './pending-actions.js';
 import { PendingActionStore } from '../services/pending-actions.js';
 import { RegisterUserUseCase } from './register-user.js';
@@ -110,6 +111,7 @@ export function makeUseCases({
   const pendingStore = new PendingActionStore(kv);
   const askTostao = new AskTostaoUseCase(repos, ai, chatDailyLimit, () => new Date(), kv, pendingStore);
   const pendingActions = new PendingActionUseCase(pendingStore, repos);
+  const checkScam = new CheckScamUseCase(repos, ai, chatDailyLimit, kv);
   const createManualTransaction = new CreateManualTransactionUseCase(repos);
   const runTostaoChecks = new RunTostaoChecksUseCase(repos);
   const importStatement = new ImportStatementUseCase(repos);
@@ -196,6 +198,7 @@ export function makeUseCases({
     pendingActions,
     setAiConsent: new SetAiConsentUseCase(repos),
     pixKey: new PixKeyUseCase(repos),
+    checkScam,
     whatsappLink: new WhatsAppLinkUseCase(repos, whatsapp),
     whatsappMessage: new HandleWhatsAppMessageUseCase(
       repos,
@@ -209,6 +212,7 @@ export function makeUseCases({
       },
       kv,
       pendingActions,
+      checkScam,
     ),
     chatHistory: {
       execute: async ({ userId }: { userId: string }) => ({ messages: await repos.chat.listRecent(userId, 60) }),

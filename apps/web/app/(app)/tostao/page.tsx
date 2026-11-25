@@ -230,6 +230,18 @@ export default async function TostaoPage({ searchParams }: { searchParams?: Prom
       ) : !me.aiConsentAt ? (
         <div className="flex flex-col gap-3">
           <AiConsentCard />
+          <Link
+            href="/tostao/golpe"
+            className="flex items-center gap-3 rounded-[20px] border border-linha bg-cartao p-4 text-tinta no-underline transition hover:bg-papel-2/50"
+          >
+            <Mascot pose="urubu-pix" size={52} alt="" still />
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span className="text-[15px] font-bold">Isso é golpe?</span>
+              <span className="text-xs leading-[17px] text-tinta-suave">
+                Confere os sinais de uma mensagem suspeita antes de clicar ou pagar.
+              </span>
+            </span>
+          </Link>
         </div>
       ) : null}
     </DesktopSplitShell>
