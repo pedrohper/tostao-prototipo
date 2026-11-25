@@ -29,6 +29,13 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-25 · Claude · produção (merge dos PRs #54 a #56 e deploy, a pedido do Pedro)
+
+- Checagem do GitHub passou nos 3 PRs; entraram na `main` com merge commit, nessa ordem. As linhas "nada publicado" abaixo valiam até aqui.
+- `bash scripts/deploy.sh` às 15:12, sem rollback; migration `20261129100000_safe_to_spend_push` aplicada; servidor na `main` (`6e92bec`). Sem `--seed` (conteúdo das lições não mudou).
+- Conferido: `/health` 200, `/entrar` 200 local e no domínio público, Política de Privacidade nova no ar, 42 migrations, coluna `notify_safe_to_spend` criada, 5 usuários (1 com aceite de IA) e 558 lançamentos, sem erro no log desde o restart.
+- Não testado: telas logadas em produção, push das 9h em aparelho real.
+
 ### 2026-11-25 · Claude · imposto de 2026 e versão do consentimento (`fix/imposto-2026-e-consentimento`, em cima da T6.15)
 
 - m6-l1 e m6-l5: `_simuladores/inss-irrf-clt.ts` com INSS (Portaria MPS/MF nº 13/2026), tabela mensal do IRRF 2026, desconto simplificado de R$ 607,20 e redução da Lei 15.270/2025. Nos valores iniciais o holerite passa de R$ 3.127,75 pra R$ 3.191,40 e a vantagem anual do PJ cai de R$ 4.814,67 pra R$ 238,13.
