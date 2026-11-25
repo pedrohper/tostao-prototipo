@@ -24,7 +24,7 @@ export function SpendingSection({ summary, profile, month, locale, t }: Props & 
         <h2 className="font-display text-xl leading-[26px] font-extrabold">{t.home.whereItWentTitle}</h2>
         <Link
           href={`/carteira?mes=${month}&filtro=saidas#lista`}
-          className="text-[13px] font-semibold text-laranja-texto"
+          className="text-small font-semibold text-laranja-texto"
         >
           {t.home.viewAll}
         </Link>
@@ -54,9 +54,9 @@ export function DesktopSpendingCard({ summary, month, locale, t }: Props) {
   const shown = topCategories.slice(0, 5);
   const total = Math.max(1, summary.outcomeInCents || topCategories.reduce((sum, c) => sum + c.totalInCents, 0));
   return (
-    <section className="flex flex-col gap-4 rounded-[22px] border border-linha bg-cartao p-[22px]">
+    <section className="flex flex-col gap-4 rounded-card border border-linha bg-cartao p-[22px]">
       <div className="flex items-baseline justify-between gap-2">
-        <h2 className="font-display text-[22px] leading-7 font-extrabold text-tinta">{t.home.whereItWentTitle}</h2>
+        <h2 className="font-display text-title leading-7 font-extrabold text-tinta">{t.home.whereItWentTitle}</h2>
         <Link href={`/carteira?mes=${month}`} className="text-sm font-semibold text-laranja-texto no-underline">
           {t.home.viewWallet}
         </Link>
@@ -98,12 +98,12 @@ export function DesktopSpendingCard({ summary, month, locale, t }: Props) {
                   <CatIcon id={cat.categoryId ?? 'outros'} emoji={null} size={22} />
                 </span>
                 <div className="flex min-w-0 grow flex-col">
-                  <span className="truncate text-[15px] font-semibold">{cat.name}</span>
+                  <span className="truncate text-body font-semibold">{cat.name}</span>
                   <span className="text-xs text-tinta-suave">
                     {t.home.percentOfSpending(Math.round((cat.totalInCents / total) * 100))}
                   </span>
                 </div>
-                <b className="shrink-0 text-[15px] font-bold tabular-nums">{money(cat.totalInCents)}</b>
+                <b className="shrink-0 text-body font-bold tabular-nums">{money(cat.totalInCents)}</b>
               </Link>
             ))}
           </div>
@@ -112,7 +112,7 @@ export function DesktopSpendingCard({ summary, month, locale, t }: Props) {
       {summary.uncategorizedCount > 0 && (
         <Link
           href="/carteira?filtro=pendentes#lista"
-          className="flex items-center justify-between gap-3 rounded-[14px] bg-amarelo-claro px-3.5 py-3 text-sm text-tinta no-underline"
+          className="flex items-center justify-between gap-3 rounded-control bg-amarelo-claro px-3.5 py-3 text-sm text-tinta no-underline"
         >
           <span>
             <b>{t.home.uncategorizedAlert(summary.uncategorizedCount)}</b>

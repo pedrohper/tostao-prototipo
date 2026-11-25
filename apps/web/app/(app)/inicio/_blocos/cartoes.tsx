@@ -25,11 +25,11 @@ export async function CreditCardsSection({
       <div className="flex items-baseline justify-between gap-3">
         <div className="flex min-w-0 flex-wrap items-baseline gap-2">
           <h2 className="font-display text-xl leading-[26px] font-extrabold">{t.home.creditCardsTitle}</h2>
-          <span className="rounded-full bg-bronze-suave px-2.5 py-0.5 text-xs font-bold text-tinta tabular-nums">
+          <span className="rounded-full bg-bronze-suave px-2.5 py-0.5 text-small leading-[18px] font-bold text-tinta tabular-nums">
             {money(cards.reduce((sum, c) => sum + Math.max(0, -c.balanceInCents), 0))}
           </span>
         </div>
-        <Link href="/carteira?aba=contas" className="shrink-0 text-[13px] font-semibold text-laranja-texto">
+        <Link href="/carteira?aba=contas" className="shrink-0 text-small font-semibold text-laranja-texto">
           {t.home.viewAllCards}
         </Link>
       </div>

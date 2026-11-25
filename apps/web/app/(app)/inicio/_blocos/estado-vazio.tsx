@@ -34,7 +34,7 @@ export async function EmptyHome({ profile }: { profile: ProfileResponse }) {
         <div className="flex items-center gap-3">
           <Mascot pose="dormindo" size={96} alt="Tostão" className="shrink-0" />
           <div className="flex min-w-0 flex-col gap-1">
-            <h2 className="font-display text-[22px] leading-[26px] font-extrabold">{fs.title}</h2>
+            <h2 className="font-display text-title leading-[26px] font-extrabold">{fs.title}</h2>
             <p className="text-[14px] leading-[20px] text-tinta-suave">{fs.subtitle}</p>
           </div>
         </div>
@@ -74,10 +74,10 @@ export async function EmptyHome({ profile }: { profile: ProfileResponse }) {
                   {item.done ? '✓' : index + 1}
                 </span>
                 <span className="flex min-w-0 grow flex-col">
-                  <span className={`text-[15px] font-bold ${item.done ? 'line-through decoration-1 opacity-70' : ''}`}>
+                  <span className={`text-body font-bold ${item.done ? 'line-through decoration-1 opacity-70' : ''}`}>
                     {fs.items[item.id].title}
                   </span>
-                  <span className="text-[13px] leading-[18px] text-tinta-suave">{fs.items[item.id].desc}</span>
+                  <span className="text-small leading-[18px] text-tinta-suave">{fs.items[item.id].desc}</span>
                 </span>
                 {item.done ? (
                   <span className="shrink-0 text-xs font-bold text-verde-texto">{fs.doneTag}</span>

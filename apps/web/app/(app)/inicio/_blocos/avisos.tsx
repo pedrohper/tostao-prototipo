@@ -41,7 +41,7 @@ const getAlerts = cache(async (month: string) => {
           className="flex items-center gap-2 rounded-2xl bg-azul py-3 pr-10 pl-2 text-tinta no-underline"
         >
           <Mascot pose="caramelo-farejando" size={72} alt="Caramelo" />
-          <p className="text-[15px] leading-[21px]">
+          <p className="text-body leading-[21px]">
             {locale === 'pt-BR' ? 'O Caramelo:' : 'Caramelo:'}{' '}
             <b>{t.home.uncategorizedAlert(summary.uncategorizedCount)}</b>.
           </p>
@@ -57,7 +57,7 @@ const getAlerts = cache(async (month: string) => {
           className="flex items-center gap-2 rounded-2xl bg-menta-clara p-3 pr-10 text-tinta no-underline"
         >
           <Mascot pose="professor" size={64} alt="Tostão" />
-          <p className="text-[15px] leading-[21px]">
+          <p className="text-body leading-[21px]">
             <b>{t.home.monthlyClosingReady(monthName(previousMonth, locale))}</b> {t.home.monthlyClosingSub}
           </p>
         </Link>
@@ -73,7 +73,7 @@ const getAlerts = cache(async (month: string) => {
           className="flex items-center gap-2 rounded-2xl bg-amarelo-claro p-3 pr-10 text-tinta no-underline"
         >
           <Mascot pose="investigando" size={64} alt="Tostão" />
-          <p className="text-[15px] leading-[21px]">
+          <p className="text-body leading-[21px]">
             {t.home.activeSubscriptionsAlert(
               subscriptionCount,
               money(subscriptions.monthlyInCents),
@@ -91,7 +91,7 @@ const getAlerts = cache(async (month: string) => {
           <Link href="/aprender/m1-l2" aria-label={t.home.viewLessonCta} className="absolute inset-0 rounded-2xl" />
           <Mascot pose="preocupado" size={92} alt="Tostão" />
           <div className="flex min-w-0 flex-col gap-2.5">
-            <p className="text-[15px] leading-[21px]">
+            <p className="text-body leading-[21px]">
               <b>{t.home.deliveryAlert(money(bigDelivery.totalInCents))}</b>.
             </p>
             <div className="relative z-[1] flex flex-wrap gap-2">
@@ -122,7 +122,7 @@ const getAlerts = cache(async (month: string) => {
           className="flex items-center gap-2 rounded-2xl bg-rosa p-3 pr-10 text-tinta no-underline"
         >
           <Mascot pose="chocado" size={64} alt="Tostão" />
-          <p className="text-[15px] leading-[21px]">
+          <p className="text-body leading-[21px]">
             <b>
               {t.home.overBudgetAlert(overBudget.name, money(overBudget.spentInCents), money(overBudget.limitInCents))}
             </b>
@@ -200,7 +200,7 @@ export async function DesktopHighlightAlert({ month }: { month: string }) {
           cta: t.home.askTostao,
         };
   return (
-    <div className="flex items-center gap-2.5 rounded-[22px] bg-rosa p-[18px_20px_18px_10px] text-tinta">
+    <div className="flex items-center gap-2.5 rounded-card bg-rosa p-[18px_20px_18px_10px] text-tinta">
       <Mascot pose={content.pose} size={110} alt="Tostão" />
       <div className="flex min-w-0 flex-col gap-3">
         <p className="m-0 text-base leading-[23px]">{content.text}</p>

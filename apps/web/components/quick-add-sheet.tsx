@@ -96,7 +96,7 @@ export function QuickAddSheet({
               <path d="M6 6l12 12M18 6L6 18" />
             </svg>
           </button>
-          <span className="text-[13px] font-semibold text-tinta-suave">{a.headerTitle}</span>
+          <span className="text-small font-semibold text-tinta-suave">{a.headerTitle}</span>
           <span className="w-11" aria-hidden="true" />
         </div>
         {data ? (
@@ -156,8 +156,8 @@ export function QuickAddButton({
   const cleanLabel = variant === 'fab' ? label.replace(/^\+\s*/, '') : label;
   const className =
     variant === 'fab'
-      ? 'fixed right-5 bottom-[calc(86px+env(safe-area-inset-bottom))] z-20 flex h-13 items-center gap-2 rounded-full bg-laranja pr-5 pl-4 text-[15px] font-bold text-tinta-fixa shadow-[0_4px_16px_rgba(30,27,24,0.28)] md:bottom-6 lg:hidden'
-      : 'flex h-11 items-center justify-center rounded-full bg-laranja px-5 text-[15px] font-bold text-tinta-fixa';
+      ? 'fixed right-5 bottom-[calc(86px+env(safe-area-inset-bottom))] z-20 flex h-13 items-center gap-2 rounded-full bg-laranja pr-5 pl-4 text-body font-bold text-tinta-fixa shadow-[0_4px_16px_rgba(30,27,24,0.28)] md:bottom-6 lg:hidden'
+      : 'flex h-11 items-center justify-center rounded-full bg-laranja px-5 text-body font-bold text-tinta-fixa';
   const btn = (
     <button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog" className={className}>
       {variant === 'fab' && (

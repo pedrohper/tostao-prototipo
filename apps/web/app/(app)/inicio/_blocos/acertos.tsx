@@ -17,17 +17,17 @@ export async function SplitsSection() {
       <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">{t.home.splitsLabel}</span>
       <div className="flex items-baseline justify-between gap-3">
         {splits.owedToYouInCents > 0 && (
-          <span className="text-[15px]">
+          <span className="text-body">
             {t.home.owedToYou} <b className="text-verde-texto tabular-nums">{money(splits.owedToYouInCents)}</b>
           </span>
         )}
         {splits.youOweInCents > 0 && (
-          <span className="text-[15px]">
+          <span className="text-body">
             {t.home.youOwe} <b className="text-vermelho-texto tabular-nums">{money(splits.youOweInCents)}</b>
           </span>
         )}
       </div>
-      <span className="truncate text-[13px] text-tinta-suave">
+      <span className="truncate text-small text-tinta-suave">
         {[...owedToMe, ...iOwe]
           .slice(0, 3)
           .map((p) => `${p.name} ${money(Math.abs(p.balanceInCents))}`)

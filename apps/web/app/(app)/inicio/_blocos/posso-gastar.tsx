@@ -16,12 +16,12 @@ export async function SafeToSpendSection() {
     return (
       <Link
         href="/renda?voltar=/inicio"
-        className="flex items-center gap-2 rounded-[22px] bg-amarelo-claro py-3 pr-4 pl-2 text-tinta no-underline"
+        className="flex items-center gap-2 rounded-card bg-amarelo-claro py-3 pr-4 pl-2 text-tinta no-underline"
       >
         <Mascot pose="pensando" size={72} alt="" className="shrink-0" />
         <span className="flex min-w-0 flex-col gap-1">
           <span className="text-xs font-semibold tracking-[0.08em] uppercase">{texts.title}</span>
-          <span className="text-[15px] leading-[21px]">{texts.invite}</span>
+          <span className="text-body leading-[21px]">{texts.invite}</span>
           <span className="text-[14px] font-bold underline underline-offset-2">{texts.inviteCta}</span>
         </span>
       </Link>

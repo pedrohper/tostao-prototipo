@@ -133,10 +133,16 @@ export default async function MaisPage() {
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <span className="truncate text-[18px] font-bold text-tinta sm:text-[19px]">{profile.name}</span>
             <span className="truncate text-[13px] text-tinta-suave">{profile.email}</span>
-            <div className="mt-0.5 flex flex-wrap items-center gap-2">
-              <span className="inline-flex rounded-full bg-papel-2 px-2.5 py-0.5 text-xs font-semibold text-tinta">
-                {t.profile.levelSummary(level, xp, streakDays)}
-              </span>
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+              {/* Dois selos que não quebram por dentro: no celular, o que não couber desce inteiro. */}
+              {[t.profile.levelBadge(level, xp), t.nav.streakDays(streakDays)].map((badge) => (
+                <span
+                  key={badge}
+                  className="rounded-full bg-papel-2 px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap text-tinta"
+                >
+                  {badge}
+                </span>
+              ))}
               <span className="text-xs font-semibold text-laranja-texto">{viewProfileLabel}</span>
             </div>
           </div>
@@ -191,7 +197,7 @@ export default async function MaisPage() {
             <span className="flex items-center gap-2 text-[15px] font-bold">
               <span>{alertsTitle}</span>
               <span
-                className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                className={`rounded-full px-2 py-0.5 text-[12px] font-bold ${
                   wa?.linkedPhone ? 'bg-menta-clara text-verde-texto' : 'bg-papel-2 text-tinta-suave'
                 }`}
               >

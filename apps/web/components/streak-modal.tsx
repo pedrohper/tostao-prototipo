@@ -98,7 +98,7 @@ function StreakDialog({
                 return (
                   <span
                     key={dayItem.day}
-                    className="flex flex-col items-center gap-1.5 text-[11px] font-semibold text-tinta-suave"
+                    className="flex flex-col items-center gap-1.5 text-[12px] font-semibold text-tinta-suave"
                   >
                     <span
                       className={`flex h-9 w-9 items-center justify-center rounded-full border ${
@@ -107,7 +107,7 @@ function StreakDialog({
                           : 'border-dashed border-linha bg-cartao text-tinta-suave'
                       }`}
                     >
-                      {active ? <Icon src="ui/ofensiva" size={18} /> : <span className="text-[11px]">·</span>}
+                      {active ? <Icon src="ui/ofensiva" size={18} /> : <span className="text-[12px]">·</span>}
                     </span>
                     <span className={active ? 'font-bold text-tinta' : ''}>{t.weekdaysShort[idx]}</span>
                     <span className="sr-only">{active ? t.system.stepDone : t.system.stepPending}</span>
@@ -125,7 +125,7 @@ function StreakDialog({
                 {t.engagement.todayMissionsLabel(completedCount, totalCount).replace(/\s*›$/, '')}
               </span>
               {allDone && (
-                <span className="rounded-full bg-menta-clara px-2.5 py-0.5 text-[11px] font-bold text-verde-texto">
+                <span className="rounded-full bg-menta-clara px-2.5 py-0.5 text-[12px] font-bold text-verde-texto">
                   {t.engagement.allDoneTitle}
                 </span>
               )}
@@ -255,12 +255,12 @@ export function SidebarStreakButton({
         onClick={() => setOpen(true)}
         className="flex w-full flex-col gap-2 rounded-2xl bg-amarelo-claro p-3.5 text-left text-tinta transition hover:brightness-95"
       >
-        <div className="flex items-center justify-between text-[13px] font-bold">
-          <span className="inline-flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center justify-between gap-x-2 text-[13px] font-bold">
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
             <Icon src="ui/ofensiva" size={16} />
             {t.nav.streakDays(effectiveDays)}
           </span>
-          <span>{xp} XP</span>
+          <span className="whitespace-nowrap">{xp} XP</span>
         </div>
         <div className="h-2 w-full rounded-full bg-cartao">
           <div className="h-full rounded-full bg-tinta" style={{ width: `${Math.max(4, xp % 100)}%` }} />

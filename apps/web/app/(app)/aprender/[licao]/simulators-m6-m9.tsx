@@ -165,7 +165,7 @@ function SaqueAniversarioVsRescisao() {
         </div>
       </div>
 
-      <div className="rounded-xl bg-papel-2 p-3 text-xs text-tinta-suave">
+      <div className="rounded-xl bg-papel-2 p-3 text-[13px] leading-[18px] text-tinta-suave">
         Saldo acumulado de FGTS (8%/mês): <b className="text-tinta">{money(saldoFgtsCents)}</b> + Multa de 40%:{' '}
         <b className="text-tinta">{money(multa40Cents)}</b>.
       </div>
@@ -174,16 +174,16 @@ function SaqueAniversarioVsRescisao() {
         <div className="rounded-2xl bg-menta-clara p-3">
           <span className="text-xs font-semibold text-verde-texto">Saque-Rescisão</span>
           <p className="font-display text-xl font-extrabold text-tinta">{money(saqueRescisaoCents)}</p>
-          <span className="text-[11px] text-verde-texto">Saldo + multa de 40%</span>
+          <span className="text-[12px] text-verde-texto">Saldo + multa de 40%</span>
         </div>
         <div className="rounded-2xl bg-rosa p-3">
           <span className="text-xs font-semibold text-vermelho-texto">Saque-Aniversário</span>
           <p className="font-display text-xl font-extrabold text-tinta">{money(saqueAniversarioCents)}</p>
-          <span className="text-[11px] text-vermelho-texto">Só a multa na demissão</span>
+          <span className="text-[12px] text-vermelho-texto">Só a multa na demissão</span>
         </div>
       </div>
 
-      <p className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
+      <p className="rounded-xl bg-amarelo-claro p-3 text-[13px] leading-relaxed text-laranja-texto">
         <Selo tipo="alerta" />
         No Saque-Aniversário, <b>{money(travadoCents)}</b> do seu saldo ficam retidos se você for demitido sem justa
         causa — e voltar para o Saque-Rescisão leva 25 meses.
@@ -215,14 +215,14 @@ function FatiadorDecimoTerceiro() {
           <span className="font-display text-base font-extrabold">{money(totalCents)}</span>
         </span>
         <TostaoSlider min={1000} max={10000} step={100} value={liquido} onChange={(e) => setLiquido(+e.target.value)} />
-        <span className="text-[11px] text-tinta-suave">
+        <span className="text-[13px] text-tinta-suave">
           1ª parcela (nov): ~{money(parc1Cents)} · 2ª parcela (dez, com descontos): ~{money(parc2Cents)}
         </span>
       </label>
 
       <div className="flex flex-col gap-2.5">
         <label className="flex flex-col gap-1">
-          <span className="flex justify-between text-xs font-semibold">
+          <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
             <span>Quitar dívidas / cartão</span>
             <span className="font-bold text-verde-texto">
               {dividas}% ({money(divCents)})
@@ -243,7 +243,7 @@ function FatiadorDecimoTerceiro() {
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="flex justify-between text-xs font-semibold">
+          <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
             <span>Janeiro (IPVA, matrícula, material)</span>
             <span className="font-bold text-laranja-texto">
               {janeiro}% ({money(janCents)})
@@ -272,15 +272,15 @@ function FatiadorDecimoTerceiro() {
 
       <div className="grid grid-cols-3 gap-2">
         <div className="rounded-xl bg-menta-clara p-2.5">
-          <span className="text-[11px] font-semibold text-verde-texto">Dívidas</span>
+          <span className="text-[12px] font-semibold text-verde-texto">Dívidas</span>
           <p className="font-display text-sm font-extrabold text-tinta">{money(divCents)}</p>
         </div>
         <div className="rounded-xl bg-amarelo-claro p-2.5">
-          <span className="text-[11px] font-semibold text-laranja-texto">Janeiro</span>
+          <span className="text-[12px] font-semibold text-laranja-texto">Janeiro</span>
           <p className="font-display text-sm font-extrabold text-tinta">{money(janCents)}</p>
         </div>
         <div className="rounded-xl bg-rosa p-2.5">
-          <span className="text-[11px] font-semibold text-vermelho-texto">Festas ({festas}%)</span>
+          <span className="text-[12px] font-semibold text-vermelho-texto">Festas ({festas}%)</span>
           <p className="font-display text-sm font-extrabold text-tinta">{money(fesCents)}</p>
         </div>
       </div>
@@ -311,12 +311,12 @@ function ContaRetornoFerias() {
         <div className="rounded-2xl bg-azul p-3">
           <span className="text-xs font-semibold text-tinta-suave">Adiantamento + 1/3</span>
           <p className="font-display text-xl font-extrabold text-tinta">{money(entraNaSaidaCents)}</p>
-          <span className="text-[11px] text-tinta-suave">Extra real é só {money(tercoCents)}</span>
+          <span className="text-[13px] text-tinta-suave">Extra real é só {money(tercoCents)}</span>
         </div>
         <div className={`rounded-2xl p-3 ${gastouTudo ? 'bg-rosa' : 'bg-menta-clara'}`}>
           <span className="text-xs font-semibold text-tinta-suave">Saldo no mês de volta</span>
           <p className="font-display text-xl font-extrabold text-tinta">{gastouTudo ? money(0) : money(salCents)}</p>
-          <span className="text-[11px] text-tinta-suave">
+          <span className="text-[12px] text-tinta-suave">
             {gastouTudo ? 'Buraco no orçamento!' : 'Contas do mês cobertas'}
           </span>
         </div>
@@ -343,7 +343,7 @@ function ContaRetornoFerias() {
         </button>
       </div>
 
-      <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
+      <p className="rounded-xl bg-papel-2 p-3 text-[13px] leading-relaxed text-tinta-suave">
         <Selo tipo={gastouTudo ? 'perigo' : 'ok'} />
         {gastouTudo
           ? `Se você gastar os ${money(entraNaSaidaCents)} viajando, na volta das férias o próximo salário já foi adiantado — sobra ${money(0)} para pagar aluguel e mercado.`
@@ -384,7 +384,7 @@ function EquivalenciaCltPj() {
   return (
     <div className="flex flex-col gap-4">
       <label className="flex flex-col gap-1">
-        <span className="flex justify-between text-xs font-semibold">
+        <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
           <span>Salário bruto CLT</span>
           <span className="font-bold">{money(cltBrutoCents)}</span>
         </span>
@@ -398,7 +398,7 @@ function EquivalenciaCltPj() {
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="flex justify-between text-xs font-semibold">
+        <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
           <span>Benefícios CLT (VR/VA/Saúde por mês)</span>
           <span className="font-bold">{money(beneficios * 100)}</span>
         </span>
@@ -412,7 +412,7 @@ function EquivalenciaCltPj() {
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="flex justify-between text-xs font-semibold">
+        <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
           <span>Proposta PJ mensal</span>
           <span className="font-bold">{money(pjMensal * 100)}</span>
         </span>
@@ -429,16 +429,16 @@ function EquivalenciaCltPj() {
         <div className="rounded-2xl bg-azul p-3">
           <span className="text-xs font-semibold text-tinta-suave">CLT líquido/ano*</span>
           <p className="font-display text-lg font-extrabold text-tinta">{money(cltAnualCents)}</p>
-          <span className="text-[11px] text-tinta-suave">~{money(Math.round(cltAnualCents / 12))}/mês</span>
+          <span className="text-[13px] text-tinta-suave">~{money(Math.round(cltAnualCents / 12))}/mês</span>
         </div>
         <div className="rounded-2xl bg-amarelo-claro p-3">
           <span className="text-xs font-semibold text-tinta-suave">PJ líquido/ano**</span>
           <p className="font-display text-lg font-extrabold text-tinta">{money(pjAnualCents)}</p>
-          <span className="text-[11px] text-tinta-suave">~{money(Math.round(pjAnualCents / 12))}/mês</span>
+          <span className="text-[13px] text-tinta-suave">~{money(Math.round(pjAnualCents / 12))}/mês</span>
         </div>
       </div>
 
-      <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
+      <p className="rounded-xl bg-papel-2 p-3 text-[13px] leading-relaxed text-tinta-suave">
         <Selo tipo="dados" />
         {diffAnual >= 0
           ? `O PJ paga ${money(diffAnual)} a mais por ano (considerando 11 meses trabalhados, 6% de DAS e R$ 200/mês de contador).`
@@ -494,16 +494,16 @@ function CalculadoraCDI() {
         <div className="rounded-2xl bg-menta-clara p-3">
           <span className="text-xs font-semibold text-verde-texto">CDB 100% CDI (líquido)</span>
           <p className="font-display text-xl font-extrabold text-tinta">{money(liqCdbCents)}</p>
-          <span className="text-[11px] text-verde-texto">~11,15% a.a. − IR</span>
+          <span className="text-[12px] text-verde-texto">~11,15% a.a. − IR</span>
         </div>
         <div className="rounded-2xl bg-papel-2 p-3">
           <span className="text-xs font-semibold text-tinta-suave">Poupança (isenta)</span>
           <p className="font-display text-xl font-extrabold text-tinta">{money(liqPoupCents)}</p>
-          <span className="text-[11px] text-tinta-suave">~6,17% + TR</span>
+          <span className="text-[12px] text-tinta-suave">~6,17% + TR</span>
         </div>
       </div>
 
-      <p className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
+      <p className="rounded-xl bg-amarelo-claro p-3 text-[13px] leading-relaxed text-laranja-texto">
         <Selo tipo="alta" />
         Mesmo pagando Imposto de Renda, o CDB 100% CDI coloca <b>{money(diferencaCents)}</b> a mais no seu bolso nesse
         prazo.
@@ -539,7 +539,7 @@ function RaioXGarantiaFGC() {
           const passou = b.valor > LIMITE_BANCO;
           return (
             <label key={b.nome} className="flex flex-col gap-1">
-              <span className="flex justify-between text-xs font-semibold">
+              <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
                 <span>{b.nome}</span>
                 <span className={`font-bold ${passou ? 'text-vermelho-texto' : 'text-tinta'}`}>
                   {money(b.valor * 100)} {passou ? '(acima de R$ 250 mil!)' : ''}
@@ -568,7 +568,7 @@ function RaioXGarantiaFGC() {
         </div>
       </div>
 
-      <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
+      <p className="rounded-xl bg-papel-2 p-3 text-[13px] leading-relaxed text-tinta-suave">
         <Selo tipo={total > TETO_GLOBAL || descoberto > 0 ? 'alerta' : 'ok'} />
         {total > TETO_GLOBAL
           ? 'Atenção: você ultrapassou o teto global de R$ 1 milhão por CPF a cada 4 anos!'
@@ -613,13 +613,13 @@ function MordidaLeaoResgate() {
             <div key={c.label} className={`flex items-center justify-between rounded-2xl p-3 ${c.cor}`}>
               <div>
                 <p className="text-xs font-extrabold text-tinta">{c.label}</p>
-                <p className="text-[11px] text-tinta-suave">
+                <p className="text-[12px] text-tinta-suave">
                   IOF {(c.iof * 100).toFixed(0)}% · IR {(c.ir * 100).toFixed(1).replace('.', ',')}%
                 </p>
               </div>
               <div className="text-right">
                 <p className="font-display text-base font-extrabold text-tinta">+{money(lucroLiqCents)}</p>
-                <p className="text-[11px] text-vermelho-texto">Leão levou {money(impostoTotalCents)}</p>
+                <p className="text-[13px] text-vermelho-texto">Leão levou {money(impostoTotalCents)}</p>
               </div>
             </div>
           );
@@ -700,13 +700,13 @@ function MapaDoTesouro() {
       </div>
 
       <div className={`rounded-2xl p-4 ${MAPA.cor}`}>
-        <span className="text-[11px] font-bold uppercase tracking-wide text-tinta-suave">{MAPA.subtitulo}</span>
+        <span className="text-[12px] font-bold uppercase tracking-wide text-tinta-suave">{MAPA.subtitulo}</span>
         <h4 className="font-display text-xl font-extrabold text-tinta">{MAPA.titulo}</h4>
         <p className="mt-1 text-xs font-semibold text-tinta">{MAPA.taxa}</p>
         <p className="mt-2 text-xs leading-relaxed text-tinta-suave">{MAPA.motivo}</p>
       </div>
 
-      <div className="rounded-xl bg-papel-2 p-3 text-xs text-tinta-suave">
+      <div className="rounded-xl bg-papel-2 p-3 text-[13px] leading-[18px] text-tinta-suave">
         Projeção bruta de <b>R$ 1.000,00</b> em {MAPA.anos} ano{MAPA.anos > 1 ? 's' : ''}:{' '}
         <b className="text-tinta">{money(projecaoCents)}</b>.
       </div>
@@ -759,14 +759,14 @@ function CalculadoraGanhoReal() {
 
       <div className="grid grid-cols-2 gap-2.5">
         <div className="rounded-2xl bg-papel-2 p-3">
-          <span className="text-xs font-semibold text-tinta-suave">R$ 10 mil em 1 ano</span>
+          <span className="text-[13px] leading-[18px] font-semibold text-tinta-suave">R$ 10 mil em 1 ano</span>
           <p className="font-display text-base font-extrabold text-tinta">{money(poderCompra1AnoCents)}</p>
-          <span className="text-[11px] text-tinta-suave">em poder de compra</span>
+          <span className="text-[12px] text-tinta-suave">em poder de compra</span>
         </div>
         <div className="rounded-2xl bg-papel-2 p-3">
-          <span className="text-xs font-semibold text-tinta-suave">R$ 10 mil em 5 anos</span>
+          <span className="text-[13px] leading-[18px] font-semibold text-tinta-suave">R$ 10 mil em 5 anos</span>
           <p className="font-display text-base font-extrabold text-tinta">{money(poderCompra5AnosCents)}</p>
-          <span className="text-[11px] text-tinta-suave">em poder de compra</span>
+          <span className="text-[12px] text-tinta-suave">em poder de compra</span>
         </div>
       </div>
     </div>
@@ -830,7 +830,7 @@ function SocioVsApostador() {
           return (
             <div
               key={item.label}
-              className="flex items-center justify-between rounded-xl border border-linha bg-cartao px-3 py-2 text-xs"
+              className="flex items-center justify-between rounded-xl border border-linha bg-cartao px-3 py-2 text-[13px] leading-[18px]"
             >
               <span className="font-bold text-tinta">{item.label}</span>
               <span className={`font-bold ${positivo ? 'text-verde-texto' : 'text-vermelho-texto'}`}>
@@ -873,7 +873,7 @@ function RendaPassivaFIIs() {
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="flex justify-between text-xs font-semibold">
+        <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
           <span>Dividend Yield mensal estimado (cota R$ 100)</span>
           <span className="font-bold">{dy.toFixed(2).replace('.', ',')}%/mês</span>
         </span>
@@ -884,12 +884,12 @@ function RendaPassivaFIIs() {
         <div className="rounded-2xl bg-amarelo-claro p-3">
           <span className="text-xs font-semibold text-laranja-texto">Cotas necessárias</span>
           <p className="font-display text-2xl font-extrabold text-tinta">{cotasNecessarias}</p>
-          <span className="text-[11px] text-laranja-texto">{money(Math.round(dividendoPorCota * 100))}/cota</span>
+          <span className="text-[13px] text-laranja-texto">{money(Math.round(dividendoPorCota * 100))}/cota</span>
         </div>
         <div className="rounded-2xl bg-menta-clara p-3">
           <span className="text-xs font-semibold text-verde-texto">Capital acumulado</span>
           <p className="font-display text-xl font-extrabold text-tinta">{money(capitalCents)}</p>
-          <span className="text-[11px] text-verde-texto">para gerar a meta</span>
+          <span className="text-[12px] text-verde-texto">para gerar a meta</span>
         </div>
       </div>
     </div>
@@ -918,16 +918,16 @@ function ApostaIndividualVsIndice() {
         <div className="rounded-2xl bg-rosa p-3">
           <span className="text-xs font-semibold text-vermelho-texto">1 Ação (queda de −40%)</span>
           <p className="font-display text-xl font-extrabold text-tinta">{money(acaoUnicaCents)}</p>
-          <span className="text-[11px] text-vermelho-texto">Risco concentrado</span>
+          <span className="text-[12px] text-vermelho-texto">Risco concentrado</span>
         </div>
         <div className="rounded-2xl bg-menta-clara p-3">
           <span className="text-xs font-semibold text-verde-texto">ETF Índice (5 anos)</span>
           <p className="font-display text-xl font-extrabold text-tinta">{money(etfIndiceCents)}</p>
-          <span className="text-[11px] text-verde-texto">Média ~10% a.a. (+61%)</span>
+          <span className="text-[12px] text-verde-texto">Média ~10% a.a. (+61%)</span>
         </div>
       </div>
 
-      <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
+      <p className="rounded-xl bg-papel-2 p-3 text-[13px] leading-relaxed text-tinta-suave">
         <Selo tipo="meta" />
         Diferença de <b>{money(etfIndiceCents - acaoUnicaCents)}</b>: uma empresa isolada pode quebrar ou perder
         mercado; um índice amplo dilui o risco entre dezenas de companhias.
@@ -964,7 +964,7 @@ function DetectorCharlatanismo() {
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="flex justify-between text-xs font-semibold">
+        <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
           <span>Aporte inicial único</span>
           <span className="font-bold">{money(aporte * 100)}</span>
         </span>
@@ -972,21 +972,21 @@ function DetectorCharlatanismo() {
       </label>
 
       <div className="flex flex-col gap-2">
-        <div className="flex justify-between rounded-xl bg-amarelo-claro px-3 py-2 text-xs">
+        <div className="flex justify-between rounded-xl bg-amarelo-claro px-3 py-2 text-[13px] leading-[18px]">
           <span className="font-semibold text-laranja-texto">Em 5 anos (60 meses)</span>
           <span className="font-display font-extrabold text-tinta">{formatCompactMoney(em5Anos)}</span>
         </div>
-        <div className="flex justify-between rounded-xl bg-rosa px-3 py-2 text-xs">
+        <div className="flex justify-between rounded-xl bg-rosa px-3 py-2 text-[13px] leading-[18px]">
           <span className="font-semibold text-vermelho-texto">Em 10 anos (120 meses)</span>
           <span className="font-display font-extrabold text-tinta">{formatCompactMoney(em10Anos)}</span>
         </div>
-        <div className="flex justify-between rounded-xl bg-rosa px-3 py-2 text-xs">
+        <div className="flex justify-between rounded-xl bg-rosa px-3 py-2 text-[13px] leading-[18px]">
           <span className="font-semibold text-vermelho-texto">Em 20 anos (240 meses)</span>
           <span className="font-display font-extrabold text-tinta">{formatCompactMoney(em20Anos)}</span>
         </div>
       </div>
 
-      <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
+      <p className="rounded-xl bg-papel-2 p-3 text-[13px] leading-relaxed text-tinta-suave">
         <Selo tipo="perigo" />O PIB inteiro do Brasil é ~R$ 11 trilhões. Se alguém promete{' '}
         {taxaMes.toFixed(1).replace('.', ',')}% fixos ao mês, em poucos anos superaria toda a economia do país — é
         matematicamente impossível.
@@ -1008,7 +1008,7 @@ function TesteCardiacoVolatilidade() {
   return (
     <div className="flex flex-col gap-4">
       <label className="flex flex-col gap-1">
-        <span className="flex justify-between text-xs font-semibold">
+        <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
           <span>Valor investido</span>
           <span className="font-bold">{money(valorCents)}</span>
         </span>
@@ -1041,7 +1041,7 @@ function TesteCardiacoVolatilidade() {
         </div>
       </div>
 
-      <div className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
+      <div className="rounded-xl bg-amarelo-claro p-3 text-[13px] leading-relaxed text-laranja-texto">
         <Selo tipo="queda" />
         Depois de cair <b>−{quedaPct}%</b>, seu ativo precisa subir{' '}
         <b>+{altaNecessariaPct.toFixed(1).replace('.', ',')}%</b> só para voltar aos {money(valorCents)} iniciais!
@@ -1112,7 +1112,7 @@ function TesteFalsaCentral() {
                     key={op.label}
                     type="button"
                     onClick={() => setRespostas((prev) => ({ ...prev, [idx]: opIdx }))}
-                    className={`rounded-xl px-2.5 py-2 text-left text-[11px] font-bold transition ${
+                    className={`rounded-xl px-2.5 py-2 text-left text-[12px] font-bold transition ${
                       selected
                         ? op.correto
                           ? 'bg-menta-clara text-verde-texto'
@@ -1126,7 +1126,7 @@ function TesteFalsaCentral() {
               })}
             </div>
             {escolhida !== undefined && (
-              <p className={`text-[11px] leading-snug ${acertou ? 'text-verde-texto' : 'text-vermelho-texto'}`}>
+              <p className={`text-[12px] leading-snug ${acertou ? 'text-verde-texto' : 'text-vermelho-texto'}`}>
                 <Selo tipo={acertou ? 'ok' : 'erro'} />
                 {c.explicacao}
               </p>
@@ -1170,7 +1170,7 @@ function VantagemDaBanca() {
   return (
     <div className="flex flex-col gap-4">
       <label className="flex flex-col gap-1">
-        <span className="flex justify-between text-xs font-semibold">
+        <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
           <span>Banca inicial</span>
           <span className="font-bold">{money(bancaInicial * 100)}</span>
         </span>
@@ -1184,7 +1184,7 @@ function VantagemDaBanca() {
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="flex justify-between text-xs font-semibold">
+        <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
           <span>Aposta por jogada (RTP 95%)</span>
           <span className="font-bold">{money(aposta * 100)}</span>
         </span>
@@ -1366,7 +1366,7 @@ function ContaAbsurdoEconomico() {
   return (
     <div className="flex flex-col gap-4">
       <label className="flex flex-col gap-1">
-        <span className="flex justify-between text-xs font-semibold">
+        <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
           <span>Valor prometido por vídeo de 30s</span>
           <span className="font-bold">{money(porVideo * 100)}</span>
         </span>
@@ -1424,7 +1424,7 @@ function ContaAbsurdoEconomico() {
         </div>
       </div>
 
-      <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
+      <p className="rounded-xl bg-papel-2 p-3 text-[13px] leading-relaxed text-tinta-suave">
         <Selo tipo="dinheiro" />
         Um anunciante real paga ~R$ 0,03 por visualização. Pagar {money(porVideo * 100)} por vídeo exigiria que a
         empresa queimasse <b>{formatCompactMoney(custoMesReais)}</b> todo mês — a conta não fecha!

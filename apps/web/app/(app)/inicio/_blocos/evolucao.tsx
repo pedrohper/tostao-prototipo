@@ -11,7 +11,7 @@ export async function EvolutionSection({ month }: { month: string }) {
     <section className="flex flex-col gap-3">
       <div className="flex flex-col gap-0.5">
         <h2 className="font-display text-xl leading-[26px] font-extrabold">{t.growth.home.evolutionTitle}</h2>
-        <p className="text-[13px] leading-[18px] text-tinta-suave">{t.growth.home.evolutionSub}</p>
+        <p className="text-small leading-[18px] text-tinta-suave">{t.growth.home.evolutionSub}</p>
       </div>
       <Card>
         <CashflowLineChart

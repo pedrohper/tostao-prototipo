@@ -45,7 +45,7 @@ export async function LessonCard() {
             ))}
           </span>
         )}
-        <span className="text-[13px] font-semibold">{t.nav.continueLesson} ›</span>
+        <span className="text-small font-semibold">{t.nav.continueLesson} ›</span>
       </span>
     </Link>
   );
@@ -60,7 +60,7 @@ export async function LessonRailCard() {
     <div className="flex flex-col gap-2.5 rounded-[20px] bg-amarelo-claro p-4">
       <Mascot pose="professor" size={96} alt="Tostão" />
       <span className="text-xs font-semibold text-tinta-suave">{progressLabel}</span>
-      <span className="font-display text-[22px] leading-[26px] font-extrabold text-tinta">
+      <span className="font-display text-title leading-[26px] font-extrabold text-tinta">
         {current?.title ?? t.home.allModulesCompleted}
       </span>
       {current && (

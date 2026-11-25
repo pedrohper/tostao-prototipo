@@ -30,21 +30,21 @@ function Linha({ i, kindLabel, dayLabel }: { i: ForecastItem; kindLabel: string;
       <span className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-[10px] bg-papel-2 leading-none">
         {i.day ? (
           <>
-            <span className="text-[9px] font-semibold text-tinta-suave uppercase">{dayLabel}</span>
+            <span className="text-mini font-semibold text-tinta-suave uppercase">{dayLabel}</span>
             <span className="text-[14px] font-bold tabular-nums">{i.day}</span>
           </>
         ) : (
-          <span className="text-[11px] font-bold text-tinta-suave">—</span>
+          <span className="text-mini font-bold text-tinta-suave">—</span>
         )}
       </span>
       <span className="flex min-w-0 grow flex-col">
-        <span className="truncate text-[15px] font-semibold">{i.title}</span>
+        <span className="truncate text-body font-semibold">{i.title}</span>
         <span className="text-xs text-tinta-suave">
           {kindLabel}
           {i.detail ? ` ${i.detail}` : ''}
         </span>
       </span>
-      <span className={`shrink-0 text-[15px] font-semibold tabular-nums ${i.entrada ? 'text-verde-texto' : ''}`}>
+      <span className={`shrink-0 text-body font-semibold tabular-nums ${i.entrada ? 'text-verde-texto' : ''}`}>
         {i.entrada ? '+ ' : ''}
         {money(i.amountInCents)}
       </span>
@@ -189,9 +189,9 @@ export function Simulacao({
         >
           <Chevron d="M15 18l-6-6 6-6" />
         </Link>
-        <span className="flex items-center gap-1.5 text-[15px] font-bold capitalize">
+        <span className="flex items-center gap-1.5 text-body font-bold capitalize">
           {monthName(month, locale)} {month.slice(0, 4)}
-          <span className="rounded-full bg-amarelo px-2 py-0.5 text-[11px] font-bold text-tinta-fixa normal-case">
+          <span className="rounded-full bg-amarelo px-2 py-0.5 text-mini font-bold text-tinta-fixa normal-case">
             {copy.simTag}
           </span>
         </span>
@@ -213,7 +213,7 @@ export function Simulacao({
       {!m ? (
         <div className="flex flex-col items-center gap-3 py-8 text-center">
           <Mascot pose="investigando" size={140} alt="" />
-          <p className="max-w-[300px] text-[15px] text-tinta-suave">{copy.emptyHint}</p>
+          <p className="max-w-[300px] text-body text-tinta-suave">{copy.emptyHint}</p>
           <ButtonLink href="/renda?voltar=/carteira?mes=futuro">{copy.tellIncome}</ButtonLink>
         </div>
       ) : (
@@ -226,7 +226,7 @@ export function Simulacao({
               <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">
                 {copy.ifContinues(monthName(month, locale))}
               </span>
-              <span className="text-[15px]">
+              <span className="text-body">
                 {m.leftInCents >= 0 ? dict.engagement.shouldHaveLeftPrefix : dict.engagement.shouldBeShortPrefix}
               </span>
               <span className="font-display text-[32px] leading-9 font-extrabold tabular-nums">
@@ -251,7 +251,7 @@ export function Simulacao({
                     <summary className="flex min-h-[60px] cursor-pointer list-none items-center gap-3 px-3.5 py-2.5 [&::-webkit-details-marker]:hidden">
                       <BankBadge nome={c.name} size={36} quadrado logos={logos} />
                       <span className="flex min-w-0 grow flex-col">
-                        <span className="truncate text-[15px] font-semibold">{c.name}</span>
+                        <span className="truncate text-body font-semibold">{c.name}</span>
                         <span className="text-xs text-tinta-suave">
                           {c.dueDay ? copy.dueDay(c.dueDay) : copy.expectedBill} · {itens.length}{' '}
                           {itens.length === 1 ? copy.itemSingular : copy.itemPlural}
@@ -272,7 +272,7 @@ export function Simulacao({
                   </details>
                 );
               })}
-              <p className="text-[12px] leading-[17px] text-tinta-suave">{copy.cardNote}</p>
+              <p className="text-mini leading-[17px] text-tinta-suave">{copy.cardNote}</p>
             </section>
           )}
 
@@ -336,7 +336,7 @@ export function Simulacao({
                     />
                   ))}
                 </div>
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-semibold text-tinta-suave">
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-mini font-semibold text-tinta-suave">
                   {fatias.map((f) => (
                     <span key={f.nome} className="flex items-center gap-1">
                       <i className="h-2 w-2 rounded-full" style={{ background: f.cor }} />
@@ -347,7 +347,7 @@ export function Simulacao({
               </div>
             )}
             {m.benefitsInCents > 0 && (
-              <p className="text-[13px] text-tinta-suave">{copy.benefitsNote(money(m.benefitsInCents))}</p>
+              <p className="text-small text-tinta-suave">{copy.benefitsNote(money(m.benefitsInCents))}</p>
             )}
           </section>
 
@@ -369,7 +369,7 @@ export function Simulacao({
                   href={`/carteira?mes=${x.month}`}
                   className="flex flex-1 flex-col items-center justify-end gap-1 text-tinta no-underline"
                 >
-                  <span className="text-[11px] font-semibold tabular-nums">
+                  <span className="text-small font-semibold tabular-nums">
                     {x.leftInCents >= 0 ? '' : '−'}
                     {money(Math.abs(x.leftInCents)).replace(/,\d\d$/, '')}
                   </span>
@@ -377,15 +377,13 @@ export function Simulacao({
                     className={`w-full max-w-12 rounded-t-lg ${x.leftInCents >= 0 ? 'bg-menta' : 'bg-rosa-forte'} ${x.month === month ? '' : 'opacity-45'}`}
                     style={{ height: Math.max(4, Math.round((Math.abs(x.leftInCents) / max) * 80)) }}
                   />
-                  <span
-                    className={`text-[11px] font-semibold capitalize ${x.month === month ? '' : 'text-tinta-suave'}`}
-                  >
+                  <span className={`text-mini font-semibold capitalize ${x.month === month ? '' : 'text-tinta-suave'}`}>
                     {monthName(x.month, locale).slice(0, 3)}
                   </span>
                 </Link>
               ))}
             </div>
-            <p className="text-[13px] text-tinta-suave">{copy.legendNote}</p>
+            <p className="text-small text-tinta-suave">{copy.legendNote}</p>
           </section>
 
           {forecast.base && (

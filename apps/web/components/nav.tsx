@@ -120,7 +120,7 @@ export function Nav({
             key={item.href}
             href={item.href}
             aria-current={isActive ? 'page' : undefined}
-            className={`relative flex flex-col items-center gap-1 py-1.5 text-xs md:h-[46px] md:flex-row md:gap-3 md:rounded-xl md:px-3.5 md:py-0 md:text-[15px] md:hover:bg-papel-2 ${
+            className={`relative flex flex-col items-center gap-1 py-1.5 text-xs md:h-[46px] md:flex-row md:gap-3 md:rounded-xl md:px-3.5 md:py-0 md:text-body md:hover:bg-papel-2 ${
               isActive
                 ? 'font-bold text-tinta md:bg-tinta md:text-papel md:hover:bg-tinta'
                 : 'font-semibold text-tinta-suave'
@@ -142,7 +142,7 @@ export function Nav({
             </span>
             <span className="flex-1 text-center md:text-left">{item.label}</span>
             {typeof item.badge === 'number' && item.badge > 0 && (
-              <span className="hidden rounded-full bg-laranja px-2 py-0.5 text-[11px] font-bold text-tinta-fixa md:inline-flex">
+              <span className="hidden rounded-full bg-laranja px-2 py-0.5 text-mini font-bold text-tinta-fixa md:inline-flex">
                 {item.badge}
               </span>
             )}

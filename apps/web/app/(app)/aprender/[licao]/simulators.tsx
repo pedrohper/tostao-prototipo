@@ -105,7 +105,7 @@ function AjusteDasFatias({ userContext = null }: SimulatorProps) {
 
       <div className="flex flex-col gap-2.5">
         <label className="flex flex-col gap-1">
-          <span className="flex justify-between text-xs font-semibold">
+          <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
             <span className="text-tinta">Necessidades (básico)</span>
             <span className="font-bold text-laranja-texto">
               {nec}% ({money(necCents)})
@@ -125,7 +125,7 @@ function AjusteDasFatias({ userContext = null }: SimulatorProps) {
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="flex justify-between text-xs font-semibold">
+          <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
             <span className="text-tinta">Desejos (lazer, estilo)</span>
             <span className="font-bold text-vermelho-texto">
               {des}% ({money(desCents)})
@@ -165,7 +165,7 @@ function AjusteDasFatias({ userContext = null }: SimulatorProps) {
             title={`Futuro: ${fut}%`}
           />
         </div>
-        <div className="flex justify-between text-[11px] font-semibold text-tinta-suave px-1">
+        <div className="flex justify-between text-[12px] font-semibold text-tinta-suave px-1">
           <span className="flex items-center gap-1">
             <i className="inline-block h-2.5 w-2.5 rounded-full bg-amarelo" /> Básico {nec}%
           </span>
@@ -180,15 +180,15 @@ function AjusteDasFatias({ userContext = null }: SimulatorProps) {
 
       <div className="grid grid-cols-3 gap-2">
         <div className="rounded-xl bg-amarelo-claro p-2.5 text-center">
-          <span className="text-[11px] font-semibold text-tinta-suave block">Básico</span>
+          <span className="text-[12px] font-semibold text-tinta-suave block">Básico</span>
           <p className="font-display text-sm font-extrabold">{money(necCents)}</p>
         </div>
         <div className="rounded-xl bg-rosa p-2.5 text-center">
-          <span className="text-[11px] font-semibold text-tinta-suave block">Lazer</span>
+          <span className="text-[12px] font-semibold text-tinta-suave block">Lazer</span>
           <p className="font-display text-sm font-extrabold">{money(desCents)}</p>
         </div>
         <div className="rounded-xl bg-menta-clara p-2.5 text-center">
-          <span className="text-[11px] font-semibold text-tinta-suave block">Futuro</span>
+          <span className="text-[12px] font-semibold text-tinta-suave block">Futuro</span>
           <p className="font-display text-sm font-extrabold">{money(futCents)}</p>
         </div>
       </div>
@@ -208,7 +208,7 @@ function AjusteDasFatias({ userContext = null }: SimulatorProps) {
         </p>
       )}
       {nec <= 65 && fut >= 15 && (
-        <p className="rounded-xl bg-menta-clara p-3 text-xs leading-relaxed text-verde-texto">
+        <p className="rounded-xl bg-menta-clara p-3 text-[13px] leading-relaxed text-verde-texto">
           <Selo tipo="brilho" />
           <b>Equilíbrio saudável:</b> você cobre o custo de vida, aproveita o momento com lazer e ainda guarda{' '}
           {money(futCents)} todo mês para seu futuro.
@@ -271,7 +271,9 @@ function BisturiNoFixo({ userContext = null }: SimulatorProps) {
                   {it.label}
                 </span>
               </div>
-              <span className="shrink-0 font-display text-xs font-extrabold text-tinta">{money(it.mensal)}/mês</span>
+              <span className="shrink-0 font-display text-[13px] leading-[18px] font-extrabold text-tinta">
+                {money(it.mensal)}/mês
+              </span>
             </button>
           );
         })}
@@ -288,7 +290,7 @@ function BisturiNoFixo({ userContext = null }: SimulatorProps) {
         </div>
       </div>
 
-      <p className="text-xs leading-relaxed text-tinta-suave">
+      <p className="text-[13px] leading-relaxed text-tinta-suave">
         {totalMensal > 0 ? (
           <>
             <Selo tipo="dica" />
@@ -319,7 +321,7 @@ function RemanejamentoEmergencia() {
     <div className="flex flex-col gap-3.5">
       <div className="flex items-center justify-between rounded-xl bg-rosa p-3">
         <div className="flex flex-col">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-vermelho-texto">Susto inesperado</span>
+          <span className="text-[12px] font-bold uppercase tracking-wider text-vermelho-texto">Susto inesperado</span>
           <span className="text-sm font-semibold text-tinta">Conserto urgente na oficina / farmácia</span>
         </div>
         <span className="font-display text-lg font-extrabold text-vermelho-texto">{money(ALVO)}</span>
@@ -331,7 +333,7 @@ function RemanejamentoEmergencia() {
 
       <div className="flex flex-col gap-2.5">
         <label className="flex flex-col gap-1">
-          <span className="flex justify-between text-xs font-semibold">
+          <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
             <span>Delivery & lanches</span>
             <span className="font-bold text-tinta">−{money(delivery * 100)}</span>
           </span>
@@ -339,7 +341,7 @@ function RemanejamentoEmergencia() {
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="flex justify-between text-xs font-semibold">
+          <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
             <span>Rolê do fim de semana</span>
             <span className="font-bold text-tinta">−{money(role * 100)}</span>
           </span>
@@ -347,7 +349,7 @@ function RemanejamentoEmergencia() {
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="flex justify-between text-xs font-semibold">
+          <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
             <span>Roupas & comprinhas</span>
             <span className="font-bold text-tinta">−{money(compras * 100)}</span>
           </span>
@@ -355,7 +357,7 @@ function RemanejamentoEmergencia() {
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="flex justify-between text-xs font-semibold">
+          <span className="flex justify-between text-[13px] leading-[18px] font-semibold">
             <span>Uber & caronas pagas</span>
             <span className="font-bold text-tinta">−{money(uber * 100)}</span>
           </span>
@@ -364,7 +366,7 @@ function RemanejamentoEmergencia() {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <div className="flex justify-between text-xs font-semibold">
+        <div className="flex justify-between text-[13px] leading-[18px] font-semibold">
           <span>Total remanejado:</span>
           <span className={`font-bold ${reequilibrado ? 'text-verde-texto' : 'text-vermelho-texto'}`}>
             {money(totalCortes)} de {money(ALVO)}
@@ -379,13 +381,13 @@ function RemanejamentoEmergencia() {
       </div>
 
       {reequilibrado ? (
-        <div className="rounded-xl bg-menta-clara p-3 text-xs leading-relaxed text-verde-texto">
+        <div className="rounded-xl bg-menta-clara p-3 text-[13px] leading-relaxed text-verde-texto">
           <Selo tipo="brilho" />
           <b>Mês reequilibrado!</b> Você cobriu os R$ 200 remanejando gastos flexíveis. O dinheiro saiu das suas
           escolhas conscientes, e você não pagou um real de juros pro rotativo.
         </div>
       ) : (
-        <div className="rounded-xl bg-amarelo-claro p-3 text-xs leading-relaxed text-laranja-texto">
+        <div className="rounded-xl bg-amarelo-claro p-3 text-[13px] leading-relaxed text-laranja-texto">
           <Selo tipo="tempo" />
           <b>Ainda faltam {money(ALVO - totalCortes)}:</b> se não compensar esse valor nas próximas semanas, ele vira
           fatura atrasada ou cheque especial. Aumente o corte em alguma categoria!
@@ -450,7 +452,7 @@ function DetectorGatilhos() {
           </span>
         </span>
         <TostaoSlider min={1} max={maxTrocas} value={diasTrocados} onChange={(e) => setTrocas(+e.target.value)} />
-        <span className="text-[11px] text-tinta-suave">
+        <span className="text-[13px] text-tinta-suave">
           Economia estimada de {money(ECONOMIA_REFEICAO)} por refeição preparada em casa.
         </span>
       </label>
@@ -466,7 +468,7 @@ function DetectorGatilhos() {
         </div>
       </div>
 
-      <p className="rounded-xl bg-papel-2 p-3 text-xs leading-relaxed text-tinta-suave">
+      <p className="rounded-xl bg-papel-2 p-3 text-[13px] leading-relaxed text-tinta-suave">
         <Selo tipo="meta" />
         <b>A regra não é sofrer:</b> você não precisa cozinhar os 7 dias da semana. Trocar apenas{' '}
         <b>

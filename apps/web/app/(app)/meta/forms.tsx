@@ -108,7 +108,9 @@ export function GoalForm({
                 }`}
               >
                 <span className="text-sm font-bold">{g.presets[preset.id].label}</span>
-                <span className="text-xs text-tinta-suave tabular-nums">{money(preset.amountInCents)}</span>
+                <span className="text-[13px] leading-[18px] text-tinta-suave tabular-nums">
+                  {money(preset.amountInCents)}
+                </span>
               </button>
             ))}
           </div>

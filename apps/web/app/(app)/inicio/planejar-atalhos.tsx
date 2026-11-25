@@ -82,9 +82,9 @@ export function PlanejarAtalhos({ t }: { t: Dictionary }) {
 
   return (
     <nav aria-label={t.home.shortcutsAria} className="-mx-5 md:-mx-10 lg:mx-0">
-      <ul className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-1 [scrollbar-width:none] md:px-10 lg:px-0 [&::-webkit-scrollbar]:hidden">
+      <ul className="flex snap-x snap-mandatory gap-1 overflow-x-auto px-5 pb-1 [scrollbar-width:none] md:px-10 lg:px-0 [&::-webkit-scrollbar]:hidden">
         {shortcuts.map((item) => (
-          <li key={item.id} className="w-[68px] shrink-0 snap-start">
+          <li key={item.id} className="w-[78px] shrink-0 snap-start">
             <Link
               prefetch={false}
               href={item.href}
@@ -96,7 +96,7 @@ export function PlanejarAtalhos({ t }: { t: Dictionary }) {
               >
                 <Icon src={item.icon} size={26} />
               </span>
-              <span className="line-clamp-2 w-full text-center text-[11px] leading-[14px] font-semibold">
+              <span className="line-clamp-2 w-full text-center text-mini leading-[15px] font-semibold">
                 {item.label}
               </span>
             </Link>

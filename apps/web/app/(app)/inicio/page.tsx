@@ -220,7 +220,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
             className="flex items-center gap-3 rounded-2xl bg-amarelo-claro p-3 text-tinta no-underline"
           >
             <Mascot pose="preocupado" size={56} alt="" />
-            <p className="text-[15px]">
+            <p className="text-body">
               {t.home.connectionBroken(brokenConnections.map((c) => c.displayName).join(', '))}
             </p>
           </Link>
@@ -236,7 +236,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
           <>
             {/* T6.17 · acima do saldo, num lugar só pro celular e o computador. Mês passado não tem "hoje". */}
             {month === hoje && (
-              <Block skeleton="h-[180px] lg:h-[185px]">
+              <Block skeleton="h-[228px] lg:h-[192px]">
                 <SafeToSpendSection />
               </Block>
             )}

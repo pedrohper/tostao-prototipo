@@ -241,7 +241,7 @@ export default async function ConectarPage({
                   <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[15px] font-bold">
                     {c.t}
                     {c.tag && (
-                      <span className="rounded-full bg-amarelo-claro px-2 py-0.5 text-[11px] font-semibold text-tinta">
+                      <span className="rounded-full bg-amarelo-claro px-2 py-0.5 text-[12px] font-semibold text-tinta">
                         {c.tag}
                       </span>
                     )}

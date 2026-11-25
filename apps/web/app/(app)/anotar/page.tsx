@@ -56,7 +56,7 @@ export default async function AnotarPage({ searchParams }: { searchParams: Promi
               <path d="M6 6l12 12M18 6L6 18" />
             </svg>
           </Link>
-          <span className="text-[13px] font-semibold text-tinta-suave">{a.headerTitle}</span>
+          <span className="text-small font-semibold text-tinta-suave">{a.headerTitle}</span>
           <span className="w-11" aria-hidden="true" />
         </div>
         <AnotarForm

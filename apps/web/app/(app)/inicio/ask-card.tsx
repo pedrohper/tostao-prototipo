@@ -21,7 +21,7 @@ export function AskTostaoCard({ locale = 'pt-BR', compact = false }: { locale?: 
 
   return (
     <section
-      className={`flex flex-col gap-3 rounded-[22px] border border-linha bg-cartao ${compact ? 'p-3.5' : 'p-[18px_20px]'}`}
+      className={`flex flex-col gap-3 rounded-card border border-linha bg-cartao ${compact ? 'p-3.5' : 'p-[18px_20px]'}`}
     >
       <div className="flex items-center gap-2.5">
         <Mascot pose="avatar" size={compact ? 28 : 36} still />
@@ -36,7 +36,7 @@ export function AskTostaoCard({ locale = 'pt-BR', compact = false }: { locale?: 
           <Link
             key={chip}
             href={`/tostao?q=${encodeURIComponent(chip)}`}
-            className="flex min-h-9 shrink-0 items-center rounded-full bg-papel-2 px-3.5 py-1.5 text-[13px] whitespace-nowrap font-semibold text-tinta no-underline hover:bg-linha/50"
+            className="flex min-h-9 shrink-0 items-center rounded-full bg-papel-2 px-3.5 py-1.5 text-small whitespace-nowrap font-semibold text-tinta no-underline hover:bg-linha/50"
           >
             {chip}
           </Link>
@@ -53,7 +53,7 @@ export function AskTostaoCard({ locale = 'pt-BR', compact = false }: { locale?: 
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t.home.askPlaceholder}
-          className={`${compact ? 'h-11' : 'h-12'} min-w-0 flex-1 rounded-full border-[1.5px] border-linha bg-papel px-4 text-[15px] text-tinta outline-none placeholder:text-tinta-suave focus:border-tinta`}
+          className={`${compact ? 'h-11' : 'h-12'} min-w-0 flex-1 rounded-full border-[1.5px] border-linha bg-papel px-4 text-body text-tinta outline-none placeholder:text-tinta-suave focus:border-tinta`}
         />
         <button
           type="submit"

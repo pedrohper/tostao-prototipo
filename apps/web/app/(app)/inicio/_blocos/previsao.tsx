@@ -43,7 +43,7 @@ export async function LeftoverSection() {
         className="flex items-center gap-2 rounded-2xl bg-amarelo-claro py-3 pr-3.5 pl-1.5 text-tinta no-underline"
       >
         <Mascot pose="pensando" size={64} alt="Tostão" />
-        <p className="grow text-[15px] leading-[21px]">
+        <p className="grow text-body leading-[21px]">
           <b>{t.home.tellIncomePromptTitle}</b> {t.home.tellIncomePromptBody}
         </p>
         {chevron}
@@ -60,7 +60,7 @@ export async function LeftoverSection() {
         <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">
           {t.home.upcomingMonthsLabel}
         </span>
-        <span className="text-[15px] leading-[21px]">
+        <span className="text-body leading-[21px]">
           {formatMonth(nextMonth.month)}:{' '}
           {nextMonth.leftInCents >= 0 ? (
             <b>{t.home.monthLeftover(money(nextMonth.leftInCents))}.</b>
@@ -81,7 +81,7 @@ function NoGoalLink({ t, className = '' }: { t: Dictionary; className?: string }
   return (
     <Link
       href="/meta?voltar=/inicio"
-      className={`flex items-center gap-3 rounded-2xl border border-dashed border-linha p-3.5 text-[15px] text-tinta no-underline ${className}`}
+      className={`flex items-center gap-3 rounded-2xl border border-dashed border-linha p-3.5 text-body text-tinta no-underline ${className}`}
     >
       <span
         aria-hidden="true"
@@ -118,12 +118,12 @@ export async function GoalsSection({ rail = false }: { rail?: boolean }) {
               <span className="truncate text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">
                 {t.home.goalLabel(goal.label)}
               </span>
-              <span className="shrink-0 text-[13px] font-semibold tabular-nums">{pct}%</span>
+              <span className="shrink-0 text-small font-semibold tabular-nums">{pct}%</span>
             </div>
             <div className="h-2.5 overflow-hidden rounded-full bg-papel-2">
               <div className="bar-fill h-full rounded-full bg-menta" style={{ width: `${pct}%` }} />
             </div>
-            <span className="text-[13px] text-tinta-suave">
+            <span className="text-small text-tinta-suave">
               {goal.reached ? (
                 <span className="inline-flex items-center gap-1">
                   <Icon src="ui/meta-batida" size={18} />

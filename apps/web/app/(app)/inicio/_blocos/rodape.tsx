@@ -7,7 +7,7 @@ export function RestoreAlertsForm({ count, t }: { count: number; t: Dictionary }
   if (count === 0) return null;
   return (
     <form action={restoreDismissedAlerts} className="self-center">
-      <button type="submit" className="min-h-11 text-[13px] font-semibold text-tinta-suave underline">
+      <button type="submit" className="min-h-11 text-small font-semibold text-tinta-suave underline">
         {t.home.showDismissedAlerts(count)}
       </button>
     </form>

@@ -108,7 +108,7 @@ export const es: Dictionary = {
       shortfall: 'es lo que falta para cerrar el mes. Sin drama: aguanta lo que no sea urgente.',
       nothingLeft: 'todo lo que entra este mes ya tiene destino.',
       parts: {
-        spent: 'lo que salió',
+        spent: 'las salidas del mes',
         fixed: 'los gastos fijos',
         subscriptions: 'las suscripciones',
         scheduled: 'las cuotas y programados',
@@ -119,7 +119,7 @@ export const es: Dictionary = {
       details: 'Ver la cuenta',
       rows: {
         income: 'Ingreso del mes',
-        spent: 'Ya salió',
+        spent: 'Salidas del mes',
         fixed: 'Fijos pendientes',
         subscriptions: 'Suscripciones pendientes',
         scheduled: 'Cuotas y programados',
@@ -207,6 +207,7 @@ export const es: Dictionary = {
   profile: {
     verifyEmailLink: 'Confirmar mi correo',
     title: 'Más',
+    levelBadge: (level, xp) => `Nivel ${level} · ${xp} XP`,
     levelSummary: (level, xp, streakDays) =>
       `Nivel ${level} · ${xp} XP · ${streakDays} ${streakDays === 1 ? 'día' : 'días'} de racha`,
     connectedAccounts: 'Cuentas conectadas',

@@ -53,7 +53,7 @@ export function SearchBar({
         autoFocus={autoFocus}
         placeholder={placeholder}
         aria-label={ariaLabel}
-        className="min-w-0 flex-1 bg-transparent text-[15px] text-tinta outline-none placeholder:text-tinta-suave"
+        className="min-w-0 flex-1 bg-transparent text-body text-tinta outline-none placeholder:text-tinta-suave"
       />
       {Object.entries(hidden).map(([k, v]) => (
         <input key={k} type="hidden" name={k} value={v} />
@@ -136,7 +136,7 @@ export function FilterDropdown({
             ? `relative flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${
                 active ? 'border-tinta bg-tinta text-papel' : 'border-linha bg-cartao text-tinta hover:bg-papel-2'
               }`
-            : `inline-flex h-11 max-w-[44vw] items-center gap-1.5 rounded-full border px-3 text-[13px] font-semibold whitespace-nowrap transition-colors sm:max-w-[220px] sm:px-4 sm:text-sm ${
+            : `inline-flex h-11 max-w-[44vw] items-center gap-1.5 rounded-full border px-3 text-small font-semibold whitespace-nowrap transition-colors sm:max-w-[220px] sm:px-4 sm:text-sm ${
                 active ? 'border-tinta bg-tinta text-papel' : 'border-linha bg-cartao text-tinta hover:bg-papel-2'
               }`
         }
@@ -194,7 +194,7 @@ export function FilterDropdown({
               {opt.groupLabel && (
                 <div
                   role="presentation"
-                  className="px-3 pt-1.5 pb-1 text-[11px] font-bold tracking-[0.08em] text-tinta-suave uppercase"
+                  className="px-3 pt-1.5 pb-1 text-mini font-bold tracking-[0.08em] text-tinta-suave uppercase"
                 >
                   {opt.groupLabel}
                 </div>
@@ -311,7 +311,7 @@ export function InlineSearch({
           placeholder={placeholder}
           aria-label={ariaLabel}
           enterKeyHint="search"
-          className="min-w-0 flex-1 bg-transparent text-[15px] text-tinta outline-none placeholder:text-tinta-suave"
+          className="min-w-0 flex-1 bg-transparent text-body text-tinta outline-none placeholder:text-tinta-suave"
         />
         {value !== '' && (
           <button
@@ -327,7 +327,7 @@ export function InlineSearch({
           <input key={k} type="hidden" name={k} value={v} />
         ))}
       </form>
-      {value.trim() !== '' && <span className="px-3 text-[11px] text-tinta-suave">{hint}</span>}
+      {value.trim() !== '' && <span className="px-3 text-mini text-tinta-suave">{hint}</span>}
     </div>
   );
 }
@@ -374,7 +374,7 @@ export function ExtratoHeaderBar({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="font-display text-[24px] leading-[30px] font-extrabold lg:text-[28px] lg:leading-[34px]">
+        <h1 className="font-display text-[24px] leading-[30px] font-extrabold lg:text-hero lg:leading-[34px]">
           {title}
         </h1>
         <div className="flex items-center gap-2">
@@ -493,14 +493,17 @@ export function Row({
           ? 'Pagado'
           : 'Paguei';
   const pendingTag = locale === 'en' ? 'Pending' : locale === 'es' ? 'Pendiente' : 'Pendente';
+  const tagClasses =
+    'rounded-full bg-amarelo-claro px-2 py-0.5 text-mini leading-4 font-bold text-laranja-texto uppercase';
 
   return (
+    // Pendente no celular: o selo e o botão de baixa descem pra uma linha própria, pra o nome do lançamento caber.
     <div
-      className={`flex min-h-[76px] items-center gap-2 border-b border-linha/60 last:border-b-0 ${t.isInternalTransfer ? 'opacity-60' : ''}`}
+      className={`flex min-h-[76px] items-center gap-x-2 border-b border-linha/60 last:border-b-0 ${unpaid ? 'flex-wrap sm:flex-nowrap' : ''} ${t.isInternalTransfer ? 'opacity-60' : ''}`}
     >
       <Link
         href={`/carteira/${t.id}?voltar=${encodeURIComponent(back)}`}
-        className="flex min-w-0 flex-1 items-center gap-3.5 py-4 text-tinta no-underline transition-colors hover:bg-papel-2/40"
+        className={`flex min-w-0 grow items-center gap-3.5 py-4 text-tinta no-underline transition-colors hover:bg-papel-2/40 ${unpaid ? 'basis-full sm:basis-0' : 'basis-0'}`}
       >
         <div
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg font-bold ${pending ? 'bg-rosa text-tinta' : bg ? 'text-tinta-fixa' : 'bg-papel-2 text-tinta'}`}
@@ -510,30 +513,30 @@ export function Row({
           {icon}
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <div className="flex items-center gap-1.5">
-            <span className="truncate text-[15px] leading-5 font-semibold">{t.customDescription || t.description}</span>
-            {unpaid && (
-              <span className="shrink-0 rounded-full bg-amarelo-claro px-2 py-0.5 text-[10px] font-bold text-laranja-texto uppercase">
-                {pendingTag}
-              </span>
-            )}
+          <span className="truncate text-body leading-5 font-semibold">{t.customDescription || t.description}</span>
+          <div className="flex min-w-0 items-center gap-1.5">
+            {unpaid && <span className={`hidden shrink-0 sm:inline ${tagClasses}`}>{pendingTag}</span>}
+            <span
+              className={`truncate text-small leading-4 ${pending ? 'font-semibold text-laranja-texto' : 'text-tinta-suave'}`}
+            >
+              {line}
+            </span>
           </div>
-          <span
-            className={`truncate text-[13px] leading-4 ${pending ? 'font-semibold text-laranja-texto' : 'text-tinta-suave'}`}
-          >
-            {line}
-          </span>
-          {t.note && <span className="truncate text-[12px] leading-4 text-tinta-suave italic">“{t.note}”</span>}
+          {t.note && <span className="truncate text-mini leading-4 text-tinta-suave italic">“{t.note}”</span>}
         </div>
         <span
-          className={`shrink-0 text-[15px] tabular-nums ${t.amountInCents > 0 ? 'font-bold text-verde-texto' : 'font-semibold'}`}
+          className={`shrink-0 text-body tabular-nums ${t.amountInCents > 0 ? 'font-bold text-verde-texto' : 'font-semibold'}`}
         >
           {t.amountInCents > 0 ? '+ ' : ''}
           {money(Math.abs(t.amountInCents))}
         </span>
       </Link>
       {unpaid && (
-        <form action={toggleTransactionSettled} className="shrink-0">
+        <form
+          action={toggleTransactionSettled}
+          className="-mt-2 flex w-full items-center justify-between gap-2 pb-3 pl-[54px] sm:mt-0 sm:w-auto sm:shrink-0 sm:p-0"
+        >
+          <span className={`sm:hidden ${tagClasses}`}>{pendingTag}</span>
           <input type="hidden" name="id" value={t.id} />
           <input type="hidden" name="settled" value="true" />
           <input type="hidden" name="kind" value={t.amountInCents > 0 ? 'entrada' : 'saida'} />

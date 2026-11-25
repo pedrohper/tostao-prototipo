@@ -20,7 +20,7 @@ export function AutoCategorizeButton({ t }: { t?: Dictionary['walletExtra']['aut
       <button
         type="submit"
         disabled={pending}
-        className="self-start rounded-full bg-tinta px-4 py-2 text-[13px] font-semibold text-papel disabled:opacity-60"
+        className="self-start rounded-full bg-tinta px-4 py-2 text-small font-semibold text-papel disabled:opacity-60"
       >
         {pending ? (
           labels.pending
@@ -32,7 +32,7 @@ export function AutoCategorizeButton({ t }: { t?: Dictionary['walletExtra']['aut
         )}
       </button>
       {state.message && (
-        <p role="status" className="text-[13px] text-tinta-suave">
+        <p role="status" className="text-small text-tinta-suave">
           {state.message}
         </p>
       )}

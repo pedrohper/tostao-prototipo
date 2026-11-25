@@ -216,7 +216,7 @@ export function TostaoFindingsBoard({
                 <div className="flex min-w-0 items-start gap-3">
                   <Mascot pose={ROUTINE_POSE[item.routine]} size={44} alt="" still />
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <span className="text-[11px] font-bold tracking-[0.06em] text-tinta-suave uppercase">
+                    <span className="text-[12px] font-bold tracking-[0.06em] text-tinta-suave uppercase">
                       {routineMeta.badge}
                     </span>
                     <span className="break-words text-[15px] leading-5 font-bold">{item.title}</span>
@@ -259,7 +259,7 @@ export function TostaoFindingsBoard({
                   <span className="block truncate font-semibold text-tinta">{item.title}</span>
                   <span className="text-xs text-tinta-suave">{t.auto.routines[item.routine].title}</span>
                 </div>
-                <span className="shrink-0 rounded-full bg-papel-2 px-2.5 py-0.5 text-[11px] font-semibold text-tinta-suave">
+                <span className="shrink-0 rounded-full bg-papel-2 px-2.5 py-0.5 text-[12px] font-semibold text-tinta-suave">
                   {item.status === 'APPLIED' ? t.auto.statusApplied : t.auto.statusDismissed}
                 </span>
               </div>
@@ -354,7 +354,7 @@ export function TostaoAutoConfigPanel({
           <span className="flex flex-col">
             <span>{t.auto.whatsappChannelLabel}</span>
             {!whatsappLinked && (
-              <span className="text-[11px] font-normal text-tinta-suave">{t.auto.whatsappNeedLinkHint}</span>
+              <span className="text-[12px] font-normal text-tinta-suave">{t.auto.whatsappNeedLinkHint}</span>
             )}
           </span>
           <input

@@ -108,7 +108,7 @@ export const ptBR: Dictionary = {
       shortfall: 'é o que falta pro mês fechar. Sem drama: segura o que não for urgente.',
       nothingLeft: 'o que entra neste mês já tem destino.',
       parts: {
-        spent: 'o que saiu',
+        spent: 'as saídas do mês',
         fixed: 'os fixos',
         subscriptions: 'as assinaturas',
         scheduled: 'as parcelas e agendados',
@@ -119,7 +119,7 @@ export const ptBR: Dictionary = {
       details: 'Ver a conta',
       rows: {
         income: 'Renda do mês',
-        spent: 'Já saiu',
+        spent: 'Saídas do mês',
         fixed: 'Fixos que faltam',
         subscriptions: 'Assinaturas que faltam',
         scheduled: 'Parcelas e agendados',
@@ -206,6 +206,7 @@ export const ptBR: Dictionary = {
   profile: {
     verifyEmailLink: 'Confirmar meu e-mail',
     title: 'Mais',
+    levelBadge: (level, xp) => `Nível ${level} · ${xp} XP`,
     levelSummary: (level, xp, streakDays) =>
       `Nível ${level} · ${xp} XP · ${streakDays} ${streakDays === 1 ? 'dia' : 'dias'} de ofensiva`,
     connectedAccounts: 'Contas conectadas',

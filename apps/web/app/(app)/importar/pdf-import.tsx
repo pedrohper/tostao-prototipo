@@ -177,7 +177,7 @@ function PreviewEditor({
         <b className="font-display text-lg tabular-nums">{money(Math.abs(total))}</b>
       </div>
       {preview.statedTotalInCents !== null && isCard && (
-        <p className="text-[12px] text-tinta-suave">
+        <p className="text-[13px] text-tinta-suave">
           O PDF diz que o total da fatura é {money(preview.statedTotalInCents)}.
           {Math.abs(preview.statedTotalInCents - total) > 1
             ? ' Confere se faltou alguma linha.'

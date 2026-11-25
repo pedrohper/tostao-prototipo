@@ -35,10 +35,10 @@ describe('safeToSpendView()', () => {
     expect(v.amount).toBe(money(89_66));
     expect(v.short).toBe(false);
     expect(v.caption).toBe('por dia, nos 15 dias que faltam (contando hoje)');
-    expect(v.explanation).toBe('Já tirei o que saiu, os fixos, as assinaturas e a sua meta.');
+    expect(v.explanation).toBe('Já tirei as saídas do mês, os fixos, as assinaturas e a sua meta.');
     expect(v.rows.map((r) => [r.label, r.value])).toEqual([
       ['Renda do mês', money(3000_00)],
-      ['Já saiu', money(400_00)],
+      ['Saídas do mês', money(400_00)],
       ['Fixos que faltam', money(900_00)],
       ['Assinaturas que faltam', money(55_00)],
       ['Pra meta neste mês', money(300_00)],
@@ -48,7 +48,7 @@ describe('safeToSpendView()', () => {
 
   it('sem meta nem contas, não diz que tirou o que não tirou', () => {
     const bare = { ...math, fixedInCents: 0, subscriptionsInCents: 0, goalInCents: 0 };
-    expect(view({ safeToSpend: bare }).explanation).toBe('Já tirei o que saiu.');
+    expect(view({ safeToSpend: bare }).explanation).toBe('Já tirei as saídas do mês.');
     expect(view({ safeToSpend: bare, spentInCents: 0 }).explanation).toBe('');
   });
 

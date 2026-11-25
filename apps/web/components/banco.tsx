@@ -341,14 +341,14 @@ function CardNetworkLogo({ brand }: { brand: string }) {
   }
   if (key === 'VISA') {
     return (
-      <span className="rounded-[4px] bg-[#1A1F71] px-1.5 py-[1px] text-[9px] font-black tracking-[0.06em] text-white italic">
+      <span className="rounded-[4px] bg-[#1A1F71] px-1.5 py-[1px] text-[12px] font-black tracking-[0.06em] text-white italic">
         VISA
       </span>
     );
   }
   if (key === 'ELO') {
     return (
-      <span className="inline-flex items-center gap-1 rounded-[4px] bg-[#1E1B18] px-1.5 py-[1px] text-[9px] font-extrabold text-white">
+      <span className="inline-flex items-center gap-1 rounded-[4px] bg-[#1E1B18] px-1.5 py-[1px] text-[12px] font-extrabold text-white">
         <span className="inline-flex gap-[1.5px]">
           <i className="h-1.5 w-1.5 rounded-full bg-[#FFCB05]" />
           <i className="h-1.5 w-1.5 rounded-full bg-[#00A4E0]" />
@@ -360,20 +360,20 @@ function CardNetworkLogo({ brand }: { brand: string }) {
   }
   if (key === 'AMEX' || key === 'AMERICAN EXPRESS') {
     return (
-      <span className="rounded-[4px] bg-[#006FCF] px-1.5 py-[1px] text-[9px] font-extrabold tracking-[0.04em] text-white">
+      <span className="rounded-[4px] bg-[#006FCF] px-1.5 py-[1px] text-[12px] font-extrabold tracking-[0.04em] text-white">
         AMEX
       </span>
     );
   }
   if (key === 'HIPERCARD' || key === 'HIPER') {
     return (
-      <span className="rounded-[4px] bg-[#B3131B] px-1.5 py-[1px] text-[9px] font-extrabold tracking-[0.03em] text-white">
+      <span className="rounded-[4px] bg-[#B3131B] px-1.5 py-[1px] text-[12px] font-extrabold tracking-[0.03em] text-white">
         HIPER
       </span>
     );
   }
   return (
-    <span className="rounded-[5px] border border-linha bg-cartao px-1.5 py-px text-[10px] font-extrabold tracking-[0.04em] text-tinta uppercase">
+    <span className="rounded-[5px] border border-linha bg-cartao px-1.5 py-px text-[12px] font-extrabold tracking-[0.04em] text-tinta uppercase">
       {getCardNetworkName(brand)}
     </span>
   );
@@ -394,7 +394,7 @@ export function CardNetworkBadge({
   return (
     <span
       aria-label={[nome, last4 ? `final ${last4}` : null].filter(Boolean).join(' ')}
-      className={`inline-flex items-center gap-1.5 whitespace-nowrap text-[11px] font-semibold text-tinta-suave ${className}`}
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap text-[12px] font-semibold text-tinta-suave ${className}`}
     >
       {brand && <CardNetworkLogo brand={brand} />}
       {last4 && <span className="tabular-nums">•• {last4}</span>}

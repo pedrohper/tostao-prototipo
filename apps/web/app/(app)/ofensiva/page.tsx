@@ -68,7 +68,7 @@ export default async function OfensivaPage({ searchParams }: { searchParams?: Pr
               return (
                 <span
                   key={dayItem.day}
-                  className="flex flex-col items-center gap-1.5 text-[11px] font-semibold text-tinta-suave"
+                  className="flex flex-col items-center gap-1.5 text-[12px] font-semibold text-tinta-suave"
                 >
                   <span
                     className={`flex h-9 w-9 items-center justify-center rounded-full border ${
@@ -77,7 +77,7 @@ export default async function OfensivaPage({ searchParams }: { searchParams?: Pr
                         : 'border-dashed border-linha bg-papel-2 text-tinta-suave'
                     }`}
                   >
-                    {active ? <Icon src="ui/ofensiva" size={18} /> : <span className="text-[11px]">·</span>}
+                    {active ? <Icon src="ui/ofensiva" size={18} /> : <span className="text-[12px]">·</span>}
                   </span>
                   <span className={active ? 'font-bold text-tinta' : ''}>{t.weekdaysShort[idx]}</span>
                 </span>
@@ -94,7 +94,7 @@ export default async function OfensivaPage({ searchParams }: { searchParams?: Pr
               {t.engagement.todayMissionsLabel(completedCount, totalCount).replace(/\s*›$/, '')}
             </span>
             {allDone && (
-              <span className="rounded-full bg-menta-clara px-2.5 py-0.5 text-[11px] font-bold text-verde-texto">
+              <span className="rounded-full bg-menta-clara px-2.5 py-0.5 text-[12px] font-bold text-verde-texto">
                 {t.engagement.allDoneTitle}
               </span>
             )}

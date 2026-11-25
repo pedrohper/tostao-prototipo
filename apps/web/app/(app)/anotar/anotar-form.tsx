@@ -119,7 +119,7 @@ export function AnotarForm({
               <h1 className="font-display text-2xl leading-[29px] font-extrabold">
                 {kind === 'saida' ? labels.titleOut : labels.titleIn}
               </h1>
-              <span className="text-[13px] leading-[18px] text-tinta-suave">
+              <span className="text-small leading-[18px] text-tinta-suave">
                 {kind === 'saida' ? labels.subOut : labels.subIn}
               </span>
             </div>
@@ -134,7 +134,7 @@ export function AnotarForm({
           {(['saida', 'entrada'] as const).map((k) => (
             <label
               key={k}
-              className={`flex h-10 cursor-pointer items-center justify-center rounded-full text-[15px] font-semibold transition-colors ${kind === k ? 'bg-tinta text-papel' : 'text-tinta hover:bg-cartao/60'}`}
+              className={`flex h-10 cursor-pointer items-center justify-center rounded-full text-body font-semibold transition-colors ${kind === k ? 'bg-tinta text-papel' : 'text-tinta hover:bg-cartao/60'}`}
             >
               <input
                 type="radio"
@@ -179,7 +179,7 @@ export function AnotarForm({
                         ? 'Ya pagado'
                         : 'Já paguei'}
                 </span>
-                <span className="text-[12px] leading-[16px] text-tinta-suave">
+                <span className="text-mini leading-[16px] text-tinta-suave">
                   {settled
                     ? locale === 'en'
                       ? 'Counts as completed now'
@@ -218,7 +218,7 @@ export function AnotarForm({
           placeholder={labels.notePlaceholder}
         />
         <fieldset className="flex min-w-0 flex-col gap-2">
-          <legend className="mb-2 text-[13px] font-semibold">{labels.repeatLegend}</legend>
+          <legend className="mb-2 text-small font-semibold">{labels.repeatLegend}</legend>
           <input type="hidden" name="repeat" value={repete} />
           <div className="grid grid-cols-3 gap-1 rounded-full bg-papel-2 p-1">
             {(
@@ -269,7 +269,7 @@ export function AnotarForm({
               </div>
             </div>
           )}
-          <p className="text-[12px] leading-[17px] text-tinta-suave">
+          <p className="text-mini leading-[17px] text-tinta-suave">
             {repete === 'nao'
               ? labels.repeatNoHint
               : repete === 'mensal'
@@ -290,7 +290,7 @@ export function AnotarForm({
               />
               <span className="flex flex-col text-[14px] leading-5">
                 <b className="font-semibold">Lançar sozinho no dia</b>
-                <span className="text-[12px] leading-[17px] text-tinta-suave">
+                <span className="text-small leading-[17px] text-tinta-suave">
                   {!podeAutomatico
                     ? 'Essa conta é ligada ao banco e já traz os lançamentos sozinha.'
                     : repete === 'parcelado'
@@ -315,7 +315,7 @@ export function AnotarForm({
         />
         {contas.length > 0 && (
           <fieldset className="flex min-w-0 flex-col gap-2">
-            <legend className="mb-2 text-[13px] font-semibold">
+            <legend className="mb-2 text-small font-semibold">
               {kind === 'saida' ? labels.paidWith : labels.receivedIn}
             </legend>
             <input type="hidden" name="accountId" value={conta ?? ''} />
@@ -344,7 +344,7 @@ export function AnotarForm({
                     <span>{c.name}</span>
                     {c.type && (
                       <span
-                        className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase ${
+                        className={`rounded-full px-1.5 py-0.5 text-mini font-bold tracking-wider uppercase ${
                           isSelected ? 'bg-papel/20 text-papel' : 'bg-papel-2 text-tinta-suave'
                         }`}
                       >
@@ -356,7 +356,7 @@ export function AnotarForm({
               })}
             </div>
             {escolhida?.auto && (
-              <p className="text-[12px] leading-[17px] text-tinta-suave">
+              <p className="text-mini leading-[17px] text-tinta-suave">
                 {kind === 'saida' ? labels.autoAccountWarnOut : labels.autoAccountWarnIn}
               </p>
             )}
@@ -364,7 +364,7 @@ export function AnotarForm({
         )}
         {!isAutomaticRule && (
           <fieldset className="flex min-w-0 flex-col gap-2">
-            <legend className="mb-2 text-[13px] font-semibold">
+            <legend className="mb-2 text-small font-semibold">
               {splitSectionLabel} <span className="font-normal text-tinta-suave">{splitOptionalHint}</span>
             </legend>
             <div className="-mx-1 flex min-w-0 items-center gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -403,7 +403,7 @@ export function AnotarForm({
                   setAcertoMode('new');
                   if (acertoMode !== 'new') setAcertoName('');
                 }}
-                className={`h-10 shrink-0 rounded-full border border-dashed px-3.5 text-[13px] font-semibold whitespace-nowrap transition-colors ${
+                className={`h-10 shrink-0 rounded-full border border-dashed px-3.5 text-small font-semibold whitespace-nowrap transition-colors ${
                   acertoMode === 'new'
                     ? 'border-tinta bg-tinta text-papel'
                     : 'border-laranja-texto text-laranja-texto hover:bg-laranja-claro/40'
@@ -449,7 +449,7 @@ export function AnotarForm({
             onClick={() => {
               setSending('another');
             }}
-            className="flex h-11 w-full items-center justify-center rounded-full border-[1.5px] border-tinta text-[15px] font-semibold text-tinta disabled:opacity-50"
+            className="flex h-11 w-full items-center justify-center rounded-full border-[1.5px] border-tinta text-body font-semibold text-tinta disabled:opacity-50"
           >
             {pending && sending === 'another' ? labels.saving : q.saveAnother}
           </button>

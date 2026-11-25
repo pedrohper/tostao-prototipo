@@ -152,7 +152,9 @@ export default async function AssinaturasPage({ searchParams }: { searchParams: 
                         aria-hidden="true"
                         className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-amarelo-claro text-tinta-fixa"
                       >
-                        <span className="text-[10px] leading-3 font-bold tracking-wider uppercase">{chip.month}</span>
+                        <span className="text-[12px] leading-[14px] font-bold tracking-wider uppercase">
+                          {chip.month}
+                        </span>
                         <span className="font-display text-[22px] leading-6 font-extrabold tabular-nums">
                           {chip.day}
                         </span>

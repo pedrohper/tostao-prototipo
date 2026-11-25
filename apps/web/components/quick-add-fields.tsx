@@ -28,9 +28,9 @@ export function AmountInput({
 }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[13px] font-semibold text-tinta-suave">{label}</span>
+      <span className="text-small font-semibold text-tinta-suave">{label}</span>
       <span className="flex items-baseline gap-1.5 border-b-2 border-tinta pb-1">
-        <span className="font-display text-[28px] font-extrabold">R$</span>
+        <span className="font-display text-hero leading-normal font-extrabold">R$</span>
         <input
           name={name}
           value={value}
@@ -131,7 +131,7 @@ export function DescriptionInput({
   const id = useId();
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
-      <label htmlFor={id} className="text-[13px] font-semibold">
+      <label htmlFor={id} className="text-small font-semibold">
         {label}
       </label>
       <input
@@ -152,7 +152,7 @@ export function DescriptionInput({
               key={s}
               type="button"
               onClick={() => onChange(s)}
-              className="h-9 shrink-0 rounded-full bg-papel-2 px-3.5 text-[13px] font-semibold whitespace-nowrap text-tinta"
+              className="h-9 shrink-0 rounded-full bg-papel-2 px-3.5 text-small font-semibold whitespace-nowrap text-tinta"
             >
               {s}
             </button>
@@ -191,7 +191,7 @@ export function CategoryField({
   const t = getDictionary(locale).growth.quickAdd;
   return (
     <fieldset className="flex min-w-0 flex-col gap-2">
-      <legend className="mb-2 text-[13px] font-semibold">{legend}</legend>
+      <legend className="mb-2 text-small font-semibold">{legend}</legend>
       <CategoryPicker
         categories={categories}
         kind={kind}
@@ -234,7 +234,7 @@ export function NoteField({
         <button
           type="button"
           onClick={onOpen}
-          className="self-start text-[13px] font-semibold text-laranja-texto underline"
+          className="self-start text-small font-semibold text-laranja-texto underline"
         >
           {addLabel}
         </button>

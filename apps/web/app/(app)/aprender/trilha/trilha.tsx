@@ -129,7 +129,7 @@ export function Trilha({
                 </div>
 
                 <span
-                  className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                  className={`rounded-full px-2.5 py-0.5 text-[12px] font-bold ${
                     completo
                       ? 'bg-menta-clara text-verde-texto'
                       : atual
@@ -143,7 +143,7 @@ export function Trilha({
 
               {/* Título do livro */}
               <div className="flex min-w-0 flex-col gap-1">
-                <span className="text-[11px] font-bold tracking-[0.06em] text-tinta-suave uppercase">
+                <span className="text-[12px] font-bold tracking-[0.06em] text-tinta-suave uppercase">
                   {t.moduleAlt(m.number)}
                   {m.optional ? th.optionalSuffix : ''}
                 </span>
@@ -153,7 +153,7 @@ export function Trilha({
 
               {/* Progresso em 5 capítulos */}
               <div className="flex flex-col gap-1.5 pt-1">
-                <div className="flex items-center justify-between text-[11px] font-semibold text-tinta-suave">
+                <div className="flex items-center justify-between text-[12px] font-semibold text-tinta-suave">
                   <span>{feitas ? t.lessonsPartial(feitas, m.lessons.length) : t.lessonsCount(m.lessons.length)}</span>
                   <span aria-hidden="true">{isOpen ? '▴' : '▾'}</span>
                 </div>

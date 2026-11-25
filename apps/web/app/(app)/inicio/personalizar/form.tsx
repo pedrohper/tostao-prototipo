@@ -72,7 +72,7 @@ export function PersonalizarForm({
                   className="h-[22px] w-[22px] shrink-0 accent-tinta"
                 />
                 <span className="flex min-w-0 flex-col">
-                  <span className={`text-[15px] font-semibold ${on ? '' : 'text-tinta-suave'}`}>{l.nome}</span>
+                  <span className={`text-body font-semibold ${on ? '' : 'text-tinta-suave'}`}>{l.nome}</span>
                   <span className="text-xs text-tinta-suave">{l.dica}</span>
                 </span>
               </label>
@@ -100,7 +100,7 @@ export function PersonalizarForm({
       </ul>
       <div className="flex flex-col gap-0.5 rounded-2xl bg-amarelo-claro px-3.5 py-3">
         <span className="text-sm font-bold">{t.dismissedTitle}</span>
-        <span className="text-[13px] leading-[19px]">{t.dismissedBody}</span>
+        <span className="text-small leading-[19px]">{t.dismissedBody}</span>
       </div>
       <button
         type="button"
@@ -113,7 +113,7 @@ export function PersonalizarForm({
         {t.resetDefault}
       </button>
       {error && (
-        <p role="alert" className="rounded-2xl bg-amarelo-claro px-3.5 py-3 text-[13px] leading-[19px] font-semibold">
+        <p role="alert" className="rounded-2xl bg-amarelo-claro px-3.5 py-3 text-small leading-[19px] font-semibold">
           {error}
         </p>
       )}

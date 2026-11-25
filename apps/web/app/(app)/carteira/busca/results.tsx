@@ -59,7 +59,7 @@ export function SearchResults({
       <div className="flex flex-col gap-6">
         {[...groups.entries()].map(([label, rows]) => (
           <section key={label} className="flex flex-col gap-1">
-            <h2 className="pb-1 text-[15px] leading-5 font-bold text-tinta">{label}</h2>
+            <h2 className="pb-1 text-body leading-5 font-bold text-tinta">{label}</h2>
             <div className="flex flex-col">
               {rows.map((tx) => (
                 <Row key={tx.id} t={tx} back={back} showDate locale={locale} />
@@ -75,7 +75,7 @@ export function SearchResults({
           </span>
         )}
         {failed && (
-          <p role="alert" className="text-[13px] text-red-700">
+          <p role="alert" className="text-small text-red-700">
             {s.loadMoreError}
           </p>
         )}

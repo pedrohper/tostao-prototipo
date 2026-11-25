@@ -148,7 +148,7 @@ export default async function MetaPage({
                     </span>
                     <div className="flex min-w-0 flex-col gap-0.5">
                       <span className="truncate text-[16px] font-bold">{item.label}</span>
-                      <span className="text-xs text-tinta-suave tabular-nums">
+                      <span className="text-[13px] leading-[18px] text-tinta-suave tabular-nums">
                         {money(item.savedInCents)}
                         {item.amountInCents ? ` ${p.ofTarget(money(item.amountInCents))}` : ''}
                       </span>
@@ -163,7 +163,7 @@ export default async function MetaPage({
                   <div className="h-full rounded-full bg-menta" style={{ width: `${itemPct}%` }} />
                 </div>
 
-                <div className="flex items-center justify-between gap-2 text-xs">
+                <div className="flex items-center justify-between gap-2 text-[13px] leading-[18px]">
                   <span className="truncate text-tinta-suave">
                     {item.reached
                       ? p.reachedBold

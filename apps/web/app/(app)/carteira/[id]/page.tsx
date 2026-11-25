@@ -137,7 +137,7 @@ export default async function CategorizarPage({
         <Acerto t={t} people={people} back={back} erro={erro === 'nota' ? undefined : erroDe(erro)} labels={d.split} />
       ) : t.isInternalTransfer && !neutral ? (
         <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2.5 rounded-[14px] bg-azul px-3 py-2.5 text-tinta">
+          <div className="flex items-center gap-2.5 rounded-control bg-azul px-3 py-2.5 text-tinta">
             <Mascot pose="investigando" size={40} alt="" />
             <p className="text-sm leading-5">{d.transferNotice}</p>
           </div>
@@ -163,7 +163,7 @@ export default async function CategorizarPage({
         </div>
       ) : (
         <>
-          <div className="flex items-center gap-2.5 rounded-[14px] bg-rosa px-3 py-2.5 text-tinta">
+          <div className="flex items-center gap-2.5 rounded-control bg-rosa px-3 py-2.5 text-tinta">
             <Mascot pose="avatar" size={40} alt="Tostão" />
             <p className="text-sm leading-5">
               {neutral ? (
@@ -269,7 +269,7 @@ export default async function CategorizarPage({
             <input type="hidden" name="id" value={t.id} />
             <input type="hidden" name="back" value={back} />
             {t.seriesId && (
-              <span className="w-full text-[13px] text-tinta-suave">
+              <span className="w-full text-small text-tinta-suave">
                 {/\(\d+\/\d+\)$/.test(t.description) ? d.manualSeriesInstallment : d.manualSeriesMonthly}
               </span>
             )}
@@ -302,7 +302,7 @@ export default async function CategorizarPage({
       )}
       {(t.customDescription || t.source === 'bank') && (
         // A descrição do banco nunca muda: é com ela que a conciliação e as regras de categoria trabalham.
-        <p className="border-t border-linha pt-3 text-[12px] leading-[17px] break-words text-tinta-suave">
+        <p className="border-t border-linha pt-3 text-mini leading-[17px] break-words text-tinta-suave">
           {g.originalDescription(t.description)}
         </p>
       )}

@@ -318,7 +318,7 @@ export function PlannerHub({
 
   return (
     <section className="flex min-w-0 flex-col gap-4 pb-8">
-      <h2 className="font-display text-[22px] leading-7 font-extrabold text-tinta">{t.planner.title}</h2>
+      <h2 className="font-display text-title leading-7 font-extrabold text-tinta">{t.planner.title}</h2>
 
       <PlannerCardGrid
         cards={cards.map((c) => ({ ...c, moreInfoAria: pc.moreInfoAria(c.title) }))}

@@ -35,7 +35,7 @@ export function CategorizeForm({ id, back, options, kind, current, rulePattern, 
       <input type="hidden" name="back" value={back} />
       {current && <input type="hidden" name="previousCategoryId" value={current} />}
       <fieldset className="flex min-w-0 flex-col gap-2.5">
-        <legend className="mb-2.5 text-[13px] font-semibold text-tinta-suave">{labels.categorizeLabel}</legend>
+        <legend className="mb-2.5 text-small font-semibold text-tinta-suave">{labels.categorizeLabel}</legend>
         <CategoryPicker
           categories={options}
           kind={kind}
@@ -57,7 +57,7 @@ export function CategorizeForm({ id, back, options, kind, current, rulePattern, 
         </p>
       )}
       {rulePattern.length >= 3 && (
-        <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-[14px] bg-papel-2 px-3.5 py-2 text-sm leading-5">
+        <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-control bg-papel-2 px-3.5 py-2 text-sm leading-5">
           <input type="checkbox" name="remember" defaultChecked className="h-5 w-5 shrink-0 accent-tinta" />
           <span>{labels.alwaysRule(rulePattern, pickedName ?? '…')}</span>
         </label>

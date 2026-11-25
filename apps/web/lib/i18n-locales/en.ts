@@ -107,7 +107,7 @@ export const en: Dictionary = {
       shortfall: 'is what is missing to close the month. No drama: hold what is not urgent.',
       nothingLeft: 'everything coming in this month is already spoken for.',
       parts: {
-        spent: 'what you spent',
+        spent: 'this month spending',
         fixed: 'fixed bills',
         subscriptions: 'subscriptions',
         scheduled: 'installments and scheduled entries',
@@ -118,7 +118,7 @@ export const en: Dictionary = {
       details: 'See the math',
       rows: {
         income: 'Monthly income',
-        spent: 'Spent so far',
+        spent: 'Month spending',
         fixed: 'Fixed bills left',
         subscriptions: 'Subscriptions left',
         scheduled: 'Installments and scheduled',
@@ -206,6 +206,7 @@ export const en: Dictionary = {
   profile: {
     verifyEmailLink: 'Confirm my email',
     title: 'More',
+    levelBadge: (level, xp) => `Level ${level} · ${xp} XP`,
     levelSummary: (level, xp, streakDays) => `Level ${level} · ${xp} XP · ${streakDays}-day streak`,
     connectedAccounts: 'Connected accounts',
     hiddenAccountHint: 'Hidden accounts are excluded from totals and screens, but keep syncing.',

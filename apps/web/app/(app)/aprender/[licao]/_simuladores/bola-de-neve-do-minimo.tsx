@@ -135,7 +135,9 @@ export function BolaDeNeveDoMinimo() {
                     <span className="mr-1.5 font-sans text-xs font-semibold text-tinta-suave">deve</span>
                     {money(item.saldo)}
                   </span>
-                  <span className="text-xs text-tinta-suave tabular-nums">já pago: {money(item.totalPago)}</span>
+                  <span className="text-[13px] leading-[18px] text-tinta-suave tabular-nums">
+                    já pago: {money(item.totalPago)}
+                  </span>
                 </span>
               </li>
             ))}

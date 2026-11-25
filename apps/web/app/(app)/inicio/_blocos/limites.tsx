@@ -13,7 +13,7 @@ export async function LimitsSection({ month }: { month: string }) {
     >
       <div className="flex items-center justify-between">
         <h2 className="font-display text-xl font-extrabold">{t.home.limitsTitle}</h2>
-        <span className="text-[13px] font-semibold text-laranja-texto">
+        <span className="text-small font-semibold text-laranja-texto">
           {budgets.length ? t.home.editAction : t.home.setAction}
         </span>
       </div>

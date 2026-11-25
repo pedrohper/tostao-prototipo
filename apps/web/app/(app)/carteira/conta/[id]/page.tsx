@@ -76,7 +76,7 @@ export default async function ContaPage({
       >
         <Chevron d="M15 18l-6-6 6-6" />
       </Link>
-      <span className="text-[15px] font-bold capitalize">
+      <span className="text-body font-bold capitalize">
         {monthName(month, locale)} {month.slice(0, 4)}
       </span>
       {month < hoje ? (
@@ -102,10 +102,10 @@ export default async function ContaPage({
       <div className="flex items-center gap-3">
         <BankBadge nome={a.name} instituicao={a.institution} size={48} quadrado logos={logos} />
         <div className="flex min-w-0 flex-col">
-          <h1 className="truncate font-display text-[28px] leading-8 font-extrabold lg:text-[34px] lg:leading-10">
+          <h1 className="truncate font-display text-hero leading-8 font-extrabold lg:text-[34px] lg:leading-10">
             {a.name}
           </h1>
-          <span className="flex flex-wrap items-center gap-x-1.5 text-[13px] text-tinta-suave">
+          <span className="flex flex-wrap items-center gap-x-1.5 text-small text-tinta-suave">
             {card ? dLabels.creditCard : dLabels.bankAccount}
             {a.institution ? ` · ${a.institution}` : ''}
             {a.lastSyncedAt ? ` · ${t.home.updatedAgo(ago(a.lastSyncedAt, nowMs(), locale))}` : ''}
@@ -130,7 +130,7 @@ export default async function ContaPage({
                 </span>
               </div>
               {card && a.dueDate && (
-                <span className="shrink-0 rounded-full bg-cartao px-3 py-1 text-[13px] font-semibold">
+                <span className="shrink-0 rounded-full bg-cartao px-3 py-1 text-small font-semibold">
                   {dLabels.dueOn(shortDate(a.dueDate, locale))}
                 </span>
               )}
@@ -139,7 +139,7 @@ export default async function ContaPage({
               <BudgetProgressBar usado={fatura + parcelasFuturas} limite={a.creditLimitInCents} locale={locale} />
             ) : null}
             {card && parcelasFuturas > 0 && (
-              <span className="text-[13px] text-tinta-suave">
+              <span className="text-small text-tinta-suave">
                 {dLabels.installmentsLimitNote(money(parcelasFuturas))}
               </span>
             )}
@@ -166,14 +166,14 @@ export default async function ContaPage({
               {!card && (
                 <div className="flex flex-col items-end">
                   <Eyebrow>{dLabels.inLabel}</Eyebrow>
-                  <span className="font-display text-[22px] leading-8 font-extrabold text-verde-texto tabular-nums">
+                  <span className="font-display text-title leading-8 font-extrabold text-verde-texto tabular-nums">
                     {money(d.inInCents)}
                   </span>
                 </div>
               )}
               {card && diff !== null && (
                 <span
-                  className={`rounded-full px-2.5 py-1 text-[13px] font-bold text-tinta-fixa ${diff <= 0 ? 'bg-menta' : 'bg-rosa dark:text-tinta'}`}
+                  className={`rounded-full px-2.5 py-1 text-small font-bold text-tinta-fixa ${diff <= 0 ? 'bg-menta' : 'bg-rosa dark:text-tinta'}`}
                 >
                   {diff <= 0 ? '↓' : '↑'} {money(Math.abs(diff))}{' '}
                   {dLabels.vsMonth(monthName(anterior!.month, locale).slice(0, 3))}
@@ -208,10 +208,8 @@ export default async function ContaPage({
               <div className="grid grid-cols-3 gap-2">
                 {d.upcoming.map((u) => (
                   <div key={u.month} className="flex flex-col rounded-xl bg-papel-2 px-2.5 py-2">
-                    <span className="text-[11px] font-semibold text-tinta-suave">
-                      {cap(monthName(u.month, locale))}
-                    </span>
-                    <span className="text-[15px] font-bold tabular-nums">{money(u.amountInCents)}</span>
+                    <span className="text-mini font-semibold text-tinta-suave">{cap(monthName(u.month, locale))}</span>
+                    <span className="text-body font-bold tabular-nums">{money(u.amountInCents)}</span>
                   </div>
                 ))}
               </div>
@@ -238,7 +236,7 @@ export default async function ContaPage({
         <div className="flex min-w-0 flex-col gap-4">
           {monthSelector('hidden lg:flex')}
 
-          <section className="flex flex-col gap-4 lg:rounded-[22px] lg:border lg:border-linha lg:bg-cartao lg:p-6">
+          <section className="flex flex-col gap-4 lg:rounded-card lg:border lg:border-linha lg:bg-cartao lg:p-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="font-display text-xl leading-[26px] font-extrabold">
                 {card ? dLabels.purchasesTitle : dLabels.movementsTitle}
@@ -277,13 +275,13 @@ export default async function ContaPage({
             {visibleTxs.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-8 text-center">
                 <Mascot pose="dormindo" size={120} alt="" />
-                <p className="text-[15px] text-tinta-suave">{dLabels.emptyMonth(card, monthName(month, locale))}</p>
+                <p className="text-body text-tinta-suave">{dLabels.emptyMonth(card, monthName(month, locale))}</p>
               </div>
             ) : (
               <div className="flex flex-col gap-6">
                 {[...groups.entries()].map(([day, list]) => (
                   <section key={day} className="flex flex-col gap-1">
-                    <h3 className="pb-1 text-[15px] leading-5 font-bold text-tinta">{day}</h3>
+                    <h3 className="pb-1 text-body leading-5 font-bold text-tinta">{day}</h3>
                     <div className="flex flex-col">
                       {list.map((tx) => (
                         <Row key={tx.id} t={tx} back={back} locale={locale} />
