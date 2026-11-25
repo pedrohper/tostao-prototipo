@@ -5,7 +5,12 @@ import type { Dictionary } from './i18n';
 type Texts = Dictionary['home']['safeToSpend'];
 
 /** `null` = a API ainda não manda essa conta (web publicada antes dela). */
-export function safeToSpendView(month: ThisMonthForecast, texts: Texts, money: (cents: number) => string) {
+export function safeToSpendView(
+  month: ThisMonthForecast,
+  texts: Texts,
+  money: (cents: number) => string,
+  closeLabel: string,
+) {
   const { safeToSpend: math, safeToSpendTodayInCents: perDay } = month;
   if (!math || perDay === undefined) return null;
   const short = math.availableInCents < 0;
@@ -24,9 +29,11 @@ export function safeToSpendView(month: ThisMonthForecast, texts: Texts, money: (
   });
 
   return {
+    lineLabel: texts.line,
     title: texts.title,
-    // Faltando dinheiro, o número grande é o total que falta (um "por dia" negativo não diz nada).
-    amount: money(short ? math.availableInCents : perDay),
+    // Faltando dinheiro, o número é o total que falta (um "por dia" negativo não diz nada), escrito "Falta R$ X".
+    amount: money(short ? -math.availableInCents : perDay),
+    amountPrefix: short ? texts.rows.missing : '',
     short,
     caption: short
       ? texts.shortfall
@@ -36,7 +43,7 @@ export function safeToSpendView(month: ThisMonthForecast, texts: Texts, money: (
           ? texts.lastDay
           : texts.perDay(math.daysIncludingToday),
     explanation: list ? texts.alreadyOut(list) : '',
-    detailsLabel: texts.details,
+    closeLabel,
     rows: [
       { label: texts.rows.income, value: money(month.incomeInCents) },
       ...taken.map(line),

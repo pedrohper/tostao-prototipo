@@ -103,9 +103,10 @@ export const es: Dictionary = {
     showDismissedAlerts: (count) => `Mostrar ${count} ${count === 1 ? 'aviso descartado' : 'avisos descartados'}`,
     safeToSpend: {
       title: 'Cuánto puedo gastar hoy',
+      line: 'Puedo gastar hoy',
       perDay: (days) => `por día, en los ${days} días que faltan (contando hoy)`,
       lastDay: 'y hoy es el último día del mes',
-      shortfall: 'es lo que falta para cerrar el mes. Sin drama: aguanta lo que no sea urgente.',
+      shortfall: 'para cerrar el mes. Sin drama: aguanta lo que no sea urgente.',
       nothingLeft: 'todo lo que entra este mes ya tiene destino.',
       parts: {
         spent: 'las salidas del mes',
@@ -116,7 +117,6 @@ export const es: Dictionary = {
       },
       and: ' y ',
       alreadyOut: (list) => `Ya descontados: ${list}.`,
-      details: 'Ver la cuenta',
       rows: {
         income: 'Ingreso del mes',
         spent: 'Salidas del mes',
@@ -128,7 +128,6 @@ export const es: Dictionary = {
         missing: 'Falta',
       },
       note: 'Es una estimación: cuenta el ingreso del mes entero, aun lo que no llegó, y da por pagados los gastos fijos con fecha pasada. Lo que no registraste y no reconocí queda fuera.',
-      invite: 'Cuéntame cuánto ganas al mes y hago esta cuenta por ti.',
       inviteCta: 'Contar mi ingreso',
     },
     customizeHome: 'Personalizar Inicio',

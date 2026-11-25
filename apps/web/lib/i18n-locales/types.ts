@@ -89,6 +89,7 @@ export interface Dictionary {
     /** T6.17 · "Quanto posso gastar hoje", acima do saldo. */
     safeToSpend: {
       title: string;
+      line: string;
       perDay: (days: number) => string;
       lastDay: string;
       shortfall: string;
@@ -96,7 +97,6 @@ export interface Dictionary {
       parts: { spent: string; fixed: string; subscriptions: string; scheduled: string; goal: string };
       and: string;
       alreadyOut: (list: string) => string;
-      details: string;
       rows: {
         income: string;
         spent: string;
@@ -108,7 +108,6 @@ export interface Dictionary {
         missing: string;
       };
       note: string;
-      invite: string;
       inviteCta: string;
     };
     dismissAlertLabel: string;

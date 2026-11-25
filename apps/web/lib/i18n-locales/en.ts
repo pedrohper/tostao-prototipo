@@ -102,9 +102,10 @@ export const en: Dictionary = {
     showDismissedAlerts: (count) => `Restore ${count} ${count === 1 ? 'dismissed alert' : 'dismissed alerts'}`,
     safeToSpend: {
       title: 'What can I spend today',
+      line: 'Spend today',
       perDay: (days) => `per day, for the ${days} days left (today included)`,
       lastDay: 'and today is the last day of the month',
-      shortfall: 'is what is missing to close the month. No drama: hold what is not urgent.',
+      shortfall: 'to close the month. No drama: hold what is not urgent.',
       nothingLeft: 'everything coming in this month is already spoken for.',
       parts: {
         spent: 'this month spending',
@@ -115,7 +116,6 @@ export const en: Dictionary = {
       },
       and: ' and ',
       alreadyOut: (list) => `Already taken out: ${list}.`,
-      details: 'See the math',
       rows: {
         income: 'Monthly income',
         spent: 'Month spending',
@@ -127,7 +127,6 @@ export const en: Dictionary = {
         missing: 'Missing',
       },
       note: 'This is an estimate: it counts the whole month income, even what has not arrived, and treats fixed bills past their date as paid. Bills you did not add and I did not detect are left out.',
-      invite: 'Tell me your monthly income and I will do this math for you.',
       inviteCta: 'Add my income',
     },
     customizeHome: 'Customize Home',

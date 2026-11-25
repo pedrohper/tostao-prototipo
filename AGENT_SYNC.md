@@ -26,7 +26,7 @@ O que está pra ser feito agora, por quem e em que branch. Tire daqui quando for
 - [ ] **Operação no servidor.** Pedro. Preencher `ALERT_WEBHOOK_URL` em `apps/api/.env` e testar (`pm2 stop tostao-web`); trocar a senha do `sudo`; conferir que a chave que abre o backup da nuvem também está guardada fora do servidor.
 - [ ] **Postgres é morto no desligamento das 00:30 (visto em 24 e 25/11).** Pedro. O `root` desliga o servidor toda noite (`rtcwake` + `shutdown`) e o Docker mata o Postgres antes do checkpoint terminar; no boot ele faz recuperação (~2 min fora do ar em 25/11; dados íntegros). Em `~/homelab/docker-compose.yml`, no serviço `postgres`, acrescentar `stop_grace_period: 60s` e rodar `docker compose up -d postgres` (reinicia o banco).
 - [ ] **Amigos no Pluggy (T6.5).** Pedro. Testar com 1 amigo; confirmar com o suporte do Pluggy se o plano permite; avisar que os dados ficam no servidor dele.
-- [ ] **Decisões de produto.** Pedro. (1) O cartão "posso gastar hoje" negativo mostra "-R$ X é o que falta": manter o sinal? (2) "Quanto sobra no mês" projeta o ritmo de gasto e pode mostrar sobra enquanto o cartão mostra falta. (3) Citar a mensagem colada em "Isso é golpe?" no aviso de IA e na Política de Privacidade.
+- [ ] **Decisões de produto.** Pedro. (1) "Quanto sobra no mês" projeta o ritmo de gasto e pode mostrar sobra enquanto o "posso gastar hoje" mostra falta. (2) Citar a mensagem colada em "Isso é golpe?" no aviso de IA e na Política de Privacidade.
 - [ ] **Conferir em aparelho e serviço reais.** Pedro. Pix copia e cola num app de banco; compartilhar a imagem do mês no iPhone e no Android; abrir o CSV no Excel; DeepSeek e WhatsApp reais; widget do Pluggy; `NEXT_PUBLIC_LEGAL_CNPJ` se aplicável; faturas PDF, Atalhos do iOS e Share Target.
 - [ ] **Backlog.** Logos de marcas (resto da T4.4); o layout do app ainda espera `/progress`, `/missions` e `/tostao/auto` antes de desenhar; ícones das explicações dos simuladores quase somem no tema escuro.
 
@@ -41,6 +41,14 @@ Relatório do que foi feito. Modelo:
 - Como validei (testes, rota, tela).
 - O que ficou de fora / riscos.
 ```
+
+### 2026-11-25 · Claude · PR #52 (Início: saldo no topo e "posso gastar hoje" pequeno, a pedido do Pedro)
+
+- O saldo é o primeiro cartão; avisos de conexão e de instalar o app vêm depois dele.
+- "Posso gastar hoje" virou uma linha de 56 px abaixo do saldo; tocar abre uma janela com a conta (fecha no botão, no Esc ou fora). Mês no vermelho: "Falta R$ X", sem sinal de menos. Sem renda, a mesma linha leva a `/renda`. Troca a posição prevista na T6.17.
+- Migration? Não. Env nova? Não.
+- Como validei: `typecheck`, `lint`, `format:check`; testes web 857/857; capturas em 320, 390 e 1440 px (positivo, falta e sem renda), claro e escuro; valores escondidos pelo olho também na janela.
+- Fora: sem teste em aparelho real.
 
 ### 2026-11-25 · Claude · servidor (conferência depois do boot, sem mudança)
 

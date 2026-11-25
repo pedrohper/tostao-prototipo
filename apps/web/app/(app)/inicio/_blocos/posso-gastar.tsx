@@ -1,7 +1,6 @@
-// "Quanto posso gastar hoje" (T6.17): o número grande acima do saldo, só no mês que está rolando. A conta é da API
+// "Quanto posso gastar hoje" (T6.17): uma linha logo abaixo do saldo, só no mês que está rolando. A conta é da API
 // (previsão); aqui só entra o texto, que diz o que foi descontado e não promete mais do que a conta sabe.
 import Link from 'next/link';
-import { Mascot } from '@/components/mascote';
 import { money } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
 import { safeToSpendView } from '@/lib/safe-to-spend';
@@ -16,17 +15,13 @@ export async function SafeToSpendSection() {
     return (
       <Link
         href="/renda?voltar=/inicio"
-        className="flex items-center gap-2 rounded-card bg-amarelo-claro py-3 pr-4 pl-2 text-tinta no-underline"
+        className="flex min-h-14 items-center justify-between gap-3 rounded-card bg-amarelo-claro px-[18px] py-2.5 text-tinta no-underline lg:px-7"
       >
-        <Mascot pose="pensando" size={72} alt="" className="shrink-0" />
-        <span className="flex min-w-0 flex-col gap-1">
-          <span className="text-xs font-semibold tracking-[0.08em] uppercase">{texts.title}</span>
-          <span className="text-body leading-[21px]">{texts.invite}</span>
-          <span className="text-[14px] font-bold underline underline-offset-2">{texts.inviteCta}</span>
-        </span>
+        <span className="min-w-0 text-small font-semibold">{texts.line}</span>
+        <span className="shrink-0 text-small font-bold underline underline-offset-2">{texts.inviteCta} ›</span>
       </Link>
     );
   }
-  const view = safeToSpendView(forecast.thisMonth, texts, money);
+  const view = safeToSpendView(forecast.thisMonth, texts, money, t.common.close);
   return view ? <SafeToSpendCard {...view} /> : null;
 }

@@ -27,13 +27,15 @@ const month = (over: Partial<ThisMonthForecast> = {}): ThisMonthForecast => ({
   safeToSpend: math,
   ...over,
 });
-const view = (over: Partial<ThisMonthForecast> = {}) => safeToSpendView(month(over), texts, money)!;
+const view = (over: Partial<ThisMonthForecast> = {}) => safeToSpendView(month(over), texts, money, 'Fechar')!;
 
 describe('safeToSpendView()', () => {
   it('número por dia, explicação só com o que foi descontado e a conta aberta que fecha', () => {
     const v = view();
     expect(v.amount).toBe(money(89_66));
     expect(v.short).toBe(false);
+    expect(v.amountPrefix).toBe('');
+    expect(v.lineLabel).toBe('Posso gastar hoje');
     expect(v.caption).toBe('por dia, nos 15 dias que faltam (contando hoje)');
     expect(v.explanation).toBe('Já tirei as saídas do mês, os fixos, as assinaturas e a sua meta.');
     expect(v.rows.map((r) => [r.label, r.value])).toEqual([
@@ -52,10 +54,11 @@ describe('safeToSpendView()', () => {
     expect(view({ safeToSpend: bare, spentInCents: 0 }).explanation).toBe('');
   });
 
-  it('negativo: o número grande é o total que falta, sem "por dia"', () => {
+  it('negativo: mostra "Falta R$ X", sem sinal de menos e sem "por dia"', () => {
     const v = view({ safeToSpend: { ...math, availableInCents: -100_00 }, safeToSpendTodayInCents: -6_67 });
     expect(v.short).toBe(true);
-    expect(v.amount).toBe(money(-100_00));
+    expect(v.amountPrefix).toBe('Falta');
+    expect(v.amount).toBe(money(100_00));
     expect(v.caption).toBe(texts.shortfall);
     expect(v.rows.at(-1)).toEqual({ label: 'Falta', value: money(100_00), total: true });
   });
@@ -68,7 +71,7 @@ describe('safeToSpendView()', () => {
   });
 
   it('API antiga (sem a conta): não desenha número', () => {
-    expect(safeToSpendView(month({ safeToSpend: undefined }), texts, money)).toBeNull();
+    expect(safeToSpendView(month({ safeToSpend: undefined }), texts, money, 'Fechar')).toBeNull();
   });
 
   it('o texto não promete o que a conta não garante', () => {

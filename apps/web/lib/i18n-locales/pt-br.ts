@@ -103,9 +103,10 @@ export const ptBR: Dictionary = {
     customizeHome: 'Personalizar o Início',
     safeToSpend: {
       title: 'Quanto posso gastar hoje',
+      line: 'Posso gastar hoje',
       perDay: (days) => `por dia, nos ${days} dias que faltam (contando hoje)`,
       lastDay: 'e hoje é o último dia do mês',
-      shortfall: 'é o que falta pro mês fechar. Sem drama: segura o que não for urgente.',
+      shortfall: 'pro mês fechar. Sem drama: segura o que não for urgente.',
       nothingLeft: 'o que entra neste mês já tem destino.',
       parts: {
         spent: 'as saídas do mês',
@@ -116,7 +117,6 @@ export const ptBR: Dictionary = {
       },
       and: ' e ',
       alreadyOut: (list) => `Já tirei ${list}.`,
-      details: 'Ver a conta',
       rows: {
         income: 'Renda do mês',
         spent: 'Saídas do mês',
@@ -128,7 +128,6 @@ export const ptBR: Dictionary = {
         missing: 'Falta',
       },
       note: 'É uma estimativa: conto a renda do mês inteiro, mesmo a que ainda não caiu, e conta fixa com o dia já passado como paga. Conta que você não cadastrou e eu não reconheci fica de fora.',
-      invite: 'Me conta quanto você ganha por mês que eu faço essa conta pra você.',
       inviteCta: 'Contar minha renda',
     },
     dismissAlertLabel: 'Já resolvi, fechar',

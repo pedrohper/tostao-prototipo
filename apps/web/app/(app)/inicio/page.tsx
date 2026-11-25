@@ -213,6 +213,23 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
           </div>
         </header>
 
+        {/* O saldo é o primeiro cartão. "Posso gastar hoje" (T6.17) vem logo abaixo, pequeno; mês passado não tem "hoje". */}
+        {!isEmptyState && (
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 lg:hidden">
+              <MobileBalanceCard {...balanceProps} />
+            </div>
+            <div className="hidden lg:block">
+              <DesktopBalanceRow {...balanceProps} />
+            </div>
+            {month === hoje && (
+              <Block skeleton="h-14">
+                <SafeToSpendSection />
+              </Block>
+            )}
+          </div>
+        )}
+
         {brokenConnections.length > 0 && (
           <Link
             href="/conectar"
@@ -234,20 +251,8 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
           </Block>
         ) : (
           <>
-            {/* T6.17 · acima do saldo, num lugar só pro celular e o computador. Mês passado não tem "hoje". */}
-            {month === hoje && (
-              <Block skeleton="h-[228px] lg:h-[192px]">
-                <SafeToSpendSection />
-              </Block>
-            )}
-            <div className="flex flex-col gap-3 lg:hidden">
-              <MobileBalanceCard {...balanceProps} />
-            </div>
             {/* Mobile: anotar vira botão flutuante (a aba Tostão da barra de baixo já cobre o "perguntar pro Tostão"). */}
             <QuickAddButton variant="fab" label={t.nav.addExpense} locale={locale} />
-            <div className="hidden lg:block">
-              <DesktopBalanceRow {...balanceProps} />
-            </div>
 
             {/* Um quadro só (e no máximo 2 achados): o que ele já diz não se repete nos avisos abaixo. */}
             {isSectionVisible('avisos') && (
