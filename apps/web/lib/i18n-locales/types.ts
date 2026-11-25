@@ -86,6 +86,31 @@ export interface Dictionary {
     emptyLimitsHint: string;
     showDismissedAlerts: (count: number) => string;
     customizeHome: string;
+    /** T6.17 · "Quanto posso gastar hoje", acima do saldo. */
+    safeToSpend: {
+      title: string;
+      perDay: (days: number) => string;
+      lastDay: string;
+      shortfall: string;
+      nothingLeft: string;
+      parts: { spent: string; fixed: string; subscriptions: string; scheduled: string; goal: string };
+      and: string;
+      alreadyOut: (list: string) => string;
+      details: string;
+      rows: {
+        income: string;
+        spent: string;
+        fixed: string;
+        subscriptions: string;
+        scheduled: string;
+        goal: string;
+        available: (days: number) => string;
+        missing: string;
+      };
+      note: string;
+      invite: string;
+      inviteCta: string;
+    };
     dismissAlertLabel: string;
     monthInGreen: string;
     monthTight: string;

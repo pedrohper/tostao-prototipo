@@ -624,7 +624,9 @@ export const goalBody = z.object({
   deadline: z.string().regex(MONTH_PATTERN, 'Use AAAA-MM (mês de 01 a 12)').nullable().default(null),
   savedInCents: cents.optional(),
 });
-export type Goal = z.infer<typeof goalBody>;
+/** Saldo líquido guardado (ou tirado) pelo "Guardei" num mês. Quem mantém é o servidor: o que vier do cliente some. */
+export type GoalMonthDeposit = { month: string; amountInCents: number };
+export type Goal = z.infer<typeof goalBody> & { monthDeposit?: GoalMonthDeposit };
 /** "Guardei R$ 50" (positivo) ou "tirei R$ 20" (negativo). */
 export const goalDepositBody = z.object({
   goalId: z.string().min(1).max(64).optional(),
@@ -750,6 +752,27 @@ export type ThisMonthForecast = {
   /** Ritmo do dia a dia por dia usado no resto do mês (sem assinaturas e contas grandes). */
   dailyPaceInCents?: number;
   leftInCents: number;
+  /**
+   * T6.17 · Quanto dá pra gastar por dia, de hoje até o fim do mês (pode ser negativo). NÃO é o `dailyPaceInCents`,
+   * que é o ritmo em que a pessoa vem gastando.
+   */
+  safeToSpendTodayInCents?: number;
+  safeToSpend?: SafeToSpendBreakdown;
+};
+/**
+ * As parcelas do "posso gastar hoje": `incomeInCents − spentInCents` menos as quatro daqui dá `availableInCents`.
+ * Cada conta aparece numa parcela só.
+ */
+export type SafeToSpendBreakdown = {
+  /** O que ainda cabe no mês inteiro (negativo = já está tudo comprometido e passou). */
+  availableInCents: number;
+  daysIncludingToday: number;
+  fixedInCents: number;
+  subscriptionsInCents: number;
+  /** Parcelas de cartão e lançamentos automáticos que ainda vão cair neste mês. */
+  scheduledInCents: number;
+  /** O que falta separar pra(s) meta(s) neste mês, somado ao que já foi separado. */
+  goalInCents: number;
 };
 /** Um mês do passado visto pela previsão: quanto saiu, quanto veio de dinheiro extra e quanto conta como dia a dia normal. */
 export type SpendingBaseMonth = {

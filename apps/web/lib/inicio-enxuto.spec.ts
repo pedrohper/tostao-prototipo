@@ -19,10 +19,12 @@ describe('Home sem atalhos de jogos', () => {
     }
   });
 
-  it('deixa o lugar do "quanto posso gastar hoje" (T6.17) acima do saldo', () => {
+  it('"quanto posso gastar hoje" (T6.17) fica acima do saldo, só no mês atual e dentro de um bloco com Suspense', () => {
     const page = read('app/(app)/inicio/page.tsx');
-    expect(page.indexOf('T6.17')).toBeGreaterThan(0);
-    expect(page.indexOf('T6.17')).toBeLessThan(page.indexOf('<MobileBalanceCard'));
+    const block = /\{month === hoje && \(\s*<Block skeleton="[^"]+">\s*<SafeToSpendSection \/>/.exec(page);
+    expect(block).not.toBeNull();
+    expect(block!.index).toBeLessThan(page.indexOf('<MobileBalanceCard'));
+    expect(block!.index).toBeLessThan(page.indexOf('<DesktopBalanceRow'));
   });
 });
 

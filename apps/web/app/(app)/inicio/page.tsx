@@ -11,10 +11,18 @@ import { DesktopHighlightAlert, DesktopSideAlerts, LocalAlerts, TostaoFindings }
 import { Block } from './_blocos/bloco';
 import { MonthSelector } from './_blocos/cabecalho';
 import { CreditCardsSection } from './_blocos/cartoes';
-import { getHomeAuto, getHomeMissions, getHomeProgress, getSummary, prefetchSections } from './_blocos/dados';
+import {
+  getForecast,
+  getHomeAuto,
+  getHomeMissions,
+  getHomeProgress,
+  getSummary,
+  prefetchSections,
+} from './_blocos/dados';
 import { EmptyHome, isEmptyHome } from './_blocos/estado-vazio';
 import { EvolutionSection } from './_blocos/evolucao';
 import { LimitsSection } from './_blocos/limites';
+import { SafeToSpendSection } from './_blocos/posso-gastar';
 import { DesktopSpendingCard, SpendingSection } from './_blocos/pra-onde-foi';
 import { GoalsSection, LeftoverSection } from './_blocos/previsao';
 import { CustomizeHomeLink, RestoreAlertsForm } from './_blocos/rodape';
@@ -56,6 +64,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   const missionsP = startEarly(getHomeMissions());
   const progressP = startEarly(getHomeProgress());
   prefetchSections(visibleSections, month);
+  if (month === hoje) void startEarly(getForecast()); // "quanto posso gastar hoje", acima do saldo
   // `auto` o layout já pede: aqui serve pra reservar o tamanho certo do quadro de achados.
   const [summary, profile, auto] = await Promise.all([summaryP, profileP, getHomeAuto()]);
 
@@ -225,7 +234,12 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
           </Block>
         ) : (
           <>
-            {/* T6.17 · "Quanto posso gastar hoje" entra aqui, acima do saldo (um lugar só pro celular e o computador). */}
+            {/* T6.17 · acima do saldo, num lugar só pro celular e o computador. Mês passado não tem "hoje". */}
+            {month === hoje && (
+              <Block skeleton="h-[180px] lg:h-[185px]">
+                <SafeToSpendSection />
+              </Block>
+            )}
             <div className="flex flex-col gap-3 lg:hidden">
               <MobileBalanceCard {...balanceProps} />
             </div>
