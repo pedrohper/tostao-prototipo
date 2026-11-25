@@ -10,7 +10,8 @@ Histórico: [até 2026-11-21](docs/historico/agent-sync-ate-2026-11-21.md) · [2
 
 O que está pra ser feito agora, por quem e em que branch. Tire daqui quando for pra Execução.
 
-- [ ] **Aprovar os 3 simuladores modelo (T6.13).** Pedro. Só depois disso fazer a T6.15 (migrar os outros).
+- [ ] **Imposto desatualizado nos simuladores m6-l1 (holerite) e m6-l5 (CLT x PJ).** Usam INSS com teto de R$ 8.157,41 e IRRF antigo; a própria lição fala das regras de 2026 (teto de R$ 8.475,55; Lei 15.270/2025: isento até R$ 5.000, redução até R$ 7.350). Conferir na fonte oficial e corrigir em PR própria. Pedro aprova.
+- [ ] **Revisar conteúdo dos simuladores** (achado na migração, nada alterado). m2-l3 e `/compensa`: o texto compara o desconto com o CDI bruto, mas o veredito usa o líquido, e pode afirmar "12,4%, mais que os 14,9%". Taxas de referência: `TAXAS_REFERENCIA` com Selic 15% e m7-l1/m7-l4 com 11,15%/11,25%, contra 13,75% no currículo. m8-l4: "em poucos anos superaria toda a economia" não vale no padrão (cerca de 39 anos). m8-l2: com 0,70% e metas redondas pede 1 cota a mais. m7-l4: "IPCA+ sempre ganha da inflação" só no vencimento. m7-l2: a frase do teto global omite o excesso por banco. m6-l2: o saldo ignora saques já feitos. m8-l1/m8-l3: cenários ilustrativos sem aviso. m5-l1: texto "renda é o motor" mesmo quando guardar cedo vence. m2-l5: "melhor janela" em qualquer dia após o fechamento. m1-l5: sem dia marcado ainda conta 1 troca. m5-l5: lazer zerado ainda manda separar R$ 0,00. m4-l5: saldo zero usa o exemplo didático com o aviso de "seus números". m3-l3: nos extremos a contraoferta vira centavos.
 - [ ] **Operação no servidor.** Pedro. Preencher `ALERT_WEBHOOK_URL` em `apps/api/.env` e testar (`pm2 stop tostao-web`); trocar a senha do `sudo`; conferir que a chave que abre o backup da nuvem também está guardada fora do servidor. Reconectar o WhatsApp: em 25/11 as 2 instâncias da Evolution estavam desconectadas.
 - [ ] **Amigos no Pluggy (T6.5).** Pedro. Testar com 1 amigo; confirmar com o suporte do Pluggy se o plano permite; avisar que os dados ficam no servidor dele.
 - [ ] **Decisões de produto.** Pedro. (1) "Quanto sobra no mês" projeta o ritmo de gasto e pode mostrar sobra enquanto o "posso gastar hoje" mostra falta. (2) A Política ganhou data própria (25/11/2026); decidir se o `TERMS_VERSION` do registro de consentimento (hoje `2026-11-20`) sobe junto.
@@ -28,6 +29,15 @@ Relatório do que foi feito. Modelo:
 - Como validei (testes, rota, tela).
 - O que ficou de fora / riscos.
 ```
+
+### 2026-11-25 · Claude (e 3 agentes Claude) · T6.15: todos os simuladores no SimuladorShell (`feat/fase6-simuladores`, em cima das sobras; nada publicado)
+
+- Os 42 que faltavam viraram um arquivo cada em `aprender/[licao]/_simuladores/`, com a conta em função pura (centavos) e um mapa por módulo; `simulators.tsx` virou só o registro; `simulators-m2-m5.tsx` e `simulators-m6-m9.tsx` apagados. m2-l3 ganhou simulador próprio (`/compensa` continua igual).
+- Shell: palpite opcional (o quiz m9-l1 abre direto), `aviso`, número grande que encolhe com o cartão; `components/simulador-campos.tsx` (opções, sim ou não, lista, quadros). Selos azuis visíveis no tema escuro.
+- Mudanças de tela além do layout: m6-l2 trocou botões de anos por régua; m9-l1 mostra um caso por vez e alterna a posição da certa; frases explicativas novas onde não havia (m4-l1, m4-l5, m7-l3, m7-l5, m8-l2, m9-l2, m9-l4); correções de português ("refeiçãoões", "1 meses", "milhões" no singular); m2-l3 ganhou limites nos campos.
+- Migration? Não. Env nova? Não.
+- Como validei: contas antigas copiadas nas specs e comparadas com as novas (todas as posições das réguas, amostra onde são milhões); `typecheck`, `lint`, `format:check`, testes (API 1220/1220 com Postgres e Redis descartáveis, web 1092/1092, contracts 39/39) e `build`; os 45 abertos pela lição numa pilha descartável, em 390 claro e 320 escuro: sem erro de JavaScript, sem rolagem lateral nem alvo menor que 44 px.
+- Fora: sem aparelho real; conteúdo e taxas não revisados (ver Plano).
 
 ### 2026-11-25 · Claude · sobras da Fase 6 (`feat/fase6-sobras`; nada publicado)
 

@@ -334,7 +334,7 @@ completa".
 
 ## T6.15 — Migrar os demais simuladores
 
-- [ ] Concluída (aguarda o Pedro aprovar os pilotos da T6.13)
+- [x] Concluída (pilotos aprovados pelo Pedro em 25/11/2026)
 
 Só depois da aprovação dos pilotos. Em lotes de ~8 por PR, módulo por módulo. Cada lote: mesmos resultados numéricos
 (teste), pergunta e palpites escritos no tom do Tostão (amigo sincero, sem julgamento) e prints. Ao fim, o `SimuladorShell`
