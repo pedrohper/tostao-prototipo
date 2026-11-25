@@ -215,10 +215,13 @@ export default async function MaisPage() {
           >
             ⚡
           </span>
-          <div className="flex min-w-0 flex-1 flex-col">
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="text-[15px] font-bold">Atalhos do iPhone</span>
-            <span className="text-[13px] text-tinta-suave">Apple Pay e notificações do banco entram sozinhas</span>
-          </div>
+            <span className="text-xs text-tinta-suave">Apple Pay e notificações do banco entram sozinhas</span>
+          </span>
+          <span className="shrink-0 text-lg text-tinta-suave" aria-hidden="true">
+            ›
+          </span>
         </Link>
         <Link
           href="/mais/jogos"

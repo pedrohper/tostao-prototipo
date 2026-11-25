@@ -58,7 +58,7 @@ export function PersonalizarForm({
           const on = !off.has(id);
           return (
             <li key={id} className="flex items-center gap-0.5 border-b border-linha last:border-b-0">
-              <label className="flex min-h-14 min-w-0 grow cursor-pointer items-center gap-3">
+              <label className="flex min-h-14 min-w-0 grow cursor-pointer items-center gap-3 py-2">
                 <input
                   type="checkbox"
                   checked={on}
