@@ -26,13 +26,13 @@ const TONE: Record<SeloTipo, string> = {
   erro: 'bg-rosa-forte text-tinta-fixa',
   dica: 'bg-amarelo text-tinta-fixa',
   brilho: 'bg-menta-clara text-verde-texto',
-  tempo: 'bg-azul text-tinta-fixa',
+  tempo: 'bg-azul text-tinta',
   fogo: 'bg-laranja-claro text-laranja-texto',
-  dados: 'bg-azul text-tinta-fixa',
+  dados: 'bg-azul text-tinta',
   queda: 'bg-rosa text-vermelho-texto',
   alta: 'bg-menta-clara text-verde-texto',
   dinheiro: 'bg-amarelo-claro text-laranja-texto',
-  lei: 'bg-azul text-tinta-fixa',
+  lei: 'bg-azul text-tinta',
 };
 
 const PATHS: Record<SeloTipo, React.ReactNode> = {

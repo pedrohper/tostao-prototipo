@@ -28,11 +28,13 @@ export type ItemDoCenario = { rotulo: string; valor: string };
 
 export type SimuladorShellProps<R extends ResultadoDoSimulador, Id extends string> = {
   pergunta: string;
-  cenario: readonly ItemDoCenario[];
-  /** 2 ou 3 opções. */
-  palpites: readonly Palpite<Id>[];
+  /** Faixa de contexto logo abaixo da pergunta (ex.: "isto veio do seu extrato"). */
+  aviso?: ReactNode;
+  cenario?: readonly ItemDoCenario[];
+  /** 2 ou 3 opções. Sem palpites (um quiz já é um chute), o simulador abre direto no resultado. */
+  palpites?: readonly Palpite<Id>[];
   resultado: R;
-  respostaCerta: (resultado: R) => Id;
+  respostaCerta?: (resultado: R) => Id;
   /** A frase que explica o número, recalculada junto com ele. */
   explicacao: ReactNode;
   /** O único controle à vista. */
@@ -57,9 +59,13 @@ const TONS: Record<TomDoResultado, { fundo: string; rotulo: string }> = {
   ruim: { fundo: 'bg-rosa', rotulo: 'text-vermelho-texto' },
 };
 
+/** Número cabe grande; um veredito por extenso ("Alto risco de golpe") precisa de letra menor pra não virar parede. */
+export const valorEhFrase = (valor: string) => valor.length > 16;
+
 export function SimuladorShell<R extends ResultadoDoSimulador, Id extends string>({
   pergunta,
-  cenario,
+  aviso,
+  cenario = [],
   palpites,
   resultado,
   respostaCerta,
@@ -69,7 +75,8 @@ export function SimuladorShell<R extends ResultadoDoSimulador, Id extends string
   resumoExtras,
   detalhes,
 }: SimuladorShellProps<R, Id>) {
-  const [fase, setFase] = useState<Fase>({ nome: 'palpite' });
+  const temPalpite = Boolean(palpites?.length && respostaCerta);
+  const [fase, setFase] = useState<Fase>(() => ({ nome: temPalpite ? 'palpite' : 'pulou' }));
   const idPergunta = useId();
   const raiz = useRef<HTMLDivElement>(null);
   const revelado = fase.nome !== 'palpite';
@@ -78,15 +85,17 @@ export function SimuladorShell<R extends ResultadoDoSimulador, Id extends string
 
   useEffect(() => {
     const el = raiz.current;
-    if (!revelado || !el) return;
+    // Sem palpite o resultado já nasce aberto: nada de puxar o foco (e a rolagem) quando a tela carrega.
+    if (!temPalpite || !revelado || !el) return;
     // O botão tocado sumiu: o foco fica no simulador e, se o topo ficou pra trás, a tela volta até ele.
     el.focus({ preventScroll: true });
     if (el.getBoundingClientRect().top < 0) el.scrollIntoView({ block: 'start' });
-  }, [revelado]);
+  }, [temPalpite, revelado]);
 
   const palpitar = (id: Id) => {
+    if (!respostaCerta) return;
     const certa = respostaCerta(resultado);
-    const rotulo = (alvo: Id) => palpites.find((p) => p.id === alvo)?.rotulo ?? alvo;
+    const rotulo = (alvo: Id) => palpites?.find((p) => p.id === alvo)?.rotulo ?? alvo;
     setFase({ nome: 'palpitou', achou: rotulo(id), real: rotulo(certa), acertou: id === certa, foto });
   };
 
@@ -101,16 +110,20 @@ export function SimuladorShell<R extends ResultadoDoSimulador, Id extends string
         {pergunta}
       </h2>
 
-      {!revelado && (
+      {aviso}
+
+      {!revelado && palpites && (
         <div className="flex flex-col gap-4">
-          <dl className="flex flex-col gap-2 rounded-2xl bg-papel-2 p-3.5">
-            {cenario.map((item) => (
-              <div key={item.rotulo} className="flex items-baseline justify-between gap-3 text-[14px] leading-snug">
-                <dt className="text-tinta-suave">{item.rotulo}</dt>
-                <dd className="shrink-0 font-semibold text-tinta tabular-nums">{item.valor}</dd>
-              </div>
-            ))}
-          </dl>
+          {cenario.length > 0 && (
+            <dl className="flex flex-col gap-2 rounded-2xl bg-papel-2 p-3.5">
+              {cenario.map((item) => (
+                <div key={item.rotulo} className="flex items-baseline justify-between gap-3 text-[14px] leading-snug">
+                  <dt className="min-w-0 text-tinta-suave">{item.rotulo}</dt>
+                  <dd className="shrink-0 font-semibold text-tinta tabular-nums">{item.valor}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
           <span className="text-[13px] font-semibold text-tinta-suave">Chuta antes de ver a conta:</span>
           <GrupoDePalpites opcoes={palpites} rotuladoPor={idPergunta} onEscolher={palpitar} />
           <button
@@ -132,7 +145,11 @@ export function SimuladorShell<R extends ResultadoDoSimulador, Id extends string
         {revelado && (
           <div className={`flex flex-col items-center gap-1 rounded-[20px] px-4 py-3.5 text-center ${tom.fundo}`}>
             <span className={`text-[13px] leading-tight font-bold ${tom.rotulo}`}>{resultado.rotulo}</span>
-            <span className="font-display text-[36px] leading-[40px] font-extrabold break-words text-tinta tabular-nums">
+            <span
+              className={`font-display font-extrabold text-balance break-words text-tinta tabular-nums ${
+                valorEhFrase(resultado.valor) ? 'text-[22px] leading-[27px]' : 'text-[36px] leading-[40px]'
+              }`}
+            >
               {resultado.valor}
             </span>
             {resultado.nota && <span className="text-[13px] leading-snug text-tinta">{resultado.nota}</span>}
