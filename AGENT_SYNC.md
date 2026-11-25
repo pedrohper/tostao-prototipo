@@ -10,21 +10,8 @@ Histórico: [até 2026-11-21](docs/historico/agent-sync-ate-2026-11-21.md) · [2
 
 O que está pra ser feito agora, por quem e em que branch. Tire daqui quando for pra Execução.
 
-- [ ] **Mergear os PRs da Fase 6, em ordem, com "merge commit" (sem squash).** Pedro. #47 → #48 → os empilhados em cima deles. Cada um tem como base o anterior.
-- [ ] **Primeiro deploy com o script novo.** Pedro. Há 2 migrations aditivas (`20261127100000_user_pix_key`, `20261128100000_user_home_prefs`), ensaiadas numa cópia do backup de 24/11. Sem env nova.
-
-  ```bash
-  cd ~/homelab/tostao-prototipo
-  mv docs/producao/07-PROMPTS-ANTIGRAVITY.md ~/        # arquivo solto trava o deploy
-  git fetch && git checkout main && git merge --ff-only origin/main
-  bash scripts/deploy.sh
-  ```
-
-  Só nesta primeira vez o rollback automático não volta o código (o `pull` já aconteceu). Se a API não subir: `git checkout fix/fase6-refresh-grace && pm2 restart tostao-api tostao-web`.
-
 - [ ] **Aprovar os 3 simuladores modelo (T6.13).** Pedro. Só depois disso fazer a T6.15 (migrar os outros).
-- [ ] **Operação no servidor.** Pedro. Preencher `ALERT_WEBHOOK_URL` em `apps/api/.env` e testar (`pm2 stop tostao-web`); trocar a senha do `sudo`; conferir que a chave que abre o backup da nuvem também está guardada fora do servidor.
-- [ ] **Postgres é morto no desligamento das 00:30 (visto em 24 e 25/11).** Pedro. O `root` desliga o servidor toda noite (`rtcwake` + `shutdown`) e o Docker mata o Postgres antes do checkpoint terminar; no boot ele faz recuperação (~2 min fora do ar em 25/11; dados íntegros). Em `~/homelab/docker-compose.yml`, no serviço `postgres`, acrescentar `stop_grace_period: 60s` e rodar `docker compose up -d postgres` (reinicia o banco).
+- [ ] **Operação no servidor.** Pedro. Preencher `ALERT_WEBHOOK_URL` em `apps/api/.env` e testar (`pm2 stop tostao-web`); trocar a senha do `sudo`; conferir que a chave que abre o backup da nuvem também está guardada fora do servidor. Reconectar o WhatsApp: em 25/11 as 2 instâncias da Evolution estavam desconectadas.
 - [ ] **Amigos no Pluggy (T6.5).** Pedro. Testar com 1 amigo; confirmar com o suporte do Pluggy se o plano permite; avisar que os dados ficam no servidor dele.
 - [ ] **Decisões de produto.** Pedro. (1) "Quanto sobra no mês" projeta o ritmo de gasto e pode mostrar sobra enquanto o "posso gastar hoje" mostra falta. (2) Citar a mensagem colada em "Isso é golpe?" no aviso de IA e na Política de Privacidade.
 - [ ] **Conferir em aparelho e serviço reais.** Pedro. Pix copia e cola num app de banco; compartilhar a imagem do mês no iPhone e no Android; abrir o CSV no Excel; DeepSeek e WhatsApp reais; widget do Pluggy; `NEXT_PUBLIC_LEGAL_CNPJ` se aplicável; faturas PDF, Atalhos do iOS e Share Target.
@@ -41,6 +28,14 @@ Relatório do que foi feito. Modelo:
 - Como validei (testes, rota, tela).
 - O que ficou de fora / riscos.
 ```
+
+### 2026-11-25 · Claude · produção (merge dos PRs #47 a #52 e deploy, a pedido do Pedro)
+
+- Checagem do GitHub passou no conjunto completo antes do merge; os 6 PRs entraram na `main` com merge commit (`3b6a9fb`).
+- `bash scripts/deploy.sh` às 09:57, em 48 s, sem rollback; migrations `20261127100000_user_pix_key` e `20261128100000_user_home_prefs` aplicadas; servidor na `main`.
+- Conferido: `/health` 200, `/entrar` 200 local e no domínio público, rotas novas pedindo login (401), 41 migrations, 5 usuários e 558 lançamentos, sem erro no log.
+- Fora do repo: `stop_grace_period: 60s` no serviço `postgres` do `~/homelab/docker-compose.yml` (cópia do arquivo anterior ao lado) e `docker compose up -d --no-deps postgres`, com `pg_dumpall` antes. Falta confirmar no desligamento desta noite que o log mostra `database system was shut down`.
+- Não testado: aparelho real, Pix no app do banco, DeepSeek, WhatsApp e Pluggy.
 
 ### 2026-11-25 · Claude · PR #52 (Início: saldo no topo e "posso gastar hoje" pequeno, a pedido do Pedro)
 
