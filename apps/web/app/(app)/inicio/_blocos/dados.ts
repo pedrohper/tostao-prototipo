@@ -4,7 +4,6 @@ import { cache } from 'react';
 import type {
   BudgetsResponse,
   ForecastResponse,
-  FriendsResponse,
   MonthSummaryResponse,
   PeopleResponse,
   RemindersResponse,
@@ -36,7 +35,6 @@ export const getReminders = cache(() =>
 );
 export const getWeekly = cache(() => api<WeeklyResponse>('/weekly').catch(orFallback(null)));
 export const getPeople = cache(() => api<PeopleResponse>('/people').catch(orFallback(null)));
-export const getFriends = cache(() => api<FriendsResponse>('/friends').catch(orFallback(null)));
 
 // Estes três o layout do app também pede (mesmo `cache()` lá embaixo): na Home não viram um segundo pedido.
 export const getHomeProgress = cache(() => getProgress().catch(orFallback(NO_PROGRESS)));

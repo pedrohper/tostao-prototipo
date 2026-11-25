@@ -33,7 +33,8 @@ export async function CreditCardsSection({
           {t.home.viewAllCards}
         </Link>
       </div>
-      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+      {/* No computador a coluna é estreita: um cartão por linha, senão o nome some. */}
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-1">
         {cards.map((card, idx) => {
           const currentBillCents = Math.max(0, -card.balanceInCents);
           const usagePct = card.creditLimitInCents

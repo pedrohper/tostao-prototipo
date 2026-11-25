@@ -58,6 +58,14 @@ export default async function MaisPage() {
         ? 'Notificaciones y lo que vigila Tostão'
         : 'Avisos no celular e o que o Tostão acompanha';
 
+  const gamesTitle = locale === 'en' ? 'Games and friends' : locale === 'es' ? 'Juegos y amigos' : 'Jogos e amigos';
+  const gamesSub =
+    locale === 'en'
+      ? 'Court, Battle, Streak and Friends'
+      : locale === 'es'
+        ? 'Tribunal, Batalla, Racha y Amigos'
+        : 'Tribunal, Batalha, Ofensiva e Amigos';
+
   const prefsTitle = locale === 'en' ? 'Preferences' : locale === 'es' ? 'Preferencias' : 'Preferências';
   const prefsSub =
     locale === 'en'
@@ -212,6 +220,22 @@ export default async function MaisPage() {
             <span className="text-[13px] text-tinta-suave">Apple Pay e notificações do banco entram sozinhas</span>
           </div>
         </Link>
+        <Link
+          href="/mais/jogos"
+          className="flex min-h-[68px] items-center gap-3.5 py-3 text-tinta no-underline transition-opacity hover:opacity-80"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rosa text-tinta">
+            <Icon src="jogo/batalha" size={22} />
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="text-[15px] font-bold">{gamesTitle}</span>
+            <span className="truncate text-xs text-tinta-suave">{gamesSub}</span>
+          </span>
+          <span className="shrink-0 text-lg text-tinta-suave" aria-hidden="true">
+            ›
+          </span>
+        </Link>
+
         <Link
           href="/mais/preferencias"
           className="flex min-h-[68px] items-center gap-3.5 py-3 text-tinta no-underline transition-opacity hover:opacity-80"

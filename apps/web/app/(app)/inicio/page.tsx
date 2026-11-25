@@ -6,21 +6,12 @@ import { DesktopBalanceRow, MobileBalanceCard } from './balance-card';
 import { PendingAlertsCard } from './pending-alerts-card';
 import { PlanejarAtalhos } from './planejar-atalhos';
 import { SplitsSection } from './_blocos/acertos';
-import { WeeklyChallengeCard } from './_blocos/amigos';
 import { LessonCard, LessonRailCard } from './_blocos/aula';
 import { DesktopHighlightAlert, DesktopSideAlerts, LocalAlerts, TostaoFindings } from './_blocos/avisos';
 import { Block } from './_blocos/bloco';
 import { MonthSelector } from './_blocos/cabecalho';
 import { CreditCardsSection } from './_blocos/cartoes';
-import {
-  getForecast,
-  getFriends,
-  getHomeAuto,
-  getHomeMissions,
-  getHomeProgress,
-  getSummary,
-  prefetchSections,
-} from './_blocos/dados';
+import { getHomeAuto, getHomeMissions, getHomeProgress, getSummary, prefetchSections } from './_blocos/dados';
 import { EmptyHome, isEmptyHome } from './_blocos/estado-vazio';
 import { EvolutionSection } from './_blocos/evolucao';
 import { LimitsSection } from './_blocos/limites';
@@ -43,7 +34,7 @@ import { getI18n } from '@/lib/i18n-server';
 import { readHomePrefs, resolveSectionOrder, type HomeSectionId } from '@/lib/inicio-prefs';
 import Link from 'next/link';
 
-const DESKTOP_LEFT_EXTRAS = new Set<HomeSectionId>(['sobra', 'cartoes', 'limites', 'acertos', 'vence']);
+const DESKTOP_LEFT_EXTRAS = new Set<HomeSectionId>(['evolucao', 'sobra', 'cartoes', 'limites', 'acertos', 'vence']);
 /** Altura do quadro de achados por quantidade de cartões (celular / computador), medida nos prints. */
 const FINDINGS_SKELETON = [undefined, 'h-[215px] lg:h-[200px]', 'h-[390px] lg:h-[355px]'];
 
@@ -59,8 +50,6 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   // Os pedidos dos blocos começam já; a página só espera o que desenha o topo.
   const missionsP = startEarly(getHomeMissions());
   const progressP = startEarly(getHomeProgress());
-  void startEarly(getForecast()); // coluna da direita no computador
-  void startEarly(getFriends());
   prefetchSections(visibleSections, month);
   // `auto` o layout já pede: aqui serve pra reservar o tamanho certo do quadro de achados.
   const [summary, profile, auto] = await Promise.all([getSummary(month), getMe(), getHomeAuto()]);
@@ -125,7 +114,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       </Block>
     ),
     cartoes: summary.accounts.some((a) => a.type === 'CREDIT') ? (
-      <Block skeleton="h-[146px] lg:h-[170px]">
+      <Block skeleton="h-[146px]">
         <CreditCardsSection summary={summary} profile={profile} />
       </Block>
     ) : null,
@@ -136,18 +125,26 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     ),
   };
 
+  // Coluna da direita no computador: só o que a pessoa deixou ligado (jogos e amigos moram em /mais).
+  const showLesson = isSectionVisible('aula');
+  const showGoal = isSectionVisible('meta');
   const rightRail = (
     <>
-      <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">{t.nav.learnHeader}</span>
-      <Block skeleton="h-[288px]">
-        <LessonRailCard />
-      </Block>
-      <Block skeleton="h-[125px]">
-        <GoalsSection rail />
-      </Block>
-      <Block skeleton="h-[194px]">
-        <WeeklyChallengeCard />
-      </Block>
+      {showLesson && (
+        <>
+          <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">
+            {t.nav.learnHeader}
+          </span>
+          <Block skeleton="h-[288px]">
+            <LessonRailCard />
+          </Block>
+        </>
+      )}
+      {showGoal && (
+        <Block skeleton="h-[125px]">
+          <GoalsSection rail />
+        </Block>
+      )}
     </>
   );
 
@@ -159,8 +156,8 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   );
   const monthSelector = <MonthSelector month={month} currentMonth={hoje} locale={locale} t={t} />;
 
-  return (
-    <DesktopSplitShell rightWidth={320} right={rightRail}>
+  const content = (
+    <>
       <Suspense fallback={null}>
         <Await promise={missionsP}>
           {(missions) =>
@@ -221,6 +218,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
           </Block>
         ) : (
           <>
+            {/* T6.17 · "Quanto posso gastar hoje" entra aqui, acima do saldo (um lugar só pro celular e o computador). */}
             <div className="flex flex-col gap-3 lg:hidden">
               <MobileBalanceCard {...balanceProps} />
             </div>
@@ -282,6 +280,14 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
           </>
         )}
       </div>
+    </>
+  );
+
+  return showLesson || showGoal ? (
+    <DesktopSplitShell rightWidth={320} right={rightRail}>
+      {content}
     </DesktopSplitShell>
+  ) : (
+    <div className="mx-auto flex w-full max-w-[1040px] flex-col gap-6">{content}</div>
   );
 }

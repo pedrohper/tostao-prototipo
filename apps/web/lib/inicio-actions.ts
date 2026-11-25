@@ -2,12 +2,12 @@
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { PREFS_COOKIE, HOME_SECTIONS, parsePrefs, type HomePrefs } from './inicio-prefs';
+import { PREFS_COOKIE, HOME_SECTIONS, parsePrefs, serializePrefs, type HomePrefs } from './inicio-prefs';
 
 async function updatePrefsCookie(updater: (prefs: HomePrefs) => HomePrefs) {
   const jar = await cookies();
   const next = updater(parsePrefs(jar.get(PREFS_COOKIE)?.value));
-  jar.set(PREFS_COOKIE, JSON.stringify(next), {
+  jar.set(PREFS_COOKIE, serializePrefs(next), {
     path: '/',
     maxAge: 60 * 60 * 24 * 365,
     sameSite: 'lax',
