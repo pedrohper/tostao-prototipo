@@ -51,12 +51,16 @@ function makeSandbox({ branch = 'main', dirty = '' }: { branch?: string; dirty?:
     chmodSync(p, 0o755);
   };
 
+  const shaFile = join(sandbox, 'head.sha');
+  writeFileSync(shaFile, 'sha-antigo\n');
+
   writeBin(
     'git',
     `case "\${1:-}" in
-  rev-parse) echo "${branch}" ;;
+  rev-parse) if [ "\${2:-}" = "--abbrev-ref" ]; then echo "${branch}"; else cat "${shaFile}"; fi ;;
   status) printf '%s' "${dirty}" ;;
-  pull) echo "git $*" >> "${logFile}" ;;
+  pull) echo "git $*" >> "${logFile}"; echo sha-novo > "${shaFile}" ;;
+  reset) echo "git $*" >> "${logFile}"; echo "$3" > "${shaFile}" ;;
   *) echo "git $*" >> "${logFile}" ;;
 esac`,
   );
@@ -65,16 +69,37 @@ esac`,
     'pnpm',
     `echo "pnpm $* DIST=\${NEXT_DIST_DIR:-}" >> "${logFile}"
 if [ "\${1:-}" = "build" ]; then
+  [ -z "\${FAIL_BUILD:-}" ] || exit 1
+  # como o type-check real: tipos velhos do build no ar quebram o build novo
+  [ ! -e "${webDir}/.next/types" ] || exit 1
   dir="${webDir}/\${NEXT_DIST_DIR:-.next}"
   mkdir -p "$dir"
   echo "new-build-id" > "$dir/BUILD_ID"
 fi`,
   );
 
-  writeBin('pm2', `echo "pm2 $*" >> "${logFile}"`);
+  writeBin(
+    'pm2',
+    `echo "pm2 $*" >> "${logFile}"
+if [ -n "\${FAIL_PM2_ONCE:-}" ] && [ ! -f "${sandbox}/pm2.failed" ]; then touch "${sandbox}/pm2.failed"; exit 1; fi`,
+  );
 
   return { binDir, deployCopy, webDir, logFile };
 }
+
+function deployEnv(binDir: string, extra: Record<string, string> = {}) {
+  return {
+    PATH: `${binDir}:${process.env.PATH}`,
+    DEPLOY_HEALTH_URL: `http://127.0.0.1:${ports.api}/health`,
+    DEPLOY_WEB_URL: `http://127.0.0.1:${ports.web}/entrar`,
+    DEPLOY_HEALTH_ATTEMPTS: '2',
+    DEPLOY_HEALTH_SLEEP: '0',
+    ...extra,
+  };
+}
+
+const readLines = (file: string) => readFileSync(file, 'utf8').trim().split('\n');
+const buildId = (webDir: string, dir: string) => readFileSync(join(webDir, dir, 'BUILD_ID'), 'utf8').trim();
 
 beforeAll(async () => {
   const api = await listen((_req, res) => res.writeHead(apiStatus).end('{"ok":true}'));
@@ -166,25 +191,47 @@ describe('scripts/deploy.sh (T6.6)', () => {
     ]);
   });
 
-  it('se /health falhar, faz rollback de .next.prev para .next, reinicia e sai com erro', async () => {
+  it('apaga os tipos velhos de .next antes do build (página removida não trava o deploy)', async () => {
+    const { binDir, deployCopy, webDir } = makeSandbox();
+    mkdirSync(join(webDir, '.next', 'types'), { recursive: true });
+    await run('bash', [deployCopy], { env: deployEnv(binDir) });
+    expect(buildId(webDir, '.next')).toBe('new-build-id');
+  });
+
+  it('se o build falhar, volta o código e as dependências sem reiniciar nada', async () => {
+    const { binDir, deployCopy, webDir, logFile } = makeSandbox();
+    await expect(run('bash', [deployCopy], { env: deployEnv(binDir, { FAIL_BUILD: '1' }) })).rejects.toThrow();
+
+    expect(buildId(webDir, '.next')).toBe('old-build-id');
+    expect(existsSync(join(webDir, '.next.prev'))).toBe(false);
+    const calls = readLines(logFile);
+    expect(calls.slice(-2)).toEqual(['git reset --keep sha-antigo', 'pnpm install --frozen-lockfile DIST=']);
+    expect(calls.some((l) => l.startsWith('pm2'))).toBe(false);
+  });
+
+  it('se o pm2 restart falhar depois da troca, devolve o .next anterior e reinicia de novo', async () => {
+    const { binDir, deployCopy, webDir, logFile } = makeSandbox();
+    await expect(run('bash', [deployCopy], { env: deployEnv(binDir, { FAIL_PM2_ONCE: '1' }) })).rejects.toMatchObject({
+      stderr: expect.stringContaining('Rollback concluído'),
+    });
+
+    expect(buildId(webDir, '.next')).toBe('old-build-id');
+    const calls = readLines(logFile);
+    expect(calls).toContain('git reset --keep sha-antigo');
+    expect(calls.filter((l) => l === 'pm2 restart tostao-api tostao-web')).toHaveLength(2);
+  });
+
+  it('se /health falhar, volta código e .next, reinicia e avisa quando o rollback não recupera', async () => {
     apiStatus = 503;
     const { binDir, deployCopy, webDir, logFile } = makeSandbox();
-    await expect(
-      run('bash', [deployCopy], {
-        env: {
-          PATH: `${binDir}:${process.env.PATH}`,
-          DEPLOY_HEALTH_URL: `http://127.0.0.1:${ports.api}/health`,
-          DEPLOY_WEB_URL: `http://127.0.0.1:${ports.web}/entrar`,
-          DEPLOY_HEALTH_ATTEMPTS: '2',
-          DEPLOY_HEALTH_SLEEP: '0',
-        },
-      }),
-    ).rejects.toThrow();
+    await expect(run('bash', [deployCopy], { env: deployEnv(binDir) })).rejects.toMatchObject({
+      stderr: expect.stringContaining('ROLLBACK NÃO RECUPEROU'),
+    });
 
-    expect(readFileSync(join(webDir, '.next', 'BUILD_ID'), 'utf8').trim()).toBe('old-build-id');
-    expect(readFileSync(join(webDir, '.next.failed', 'BUILD_ID'), 'utf8').trim()).toBe('new-build-id');
-
-    const calls = readFileSync(logFile, 'utf8').trim().split('\n');
+    expect(buildId(webDir, '.next')).toBe('old-build-id');
+    expect(buildId(webDir, '.next.failed')).toBe('new-build-id');
+    const calls = readLines(logFile);
+    expect(calls).toContain('git reset --keep sha-antigo');
     expect(calls.filter((l) => l === 'pm2 restart tostao-api tostao-web')).toHaveLength(2);
   });
 });

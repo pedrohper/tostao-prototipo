@@ -9,6 +9,7 @@ export default tseslint.config(
     ignores: [
       '**/node_modules/**',
       '**/.next/**',
+      '**/.next.*/**',
       '**/dist/**',
       'docs-obsidian/**',
       'artefato-tostao-claude.html',

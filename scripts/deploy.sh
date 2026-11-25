@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Deploy repetível do Tostão em produção (T6.6).
 # Uso: bash scripts/deploy.sh [--seed] [--dry-run]
+#
+# Se qualquer passo depois do `git pull` falhar, volta o código (git reset --keep), as dependências e o `.next`
+# anteriores. Migrations NÃO são desfeitas: por isso elas precisam ser sempre aditivas.
 set -euo pipefail
 
 DRY_RUN=0
@@ -77,10 +80,12 @@ check_git_clean_main() {
 
 build_web_isolated() {
   if [ "$DRY_RUN" -eq 1 ]; then
-    printf '  (dry-run) rm -rf %s && NEXT_DIST_DIR=.next.new NEXT_TELEMETRY_DISABLED=1 pnpm build\n' "$NEXT_NEW"
+    printf '  (dry-run) rm -rf %s %s/types && NEXT_DIST_DIR=.next.new NEXT_TELEMETRY_DISABLED=1 pnpm build\n' "$NEXT_NEW" "$NEXT_DIR"
     return 0
   fi
-  rm -rf "$NEXT_NEW"
+  # O type-check do build também lê os tipos gerados em .next (o build no ar): uma página apagada ou renomeada
+  # faria esse build falhar. O `next start` não usa essas pastas.
+  rm -rf "$NEXT_NEW" "$NEXT_DIR/types" "$NEXT_DIR/dev/types"
   NEXT_DIST_DIR=.next.new NEXT_TELEMETRY_DISABLED=1 pnpm build
   if [ ! -f "$NEXT_NEW/BUILD_ID" ]; then
     printf 'Erro: build não gerou %s/BUILD_ID.\n' "$NEXT_NEW" >&2
@@ -106,21 +111,6 @@ swap_next_atomic() {
   fi
 }
 
-rollback_next() {
-  printf 'Healthcheck falhou; iniciando rollback de %s...\n' "$NEXT_DIR" >&2
-  if [ -d "$NEXT_PREV" ]; then
-    rm -rf "$NEXT_FAILED"
-    if [ -d "$NEXT_DIR" ]; then
-      mv "$NEXT_DIR" "$NEXT_FAILED"
-    fi
-    mv "$NEXT_PREV" "$NEXT_DIR"
-    pm2 restart "${PM2_APPS[@]}" || true
-    printf 'Rollback concluído com %s e serviços reiniciados.\n' "$NEXT_PREV" >&2
-  else
-    printf 'Aviso: %s não existe para rollback.\n' "$NEXT_PREV" >&2
-  fi
-}
-
 wait_for_health() {
   if [ "$DRY_RUN" -eq 1 ]; then
     printf '  (dry-run) esperar 200 em %s e %s (rollback para %s se falhar)\n' "$HEALTH_URL" "$WEB_URL" "$NEXT_PREV"
@@ -139,39 +129,93 @@ wait_for_health() {
   return 1
 }
 
-step "Conferir working tree limpo e branch main"
-check_git_clean_main
+# Código que estava no ar antes do pull; vazio = nada a desfazer.
+PREV_SHA=""
+SWAPPED=0
 
-step "Atualizar main (git pull --ff-only)"
-run_cmd git pull --ff-only
+restore_next() {
+  if [ ! -d "$NEXT_PREV" ]; then
+    printf 'Aviso: %s não existe; o .next ficou como está.\n' "$NEXT_PREV" >&2
+    return 0
+  fi
+  rm -rf "$NEXT_FAILED"
+  if [ -d "$NEXT_DIR" ]; then
+    mv "$NEXT_DIR" "$NEXT_FAILED"
+  fi
+  mv "$NEXT_PREV" "$NEXT_DIR"
+}
 
-step "Fazer backup do banco (scripts/backup-db.sh)"
-run_cmd bash scripts/backup-db.sh
+# Roda em qualquer saída. Em falha depois do pull, devolve o servidor ao estado anterior e diz se voltou mesmo.
+on_exit() {
+  local code=$?
+  trap - EXIT
+  if [ "$code" -eq 0 ] || [ -z "$PREV_SHA" ]; then
+    exit "$code"
+  fi
+  set +e
+  local current ok=1
+  current="$(git rev-parse HEAD)"
+  printf '\nDeploy falhou (código %s); iniciando rollback...\n' "$code" >&2
+  if [ "$current" != "$PREV_SHA" ]; then
+    printf 'Voltando o código para %s (migrations já aplicadas continuam).\n' "$PREV_SHA" >&2
+    git reset --keep "$PREV_SHA" && pnpm install --frozen-lockfile || ok=0
+  fi
+  if [ "$SWAPPED" -eq 1 ]; then
+    restore_next || ok=0
+    pm2 restart "${PM2_APPS[@]}" || ok=0
+    wait_for_health || ok=0
+  fi
+  if [ "$ok" -eq 1 ]; then
+    printf 'Rollback concluído.\n' >&2
+  else
+    printf 'ROLLBACK NÃO RECUPEROU TUDO: confira na mão (git log -1, pm2 status, pm2 logs).\n' >&2
+  fi
+  exit "$code"
+}
 
-step "Instalar dependências (pnpm install --frozen-lockfile)"
-run_cmd pnpm install --frozen-lockfile
+main() {
+  step "Conferir working tree limpo e branch main"
+  check_git_clean_main
+  if [ "$DRY_RUN" -eq 0 ]; then
+    PREV_SHA="$(git rev-parse HEAD)"
+  fi
 
-step "Aplicar migrations (pnpm db:deploy)"
-run_cmd pnpm db:deploy
+  step "Atualizar main (git pull --ff-only)"
+  run_cmd git pull --ff-only
 
-if [ "$RUN_SEED" -eq 1 ]; then
-  step "Rodar seed (pnpm db:seed)"
-  run_cmd pnpm db:seed
-fi
+  step "Fazer backup do banco (scripts/backup-db.sh)"
+  run_cmd bash scripts/backup-db.sh
 
-step "Build da web em pasta separada (NEXT_DIST_DIR=.next.new)"
-build_web_isolated
+  step "Instalar dependências (pnpm install --frozen-lockfile)"
+  run_cmd pnpm install --frozen-lockfile
 
-step "Troca atômica de .next (guardando anterior em .next.prev)"
-swap_next_atomic
+  step "Aplicar migrations (pnpm db:deploy)"
+  run_cmd pnpm db:deploy
 
-step "Reiniciar tostao-api e tostao-web juntos"
-run_cmd pm2 restart "${PM2_APPS[@]}"
+  if [ "$RUN_SEED" -eq 1 ]; then
+    step "Rodar seed (pnpm db:seed)"
+    run_cmd pnpm db:seed
+  fi
 
-step "Esperar /health responder 200 (rollback se falhar)"
-if ! wait_for_health; then
-  rollback_next
-  exit 1
-fi
+  step "Build da web em pasta separada (NEXT_DIST_DIR=.next.new)"
+  build_web_isolated
 
-printf '\nDeploy concluído com sucesso.\n'
+  step "Troca atômica de .next (guardando anterior em .next.prev)"
+  swap_next_atomic
+  SWAPPED=1
+
+  step "Reiniciar tostao-api e tostao-web juntos"
+  run_cmd pm2 restart "${PM2_APPS[@]}"
+
+  step "Esperar /health responder 200 (rollback se falhar)"
+  wait_for_health
+
+  printf '\nDeploy concluído com sucesso.\n'
+}
+
+trap on_exit EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+# Tudo dentro de main(): o bash lê o script inteiro antes do `git pull` poder trocar este arquivo.
+main
