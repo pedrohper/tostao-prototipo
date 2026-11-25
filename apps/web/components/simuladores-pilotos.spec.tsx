@@ -25,7 +25,18 @@ import {
 } from '@/app/(app)/aprender/[licao]/_simuladores/hora-de-freela';
 import { SIMULATORS } from '@/app/(app)/aprender/[licao]/simulators';
 import { money } from '@/lib/format';
-import { montar, type No } from './mini-render.testutil';
+import {
+  aberto,
+  grande,
+  limites,
+  mover,
+  palpitar,
+  plain,
+  principalForaDoMais,
+  regua,
+  reguaDe,
+  tudo,
+} from './simulador.testutil';
 
 // ---------- As contas de ANTES (cópia literal) ----------
 
@@ -65,10 +76,6 @@ function antesBola(faturaInicial: number, pctMinimo: number, taxaMensal: number,
 
   return { saldo, totalPago, totalGeral: totalPago + saldo, bateuTeto };
 }
-
-/** Todas as posições de uma régua antiga. */
-const regua = (min: number, max: number, passo: number) =>
-  Array.from({ length: Math.round((max - min) / passo) + 1 }, (_, i) => min + i * passo);
 
 describe('a matemática não mudou (todas as posições das réguas de antes)', () => {
   it('Balanço do estágio', () => {
@@ -137,38 +144,6 @@ describe('a matemática não mudou (todas as posições das réguas de antes)', 
 });
 
 // ---------- A tela ----------
-
-const aberto = (Sim: () => React.ReactNode) => {
-  const tela = montar(<Sim />);
-  const pular = tela.um((no) => no.tag === 'button' && tela.texto(no) === 'Pular palpite', 'o "Pular palpite"');
-  tela.disparar(pular, 'onClick');
-  return tela;
-};
-type Tela = ReturnType<typeof montar>;
-const plain = (s: string) =>
-  s
-    .replace(/\u00a0/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-const tudo = (tela: Tela) => plain(tela.texto());
-const grande = (tela: Tela) => plain(tela.texto(tela.um((no) => no.props['aria-live'] === 'polite')));
-const reguas = (tela: Tela) => tela.todos((no) => no.tag === 'input' && no.props.type === 'range');
-const reguaDe = (tela: Tela, rotulo: string): No =>
-  tela.um((no) => no.props.type === 'range' && no.props['aria-label'] === rotulo, `a régua "${rotulo}"`);
-const mover = (tela: Tela, rotulo: string, valor: number) =>
-  tela.disparar(reguaDe(tela, rotulo), 'onChange', { target: { value: String(valor) } });
-const limites = (tela: Tela) =>
-  reguas(tela).map((r) => [r.props['aria-label'], r.props.value, r.props.min, r.props.max, r.props.step]);
-const palpitar = (Sim: () => React.ReactNode, indice: number) => {
-  const tela = montar(<Sim />);
-  tela.disparar(tela.todos((no) => no.props.role === 'radio')[indice]!, 'onClick');
-  return tudo(tela);
-};
-const principalForaDoMais = (tela: Tela, rotulo: string) => {
-  const mais = tela.um((no) => no.tag === 'details');
-  expect(mais.props.open).toBeUndefined();
-  expect(plain(tela.texto(mais))).not.toContain(rotulo);
-};
 
 describe('piloto m5-l3 · Balanço do estágio', () => {
   it('mesmas réguas de antes (em centavos) e a bolsa como controle principal', () => {
