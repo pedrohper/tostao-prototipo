@@ -18,16 +18,22 @@ const GOOD = '#0F7A55';
 const BAD = '#B3261E';
 
 const dataUrl = (buffer: Buffer) => `data:image/png;base64,${buffer.toString('base64')}`;
-const file = (...parts: string[]) => readFile(join(process.cwd(), ...parts));
-const font = (family: string, name: string) => file('node_modules', '@fontsource', family, 'files', name);
 
 async function loadAssets(good: boolean) {
   const [display, regular, bold, wordmark, mascot] = await Promise.all([
-    font('bricolage-grotesque', 'bricolage-grotesque-latin-800-normal.woff'),
-    font('inter', 'inter-latin-400-normal.woff'),
-    font('inter', 'inter-latin-700-normal.woff'),
-    file('public', 'wordmark.png'),
-    file('assets', 'compartilhar', good ? 'comemorando.png' : 'pensando.png'),
+    // Caminhos escritos por extenso: com um helper de `...partes` o Turbopack rastreia o projeto inteiro.
+    readFile(
+      join(
+        process.cwd(),
+        'node_modules/@fontsource/bricolage-grotesque/files/bricolage-grotesque-latin-800-normal.woff',
+      ),
+    ),
+    readFile(join(process.cwd(), 'node_modules/@fontsource/inter/files/inter-latin-400-normal.woff')),
+    readFile(join(process.cwd(), 'node_modules/@fontsource/inter/files/inter-latin-700-normal.woff')),
+    readFile(join(process.cwd(), 'public/wordmark.png')),
+    good
+      ? readFile(join(process.cwd(), 'assets/compartilhar/comemorando.png'))
+      : readFile(join(process.cwd(), 'assets/compartilhar/pensando.png')),
   ]);
   return {
     fonts: [
