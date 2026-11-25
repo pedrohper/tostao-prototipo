@@ -20,6 +20,18 @@ describe('catálogo de simuladores', () => {
     expect(SIMULATOR_CATALOG.length).toBeGreaterThanOrEqual(10);
   });
 
+  it('cada um diz o que a pessoa vai entender, em frase curta (cabe em 2 linhas no celular) e própria', () => {
+    for (const s of SIMULATOR_CATALOG) {
+      expect(s.aprende.length, s.id).toBeGreaterThan(30);
+      expect(s.aprende.length, s.id).toBeLessThanOrEqual(90);
+      expect(s.aprende, s.id).toMatch(/^[A-ZÀ-Ú].*\.$/);
+      expect(s.aprende, s.id).not.toBe(s.blurb);
+    }
+    expect(new Set(SIMULATOR_CATALOG.map((s) => s.aprende)).size).toBe(SIMULATOR_CATALOG.length);
+    // os 3 pilotos do SimuladorShell (T6.13) estão na galeria
+    for (const piloto of ['m2-l2', 'm5-l3', 'm5-l4']) expect(findSimulator(piloto), piloto).not.toBeNull();
+  });
+
   it('findSimulator só acha o que está na galeria (id inventado ou de lição sem destaque = null)', () => {
     expect(findSimulator('m4-l5')?.title).toBe('Reserva de emergência');
     expect(findSimulator('m1-l4')).toBeNull();
