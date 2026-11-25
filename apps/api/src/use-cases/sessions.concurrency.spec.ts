@@ -50,16 +50,41 @@ describe.skipIf(!url)('sessão, reset e verificação: concorrência no Postgres
     expect(await db.refreshToken.count({ where: { userId: user.id, revokedAt: null } })).toBe(0);
   });
 
-  it('refresh simultâneo com o mesmo token: só 1 recebe o par novo; o outro conta como reuso e derruba a família', async () => {
+  it('refresh simultâneo com o mesmo token (abas): todos recebem token na mesma família, sem derrubar a sessão (T6.4)', async () => {
     const repos = makePrismaRepositories(db);
     const user = await newUser(`refresh-${Date.now()}@x.com`);
     const sessions = new SessionsUseCase(repos);
     const { refreshToken } = await sessions.open(user.id);
     const results = await Promise.allSettled(Array.from({ length: 5 }, () => sessions.rotate(refreshToken)));
-    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
-    // os perdedores chegaram depois do vencedor ter revogado o token => reuso => família inteira revogada
-    expect(await db.refreshToken.count({ where: { userId: user.id, revokedAt: null } })).toBe(0);
-    expect(await db.refreshToken.count({ where: { userId: user.id } })).toBe(2);
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(5);
+    const rows = await db.refreshToken.findMany({ where: { userId: user.id } });
+    expect(new Set(rows.map((r) => r.familyId)).size).toBe(1);
+    expect(rows).toHaveLength(6); // o original (revogado) + 5 filhos vivos
+    expect(rows.filter((r) => !r.revokedAt)).toHaveLength(5);
+    expect(await db.auditLog.count({ where: { userId: user.id, action: 'refresh_reuse_detected' } })).toBe(0);
+    expect(await db.auditLog.count({ where: { userId: user.id, action: 'refresh_grace_used' } })).toBe(4);
+  });
+
+  it('janela de 30 s no Postgres: reuso em 5 s passa; em 31 s derruba a família; filho já usado derruba', async () => {
+    const repos = makePrismaRepositories(db);
+    const t0 = new Date();
+    const at = (ms: number) => new SessionsUseCase(repos, () => new Date(t0.getTime() + ms));
+
+    const a = await newUser(`grace-a-${Date.now()}@x.com`);
+    const { refreshToken: pa } = await at(0).open(a.id);
+    await at(0).rotate(pa);
+    await expect(at(5_000).rotate(pa)).resolves.toHaveProperty('userId');
+    expect(await db.refreshToken.count({ where: { userId: a.id, revokedAt: null } })).toBe(2);
+    await expect(at(31_000).rotate(pa)).rejects.toThrow();
+    expect(await db.refreshToken.count({ where: { userId: a.id, revokedAt: null } })).toBe(0);
+    expect(await db.auditLog.count({ where: { userId: a.id, action: 'refresh_reuse_detected' } })).toBe(1);
+
+    const b = await newUser(`grace-b-${Date.now()}@x.com`);
+    const { refreshToken: pb } = await at(0).open(b.id);
+    const child = await at(0).rotate(pb);
+    await at(1_000).rotate(child.refreshToken); // o filho já foi usado
+    await expect(at(5_000).rotate(pb)).rejects.toThrow();
+    expect(await db.refreshToken.count({ where: { userId: b.id, revokedAt: null } })).toBe(0);
   });
 
   it('rotação mantém a família e encadeia replacedById; apagar o usuário leva os tokens (cascade)', async () => {

@@ -761,10 +761,12 @@ class PrismaRefreshTokensRepository implements RefreshTokensRepository {
     tokenHash,
     now,
     next,
+    graceMs = 0,
   }: {
     tokenHash: string;
     now: Date;
     next: Omit<NewRefreshToken, 'userId' | 'familyId'>;
+    graceMs?: number;
   }): Promise<RotateRefreshResult> {
     return inTx(this.db, async (tx) => {
       const claimed = await tx.refreshToken.updateMany({
@@ -781,6 +783,16 @@ class PrismaRefreshTokensRepository implements RefreshTokensRepository {
         return { status: 'rotated', userId: current.userId, familyId: current.familyId } as const;
       }
       if (current.revokedAt) {
+        // Janela de tolerância: `revokedAt` de um token trocado É a hora da troca (`replacedById` só existe em quem
+        // foi trocado, não em quem saiu por logout). Reapareceu logo depois e o filho segue vivo e sem uso: a resposta
+        // da troca se perdeu. Emite outro token na mesma família; o filho original continua válido (outra aba pode tê-lo).
+        if (graceMs > 0 && current.replacedById && now.getTime() - current.revokedAt.getTime() <= graceMs) {
+          const child = await tx.refreshToken.findUnique({ where: { id: current.replacedById } });
+          if (child && child.familyId === current.familyId && !child.revokedAt && child.expiresAt > now) {
+            await tx.refreshToken.create({ data: { ...next, userId: current.userId, familyId: current.familyId } });
+            return { status: 'rotated', userId: current.userId, familyId: current.familyId, viaGrace: true } as const;
+          }
+        }
         // Token já usado/revogado reapresentado: alguém tem uma cópia. Derruba a família toda.
         await tx.refreshToken.updateMany({
           where: { familyId: current.familyId, revokedAt: null },

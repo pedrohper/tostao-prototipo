@@ -1,5 +1,5 @@
 import { createHmac } from 'node:crypto';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { buildApp } from '../app.js';
 import { FakeBankGateway } from '../gateways/fake-bank-gateway.js';
 import { FakeEmailGateway } from '../gateways/email-gateway.js';
@@ -56,9 +56,10 @@ describe('refresh token: rotação', () => {
   });
 
   it('reuso de token já trocado revoga a família inteira (inclusive o token legítimo mais novo)', async () => {
-    const { repos, user, sessions } = await setup();
+    const { repos, user, sessions, tick } = await setup();
     const { refreshToken: r1 } = await sessions.open(user.id);
     const { refreshToken: r2 } = await sessions.rotate(r1); // o dono renovou
+    tick(31_000); // passou da janela de tolerância
     // o ladrão apresenta o r1 roubado
     await expect(sessions.rotate(r1)).rejects.toBeInstanceOf(InvalidRefreshTokenError);
     expect(repos.refreshTokens.items.every((t) => t.revokedAt !== null)).toBe(true);
@@ -67,10 +68,11 @@ describe('refresh token: rotação', () => {
   });
 
   it('reuso numa família não mexe nas sessões de outros aparelhos', async () => {
-    const { repos, user, sessions } = await setup();
+    const { repos, user, sessions, tick } = await setup();
     const { refreshToken: a1 } = await sessions.open(user.id); // aparelho A
     const { refreshToken: b1 } = await sessions.open(user.id); // aparelho B
     await sessions.rotate(a1);
+    tick(31_000);
     await expect(sessions.rotate(a1)).rejects.toBeInstanceOf(InvalidRefreshTokenError);
     await expect(sessions.rotate(b1)).resolves.toHaveProperty('refreshToken');
     expect(repos.refreshTokens.items.filter((t) => !t.revokedAt)).toHaveLength(1);
@@ -87,12 +89,91 @@ describe('refresh token: rotação', () => {
     expect(repos.refreshTokens.items[0]!.revokedAt).toBeNull();
   });
 
-  it('dois refresh simultâneos com o mesmo token: só um recebe o par novo', async () => {
-    const { user, sessions } = await setup();
+  it('dois refresh simultâneos com o mesmo token (duas abas): os dois recebem token, na mesma família, sem derrubar nada', async () => {
+    const { repos, user, sessions } = await setup();
     const { refreshToken } = await sessions.open(user.id);
     const results = await Promise.allSettled([sessions.rotate(refreshToken), sessions.rotate(refreshToken)]);
-    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
-    expect(results.filter((r) => r.status === 'rejected')).toHaveLength(1);
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(2);
+    expect(repos.refreshTokens.items.filter((t) => !t.revokedAt)).toHaveLength(2);
+    expect(new Set(repos.refreshTokens.items.map((t) => t.familyId)).size).toBe(1);
+  });
+});
+
+describe('refresh token: janela de tolerância de 30 s no reuso (T6.4)', () => {
+  it('reuso em 5 s funciona: novo token na mesma família, família intacta e sem registrar reuso', async () => {
+    const { repos, user, sessions, tick } = await setup();
+    const { refreshToken: p } = await sessions.open(user.id);
+    const first = await sessions.rotate(p); // a resposta se perdeu: a aba nunca viu `first`
+    tick(5_000);
+    const retry = await sessions.rotate(p);
+    expect(retry.userId).toBe(user.id);
+    expect(retry.refreshToken).not.toBe(first.refreshToken);
+
+    expect(new Set(repos.refreshTokens.items.map((t) => t.familyId)).size).toBe(1);
+    // o pai segue revogado, os dois filhos seguem vivos (a outra aba pode ter ficado com o primeiro)
+    expect(repos.refreshTokens.items.filter((t) => !t.revokedAt)).toHaveLength(2);
+    const actions = repos.audit.items.map((a) => a.action);
+    expect(actions).toEqual(['refresh_grace_used']);
+    expect(actions).not.toContain('refresh_reuse_detected');
+    // e os dois tokens renovam normalmente
+    await expect(sessions.rotate(first.refreshToken)).resolves.toHaveProperty('userId');
+    await expect(sessions.rotate(retry.refreshToken)).resolves.toHaveProperty('userId');
+  });
+
+  it('o limite é 30 s: em 30 s ainda vale; em 31 s derruba a família e grava refresh_reuse_detected', async () => {
+    const at30 = await setup();
+    const a = await at30.sessions.open(at30.user.id);
+    await at30.sessions.rotate(a.refreshToken);
+    at30.tick(30_000);
+    await expect(at30.sessions.rotate(a.refreshToken)).resolves.toHaveProperty('userId');
+
+    const at31 = await setup();
+    const b = await at31.sessions.open(at31.user.id);
+    const child = await at31.sessions.rotate(b.refreshToken);
+    at31.tick(31_000);
+    await expect(at31.sessions.rotate(b.refreshToken)).rejects.toBeInstanceOf(InvalidRefreshTokenError);
+    expect(at31.repos.refreshTokens.items.every((t) => t.revokedAt !== null)).toBe(true);
+    expect(at31.repos.audit.items.map((x) => x.action)).toEqual(['refresh_reuse_detected']);
+    await expect(at31.sessions.rotate(child.refreshToken)).rejects.toBeInstanceOf(InvalidRefreshTokenError);
+  });
+
+  it('reuso em 5 s DEPOIS que o filho já foi usado derruba a família (o filho foi entregue e usado: é cópia)', async () => {
+    const { repos, user, sessions, tick } = await setup();
+    const { refreshToken: p } = await sessions.open(user.id);
+    const child = await sessions.rotate(p);
+    await sessions.rotate(child.refreshToken); // o filho já foi usado
+    tick(5_000);
+    await expect(sessions.rotate(p)).rejects.toBeInstanceOf(InvalidRefreshTokenError);
+    expect(repos.refreshTokens.items.every((t) => t.revokedAt !== null)).toBe(true);
+    expect(repos.audit.items.map((a) => a.action)).toEqual(['refresh_reuse_detected']);
+  });
+
+  it('logout dentro da janela vale: token antigo não ressuscita a sessão', async () => {
+    const { user, sessions, tick } = await setup();
+    const { refreshToken: p } = await sessions.open(user.id);
+    const child = await sessions.rotate(p);
+    await sessions.logout(child.refreshToken);
+    tick(2_000);
+    await expect(sessions.rotate(p)).rejects.toBeInstanceOf(InvalidRefreshTokenError);
+  });
+
+  it('a janela não vale pra token revogado por logout (sem filho): continua 401', async () => {
+    const { user, sessions, tick } = await setup();
+    const { refreshToken: p } = await sessions.open(user.id);
+    await sessions.logout(p);
+    tick(2_000);
+    await expect(sessions.rotate(p)).rejects.toBeInstanceOf(InvalidRefreshTokenError);
+  });
+
+  it('filho vencido não conta como vivo: o reuso derruba', async () => {
+    const repos = makeInMemoryRepositories();
+    const user = await repos.users.create({ name: 'Pedro', email: 'p@x.com', passwordHash: 'x' });
+    let now = new Date('2026-11-20T12:00:00Z');
+    const sessions = new SessionsUseCase(repos, () => now, 10); // refresh de 10 s: o filho vence logo
+    const { refreshToken: p } = await sessions.open(user.id);
+    await sessions.rotate(p);
+    now = new Date(now.getTime() + 11_000);
+    await expect(sessions.rotate(p)).rejects.toBeInstanceOf(InvalidRefreshTokenError);
   });
 });
 
@@ -199,7 +280,7 @@ describe('sessão pela API (HTTP)', () => {
     expect((await me(reg.accessToken)).statusCode).toBe(200);
   });
 
-  it('POST /sessions/refresh não exige JWT; troca o par e o refresh antigo vira reuso (401)', async () => {
+  it('POST /sessions/refresh não exige JWT; troca o par e o refresh antigo vira reuso (401) depois da janela de 30 s', async () => {
     const { app, reg } = await bootApi();
     const r = await app.inject({
       method: 'POST',
@@ -210,19 +291,31 @@ describe('sessão pela API (HTTP)', () => {
     const next = r.json();
     expect((await app.inject({ method: 'GET', url: '/me', headers: bearer(next.accessToken) })).statusCode).toBe(200);
 
+    // T6.4: dentro de 30 s o refresh antigo ainda funciona (resposta perdida / duas abas): outro par, mesma família
     const replay = await app.inject({
       method: 'POST',
       url: '/sessions/refresh',
       payload: { refreshToken: reg.refreshToken },
     });
-    expect(replay.statusCode).toBe(401);
-    // a família caiu: o par novo também não renova
-    const after = await app.inject({
-      method: 'POST',
-      url: '/sessions/refresh',
-      payload: { refreshToken: next.refreshToken },
-    });
-    expect(after.statusCode).toBe(401);
+    expect(replay.statusCode).toBe(200);
+    expect(replay.json().refreshToken).not.toBe(next.refreshToken);
+
+    // passou da janela: o refresh antigo vira reuso (401) e a família cai, inclusive os pares novos
+    vi.useFakeTimers({ toFake: ['Date'], now: Date.now() + 31_000 });
+    try {
+      const late = await app.inject({
+        method: 'POST',
+        url: '/sessions/refresh',
+        payload: { refreshToken: reg.refreshToken },
+      });
+      expect(late.statusCode).toBe(401);
+    } finally {
+      vi.useRealTimers();
+    }
+    for (const t of [next.refreshToken, replay.json().refreshToken]) {
+      const after = await app.inject({ method: 'POST', url: '/sessions/refresh', payload: { refreshToken: t } });
+      expect(after.statusCode).toBe(401);
+    }
     // refresh token não é access token, e access token não é refresh token
     expect((await app.inject({ method: 'GET', url: '/me', headers: bearer(reg.refreshToken) })).statusCode).toBe(401);
     expect(

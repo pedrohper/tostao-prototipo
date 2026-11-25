@@ -626,10 +626,12 @@ export class InMemoryRefreshTokensRepository implements RefreshTokensRepository 
     tokenHash,
     now,
     next,
+    graceMs = 0,
   }: {
     tokenHash: string;
     now: Date;
     next: Omit<NewRefreshToken, 'userId' | 'familyId'>;
+    graceMs?: number;
   }): Promise<RotateRefreshResult> {
     const current = this.items.find((t) => t.tokenHash === tokenHash);
     if (!current) return { status: 'invalid' };
@@ -649,6 +651,21 @@ export class InMemoryRefreshTokensRepository implements RefreshTokensRepository 
       return { status: 'rotated', userId: current.userId, familyId: current.familyId };
     }
     if (current.revokedAt) {
+      if (graceMs > 0 && current.replacedById && now.getTime() - current.revokedAt.getTime() <= graceMs) {
+        const child = this.items.find((t) => t.id === current.replacedById);
+        if (child && child.familyId === current.familyId && !child.revokedAt && child.expiresAt > now) {
+          this.items.push({
+            id: randomUUID(),
+            createdAt: now,
+            revokedAt: null,
+            replacedById: null,
+            ...next,
+            userId: current.userId,
+            familyId: current.familyId,
+          });
+          return { status: 'rotated', userId: current.userId, familyId: current.familyId, viaGrace: true };
+        }
+      }
       for (const t of this.items) if (t.familyId === current.familyId && !t.revokedAt) t.revokedAt = now;
       return { status: 'reused', userId: current.userId, familyId: current.familyId };
     }

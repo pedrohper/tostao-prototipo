@@ -304,18 +304,21 @@ export type NewRefreshToken = Pick<
   'userId' | 'tokenHash' | 'familyId' | 'expiresAt' | 'userAgent' | 'ipAddress'
 >;
 export type RotateRefreshResult =
-  | { status: 'rotated'; userId: string; familyId: string }
+  | { status: 'rotated'; userId: string; familyId: string; viaGrace?: boolean }
   | { status: 'reused'; userId: string; familyId: string }
   | { status: 'invalid' };
 export interface RefreshTokensRepository {
   create(data: NewRefreshToken): Promise<RefreshToken>;
   /**
    * Troca atômica: só quem consegue marcar o token como revogado (pendente + dentro da validade) recebe o novo.
-   * Token JÁ revogado reapresentado = reuso: a família inteira é revogada no mesmo bloco.
+   * Token JÁ revogado reapresentado = reuso: a família inteira é revogada no mesmo bloco, EXCETO dentro de
+   * `graceMs` depois da troca, se o filho dele ainda estiver vivo e sem uso (a resposta da troca se perdeu, ou duas
+   * abas renovaram juntas): aí emite outro token na mesma família e devolve `viaGrace: true`.
    */
   rotate(data: {
     tokenHash: string;
     now: Date;
+    graceMs?: number;
     next: Omit<NewRefreshToken, 'userId' | 'familyId'>;
   }): Promise<RotateRefreshResult>;
   /** Revoga a família do token (logout deste aparelho). Idempotente; token desconhecido não faz nada. */
