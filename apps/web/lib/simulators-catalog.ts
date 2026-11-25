@@ -56,6 +56,18 @@ export const SIMULATOR_CATALOG: readonly SimulatorEntry[] = [
     group: 'Reserva e renda',
   },
   {
+    id: 'm5-l3',
+    title: 'Balanço do estágio',
+    blurb: 'Bolsa menos curso, transporte e comida: o estágio se paga?',
+    group: 'Reserva e renda',
+  },
+  {
+    id: 'm5-l4',
+    title: 'Preço do freela',
+    blurb: 'Quanto cobrar contando horas, custos e revisões.',
+    group: 'Reserva e renda',
+  },
+  {
     id: 'm6-l1',
     title: 'Holerite real',
     blurb: 'Do salário bruto ao líquido: INSS, IR e o que sobra.',
