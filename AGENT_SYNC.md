@@ -9,6 +9,11 @@ Regra: **leia este arquivo antes de codar** e **registre o relatório ao termina
 
 O que está pra ser feito agora, por quem e em que branch. Tire daqui quando for pra Execução.
 
+- [ ] **Checklist manual da T6.5 — liberar `/conectar` para amigos (branch `feat/fase6-conectar-amigos`).** Pedro. **Sem migration, sem env nova.** Antes de chamar vários amigos pra conectar o banco:
+  1. **Testar de ponta a ponta com 1 amigo primeiro** (criar conta em `meu.pluggy.ai`, ligar o banco lá, autorizar no `/conectar` do Tostão e conferir se as contas/transações sincronizam após o fim do trial de 15 dias).
+  2. **Confirmar os termos do plano com o suporte do Pluggy** (se o plano atual da aplicação permite outras pessoas usarem o conector MeuPluggy pelo seu `clientId`/`clientSecret`).
+  3. **Avisar os amigos sobre onde os dados ficam** (no servidor do Pedro; a Política de Privacidade já está publicada em `/privacidade`).
+
 > ⚠️ **Alerta (2026-11-15): o servidor está à frente do GitHub.** Em `~/homelab/tostao-prototipo` existe código que **não está no GitHub** e **já está no ar** (build de 15/11 11:54):
 >
 > - 3 commits locais na `main` (Simuladores M2–M9, UX mobile/desktop e um merge);
@@ -41,6 +46,21 @@ Relatório do que foi feito. Modelo:
 - Como validei (testes, rota, tela).
 - O que ficou de fora / riscos.
 ```
+
+### 2026-11-24 · Antigravity · branch feat/fase6-conectar-amigos (Fase 6, PR 3: T6.5 passo a passo de conexão para amigos)
+
+**Feita numa worktree isolada a partir da `main` (`5b7959e`). Commit local, sem push e sem deploy/restart.** `.next` e PM2 de produção não foram tocados.
+
+- **`apps/web/components/conectar-guia.tsx`**: novo `ConectarGuia` com os 3 passos curtos para leigo no tom do Tostão (`1. Cria sua conta no MeuPluggy` em `meu.pluggy.ai`, `2. Volta aqui e toca em "Conectar"`, `3. Escolhe MeuPluggy e autoriza`), usando os ícones já existentes (`conectar/banco`, `ui/banco`, `jogo/dia-cumprido`) e o `<details>` `"Por que preciso disso?"` explicando em 2 linhas que o Tostão só lê gastos e nunca movimenta dinheiro; novo `WidgetErrorAlert` com mensagem humana e links diretos para `Importar extrato (PDF/OFX)` e `Anotar na mão`.
+- **`apps/web/lib/conectar-widget.ts`**: `humanizeWidgetError` garante que nenhuma falha do fluxo do widget (busca de `connectToken`, `import`/inicialização do SDK, `onError` ou `connectItem`) exponha `Item ID`, `Pluggy`, `clientUserId`, `connect_token` ou códigos HTTP na interface.
+- **`apps/web/app/(app)/conectar/page.tsx` e `forms.tsx`**: `/conectar` (normal e `?novo=1`) exibe `<ConectarGuia />`, usa `<WidgetErrorAlert />` no lugar de erros crus e remove `"Já tenho um Item ID"` / `"Avançado e suporte"` da tela principal (o formulário manual fica restrito a ambientes sem widget ou `?manual=1`). A checagem de posse (`clientUserId === userId`) em `apps/api/src/use-cases/connect-bank.ts` não foi alterada.
+- **Testes novos**: `apps/web/lib/conectar-widget.spec.ts` (sanitização de erros técnicos) e `apps/web/components/conectar-guia.spec.tsx` (markup `renderToString` dos 3 passos, ícones, `"Por que preciso disso?"`, alternativas no alerta e guardas de fonte).
+- Migration? Não. Variável de ambiente nova? Não.
+- **Como validei**: `pnpm format:check`, `pnpm typecheck`, `pnpm lint`, `pnpm test` (`@tostao/api` 875 passed / 98 skipped de Postgres/Redis, `@tostao/web` 68 arquivos / 722 passed, `@tostao/contracts` 16 passed) e `pnpm build` (no `.next` da worktree).
+- **O que ficou de fora / observações**:
+  - `docs/producao/07-FASE-6-ROBUSTEZ-UX-SIMULADORES-E-FEATURES.md` não existe na `main` (foi criado na branch `fix/fase6-operacao`, ainda sem merge), então o checkbox da T6.5 não foi marcado aqui para evitar conflito com a PR 1.
+  - `pnpm shots` ainda não existe no repo (T6.8); visual não conferido em navegador real.
+  - Teste real com 1 amigo, validação dos termos do plano com o Pluggy e aviso sobre onde os dados ficam registrados no `## Plano` acima.
 
 ### 2026-11-22 · Claude · branch feat/fase5-t52-t53 (redesign desktop de autenticação: painel ilustrado + formulário limpo)
 

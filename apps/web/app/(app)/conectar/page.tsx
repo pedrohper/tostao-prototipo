@@ -1,3 +1,4 @@
+import { ConectarGuia } from '@/components/conectar-guia';
 import { Icon } from '@/components/icone';
 import Link from 'next/link';
 import { Mascot } from '@/components/mascote';
@@ -5,17 +6,17 @@ import { BackLink, Card, Eyebrow, PageFrame } from '@/components/ui';
 import { resolveBackHref, updatedTimeLabel } from '@/lib/format';
 import { getI18n } from '@/lib/i18n-server';
 import { ConnectPanel, DisconnectButton, SyncButton } from './forms';
-import { getDictionary } from '@/lib/i18n';
 import { getMe } from '@/lib/api-queries';
 
 export default async function ConectarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ novo?: string; voltar?: string }>;
+  searchParams: Promise<{ novo?: string; voltar?: string; manual?: string }>;
 }) {
   // Nenhum POST aqui: um GET de página não pode ter efeito colateral (antes pedia um connect-token ao Pluggy a cada
   // visita). Se o servidor tem o widget vem em /me; o token só é pedido quando a pessoa clica em conectar.
-  const [{ novo, voltar }, me, { locale, t }] = await Promise.all([searchParams, getMe(), getI18n()]);
+  const [{ novo, voltar, manual }, me, { locale, t }] = await Promise.all([searchParams, getMe(), getI18n()]);
+  const allowManual = manual === '1';
   const p = t.pages.conectar;
   const widget = me.pluggyEnabled;
   const backHref = resolveBackHref(voltar, '/mais');
@@ -137,10 +138,9 @@ export default async function ConectarPage({
       </section>
     ) : null;
 
-  // Onboarding (?novo=1): três cartões de escolha imediata; Item ID, passo a passo do Pluggy e notas técnicas
-  // ficam num bloco recolhido. A Nav some e o progresso/"Fazer depois" vêm do OnboardingShell (layout).
+  // Onboarding (?novo=1): três cartões de escolha imediata + passo a passo curto (3 passos) pra leigo.
+  // Campo manual só entra sem widget ou via ?manual=1.
   if (novo) {
-    const t3 = getDictionary(locale).growth.onboarding;
     const [bank, ...others] = caminhos;
     const cardClass =
       'flex items-center gap-3 rounded-2xl border border-linha bg-cartao p-3.5 text-tinta no-underline transition-colors hover:bg-papel-2';
@@ -163,6 +163,7 @@ export default async function ConectarPage({
               novo
               locale={locale}
               layout="card"
+              importarHref={importarHref}
               card={{ icon: bank.icon, bg: bank.bg, title: bank.t, tag: bank.tag, desc: bank.d }}
             />
           )}
@@ -178,7 +179,7 @@ export default async function ConectarPage({
                 <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[15px] font-bold">
                   {c.t}
                   {c.tag && (
-                    <span className="rounded-full bg-amarelo-claro px-2 py-0.5 text-[11px] font-semibold text-tinta">
+                    <span className="rounded-full bg-amarelo-claro px-2 py-0.5 text-xs font-semibold text-tinta">
                       {c.tag}
                     </span>
                   )}
@@ -192,6 +193,10 @@ export default async function ConectarPage({
           ))}
         </div>
 
+        {widget ? <ConectarGuia /> : <ConnectPanel widget={false} novo locale={locale} importarHref={importarHref} />}
+
+        {widget && allowManual && <ConnectPanel widget novo locale={locale} layout="manual" />}
+
         {connectedBanks}
 
         <Link
@@ -200,46 +205,6 @@ export default async function ConectarPage({
         >
           {p.continueOnboarding}
         </Link>
-
-        <details open={!widget} className="rounded-2xl border border-linha bg-papel-2 p-3.5">
-          <summary className="cursor-pointer text-[14px] font-semibold text-tinta-suave">{t3.advancedTitle}</summary>
-          <div className="mt-3 flex flex-col gap-4">
-            <p className="text-[13px] leading-[18px] text-tinta-suave">{t3.advancedHint}</p>
-            {widget ? (
-              <>
-                <ol className="list-decimal space-y-1 pl-5 text-[13px] leading-relaxed text-tinta">
-                  <li>{p.howSteps[0]}</li>
-                  <li>
-                    {p.howSteps[1]}
-                    <b>MeuPluggy</b>
-                    {p.howSteps[2]}
-                    <a
-                      href="https://meu.pluggy.ai"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-semibold underline"
-                    >
-                      meu.pluggy.ai
-                    </a>
-                  </li>
-                  <li>{p.howSteps[3]}</li>
-                </ol>
-                <ConnectPanel widget novo locale={locale} layout="manual" />
-              </>
-            ) : (
-              <>
-                <ConnectPanel widget={false} novo locale={locale} />
-              </>
-            )}
-            <ul className="flex flex-col gap-2">
-              {pontos.map((pt) => (
-                <li key={pt.b} className="text-[13px] leading-[18px] text-tinta">
-                  <b>{pt.b}</b> {pt.t}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </details>
       </PageFrame>
     );
   }
@@ -319,33 +284,15 @@ export default async function ConectarPage({
         <div id="banco" className="flex scroll-mt-6 flex-col gap-4">
           <h2 className="pt-2 font-display text-xl font-extrabold lg:pt-0 lg:text-2xl">{p.sectionTitle}</h2>
 
-          {widget && (
-            <div className="flex flex-col gap-2.5 rounded-[20px] border border-linha bg-papel-2 p-4">
-              <>
-                <Eyebrow>{p.howTitle}</Eyebrow>
-                <ol className="list-decimal space-y-1 pl-5 text-[14px] leading-relaxed text-tinta">
-                  <li>{p.howSteps[0]}</li>
-                  <li>
-                    {p.howSteps[1]}
-                    <b>MeuPluggy</b>
-                    {p.howSteps[2]}
-                    <a
-                      href="https://meu.pluggy.ai"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-semibold underline"
-                    >
-                      meu.pluggy.ai
-                    </a>
-                    {p.howSteps[3] ? '' : ''}
-                  </li>
-                  <li>{p.howSteps[3]}</li>
-                </ol>
-              </>
-            </div>
-          )}
+          {widget && <ConectarGuia />}
 
-          <ConnectPanel widget={widget} novo={Boolean(novo)} locale={locale} />
+          <ConnectPanel
+            widget={widget}
+            novo={Boolean(novo)}
+            locale={locale}
+            importarHref={importarHref}
+            allowManual={allowManual}
+          />
 
           {connectedBanks}
         </div>
