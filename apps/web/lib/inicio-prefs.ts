@@ -1,6 +1,15 @@
-import { cookies } from 'next/headers';
+import {
+  applyHomePrefsPatch,
+  hasHomeLayoutChoice,
+  readStoredHomePrefs,
+  type HomePrefsResponse,
+  type StoredHomePrefs,
+} from '@tostao/contracts';
 
-/** Cookie storing hidden Home sections and dismissed alerts per device. */
+/**
+ * Cookie com as preferências da Home. A versão principal mora na conta (T6.11, `/me/home-prefs`); aqui fica só uma
+ * cópia, carimbada com o `dono`, pra quando a API falhar. Cookie sem `dono` é de antes disso e ainda precisa subir.
+ */
 export const PREFS_COOKIE = 'tostao-inicio';
 export type HomePrefs = { ordem: string[]; ocultos: string[]; fechados: string[]; v?: number };
 
@@ -77,13 +86,73 @@ export function serializePrefs(prefs: HomePrefs): string {
   return JSON.stringify(rest);
 }
 
-export async function readHomePrefs(): Promise<HomePrefs> {
-  return parsePrefs((await cookies()).get(PREFS_COOKIE)?.value);
-}
-
 /** Returns user's chosen section order with any newly added sections appended at the end. */
 export function resolveSectionOrder(prefs: HomePrefs): HomeSectionId[] {
   const allIds = HOME_SECTIONS.map((s) => s.id) as HomeSectionId[];
   const selected = prefs.ordem.filter((id): id is HomeSectionId => (allIds as string[]).includes(id));
   return [...selected, ...allIds.filter((id) => !selected.includes(id))];
+}
+
+/** Teto do valor já codificado: acima de ~4 KB o navegador descarta o cookie sem avisar. */
+const MAX_COOKIE_CHARS = 3500;
+
+function cookieOwner(raw: string | undefined): string | null {
+  try {
+    const owner = (JSON.parse(raw ?? '') as { dono?: unknown }).dono;
+    return typeof owner === 'string' ? owner : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Cookie de antes da T6.11 no formato da conta. Só vai o que é escolha de verdade ou aviso fechado: um padrão antigo
+ * "congelado" fica de fora. `null` = nada pra subir (inclusive quando o cookie já é uma cópia da conta).
+ */
+export function legacyCookiePrefs(raw: string | undefined): StoredHomePrefs | null {
+  if (!raw || cookieOwner(raw) !== null) return null;
+  const prefs = readStoredHomePrefs(JSON.parse(serializePrefs(parsePrefs(raw))));
+  return prefs && (hasHomeLayoutChoice(prefs) || prefs.fechados.length > 0) ? prefs : null;
+}
+
+/** A cópia local do que está na conta. Se não couber no cookie, saem os avisos fechados mais antigos. */
+export function cacheCookie(prefs: StoredHomePrefs, owner: string): string {
+  let { fechados } = prefs;
+  for (;;) {
+    const value = JSON.stringify({ ...prefs, fechados, dono: owner });
+    if (fechados.length === 0 || encodeURIComponent(value).length <= MAX_COOKIE_CHARS) return value;
+    fechados = fechados.slice(1);
+  }
+}
+
+export type HomePrefsState = {
+  prefs: HomePrefs;
+  /** Este aparelho ainda tem um cookie antigo pra subir, ou a cópia local ficou velha. */
+  needsSync: boolean;
+};
+
+/**
+ * Junta o que a conta guarda (`remote`; `undefined` = a API não respondeu) com o cookie do aparelho:
+ * a conta manda; sem resposta, vale a cópia; cookie antigo aparece já misturado, antes mesmo de subir.
+ */
+export function resolveHomePrefs({
+  remote,
+  cookie,
+  userId,
+}: {
+  remote: HomePrefsResponse | undefined;
+  cookie: string | undefined;
+  userId: string | null;
+}): HomePrefsState {
+  const owner = cookieOwner(cookie);
+  const own = owner !== null && owner !== userId ? undefined : cookie; // cópia de outra conta no mesmo aparelho
+  if (remote?.prefs === undefined) return { prefs: parsePrefs(own), needsSync: false };
+  const saved = readStoredHomePrefs(remote.prefs);
+  const legacy = legacyCookiePrefs(own);
+  const merged = legacy ? applyHomePrefsPatch(saved, { migrar: legacy }) : saved;
+  const copy = saved && userId ? cacheCookie(saved, userId) : undefined;
+  return {
+    prefs: parsePrefs(merged ? JSON.stringify(merged) : undefined),
+    needsSync: userId !== null && (legacy !== null || copy !== cookie),
+  };
 }

@@ -1,5 +1,6 @@
 import { BackLink, PageFrame } from '@/components/ui';
-import { DEFAULT_HIDDEN_SECTIONS, HOME_SECTIONS, readHomePrefs, resolveSectionOrder } from '@/lib/inicio-prefs';
+import { DEFAULT_HIDDEN_SECTIONS, HOME_SECTIONS, resolveSectionOrder } from '@/lib/inicio-prefs';
+import { readHomePrefs } from '@/lib/inicio-prefs-server';
 import { resolveBackHref } from '@/lib/format';
 import { PersonalizarForm } from './form';
 import { getI18n } from '@/lib/i18n-server';

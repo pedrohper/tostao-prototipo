@@ -2,7 +2,7 @@
 import { UpcomingReminders, WeeklySummaryCard } from '@/components/engajamento';
 import { DismissibleCard } from '@/components/fechavel';
 import { getI18n } from '@/lib/i18n-server';
-import { readHomePrefs } from '@/lib/inicio-prefs';
+import { readHomePrefs } from '@/lib/inicio-prefs-server';
 import { getReminders, getWeekly } from './dados';
 
 export async function RemindersSection() {

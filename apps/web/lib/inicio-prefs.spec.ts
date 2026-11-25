@@ -1,8 +1,6 @@
 // T4.3 e T6.10 · Home enxuta: quem nunca personalizou recebe o essencial; quem personalizou mantém a própria escolha.
-import { describe, expect, it, vi } from 'vitest';
-
-vi.mock('next/headers', () => ({ cookies: vi.fn() }));
-
+import { HOME_SECTION_IDS } from '@tostao/contracts';
+import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_HIDDEN_SECTIONS,
   HOME_SECTIONS,
@@ -24,6 +22,10 @@ describe('padrão enxuto', () => {
       expect(HOME_SECTIONS.map((s) => s.id as string)).toContain(id);
       expect(DEFAULT_HIDDEN_SECTIONS as readonly string[]).toContain(id);
     }
+  });
+
+  it('os blocos da web são exatamente os que a API aceita (T6.11)', () => {
+    expect(HOME_SECTIONS.map((s) => s.id)).toEqual([...HOME_SECTION_IDS]);
   });
 
   it('só esconde ids que existem (nada de seção fantasma no padrão)', () => {

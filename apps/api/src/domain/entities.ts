@@ -17,6 +17,8 @@ export type User = {
   aiConsentAt: Date | null;
   /** Chave Pix opcional, na forma canônica (só serve pro "Cobrar" dos acertos). Dado pessoal: nunca em log. */
   pixKey: string | null;
+  /** Preferências da Home, como estão gravadas. Sempre lidas por `readStoredHomePrefs` (o formato pode envelhecer). */
+  homePrefs: unknown;
   /** Fuso da pessoa (IANA). Dia civil e fechamento de mês usam isto. */
   timezone: string;
   createdAt: Date;

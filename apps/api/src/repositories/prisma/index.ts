@@ -27,7 +27,7 @@ import type {
   UserConsent,
   FriendRequest,
 } from '../../domain/entities.js';
-import type { FinancialPlan, UpdateTostaoAutoConfigBody } from '@tostao/contracts';
+import type { FinancialPlan, StoredHomePrefs, UpdateTostaoAutoConfigBody } from '@tostao/contracts';
 import type {
   AccountData,
   AccountsRepository,
@@ -153,6 +153,17 @@ class PrismaUsersRepository implements UsersRepository {
   }
   async setPixKey(id: string, pixKey: string | null) {
     await this.db.user.update({ where: { id }, data: { pixKey } });
+  }
+  updateHomePrefs(id: string, change: (current: unknown) => StoredHomePrefs) {
+    return inTx(this.db, async (tx) => {
+      // Tranca a linha da pessoa: celular e PC gravando juntos fazem fila e o segundo já enxerga o que o primeiro gravou.
+      await tx.$queryRaw`SELECT id FROM users WHERE id = ${id} FOR NO KEY UPDATE`;
+      const row = await tx.user.findUnique({ where: { id }, select: { homePrefs: true } });
+      if (!row) return null;
+      const next = change(row.homePrefs);
+      await tx.user.update({ where: { id }, data: { homePrefs: next } });
+      return next;
+    });
   }
   async delete(id: string) {
     await this.db.user.delete({ where: { id } });

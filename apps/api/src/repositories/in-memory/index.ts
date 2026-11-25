@@ -32,7 +32,12 @@ import type {
   RecurringRule,
   AutomationToken,
 } from '../../domain/entities.js';
-import { isYieldTransaction, type FinancialPlan, type UpdateTostaoAutoConfigBody } from '@tostao/contracts';
+import {
+  isYieldTransaction,
+  type FinancialPlan,
+  type StoredHomePrefs,
+  type UpdateTostaoAutoConfigBody,
+} from '@tostao/contracts';
 import type {
   AccountData,
   NewUser,
@@ -127,6 +132,7 @@ export class InMemoryUsersRepository implements UsersRepository {
       termsVersion: data.termsVersion ?? null,
       aiConsentAt: null,
       pixKey: null,
+      homePrefs: null,
       timezone: 'America/Sao_Paulo',
     };
     this.items.push(user);
@@ -150,6 +156,13 @@ export class InMemoryUsersRepository implements UsersRepository {
   async setPixKey(id: string, pixKey: string | null) {
     const u = this.items.find((x) => x.id === id);
     if (u) u.pixKey = pixKey;
+  }
+  async updateHomePrefs(id: string, change: (current: unknown) => StoredHomePrefs) {
+    const u = this.items.find((x) => x.id === id);
+    if (!u) return null;
+    const next = change(u.homePrefs); // sem `await` no meio: aqui já é atômico
+    u.homePrefs = next;
+    return next;
   }
   async delete(id: string) {
     this.items = this.items.filter((u) => u.id !== id);

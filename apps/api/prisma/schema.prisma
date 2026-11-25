@@ -29,6 +29,8 @@ model User {
   aiConsentAt     DateTime? @map("ai_consent_at") @db.Timestamptz(3)
   // Chave Pix opcional (T6.16), já na forma canônica. Dado pessoal: sai no export LGPD, some com a conta, não vai pra log.
   pixKey          String?   @map("pix_key")
+  // Preferências da Home (T6.11): blocos, ordem e avisos fechados, no formato `StoredHomePrefs` dos contratos.
+  homePrefs       Json?     @map("home_prefs")
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   oauthAccounts           OAuthAccount[]

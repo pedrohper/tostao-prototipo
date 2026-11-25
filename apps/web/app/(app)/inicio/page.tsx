@@ -27,11 +27,13 @@ import { QuickAddButton } from '@/components/quick-add-sheet';
 import { MissionCompletionToast } from '@/components/sons';
 import { StreakModalButton } from '@/components/streak-modal';
 import { Await, SectionSkeleton, startEarly } from '@/components/suspense';
+import { SyncHomePrefs } from '@/components/sync-home-prefs';
 import { getMe } from '@/lib/api-queries';
 import { currentMonth, todayIso } from '@/lib/format';
 import { MAX_HOME_ALERTS } from '@/lib/home-alerts';
 import { getI18n } from '@/lib/i18n-server';
-import { readHomePrefs, resolveSectionOrder, type HomeSectionId } from '@/lib/inicio-prefs';
+import { resolveSectionOrder, type HomeSectionId } from '@/lib/inicio-prefs';
+import { readHomePrefsState } from '@/lib/inicio-prefs-server';
 import Link from 'next/link';
 
 const DESKTOP_LEFT_EXTRAS = new Set<HomeSectionId>(['evolucao', 'sobra', 'cartoes', 'limites', 'acertos', 'vence']);
@@ -43,7 +45,10 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   const hoje = currentMonth();
   const rawMes = sp.mes;
   const month = /^\d{4}-\d{2}$/.test(rawMes ?? '') && rawMes! <= hoje ? rawMes! : hoje;
-  const [prefs, { locale, t }] = await Promise.all([readHomePrefs(), getI18n()]);
+  // O saldo não depende das preferências: o pedido dele sai junto, sem fila.
+  const summaryP = startEarly(getSummary(month));
+  const profileP = startEarly(getMe());
+  const [{ prefs, needsSync }, { locale, t }] = await Promise.all([readHomePrefsState(), getI18n()]);
   const isSectionVisible = (id: HomeSectionId) => !prefs.ocultos.includes(id);
   const visibleSections = resolveSectionOrder(prefs).filter(isSectionVisible);
 
@@ -52,7 +57,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   const progressP = startEarly(getHomeProgress());
   prefetchSections(visibleSections, month);
   // `auto` o layout já pede: aqui serve pra reservar o tamanho certo do quadro de achados.
-  const [summary, profile, auto] = await Promise.all([getSummary(month), getMe(), getHomeAuto()]);
+  const [summary, profile, auto] = await Promise.all([summaryP, profileP, getHomeAuto()]);
 
   const isEmptyState = isEmptyHome(summary);
   const brokenConnections = profile.connections.filter((c) => c.status === 'ERROR' && !c.isImport);
@@ -172,6 +177,8 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
           }
         </Await>
       </Suspense>
+
+      {needsSync && <SyncHomePrefs />}
 
       {/*
         Uma árvore só pro que é igual nos dois tamanhos (cabeçalho, alertas, estado vazio, achados do Tostão): esses

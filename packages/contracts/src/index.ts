@@ -6,6 +6,7 @@ export * from './juros';
 export * from './pix';
 export * from './golpe';
 export * from './export';
+export * from './home-prefs';
 
 // ---------- Auth ----------
 // bcrypt só lê os 72 primeiros BYTES da senha (o resto seria ignorado em silêncio). Rejeitamos acima disso.

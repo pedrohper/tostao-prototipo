@@ -9,7 +9,7 @@ import { TostaoFindingsBoard } from '@/components/tostao-auto-card';
 import { currentDayOfMonth, money, monthName, shiftMonth } from '@/lib/format';
 import { unifyAlerts, type LocalAlertKey } from '@/lib/home-alerts';
 import { getI18n } from '@/lib/i18n-server';
-import { readHomePrefs } from '@/lib/inicio-prefs';
+import { readHomePrefs } from '@/lib/inicio-prefs-server';
 import { getBudgets, getHomeAuto, getSubscriptions, getSummary } from './dados';
 
 const DELIVERY_TIP_FROM_CENTS = 10000;

@@ -42,6 +42,7 @@ export function PersonalizarForm({
   const [ordem, setOrdem] = useState(linhas.map((l) => l.id));
   const [off, setOff] = useState(new Set(ocultos));
   const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const byId = new Map(linhas.map((l) => [l.id, l]));
   const mover = (i: number, d: number) => {
     const j = i + d;
@@ -111,10 +112,21 @@ export function PersonalizarForm({
       >
         {t.resetDefault}
       </button>
+      {error && (
+        <p role="alert" className="rounded-2xl bg-amarelo-claro px-3.5 py-3 text-[13px] leading-[19px] font-semibold">
+          {error}
+        </p>
+      )}
       <button
         type="button"
         disabled={pending}
-        onClick={() => start(() => saveHomePrefs(ordem, [...off]))}
+        onClick={() =>
+          start(async () => {
+            setError(null);
+            const result = await saveHomePrefs(ordem, [...off]); // quando dá certo, redireciona pra Home
+            if (result) setError(result.error);
+          })
+        }
         className="sticky bottom-[104px] flex h-[52px] items-center justify-center rounded-full bg-tinta text-base font-semibold text-papel disabled:opacity-60 md:bottom-6"
       >
         {pending ? savingLabel : saveLabel}

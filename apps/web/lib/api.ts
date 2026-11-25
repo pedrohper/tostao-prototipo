@@ -36,6 +36,8 @@ export async function api<T>(
     skipAuthRedirect?: boolean;
     /** Segundos de cache do Next pra essa resposta (só GET e só dado que muda pouco, ex.: logos). Padrão: sem cache. */
     revalidate?: number;
+    /** Desiste depois desse tempo (vira o mesmo erro de "API fora"). Pra leitura que não pode segurar a tela. */
+    timeoutMs?: number;
   } = {},
 ): Promise<T> {
   const token = await getToken();
@@ -49,6 +51,7 @@ export async function api<T>(
       method: init.method ?? 'GET',
       headers,
       body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
+      ...(init.timeoutMs !== undefined ? { signal: AbortSignal.timeout(init.timeoutMs) } : {}),
       // O cache do Next separa por cabeçalho (Authorization incluso): a resposta de uma pessoa nunca serve outra.
       ...(init.revalidate !== undefined ? { next: { revalidate: init.revalidate } } : { cache: 'no-store' as const }),
     });
