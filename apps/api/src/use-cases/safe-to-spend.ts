@@ -47,11 +47,13 @@ const sameBill = (a: Bill, b: Bill) =>
   (shareName(a.name, b.name) && within(a.cents, b.cents, 25)) ||
   (a.cents === b.cents && a.day !== null && b.day !== null && Math.abs(a.day - b.day) <= 3);
 
+export type Payment = { cents: number; day: number; description: string };
+
 /**
  * Separa o primeiro lançamento (ainda não usado) que paga a conta. Exigente de propósito: achar pagamento que não
  * existe faria o número prometer dinheiro que já tem dono.
  */
-function takePayment(bill: Bill, payments: { cents: number; day: number; description: string }[]) {
+export function takePayment(bill: Bill, payments: Payment[]) {
   const index = payments.findIndex(
     (p) =>
       (shareName(bill.name, p.description) && within(bill.cents, p.cents, 15)) ||
@@ -65,6 +67,14 @@ function takePayment(bill: Bill, payments: { cents: number; day: number; descrip
   payments.splice(index, 1);
   return true;
 }
+
+/** As saídas do mês no formato em que se procura o pagamento de uma conta. */
+export const paymentsOf = (outflows: Transaction[], tz: string): Payment[] =>
+  outflows.map((t) => ({
+    cents: -t.amountInCents,
+    day: civilDayOfMonth(t.occurredAt, tz),
+    description: t.description,
+  }));
 
 export function safeToSpend({
   now,
@@ -101,11 +111,7 @@ export function safeToSpend({
 }): { safeToSpendTodayInCents: number; safeToSpend: SafeToSpendBreakdown } {
   const today = civilDayOfMonth(now, tz);
   const month = civilDay(now, tz).slice(0, 7);
-  const payments = monthOutflows.map((t) => ({
-    cents: -t.amountInCents,
-    day: civilDayOfMonth(t.occurredAt, tz),
-    description: t.description,
-  }));
+  const payments = paymentsOf(monthOutflows, tz);
 
   const pending: (Bill & { kind: 'fixed' | 'subscription' | 'scheduled' })[] = [];
   /** Entra na lista, a não ser que a conta já esteja lá vinda de OUTRA origem (aí fica o maior valor). */

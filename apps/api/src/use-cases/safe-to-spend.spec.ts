@@ -182,6 +182,18 @@ describe('nada é descontado duas vezes', () => {
     expect(b.availableInCents).toBe(3000_00 - 99_90);
   });
 
+  it('a previsão do mês também não desconta de novo a conta fixa já anotada', async () => {
+    const { spend, read } = await setup({ fixed: [{ name: 'Conta de luz', amountInCents: 86_00, day: 28 }] });
+    const before = (await read())!;
+    expect(before.fixedLeftInCents).toBe(86_00);
+    await spend('2026-11-28', 86_00, 'Luz');
+    const after = (await read())!;
+    expect(after.fixedLeftInCents).toBe(0);
+    expect(after.spentInCents).toBe(86_00);
+    // anotar não muda o quanto sobra: a conta só trocou de lugar
+    expect(after.leftInCents).toBe(before.leftInCents);
+  });
+
   it('Pix sem o nome da conta, de valor idêntico e perto do vencimento, paga a conta grande', async () => {
     const { spend, breakdown } = await setup({ fixed: [{ name: 'Aluguel', amountInCents: 1200_00, day: 18 }] });
     await spend('2026-11-15', 1200_00, 'PIX ENVIADO JOAO SILVA');

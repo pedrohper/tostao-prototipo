@@ -22,7 +22,7 @@ import { patternFromDescription } from '../services/categorize.js';
 import { occurrenceDescription, occurrencesInMonth } from '../services/recurrence.js';
 import { listSubscriptions, subscriptionsFrom } from './list-subscriptions.js';
 import { loadFinance, sliceRange, summarizeMonth, summarizeMonths, type FinanceSnapshot } from './month-aggregation.js';
-import { safeToSpend } from './safe-to-spend.js';
+import { paymentsOf, safeToSpend, takePayment } from './safe-to-spend.js';
 import { subscriptionBaseKey, subscriptionKey } from '../services/subscriptions.js';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -759,11 +759,21 @@ export function computeForecast(plan: FinancialPlan, data: ForecastData, now: Da
   const today = dayOf(now);
   const daysInMonth = daysInMonthOf(cur);
   const daysLeft = daysInMonth - today;
-  // Conta do dia 31 num mês de 30 dias vence no dia 30 (o último): ainda "falta" até lá.
-  const fixedLeft = plan.fixedExpenses
-    .filter((f) => Math.min(f.day, daysInMonth) > today)
-    .reduce((sum, f) => sum + f.amountInCents, 0);
+  const monthStart = monthRange(cur, tz).from;
   const endOfMonth = monthRange(cur, tz).to;
+  // As mesmas saídas que o resumo do mês soma (inclusive as anotadas com data mais pra frente).
+  const monthOutflows = sliceRange(data.txs, monthStart, endOfMonth).filter(
+    (t) => t.amountInCents < 0 && !t.isInternalTransfer && !(t.accountId && hiddenAccountIds.has(t.accountId)),
+  );
+  // Conta do dia 31 num mês de 30 dias vence no dia 30 (o último): ainda "falta" até lá. A que já está nas saídas do
+  // mês (anotada ou paga antes do vencimento) não é descontada de novo.
+  const payments = paymentsOf(monthOutflows, tz);
+  const fixedLeft = plan.fixedExpenses
+    .map((f) => ({ name: f.name, cents: f.amountInCents, day: Math.min(f.day, daysInMonth) }))
+    .filter((bill) => bill.day > today)
+    .sort((a, b) => a.day - b.day)
+    .filter((bill) => !takePayment(bill, payments))
+    .reduce((sum, bill) => sum + bill.cents, 0);
   // Assinatura parcelada que já acabou (installmentsLeft === 0) não cobra mais.
   const subsLeft = subs.subscriptions
     .filter(
@@ -776,7 +786,6 @@ export function computeForecast(plan: FinancialPlan, data: ForecastData, now: Da
   const accountIds = new Set(accounts.filter((a) => !a.hidden).map((a) => a.id));
   const subKeysActive = new Set(subs.subscriptions.map((x) => subscriptionBaseKey(x.key)));
   const big = Math.max(20000, Math.round(income * BIG_SPEND_FACTOR));
-  const monthStart = monthRange(cur, tz).from;
   const everyday = txWindow
     .filter(
       (t) =>
@@ -809,10 +818,7 @@ export function computeForecast(plan: FinancialPlan, data: ForecastData, now: Da
       incomeInCents: incomeNow,
       spentInCents: curSummary.outcomeInCents,
       goalInCents: goalReserveOfMonth(resolveGoals(plan), cur),
-      // As mesmas saídas que o resumo do mês soma (inclusive as anotadas com data mais pra frente).
-      monthOutflows: sliceRange(data.txs, monthStart, endOfMonth).filter(
-        (t) => t.amountInCents < 0 && !t.isInternalTransfer && !(t.accountId && hiddenAccountIds.has(t.accountId)),
-      ),
+      monthOutflows,
       fixedExpenses: plan.fixedExpenses,
       subscriptions: subs.subscriptions,
       installments: installmentsOfMonth(
