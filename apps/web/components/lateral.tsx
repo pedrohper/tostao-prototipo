@@ -18,7 +18,7 @@ export function SidebarFooter({
     <div className="mt-auto hidden flex-col gap-3 md:flex">
       {dados.carregando ? (
         // Mesma altura do cartão da ofensiva: nada pula quando ele chega.
-        <div aria-hidden="true" className="h-[88px] animate-pulse rounded-2xl bg-papel-2 motion-reduce:animate-none" />
+        <div aria-hidden="true" className="h-[108px] animate-pulse rounded-2xl bg-papel-2 motion-reduce:animate-none" />
       ) : (
         <SidebarStreakButton
           xp={dados.xp}
