@@ -77,6 +77,36 @@ Plano B: se o banco já foi ligado pela Demo do dashboard ("Ir para Demo" → me
 | `pnpm content:build`                           | Regera as lições a partir de `content/curriculo.md` |
 | `pnpm --filter @tostao/api exec prisma studio` | Abre o banco no navegador                           |
 
+### Prints das telas (`pnpm shots`)
+
+Sobe a API e a web numa pilha descartável, cria um usuário de demonstração com **dados fictícios** e salva em `shots/` os prints de Início, Carteira, Anotar, Tostão, Aprender, 3 simuladores, Conectar e Mais, em 390×844 e 1440×900, claro e escuro (40 imagens de página inteira em `shots/`, mais a primeira tela de cada uma em `shots/dobra/`, e o `relatorio.json` com o que parece quebrado). Não compara imagens: é pra abrir e olhar. PR de tela anexa ou descreve os prints.
+
+Precisa de um Postgres e um Redis **de teste** (nada de produção):
+
+```bash
+SHOTS_DATABASE_URL="postgresql://tostao:tostao@127.0.0.1:55432/tostao_shots" \
+SHOTS_REDIS_URL="redis://127.0.0.1:56379/1" \
+pnpm shots
+```
+
+O navegador: se o Chromium abrir na máquina, usa ele; senão usa a imagem oficial `mcr.microsoft.com/playwright` pelo Docker (baixa ~2 GB na primeira vez). Pra rodar direto no servidor, uma vez: `pnpm exec playwright install chromium` e `sudo npx playwright install-deps chromium`.
+
+| Variável             | Padrão        | Pra quê                                                                     |
+| -------------------- | ------------- | --------------------------------------------------------------------------- |
+| `SHOTS_DATABASE_URL` | (obrigatória) | Banco local com `demo`, `test` ou `shots` no nome (é criado se não existir) |
+| `SHOTS_REDIS_URL`    | (obrigatória) | Redis local de teste. A porta 6379 só com `SHOTS_ALLOW_REDIS_6379=1`        |
+| `SHOTS_DIR`          | `shots`       | Pasta de saída                                                              |
+| `SHOTS_ONLY`         | todas         | Telas ou caminhos: `inicio,mais` ou `/acertos,/fechamento`                  |
+| `SHOTS_WEB_MODE`     | `build`       | `dev` pula o build (aparece o indicador do Next nos prints)                 |
+| `SHOTS_SKIP_BUILD`   |               | `1` reaproveita o build que já está em `SHOTS_DIST_DIR`                     |
+| `SHOTS_DIST_DIR`     | `.next.shots` | Pasta de build da web (nunca a `.next` da produção)                         |
+| `SHOTS_API_PORT`     | `4333`        | Porta da API dos prints (3333 é recusada)                                   |
+| `SHOTS_WEB_PORT`     | `4100`        | Porta da web dos prints (3000 é recusada)                                   |
+| `SHOTS_RUNNER`       | `auto`        | `docker` ou `local` força onde o Chromium roda                              |
+| `SHOTS_DOCKER_IMAGE` | pela versão   | Outra imagem do Playwright                                                  |
+
+`pnpm shots --check` só confere a configuração; `pnpm shots --serve` deixa a pilha no ar (mostra o e-mail e a senha sorteada) até o Ctrl+C. O usuário de demonstração **não** faz parte do `pnpm db:seed`: quem cria é `apps/api/src/demo/seed-demo.ts`, que recusa `NODE_ENV=production`, exige a flag `--confirmo-banco-de-demo` e recusa banco remoto, sem nome de teste ou com conta de gente de verdade.
+
 ## Mapa do código
 
 ```

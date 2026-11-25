@@ -11,3 +11,5 @@ coverage
 next-env.d.ts
 *.tsbuildinfo
 artefato-tostao-claude.html
+# Prints automáticos (`pnpm shots`)
+/shots/
