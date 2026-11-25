@@ -72,7 +72,7 @@ export function makeLimiters(app: FastifyInstance) {
     resendVerificationByUser: make('resend-verification:user', 5, FIFTEEN_MINUTES, user),
 
     deleteAccountByUser: make('me-delete:user', 5, FIFTEEN_MINUTES, user),
-    /** Exportação LGPD: junta o histórico inteiro numa resposta, então só 2 por dia por pessoa. */
+    /** Exportação (JSON da LGPD e CSV): junta o histórico inteiro numa resposta, então só 2 por dia por pessoa. */
     exportByUser: make('me-export:user', 2, ONE_DAY, user),
     friendsByUser: make('friends:user', 10, FIFTEEN_MINUTES, user),
     /** Cadastrar, trocar ou apagar a chave Pix. */

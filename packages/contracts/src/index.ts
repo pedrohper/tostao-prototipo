@@ -5,6 +5,7 @@ import { z } from 'zod';
 export * from './juros';
 export * from './pix';
 export * from './golpe';
+export * from './export';
 
 // ---------- Auth ----------
 // bcrypt só lê os 72 primeiros BYTES da senha (o resto seria ignorado em silêncio). Rejeitamos acima disso.

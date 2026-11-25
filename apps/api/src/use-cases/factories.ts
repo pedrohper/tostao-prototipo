@@ -49,6 +49,7 @@ import { InstitutionLogosUseCase } from './institution-logos.js';
 import { DeleteTransactionUseCase } from './delete-transaction.js';
 import { DeleteAccountUseCase } from './delete-account.js';
 import { ExportUserDataUseCase } from './export-user-data.js';
+import { ExportTransactionsCsvUseCase } from './export-transactions-csv.js';
 import { CategorizeTransactionUseCase } from './categorize-transaction.js';
 import { CreateManualTransactionUseCase } from './create-manual-transaction.js';
 import { UpdateTransactionUseCase } from './update-transaction.js';
@@ -142,6 +143,7 @@ export function makeUseCases({
     disconnectBank: new DisconnectBankUseCase(repos, bank),
     deleteAccount: new DeleteAccountUseCase(repos, bank),
     exportUserData: new ExportUserDataUseCase(repos),
+    exportTransactionsCsv: new ExportTransactionsCsvUseCase(repos),
     createConnectToken: {
       execute: async ({ userId }: { userId: string }) => ({ connectToken: await bank.createConnectToken(userId) }),
     },

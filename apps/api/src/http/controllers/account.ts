@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import {
   consentsBody,
   deleteAccountBody,
+  exportCsvQuery,
   pixKeyBody,
   type ConsentsResponse,
   type DeleteAccountResponse,
@@ -30,6 +31,33 @@ export function accountRoutes(app: FastifyInstance, uc: UseCases, limits: Limite
       .type('application/json; charset=utf-8')
       .send(JSON.stringify(data, null, 2));
   });
+
+  // Lançamentos em planilha (T6.21). Mesmo limite (o contador é o MESMO do JSON: 2 por dia somando os dois) e mesmo
+  // AuditLog. A data é conferida antes do limite: um período digitado errado não gasta a cota.
+  app.get(
+    '/me/export.csv',
+    {
+      onRequest: verifyJwt,
+      preValidation: async (request) => {
+        exportCsvQuery.parse(request.query);
+      },
+      preHandler: limits.exportByUser,
+    },
+    async (request, reply) => {
+      const { from, to } = exportCsvQuery.parse(request.query);
+      const { fileName, csv } = await uc.exportTransactionsCsv.execute({
+        userId: request.user.sub,
+        from,
+        to,
+        ipAddress: request.ip,
+      });
+      return reply
+        .header('content-disposition', `attachment; filename="${fileName}"`)
+        .header('cache-control', 'no-store, private')
+        .type('text/csv; charset=utf-8')
+        .send(csv);
+    },
+  );
 
   // Chave Pix da própria pessoa (T6.16). Rota separada do /me de propósito: a chave só trafega nas telas que usam.
   app.get('/me/pix-key', { onRequest: verifyJwt }, async (request) => {

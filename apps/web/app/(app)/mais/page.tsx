@@ -6,6 +6,7 @@ import { Icon } from '@/components/icone';
 import { DesktopSplitShell } from '@/components/lateral';
 import { Mascot } from '@/components/mascote';
 import { PwaInstallBanner } from '@/components/pwa-install-banner';
+import { SeusDados } from '@/components/seus-dados';
 import { api } from '@/lib/api';
 import { getI18n } from '@/lib/i18n-server';
 import { NO_PROGRESS, xpFrom } from '@/lib/xp';
@@ -243,6 +244,8 @@ export default async function MaisPage() {
           </span>
         </Link>
       </nav>
+
+      <SeusDados />
     </DesktopSplitShell>
   );
 }
