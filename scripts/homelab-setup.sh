@@ -62,13 +62,13 @@ say "Compilando o site";                  NEXT_TELEMETRY_DISABLED=1 pnpm build
 command -v pm2 >/dev/null || { say "Instalando pm2"; sudo npm i -g pm2; }
 say "Subindo API e site no pm2"
 pm2 delete tostao-api tostao-web >/dev/null 2>&1 || true
-pm2 start "pnpm start:api" --name tostao-api --cwd "$ROOT"
-PORT="$WEB_PORT" pm2 start "pnpm start:web" --name tostao-web --cwd "$ROOT"
+# Processo único por app (T6.1): a config versionada executa o node direto, sem bash/pnpm no meio.
+WEB_PORT="$WEB_PORT" pm2 start "$ROOT/scripts/pm2/tostao.config.cjs" --only tostao-api,tostao-web
 pm2 save
 
-sleep 5
-curl -fsS "http://localhost:3333/health" >/dev/null && echo "API ok" || { echo "API não respondeu. Veja: pm2 logs tostao-api"; exit 1; }
-curl -fsS -o /dev/null "http://localhost:$WEB_PORT/entrar" && echo "Site ok" || { echo "Site não respondeu. Veja: pm2 logs tostao-web"; exit 1; }
+wait_http() { curl -fsS -o /dev/null --retry 60 --retry-delay 1 --retry-all-errors --max-time 5 "$1"; }
+if wait_http "http://127.0.0.1:3333/health"; then echo "API ok"; else echo "API não respondeu. Veja: pm2 logs tostao-api"; exit 1; fi
+if wait_http "http://127.0.0.1:$WEB_PORT/entrar"; then echo "Site ok"; else echo "Site não respondeu. Veja: pm2 logs tostao-web"; exit 1; fi
 
 # ---------- 5. HTTPS na rede Tailscale ----------
 say "Publicando com HTTPS na sua rede Tailscale"

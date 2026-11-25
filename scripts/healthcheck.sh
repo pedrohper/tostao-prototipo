@@ -52,12 +52,13 @@ save_state() {
 
 probe() { curl -fsS -o /dev/null --max-time 10 --connect-timeout 5 "$1" 2>/dev/null; }
 
-# Devolve 0 só se o webhook respondeu 2xx. Sem URL configurada devolve 0 (não adianta tentar de novo a cada rodada).
+# Devolve 0 só se o webhook respondeu 2xx. Sem URL devolve 1: o estado não marca "avisado", então preencher a URL
+# no meio de uma queda ainda manda o aviso.
 send_alert() {
   local status="$1" text="$2" failed="$3"
   if [[ -z "$webhook_url" ]]; then
     log "ALERT_WEBHOOK_URL vazio: não há para onde avisar ($status: $text)"
-    return 0
+    return 1
   fi
   local payload
   payload="$(printf '{"status":"%s","text":"%s","failed":[%s],"failures":%s,"host":"%s","at":"%s"}' \
@@ -100,4 +101,5 @@ if ((fails >= FAIL_THRESHOLD && alerted == 0)); then
     log "aviso de queda falhou: tento de novo na próxima rodada"
   fi
 fi
-save_state
+# Sem conseguir gravar o estado (disco cheio), a contagem nunca chegaria ao limite: avisa direto, mesmo repetindo.
+save_state || send_alert "down" "Tostão fora do ar (${failed_text}) e o monitor não consegue gravar o estado: disco cheio?" "$failed_json"

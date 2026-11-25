@@ -1,7 +1,7 @@
 // T6.3: scripts/healthcheck.sh. Alerta depois de 2 falhas seguidas, uma vez só ao cair e uma ao voltar.
 // Sobe dois servidores locais (alvo de saúde e webhook) e roda o script de verdade com bash.
 import { execFile } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -137,6 +137,26 @@ describe('healthcheck.sh', () => {
     expect(webhookBodies).toHaveLength(3);
     await check();
     expect(webhookBodies).toHaveLength(3); // entregue: para de repetir
+  });
+
+  it('sem URL não marca como avisado: preencher no meio da queda ainda avisa', async () => {
+    apiStatus = 503;
+    const url = readFileSync(envFile, 'utf8');
+    writeFileSync(envFile, 'OTHER=1\n');
+    await check();
+    await check();
+    expect(readFileSync(join(stateDir, 'state', 'healthcheck.state'), 'utf8')).toBe('fails=2\nalerted=0\n');
+    writeFileSync(envFile, url);
+    await check();
+    expect(webhookBodies).toHaveLength(1);
+  });
+
+  it('se não der pra gravar o estado, avisa mesmo assim', async () => {
+    apiStatus = 503;
+    // um diretório no lugar do arquivo temporário faz a gravação falhar (como num disco cheio)
+    mkdirSync(join(stateDir, 'state', 'healthcheck.state.tmp'), { recursive: true });
+    await check();
+    expect(webhookBodies).toHaveLength(1);
   });
 
   it('não escreve a URL do webhook no log nem no estado', async () => {
