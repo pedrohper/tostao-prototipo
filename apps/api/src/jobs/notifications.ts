@@ -118,12 +118,19 @@ export async function runNotifications(
   return { sent };
 }
 
+/** Devolve `{ stop }` pra o desligamento limpo parar o intervalo; `null` quando push e WhatsApp estão desligados. */
 export function scheduleNotifications(repos: Repositories, push: PushGateway, whatsapp?: WhatsAppGateway) {
-  if (!push.enabled && !whatsapp?.enabled) return;
+  if (!push.enabled && !whatsapp?.enabled) return null;
   const tick = () =>
     runNotifications(repos, push, new Date(), whatsapp).catch((err) =>
       console.error('[avisos]', (err as Error).message),
     );
-  setInterval(tick, 15 * 60 * 1000);
-  setTimeout(tick, 30 * 1000);
+  const interval = setInterval(tick, 15 * 60 * 1000);
+  const first = setTimeout(tick, 30 * 1000);
+  return {
+    stop() {
+      clearInterval(interval);
+      clearTimeout(first);
+    },
+  };
 }

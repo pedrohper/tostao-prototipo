@@ -18,6 +18,10 @@ export interface KeyValueStore {
   setnx(key: string, value: string, ttlSeconds: number): Promise<boolean>;
   /** Apaga só se o valor ainda é `value` (quem libera o lock é o dono; um lock já expirado e retomado por outro não cai). */
   delIfEquals(key: string, value: string): Promise<boolean>;
+  /** PING: rejeita se o Redis não responde. Usado no boot e no /health. */
+  ping(): Promise<void>;
+  /** Encerra a conexão (desligamento limpo). */
+  close(): Promise<void>;
 }
 
 /** Só pra testes. Relógio injetável pra testar validade sem esperar. */
@@ -68,6 +72,8 @@ export class MemoryKeyValueStore implements KeyValueStore {
     this.data.delete(key);
     return true;
   }
+  async ping() {}
+  async close() {}
 }
 
 export class RedisKeyValueStore implements KeyValueStore {
@@ -138,6 +144,17 @@ export class RedisKeyValueStore implements KeyValueStore {
       value,
     );
     return n === 1;
+  }
+  async ping() {
+    await this.redis.ping();
+  }
+  /** QUIT espera os comandos em andamento; se o Redis não responde, corta a conexão na hora. */
+  async close() {
+    try {
+      await this.redis.quit();
+    } catch {
+      this.redis.disconnect();
+    }
   }
 }
 

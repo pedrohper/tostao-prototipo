@@ -24,6 +24,8 @@ import { OidcOAuthGateway } from './gateways/oauth-gateway.js';
 import { makeEmailGateway } from './gateways/make-email-gateway.js';
 import { createKeyValueStore } from './lib/redis.js';
 import { buildN8nBridge, listenN8nBridge } from './http/n8n-bridge.js';
+import { waitFor } from './lib/wait-for.js';
+import { installShutdown } from './lib/shutdown.js';
 
 /** "true"/"false" viram boolean; "a,b,c" vira lista (IPs/CIDRs/palavras-chave do proxy-addr); o resto passa direto. */
 function parseTrustProxy(raw: string): boolean | string | string[] {
@@ -59,6 +61,17 @@ const push =
     : new DisabledPushGateway();
 const email = makeEmailGateway(env);
 const kv = createKeyValueStore({ redisUrl: env.REDIS_URL, nodeEnv: process.env.NODE_ENV });
+
+// No boot do servidor o pm2 sobe a API antes do Docker terminar de subir o Postgres/Redis. Espera os dois (1, 2, 4, 8 s…
+// até ~60 s) ANTES de agendar crons e abrir a porta; passou do teto, sai com erro e o pm2 tenta de novo.
+// Durante a espera ainda não há handler de sinal: SIGTERM/SIGINT encerram o processo na hora (padrão do Node).
+try {
+  await Promise.all([waitFor('postgres', () => prisma.$queryRaw`SELECT 1`), waitFor('redis', () => kv.ping())]);
+} catch (err) {
+  console.error('[boot] dependência fora do ar, abortando:', (err as Error).message);
+  await Promise.allSettled([prisma.$disconnect(), kv.close()]);
+  process.exit(1);
+}
 const oauth = new OidcOAuthGateway({
   google:
     env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
@@ -92,6 +105,22 @@ const app = await buildApp({
   webOrigin: env.WEB_ORIGIN,
   trustProxy: parseTrustProxy(env.TRUST_PROXY),
   logger: true,
+  checkDb: () => prisma.$queryRaw`SELECT 1`,
+});
+
+// Desligamento limpo (SIGTERM do pm2, Ctrl+C). Ordem: para os crons, fecha o HTTP, a ponte do n8n, o Prisma e o Redis.
+// Passou de 10 s, sai com erro; um segundo sinal força a saída. `jobs` e `n8nBridge` são preenchidos mais abaixo.
+const jobs: { stop(): unknown }[] = [];
+let n8nBridge: ReturnType<typeof buildN8nBridge> | undefined;
+installShutdown({
+  timeoutMs: 10_000,
+  steps: [
+    { name: 'crons', run: () => jobs.forEach((job) => job.stop()) },
+    { name: 'http', run: () => app.close() },
+    { name: 'ponte do n8n', run: () => n8nBridge?.close() },
+    { name: 'prisma', run: () => prisma.$disconnect() },
+    { name: 'redis', run: () => kv.close() },
+  ],
 });
 
 const sync = new SyncBankConnectionUseCase({ ...repos, bank });
@@ -111,7 +140,7 @@ const syncEverything = async () => {
     console.error('[tostao-auto] pós-sync falhou:', (err as Error).message),
   );
 };
-scheduleDailySync(env.SYNC_CRON, syncEverything);
+jobs.push(scheduleDailySync(env.SYNC_CRON, syncEverything));
 // Subiu depois de muito tempo parado? Sincroniza já, sem esperar o próximo horário.
 if (await isSyncStale(repos, 6 * 3600_000).catch(() => false)) {
   console.info('[sync] última sincronização tem mais de 6 h: rodando agora');
@@ -120,17 +149,19 @@ if (await isSyncStale(repos, 6 * 3600_000).catch(() => false)) {
 
 // Recorrências e agendados (T5.2): lock distribuído no Redis + idempotência no Postgres, então 2 réplicas não duplicam.
 const materialize = () => materializeAll(repos, kv);
-scheduleRecurring(env.RECURRING_CRON, materialize);
+jobs.push(scheduleRecurring(env.RECURRING_CRON, materialize));
 void materialize().catch((err) => console.error('[recorrencias] rodada inicial falhou:', (err as Error).message));
 
-scheduleNotifications(repos, push, whatsapp);
-scheduleOutbox(repos, bank);
-scheduleTostaoChecks(repos, { push, whatsapp });
+const notifications = scheduleNotifications(repos, push, whatsapp);
+if (notifications) jobs.push(notifications);
+jobs.push(scheduleOutbox(repos, bank));
+jobs.push(scheduleTostaoChecks(repos, { push, whatsapp }));
 
 await app.listen({ port: env.PORT, host: env.HOST });
 
 if (env.N8N_WHATSAPP_SECRET && env.N8N_LISTEN_HOST) {
-  void listenN8nBridge(buildN8nBridge(app), env.N8N_LISTEN_HOST, env.N8N_LISTEN_PORT, (m) => console.info(m));
+  n8nBridge = buildN8nBridge(app);
+  void listenN8nBridge(n8nBridge, env.N8N_LISTEN_HOST, env.N8N_LISTEN_PORT, (m) => console.info(m));
 }
 const oauthProviders = Object.entries(oauth.enabledProviders())
   .filter(([, on]) => on)
