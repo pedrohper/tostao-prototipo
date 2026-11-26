@@ -70,7 +70,7 @@ export function Nav({
       <Link
         href="/inicio"
         aria-label={`Tostão — ${t.nav.home}`}
-        className="mb-[26px] ml-3.5 hidden self-start text-tinta md:block"
+        className="mb-[26px] ml-3.5 block self-start text-tinta max-md:hidden"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -142,7 +142,7 @@ export function Nav({
             </span>
             <span className="flex-1 text-center md:text-left">{item.label}</span>
             {typeof item.badge === 'number' && item.badge > 0 && (
-              <span className="hidden rounded-full bg-laranja px-2 py-0.5 text-mini font-bold text-tinta-fixa md:inline-flex">
+              <span className="inline-flex rounded-full bg-laranja px-2 py-0.5 text-mini font-bold text-tinta-fixa max-md:hidden">
                 {item.badge}
               </span>
             )}

@@ -213,7 +213,7 @@ export function StreakModalButton({
         type="button"
         onClick={() => setOpen(true)}
         aria-label={ariaLabel}
-        className="hidden items-center gap-1 rounded-full bg-amarelo-claro px-3 py-1.5 text-sm font-bold text-tinta transition hover:brightness-95 lg:flex"
+        className="flex items-center gap-1 rounded-full bg-amarelo-claro px-3 py-1.5 text-sm font-bold text-tinta transition hover:brightness-95 max-lg:hidden"
       >
         <Icon src="ui/ofensiva" size={18} />
         <span className="tabular-nums">{effectiveDays}</span>

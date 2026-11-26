@@ -151,7 +151,7 @@ export default async function AcertosPage({
         </div>
 
         {/* No desktop a coluna lateral continua visível; no mobile o formulário abre pelo botão "+ Criar acerto". */}
-        <section className="hidden min-w-0 flex-col gap-2.5 rounded-2xl border border-linha bg-cartao p-4 lg:flex">
+        <section className="flex min-w-0 flex-col gap-2.5 rounded-2xl border border-linha bg-cartao p-4 max-lg:hidden">
           <Eyebrow>{p.formTitle}</Eyebrow>
           {errMsg && (
             <p role="alert" className="rounded-xl bg-rosa px-3 py-2 text-sm font-medium">

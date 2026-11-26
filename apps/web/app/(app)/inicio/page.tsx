@@ -219,7 +219,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
             <div className="flex flex-col gap-3 lg:hidden">
               <MobileBalanceCard {...balanceProps} />
             </div>
-            <div className="hidden lg:block">
+            <div className="max-lg:hidden">
               <DesktopBalanceRow {...balanceProps} />
             </div>
             {month === hoje && (
@@ -270,7 +270,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
             </div>
 
             {/* Desktop (lg+) */}
-            <div className="hidden lg:flex lg:flex-col lg:gap-7">
+            <div className="flex flex-col gap-7 max-lg:hidden">
               {isSectionVisible('atalhos') && sections.atalhos}
               {isSectionVisible('pendencias') && sections.pendencias}
 

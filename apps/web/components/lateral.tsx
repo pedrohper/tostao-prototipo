@@ -15,7 +15,7 @@ export function SidebarFooter({
   const t = getDictionary(locale);
 
   return (
-    <div className="mt-auto hidden flex-col gap-3 md:flex">
+    <div className="mt-auto flex flex-col gap-3 max-md:hidden">
       {dados.carregando ? (
         // Mesma altura do cartão da ofensiva: nada pula quando ele chega.
         <div aria-hidden="true" className="h-[108px] animate-pulse rounded-2xl bg-papel-2 motion-reduce:animate-none" />
@@ -68,7 +68,7 @@ export function DesktopSplitShell({
         <div className="mx-auto flex w-full max-w-[1040px] flex-col gap-6 lg:gap-7 xl:gap-8">{children}</div>
       </div>
       <aside
-        className={`hidden shrink-0 flex-col gap-5 border-l border-linha px-6 py-9 lg:flex xl:px-7 xl:py-10 ${asideWidth}`}
+        className={`flex shrink-0 flex-col gap-5 border-l border-linha px-6 py-9 max-lg:hidden xl:px-7 xl:py-10 ${asideWidth}`}
       >
         {right}
       </aside>
@@ -80,7 +80,7 @@ export function DesktopSplitShell({
 export function RightRail({ locale = 'pt-BR' }: { missions?: MissionsResponse | null; locale?: Locale }) {
   const t = getDictionary(locale);
   return (
-    <aside className="hidden w-80 shrink-0 flex-col gap-5 border-l border-linha px-6 pt-9 pb-10 lg:flex">
+    <aside className="flex w-80 shrink-0 flex-col gap-5 border-l border-linha px-6 pt-9 pb-10 max-lg:hidden">
       <span className="text-xs font-semibold tracking-[0.08em] text-tinta-suave uppercase">{t.nav.learnHeader}</span>
       <div className="flex flex-col gap-2.5 rounded-[20px] bg-amarelo-claro p-4">
         <Mascot pose="professor" size={88} alt="Tostão" />
