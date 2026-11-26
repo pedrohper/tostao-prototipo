@@ -29,6 +29,13 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-26 · Claude · Tostão maior no login e no cadastro (`feat/porquinho-maior-no-login`; nada publicado)
+
+- `app/(auth)/layout.tsx`: o mascote vai até 720 px (antes 520), limitado por `88dvh`; os enfeites ficaram menores e mais no canto pra não ficarem atrás dele.
+- Migration? Não. Env nova? Não.
+- Como validei: `build`, `format:check` e `lint`; fotos de `/entrar` em 1024x768, 1280x720, 1366x650, 1440x900, 1920x950 e 2560x1300 (sem sobrepor logo nem enfeites, sem rolagem lateral) e em 390 px (painel segue escondido).
+- Fora: a imagem original tem 479 px; passar de 720 px pede um desenho maior.
+
 ### 2026-11-25 · Claude · produção (merge dos PRs #54 a #56 e deploy, a pedido do Pedro)
 
 - Checagem do GitHub passou nos 3 PRs; entraram na `main` com merge commit, nessa ordem. As linhas "nada publicado" abaixo valiam até aqui.

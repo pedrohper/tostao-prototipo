@@ -53,7 +53,7 @@ function Doodles() {
       viewBox="0 0 360 300"
       fill="none"
       aria-hidden="true"
-      className="pointer-events-none absolute top-[14%] right-[6%] w-[min(46%,320px)] text-tinta-fixa"
+      className="pointer-events-none absolute top-[6%] right-[3%] w-[min(38%,320px)] text-tinta-fixa"
     >
       {/* folha com gráfico de barras */}
       <g transform="rotate(8 150 130)">
@@ -98,8 +98,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <Wordmark className="text-tinta-fixa" />
         </Link>
         <Doodles />
-        {/* Mascote grandão, cortado pela borda de baixo como se estivesse espiando */}
-        <div className="pointer-events-none absolute bottom-0 left-[4%] w-[min(86%,520px)] translate-y-[14%]">
+        {/* Mascote grandão, cortado pela borda de baixo como se estivesse espiando. Cresce com o painel; o limite
+            pela altura (88dvh) impede de subir em cima do logo em tela baixa. */}
+        <div className="pointer-events-none absolute bottom-0 -left-[6%] w-[min(100%,720px,88dvh)] translate-y-[14%]">
           <Mascot pose="acenando" size={479} alt="" className="h-auto w-full" eager />
         </div>
       </aside>
