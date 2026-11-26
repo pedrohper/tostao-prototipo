@@ -515,7 +515,7 @@ export function Row({
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="truncate text-body leading-5 font-semibold">{t.customDescription || t.description}</span>
           <div className="flex min-w-0 items-center gap-1.5">
-            {unpaid && <span className={`hidden shrink-0 sm:inline ${tagClasses}`}>{pendingTag}</span>}
+            {unpaid && <span className={`shrink-0 max-sm:hidden ${tagClasses}`}>{pendingTag}</span>}
             <span
               className={`truncate text-small leading-4 ${pending ? 'font-semibold text-laranja-texto' : 'text-tinta-suave'}`}
             >

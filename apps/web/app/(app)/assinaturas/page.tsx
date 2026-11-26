@@ -137,7 +137,7 @@ export default async function AssinaturasPage({ searchParams }: { searchParams: 
               </div>
             )}
 
-            <div className="hidden lg:block">{note}</div>
+            <div className="max-lg:hidden">{note}</div>
           </div>
 
           <div className="flex min-w-0 flex-col gap-5">

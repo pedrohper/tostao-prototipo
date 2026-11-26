@@ -129,7 +129,7 @@ export function SwipeSheet({
         >
           <div className="h-[5px] w-10 rounded-full bg-linha" />
         </div>
-        <div className="hidden shrink-0 items-center justify-end px-4 pt-3.5 pb-0 md:flex">
+        <div className="flex shrink-0 items-center justify-end px-4 pt-3.5 pb-0 max-md:hidden">
           <button
             type="button"
             onClick={fechar}

@@ -108,7 +108,7 @@ export function SocialAuthButtons({
       <div className="order-last my-1 flex items-center gap-3 text-xs font-semibold tracking-wide text-tinta-suave uppercase lg:order-first">
         <span className="h-px grow bg-linha" aria-hidden="true" />
         <span className="lg:hidden">{social.orEmail}</span>
-        <span className="hidden lg:inline">{social.orContinueWith}</span>
+        <span className="max-lg:hidden">{social.orContinueWith}</span>
         <span className="h-px grow bg-linha" aria-hidden="true" />
       </div>
     </div>

@@ -98,13 +98,15 @@ describe('Metas, Anotações e Acertos no mobile', () => {
     expect(anotacoes).toContain("sp.mes === 'todos'");
   });
 
-  it('Acertos usa botão "+ Criar acerto" (NewSplitButton) e esconde o formulário fixo no mobile (hidden ... lg:flex)', () => {
+  it('Acertos usa botão "+ Criar acerto" (NewSplitButton) e esconde o formulário fixo no mobile (max-lg:hidden)', () => {
     const acertos = read('app/(app)/acertos/page.tsx');
     const pessoa = read('app/(app)/acertos/[id]/page.tsx');
     expect(acertos).toContain('<NewSplitButton');
-    expect(acertos).toContain('hidden min-w-0 flex-col gap-2.5 rounded-2xl border border-linha bg-cartao p-4 lg:flex');
+    expect(acertos).toContain(
+      'flex min-w-0 flex-col gap-2.5 rounded-2xl border border-linha bg-cartao p-4 max-lg:hidden',
+    );
     expect(pessoa).toContain('<NewSplitButton');
-    expect(pessoa).toContain('hidden min-w-0 flex-col gap-4 lg:flex');
+    expect(pessoa).toContain('flex min-w-0 flex-col gap-4 max-lg:hidden');
   });
 });
 

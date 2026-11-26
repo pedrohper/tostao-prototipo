@@ -319,7 +319,7 @@ export default async function CarteiraPage({
               : []),
           ]}
           desktopControls={
-            <div className="hidden items-center gap-2 lg:flex">
+            <div className="flex items-center gap-2 max-lg:hidden">
               <div className="inline-flex h-10 items-center gap-1 rounded-full bg-tinta px-1.5 text-sm font-semibold text-papel">
                 <Link
                   href={q({ mes: shiftMonth(statementMonth, -1) })}
@@ -378,7 +378,7 @@ export default async function CarteiraPage({
                 <circle cx="12" cy="12" r="3" />
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
               </svg>
-              <span className="hidden sm:inline">{editWalletLabel}</span>
+              <span className="max-sm:hidden">{editWalletLabel}</span>
             </Link>
           )}
         </div>
@@ -409,7 +409,7 @@ export default async function CarteiraPage({
       {aba === 'extrato' && (
         <>
           {/* Barra de filtros no desktop */}
-          <div className="hidden flex-wrap items-center justify-between gap-2 lg:flex">
+          <div className="flex flex-wrap items-center justify-between gap-2 max-lg:hidden">
             <div className="flex flex-wrap items-center gap-2">
               {FILTER_KEYS.map((f) => {
                 const isSelected = !cat && filter === f;
@@ -691,7 +691,7 @@ export default async function CarteiraPage({
                   ))}
                 </div>
 
-                <div className="hidden overflow-hidden rounded-card border border-linha bg-cartao px-4 py-2 lg:block xl:px-5">
+                <div className="overflow-hidden rounded-card border border-linha bg-cartao px-4 py-2 max-lg:hidden xl:px-5">
                   <div className="overflow-x-auto">
                     <table className="w-full table-fixed border-collapse">
                       <thead>
@@ -705,7 +705,7 @@ export default async function CarteiraPage({
                           <th className="w-[128px] px-2 py-3.5 text-xs font-semibold text-tinta-suave xl:w-[156px] xl:px-3">
                             {t.wallet.tableHeaders.category}
                           </th>
-                          <th className="hidden w-[132px] px-3 py-3.5 text-xs font-semibold text-tinta-suave xl:table-cell">
+                          <th className="w-[132px] px-3 py-3.5 text-xs font-semibold text-tinta-suave max-xl:hidden">
                             {t.wallet.tableHeaders.account}
                           </th>
                           <th className="w-[96px] px-2 py-3.5 text-right text-xs font-semibold text-tinta-suave xl:w-[120px] xl:px-3">
@@ -767,7 +767,7 @@ export default async function CarteiraPage({
                                   </Link>
                                 )}
                               </td>
-                              <td className="hidden truncate px-3 py-4 text-small text-tinta-suave xl:table-cell">
+                              <td className="truncate px-3 py-4 text-small text-tinta-suave max-xl:hidden">
                                 {tx.accountName ?? tw.manualLabel}
                               </td>
                               <td

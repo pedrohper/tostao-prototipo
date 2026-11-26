@@ -234,7 +234,7 @@ export default async function ContaPage({
         </div>
 
         <div className="flex min-w-0 flex-col gap-4">
-          {monthSelector('hidden lg:flex')}
+          {monthSelector('max-lg:hidden')}
 
           <section className="flex flex-col gap-4 lg:rounded-card lg:border lg:border-linha lg:bg-cartao lg:p-6">
             <div className="flex flex-wrap items-center justify-between gap-2">

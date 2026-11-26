@@ -23,7 +23,7 @@ export function AntesDeMexer({
           <span className="text-[14px] leading-[20px] text-tinta">{aprende}</span>
           <span className="text-[13px] font-bold text-laranja-texto">
             <span className="group-open:hidden">Ler a ideia</span>
-            <span className="hidden group-open:inline">Fechar</span>
+            <span className="group-not-open:hidden">Fechar</span>
           </span>
         </span>
         <svg

@@ -93,7 +93,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </div>
 
       {/* Painel ilustrado: fundo quente fixo (não muda com o tema) e fica à esquerda no desktop. */}
-      <aside className="relative m-6 hidden min-h-[calc(100dvh-3rem)] overflow-hidden rounded-[28px] bg-[#FFF1E6] lg:order-first lg:block">
+      <aside className="relative m-6 min-h-[calc(100dvh-3rem)] overflow-hidden rounded-[28px] bg-[#FFF1E6] max-lg:hidden lg:order-first">
         <Link href="/" aria-label="Tostão" className="absolute top-8 left-9 z-10 inline-block">
           <Wordmark className="text-tinta-fixa" />
         </Link>

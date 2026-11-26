@@ -168,7 +168,7 @@ export default async function PessoaPage({
                 <li className="py-4 text-sm text-tinta-suave">{pr.emptyHistory(p.name)}</li>
               )}
             </ul>
-            <p className="hidden text-xs leading-[18px] text-tinta-suave lg:block">
+            <p className="text-xs leading-[18px] text-tinta-suave max-lg:hidden">
               {pr.footerExplain(p.name, monthName(new Date().toISOString().slice(0, 7), locale))}
             </p>
           </section>
@@ -182,7 +182,7 @@ export default async function PessoaPage({
         </div>
 
         {/* Desktop mantém a coluna lateral; no mobile o botão "+ Criar acerto" abre o modal limpo. */}
-        <div className="hidden min-w-0 flex-col gap-4 lg:flex">
+        <div className="flex min-w-0 flex-col gap-4 max-lg:hidden">
           <section className="flex flex-col gap-2.5 rounded-2xl border border-linha bg-cartao p-4">
             <Eyebrow>{pr.formTitle(p.name)}</Eyebrow>
             {errMsg && (
