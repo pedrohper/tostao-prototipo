@@ -29,12 +29,14 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
-### 2026-11-26 · Claude · Tostão maior no login e no cadastro (`feat/porquinho-maior-no-login`; nada publicado)
+### 2026-11-26 · Claude · Tostão maior no login e telas que sumiam no computador (`feat/porquinho-maior-no-login`; nada publicado)
 
 - `app/(auth)/layout.tsx`: o mascote vai até 720 px (antes 520), limitado por `88dvh`; os enfeites ficaram menores e mais no canto pra não ficarem atrás dele.
 - Migration? Não. Env nova? Não.
 - Como validei: `build`, `format:check` e `lint`; fotos de `/entrar` em 1024x768, 1280x720, 1366x650, 1440x900, 1920x950 e 2560x1300 (sem sobrepor logo nem enfeites, sem rolagem lateral) e em 390 px (painel segue escondido).
 - Fora: a imagem original tem 479 px; passar de 720 px pede um desenho maior.
+- Sumiço no computador do Pedro (painel do porco, logo, saldo, colunas laterais): a produção está íntegra; reproduzido injetando `.hidden{display:none}` de fora. As utilidades do Tailwind 4 ficam em `@layer`, então CSS sem camada ganha mesmo sem `!important`. Causa provável: extensão do Chrome (não confirmada). `hidden <bp>:<display>` virou `max-<bp>:hidden` em 14 arquivos; regra nova em `lib/ui-classe-hidden.spec.ts`: não usar a classe solta `hidden` pra reexibir por tamanho.
+- Como validei: web 1100/1100, `typecheck`, `lint`, `format:check`, `build`; pilha descartável, telas alteradas em 390, 700, 900, 1100, 1440 e 1920: sem a regra, antes e depois com os mesmos elementos (só muda a ordem de lançamentos do mesmo dia entre uma carga e outra); com a regra, antes 63 de 90 medições perdiam elementos, depois nenhuma.
 
 ### 2026-11-25 · Claude · produção (merge dos PRs #54 a #56 e deploy, a pedido do Pedro)
 
