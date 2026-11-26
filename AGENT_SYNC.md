@@ -29,6 +29,12 @@ Relatório do que foi feito. Modelo:
 - O que ficou de fora / riscos.
 ```
 
+### 2026-11-26 · Claude · produção (merge do PR #58 e deploy, a pedido do Pedro)
+
+- `bash scripts/deploy.sh` às 15:54, sem rollback; backup antes; nenhuma migration pendente (42); servidor na `main` (`498ca55`). A linha "nada publicado" abaixo valia até aqui.
+- Conferido: `/health` 200, `/entrar` e `/criar-conta` 200 no domínio público; nelas o painel continua visível com `.hidden` injetado, com e sem `!important`; API e web online.
+- Não testado: o navegador do Pedro e telas logadas em produção.
+
 ### 2026-11-26 · Claude · Tostão maior no login e telas que sumiam no computador (`feat/porquinho-maior-no-login`; nada publicado)
 
 - `app/(auth)/layout.tsx`: o mascote vai até 720 px (antes 520), limitado por `88dvh`; os enfeites ficaram menores e mais no canto pra não ficarem atrás dele.
